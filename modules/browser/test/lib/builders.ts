@@ -200,12 +200,15 @@ export interface FakeGuest extends GuestLike {
   windowOpen?: (d: { url: string }) => { action: 'deny' }
   /** Fires the listeners of `event`. */
   emit(event: string, ...args: unknown[]): void
+  listenerCount(event: string): number
   /** Replies of `executeJavaScriptInIsolatedWorld`, in order; when empty the call resolves to true. */
   isolatedReplies: IsolatedReply[]
+  /** Used when `isolatedReplies` is empty. */
+  isolatedHandler?: (code: string) => unknown
   isolatedCalls: { worldId: number; code: string }[]
   mainWorldCalls: string[]
   mainWorldReply: unknown
-  capture: { image: ImageLike | null; error?: Error }
+  capture: { image: ImageLike | null; error?: Error; wait?: Promise<void> }
 }
 
 let guestIds = 0
@@ -275,6 +278,13 @@ export function fakeGuest(): FakeGuest {
     on(event, cb) {
       listeners.set(event, [...(listeners.get(event) ?? []), cb])
     },
+    off(event, cb) {
+      listeners.set(
+        event,
+        (listeners.get(event) ?? []).filter((l) => l !== cb),
+      )
+    },
+    listenerCount: (event: string) => listeners.get(event)?.length ?? 0,
     isDestroyed: () => g.destroyed,
     close() {
       g.calls.push('close')
@@ -288,10 +298,11 @@ export function fakeGuest(): FakeGuest {
     async executeJavaScriptInIsolatedWorld(worldId, scripts) {
       const code = scripts[0]?.code ?? ''
       g.isolatedCalls.push({ worldId, code })
-      const reply = g.isolatedReplies.length ? g.isolatedReplies.shift() : true
+      const reply = g.isolatedReplies.length ? g.isolatedReplies.shift() : (g.isolatedHandler?.(code) ?? true)
       return typeof reply === 'function' ? (reply as (c: string) => unknown)(code) : reply
     },
     async capturePage() {
+      if (g.capture.wait) await g.capture.wait
       if (g.capture.error) throw g.capture.error
       return g.capture.image ?? fakeImage({ width: 0, height: 0 }, true)
     },
@@ -426,4 +437,86 @@ export function fakeMainCtx(opts: { comments?: boolean } = {}) {
     return (await h(input)) as O
   }
   return { ctx, invoke, published, executed, commands }
+}
+
+// ── PickerService ────────────────────────────────────────────────────────────────────────────────────────────
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import type { CancelReason } from '../../src/contract'
+import type { PickOutcome, RawPickedElement } from '../../src/main/picker/page/types'
+import { PickerService } from '../../src/main/picker/picker-service'
+import { ACTION_BODIES, PICKER_ACTIONS, type PickerAction } from '../../src/main/picker/script'
+
+export const actionOf = (code: string): PickerAction | undefined =>
+  PICKER_ACTIONS.find((a) => code.includes(ACTION_BODIES[a]))
+
+export const validRaw = (over: Partial<RawPickedElement> = {}): RawPickedElement => ({
+  url: 'http://u:p@localhost:1/index.html?token=abc#frag',
+  title: 'Fixture',
+  selector: '#b',
+  domPath: 'body > button#b',
+  tagName: 'button',
+  outerHtml: '<button id="b">x</button>',
+  text: 'x',
+  rect: { x: 10, y: 20, width: 80, height: 24 },
+  viewport: { width: 400, height: 300 },
+  styles: { display: 'block' },
+  ...over,
+})
+
+export function deferred<T>() {
+  let resolve: (v: T) => void = () => undefined
+  const promise = new Promise<T>((r) => {
+    resolve = r
+  })
+  return { promise, resolve }
+}
+
+/** A PickerService over a fake manager/host with one tab; the page's `awaitPick` waits for `outcome()`. */
+export function setupPicker(over: Partial<Settings> = {}) {
+  const m = setupManager(over)
+  m.manager.setActiveWorktree('wtA')
+  const tabId = m.manager.openTab('wtA', 'http://localhost:1/')
+  const guest = m.host.guestOf(tabId)
+  let page = deferred<PickOutcome>()
+  guest.isolatedHandler = (code) => {
+    const action = actionOf(code)
+    m.host.calls.push(`iso:${action}`)
+    return action === 'awaitPick' ? page.promise : true
+  }
+  const events = {
+    picked: [] as BrowserPick[],
+    cancelled: [] as { tabId: string; reason: CancelReason }[],
+    armed: [] as (string | null)[],
+  }
+  const shotsDir = mkdtempSync(join(tmpdir(), 'pragma-browser-shots-'))
+  const picker = new PickerService({
+    manager: m.manager,
+    views: m.host,
+    settings: () => m.settings,
+    shotsDir,
+    page: () => ({ accent: '#000', hint: 'Pick' }),
+    emit: {
+      picked: (p) => void events.picked.push(p),
+      cancelled: (e) => void events.cancelled.push(e),
+      armedChanged: (t) => {
+        events.armed.push(t)
+        m.manager.setPickerArmed(t)
+      },
+    },
+  })
+  return {
+    ...m,
+    tabId,
+    guest,
+    picker,
+    events,
+    shotsDir,
+    /** Resolves the page's pending `awaitPick`. */
+    outcome(o: PickOutcome) {
+      page.resolve(o)
+      page = deferred<PickOutcome>()
+    },
+  }
 }

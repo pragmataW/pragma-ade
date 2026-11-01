@@ -1,11 +1,11 @@
 import type { BrowserHost } from './guest'
-import type { PickerControl } from './picker-control'
+import type { PickerService } from './picker/picker-service'
 import type { BrowserTabManager } from './tab-manager'
 
 /** The active module's main-side objects (test hooks and `deactivate` read them). */
 export interface BrowserMainRuntime {
   manager: BrowserTabManager
-  picker: PickerControl
+  picker: PickerService
   host: BrowserHost
 }
 

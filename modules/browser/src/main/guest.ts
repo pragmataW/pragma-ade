@@ -17,6 +17,7 @@ export interface GuestLike {
   isDevToolsOpened(): boolean
   setWindowOpenHandler(h: (d: { url: string }) => { action: 'deny' }): void
   on(event: string, cb: (...a: unknown[]) => void): void
+  off(event: string, cb: (...a: unknown[]) => void): void
   isDestroyed(): boolean
   close(): void
   executeJavaScript(code: string): Promise<unknown>

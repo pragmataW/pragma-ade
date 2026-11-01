@@ -4,5 +4,8 @@
   },
   "commands": {
     "togglePicker": "Browser: Pick element"
+  },
+  "picker": {
+    "banner": "Click an element to comment on it. Press Esc to cancel."
   }
 }

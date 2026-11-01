@@ -26,7 +26,7 @@ const LIB_SOURCE = `{
 }`
 
 /** `p` is `globalThis.__pragmaPicker` (may be undefined), `o` the options, `lib` the page library. */
-const ACTION_BODIES: Record<PickerAction, string> = {
+export const ACTION_BODIES: Record<PickerAction, string> = {
   arm: 'const picker = (g.__pragmaPicker ??= lib.installPicker(o)); picker.arm(o); return true',
   awaitPick: "return p ? p.awaitPick() : { kind: 'cancelled' }",
   cancel: 'p?.cancel(); return true',
