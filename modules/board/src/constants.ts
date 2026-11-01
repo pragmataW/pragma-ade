@@ -47,3 +47,8 @@ export const MONOGRAM_PX = 16
 export const ESCAPE_KEY = 'Escape'
 export const ENTER_KEY = 'Enter'
 export const DATE_TIME_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
+/** Pointer travel before a drag starts (clicks stay clicks). */
+export const DRAG_ACTIVATION_PX = 5
+export const DND_TASK_PREFIX = 'task:'
+export const DND_COLUMN_PREFIX = 'column:'
+export const DND_KIND = { task: 'task', column: 'column' } as const

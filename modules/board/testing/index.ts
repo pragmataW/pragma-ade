@@ -1,10 +1,11 @@
 /** Playwright helpers for the board's and other modules' (phase 10) E2E tests (`@pragma/module-board/testing`). */
-import type { Locator, Page } from '@playwright/test'
-import { dragTo } from '@pragma/test-support/e2e'
+import { expect, type Locator, type Page } from '@playwright/test'
+import { dragTo, settleAnimations } from '@pragma/test-support/e2e'
 import { BOARD_TESTID_ATTRS as A, BOARD_TESTIDS as T } from '../src/contract'
 
 const byTestId = (id: string): string => `[data-testid="${id}"]`
 const WAIT_MS = 10_000
+const RETRY_MS = 1000
 const DRAG_STEPS = 12
 const ENTER = 'Enter'
 
@@ -76,12 +77,33 @@ export class BoardPage {
     const col = this.column(toColumn)
     const cards = col.getByTestId(T.card)
     const target = toIndex < (await cards.count()) ? cards.nth(toIndex) : col.getByTestId(T.quickAdd)
+    // A new drag cannot start while the previous drop animation runs.
+    await settleAnimations(this.page)
     await dragTo(this.page, this.card(title), target, { steps: DRAG_STEPS })
   }
 
-  /** Drags a column by its handle onto the column now at `toIndex`. */
+  /** Waits until the drag hovers `column` (`data-drop-target`). */
+  async expectDropTarget(column: string): Promise<void> {
+    await expect(this.column(column)).toHaveAttribute(A.dropTarget, 'true', { timeout: WAIT_MS })
+  }
+
+  /**
+   * During a keyboard drag, presses `key` until the drag hovers `column` (the first press can land before dnd-kit
+   * measured the drop targets).
+   */
+  async keyboardMoveTo(key: string, column: string): Promise<void> {
+    await expect(async () => {
+      await this.page.keyboard.press(key)
+      await expect(this.column(column)).toHaveAttribute(A.dropTarget, 'true', { timeout: RETRY_MS })
+    }).toPass({ timeout: WAIT_MS })
+  }
+
+  /** Drags a column by its handle onto the column now at `toIndex` (its menu button, the visible right edge). */
   async dragColumn(name: string, toIndex: number): Promise<void> {
-    const target = this.page.getByTestId(T.column).nth(toIndex).getByTestId(T.columnHandle)
-    await dragTo(this.page, this.column(name).getByTestId(T.columnHandle), target, { steps: DRAG_STEPS })
+    const source = this.column(name).getByTestId(T.columnHandle)
+    await settleAnimations(this.page)
+    await source.scrollIntoViewIfNeeded()
+    const target = this.page.getByTestId(T.column).nth(toIndex).getByTestId(T.columnMenu)
+    await dragTo(this.page, source, target, { steps: DRAG_STEPS })
   }
 }

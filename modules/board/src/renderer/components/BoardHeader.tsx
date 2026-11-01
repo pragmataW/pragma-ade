@@ -1,3 +1,4 @@
+import { AddColumn } from './AddColumn'
 import { NewTaskButton } from './NewTaskButton'
 import { ScopePicker } from './ScopePicker'
 
@@ -7,6 +8,7 @@ export function BoardHeader() {
     <header className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--bd)] bg-[var(--pn)] px-3">
       <ScopePicker />
       <div className="ml-auto flex items-center gap-2">
+        <AddColumn />
         <NewTaskButton />
       </div>
     </header>

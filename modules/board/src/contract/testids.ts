@@ -86,4 +86,6 @@ export const BOARD_TESTID_ATTRS = {
   value: 'data-value',
   scope: 'data-scope',
   mode: 'data-mode',
+  /** `true` on the column a dragged card or column is over. */
+  dropTarget: 'data-drop-target',
 } as const
