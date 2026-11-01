@@ -1,4 +1,10 @@
-import { baseLaunchSpec, type LaunchCapability } from '../../src/contract'
+import {
+  baseLaunchSpec,
+  initialPromptOf,
+  type LaunchCapability,
+  type LaunchContext,
+  resolvePromptText,
+} from '../../src/contract'
 import type { ProviderAccess } from '../../src/main/profiles/profiles-store'
 
 export interface FakeProviderDef {
@@ -16,7 +22,15 @@ export const DEFAULT_PROVIDERS: FakeProviderDef[] = [
   { id: 'custom', command: '' },
 ]
 
-/** A fake `ctx.providers` over descriptors with `launch` capabilities (`buildLaunch` = profile command + args). */
+/** Profile command + args, then the prompt as the final argument (long prompts via the temp file). */
+async function buildFakeLaunch(ctx: LaunchContext) {
+  const prompt = initialPromptOf(ctx)
+  const resolved = prompt === undefined ? undefined : await resolvePromptText(ctx, prompt)
+  const spec = baseLaunchSpec(ctx)
+  return resolved ? { ...spec, args: spec.args.concat(resolved.text), tempFiles: resolved.tempFiles } : spec
+}
+
+/** A fake `ctx.providers` over descriptors with `launch` capabilities (`buildFakeLaunch`). */
 export function makeProviders(
   defs: FakeProviderDef[] = DEFAULT_PROVIDERS,
 ): ProviderAccess & { defs: FakeProviderDef[] } {
@@ -33,7 +47,7 @@ export function makeProviders(
       .map((d) => [
         d.id,
         {
-          buildLaunch: async (ctx) => baseLaunchSpec(ctx),
+          buildLaunch: buildFakeLaunch,
           ...(d.seed === undefined ? {} : { seed: { order: d.seed } }),
           ...(d.checkCompatibility ? { checkCompatibility: d.checkCompatibility } : {}),
         },

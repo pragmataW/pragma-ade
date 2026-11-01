@@ -40,3 +40,12 @@ export const ELLIPSIS = '…'
 export const TEMP_ROOT_SEGMENTS = ['agents', 'tmp'] as const
 export const TEMP_DIR_MODE = 0o700
 export const TEMP_FILE_MODE = 0o600
+/** stopSession: SIGTERM, wait, SIGKILL, wait; never resolves on a timeout alone. */
+export const STOP_GRACE_MS = 5000
+export const KILL_CONFIRM_MS = 5000
+export const DEFAULT_PTY_COLS = 120
+export const DEFAULT_PTY_ROWS = 32
+/** Tag key carrying the session id on agent ptys (the owner tag is the terminal contract's). */
+export const PTY_TAG_SESSION = 'sessionId'
+export const SIGTERM = 'SIGTERM'
+export const SIGKILL = 'SIGKILL'
