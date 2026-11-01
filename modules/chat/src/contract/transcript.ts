@@ -22,6 +22,8 @@ export interface MessageItem {
   role: ChatEventOf<typeof K.message>['role']
   text: string
   attachments: ChatAttachmentRef[]
+  /** When the message was sent (envelope time). */
+  at: number
 }
 export interface TextItem<Kind extends typeof K.textDelta | typeof K.thinking = typeof K.textDelta> {
   kind: Kind
@@ -243,7 +245,7 @@ function apply(t: ChatTranscript, e: ChatEvent, seq: number, at: number): ChatTr
     case K.options:
       return { ...t, info: { ...t.info, options: e.options } }
     case K.message:
-      return upsert(t, { kind: K.message, id: e.messageId, role: e.role, text: e.text, attachments: e.attachments })
+      return upsert(t, { kind: K.message, id: e.messageId, role: e.role, text: e.text, attachments: e.attachments, at })
     case K.turnStart:
       return { ...t, turnActive: true, turnStartedAt: at }
     case K.textDelta:

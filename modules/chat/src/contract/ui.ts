@@ -1,4 +1,5 @@
 /** The chat UI kit contract (§5.4): type-only React imports, so providers compose their own chat UI. */
+import type { ThemeMode } from '@pragma/sdk'
 import type { ClipboardEvent, ComponentType, DragEvent } from 'react'
 import type { ChatImage, ChatPermissionDecision, ChatSupport, ChatUserInput } from './capability'
 import type { ChatEventEnvelope, ChatEventKind } from './events'
@@ -35,6 +36,10 @@ export interface ChatSlotProps {
   session: ChatSessionApi
 }
 export type ChatSlotComponent = ComponentType<ChatSlotProps>
+/** The turn header also gets the time of the user message that started the turn. */
+export interface ChatTurnHeaderProps extends ChatSlotProps {
+  at?: number
+}
 
 export interface ComposerApi {
   text: string
@@ -83,7 +88,7 @@ export interface ChatUiDefinition {
   /** Default true: consecutive tool-call items render inside one `ToolCallGroup`. */
   groupToolCalls?: boolean
   /** Default `AssistantTurnHeader` (provider mark + name + time); null hides it. */
-  turnHeader?: ChatSlotComponent | null
+  turnHeader?: ComponentType<ChatTurnHeaderProps> | null
 }
 
 declare module '@pragma/sdk' {
@@ -119,6 +124,8 @@ export interface ChatHost {
   /** 04's `StatusIcon` when agent-status is active, else null (the kit draws a fallback). */
   StatusIcon: ComponentType<{ status: ChatSessionStatus; turnCompleted: boolean; size?: 'sm' | 'md' }> | null
   openExternal(url: string): void
+  /** The resolved light/dark mode (diff themes). */
+  theme: { get(): ThemeMode; subscribe(cb: () => void): ChatSubscription }
   settings: {
     get(): ChatSettings
     update(patch: Partial<ChatSettings>): Promise<unknown>

@@ -1,4 +1,5 @@
 import { ToggleGroup, ToggleGroupItem } from '@pragma/ui/components/toggle-group'
+import { VARIANT_OUTLINE } from '../../constants'
 
 export interface SegmentedItem {
   value: string
@@ -24,7 +25,7 @@ export function Segmented({
   return (
     <ToggleGroup
       type="single"
-      variant="outline"
+      variant={VARIANT_OUTLINE}
       className="w-fit"
       value={value}
       data-testid={testId}

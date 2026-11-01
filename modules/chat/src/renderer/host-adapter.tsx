@@ -33,6 +33,10 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
     ProviderMark,
     StatusIcon: opts.agentStatusActive ? StatusIcon : null,
     openExternal: (url) => void ctx.shell.openExternal(url),
+    theme: {
+      get: () => ctx.theme.get().resolved,
+      subscribe: (cb) => ctx.theme.onChange(() => cb()),
+    },
     settings: {
       get: () => ctx.settings.get(),
       update: (patch) => ctx.settings.update(patch),

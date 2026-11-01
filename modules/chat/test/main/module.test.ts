@@ -95,7 +95,9 @@ describe('chat main module', () => {
     const s = setup({ history })
     s.agents.sessions.set('s1', { ...s.session, externalSessionId: 'ext' })
     const t = await s.services[0]?.getHistory('s1')
-    expect(t?.items).toEqual([{ kind: 'message', id: 'u', role: 'user', text: 'old', attachments: [] }])
+    expect(t?.items).toEqual([
+      { kind: 'message', id: 'u', role: 'user', text: 'old', attachments: [], at: expect.any(Number) },
+    ])
   })
 
   it('checkSupport noCapability when provider lacks chat', async () => {

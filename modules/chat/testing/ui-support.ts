@@ -91,6 +91,7 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
     ProviderMark: NoMark,
     StatusIcon: null,
     openExternal: (url) => void calls.push({ method: 'openExternal', args: [url] }),
+    theme: { get: () => 'dark', subscribe: () => ({ dispose: () => undefined }) },
     settings: {
       get: () => host.currentSettings,
       async update(patch) {

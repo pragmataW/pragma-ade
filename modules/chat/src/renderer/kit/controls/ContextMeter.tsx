@@ -1,6 +1,6 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
-import { CONTEXT_WARN_RATIO, PERCENT, RING } from '../../../constants'
+import { CONTEXT_WARN_RATIO, NO_FILL, PERCENT, RING, TWO_PI } from '../../../constants'
 import { CHAT_TESTIDS, type ChatSlotProps, type UsageEvent } from '../../../contract'
 
 /** Context use in percent; null when the provider did not report it. */
@@ -12,7 +12,6 @@ export function contextPercent(usage: UsageEvent | null | undefined): number | n
 export const CONTEXT_VARIANTS = ['bar', 'ring', 'text'] as const
 export type ContextVariant = (typeof CONTEXT_VARIANTS)[number]
 const [BAR, RING_VARIANT, TEXT] = CONTEXT_VARIANTS
-const NO_FILL = 'none'
 
 function Ring({ percent }: { percent: number }) {
   const circumference = TWO_PI * RING.r

@@ -32,5 +32,57 @@
   },
   "usage": {
     "context": "Context {{percent}}%"
+  },
+  "list": {
+    "jumpToLatest": "Jump to latest"
+  },
+  "tool": {
+    "group": "{{count}} tool calls",
+    "status": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Done",
+      "error": "Failed"
+    },
+    "truncated": "Output truncated",
+    "results": "{{count}} results"
+  },
+  "copy": {
+    "label": "Copy",
+    "copied": "Copied"
+  },
+  "thinking": {
+    "label": "Thinking"
+  },
+  "diff": {
+    "tooLarge": "Diff too large to display",
+    "change": {
+      "edit": "Edited",
+      "create": "Created",
+      "overwrite": "Rewritten",
+      "delete": "Deleted"
+    }
+  },
+  "permission": {
+    "allow": "Allow",
+    "alwaysAllow": "Always allow",
+    "deny": "Deny",
+    "outcome": {
+      "allowed": "Allowed",
+      "allowed_always": "Always allowed",
+      "denied": "Denied",
+      "cancelled": "Cancelled"
+    }
+  },
+  "notice": {
+    "interrupted": "Interrupted",
+    "error": "Turn failed",
+    "limit": "Turn limit reached",
+    "exited": "Session ended",
+    "crashed": "The agent process exited unexpectedly"
+  },
+  "working": {
+    "thinking": "Thinking…",
+    "meta": "{{elapsed}} · esc to interrupt"
   }
 }
