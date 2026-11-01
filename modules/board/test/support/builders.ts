@@ -1,3 +1,4 @@
+import type { LinkedSessionDto, TaskDto } from '../../src/contract'
 import type { BoardRepo } from '../../src/main/repo'
 import type { BoardRow, TaskInsert, TaskRow } from '../../src/main/schema'
 
@@ -27,4 +28,44 @@ export function seedTask(repo: BoardRepo, board: BoardRow, o: Partial<TaskInsert
     updatedAt: NOW,
     ...o,
   })
+}
+
+/** A complete task DTO (board 1, project p1, column 1, no labels/worktree/sessions). */
+export function aTask(over: Partial<TaskDto> = {}): TaskDto {
+  const id = over.id ?? 1
+  return {
+    id,
+    key: `PRA-${id}`,
+    number: id,
+    boardId: 1,
+    projectId: 'p1',
+    columnId: 1,
+    title: `Task ${id}`,
+    descriptionMd: '',
+    priority: 'none',
+    labelIds: [],
+    worktreeId: null,
+    sortKey: 'a0',
+    sessions: [],
+    sessionIds: [],
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...over,
+  }
+}
+
+/** A linked-session DTO for profile `profileId`. */
+export function aLinkedSession(sessionId: string, over: Partial<LinkedSessionDto> = {}): LinkedSessionDto {
+  return {
+    sessionId,
+    worktreeId: 'w1',
+    title: null,
+    status: null,
+    turnCompleted: false,
+    profileId: 'fake',
+    profileName: 'Fake',
+    profileDisplayNameKey: null,
+    providerId: 'custom',
+    ...over,
+  }
 }

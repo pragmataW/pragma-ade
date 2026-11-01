@@ -8,3 +8,8 @@ export const BRANCH_PREFIX = 'feat/'
 export const SLUG_SEPARATOR = '-'
 export const PROMPT_SEPARATOR = '\n\n'
 export const NON_SLUG_CHARS_RE = /[^a-z0-9]+/g
+/** First suffix for a taken name: `PRA` → `PRA2`, `feat/x` → `feat/x-2`. */
+export const FIRST_DUPLICATE_SUFFIX = 2
+/** `PRA-12` (prefix letters/digits, task number). */
+export const TASK_KEY_RE = /^(?<prefix>[A-Za-z0-9]+)-(?<number>\d+)$/
+export const DIGITS_RE = /^\d+$/
