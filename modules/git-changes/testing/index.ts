@@ -5,6 +5,8 @@ import { dirname, join } from 'node:path'
 import { createFixtureRepo, type FixtureRepo, isolatedGitEnv } from '@pragma/test-support'
 import type { GitPort } from '../src/main/diff-service'
 
+export * from './fake-main-ctx'
+
 const GIT_MAX_BUFFER = 64 * 1024 * 1024
 
 /** A `GitPort` over the `git` CLI with the projects semantics: untrimmed stdout, throws unless `allowFailure`. */

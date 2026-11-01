@@ -115,3 +115,6 @@ export const GIT_CHANGES_SETTINGS_DEFAULTS: GitChangesSettings = {
   diffStyle: DIFF_STYLES[0],
   showFullFile: false,
 }
+
+export const GIT_CHANGES_ERROR_CODES = ['worktreeNotFound'] as const
+export type GitChangesErrorCode = (typeof GIT_CHANGES_ERROR_CODES)[number]
