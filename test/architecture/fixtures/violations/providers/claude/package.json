@@ -1,0 +1,7 @@
+{
+  "name": "@pragma/provider-claude",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {},
+  "pragma": { "id": "claude", "kind": "provider", "displayNameKey": "claude:module.name" }
+}
