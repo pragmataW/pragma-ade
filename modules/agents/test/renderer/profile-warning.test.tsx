@@ -11,7 +11,7 @@ it.each<[string, ProfileCheck, string, string]>([
     'notFound',
     { resolution: { status: 'notFound' }, compatibility: null },
     AGENTS_TESTIDS.commandWarning,
-    '`dgc` was not found on PATH',
+    'dgc was not found on PATH',
   ],
   [
     'notExecutable',

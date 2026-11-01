@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@pragma/ui/components/dropdown-menu'
 import { Icon } from '@pragma/ui/components/icon'
+import { LAYOUT } from '@pragma/ui/tokens'
 import { ICON_SM, ICONS, MARK_TAB } from '../../constants'
 import {
   AGENT_SLOTS,
@@ -110,7 +111,11 @@ export function SessionTabs({
 }) {
   const t = useT()
   return (
-    <div role="tablist" className="flex h-10 shrink-0 items-stretch border-b border-bd bg-pn">
+    <div
+      role="tablist"
+      style={{ height: LAYOUT.tabStrip }}
+      className="flex shrink-0 items-stretch border-b border-bd bg-pn"
+    >
       <div className="flex min-w-0 items-stretch overflow-x-auto">
         {sessions.map((s) => (
           <SessionTab key={s.id} session={s} active={s.id === active?.id} />

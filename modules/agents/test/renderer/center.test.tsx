@@ -34,6 +34,11 @@ describe('agents center view', () => {
     expect(screen.getByTestId('fake-terminal')).toHaveAttribute('data-pty-id', 'pty-b')
   })
 
+  it('the tab strip is LAYOUT.tabStrip (40px) high, independent of the root font size', async () => {
+    await mount({ sessions: [running('a', 1)] })
+    expect(await screen.findByRole('tablist')).toHaveStyle({ height: '40px' })
+  })
+
   it("switching active worktree shows that worktree's tabs", async () => {
     const f = await mount({ sessions: [running('a', 1), running('b', 1, { worktreeId: 'w2', title: 'Other' })] })
     await waitFor(() => expect(tabs()).toHaveLength(1))
@@ -106,10 +111,18 @@ describe('agents center view', () => {
     expect(f.backend.calls).toContainEqual([AGENTS_IPC.relaunchSession, { id: 'a' }])
   })
 
+  it('ended banner above a still-attachable terminal does not repeat the exit code (TerminalView shows it)', async () => {
+    await mount({ sessions: [running('a', 1, { status: 'exited', exitCode: 3 })] })
+    const notice = await screen.findByTestId(AGENTS_TESTIDS.sessionEnded)
+    expect(notice).toHaveTextContent('This session has ended')
+    expect(notice).not.toHaveTextContent('Exit code 3')
+    expect(screen.getByTestId('fake-terminal')).toHaveAttribute('data-pty-id', 'pty-a')
+  })
+
   it('an error session shows the translated failure', async () => {
     const error = { code: 'commandNotFound' as const, message: 'agents:errors.commandNotFound|{"command":"dgc"}' }
     await mount({ sessions: [running('a', 1, { status: 'error', error, attachable: false })] })
-    expect(await screen.findByTestId(AGENTS_TESTIDS.sessionError)).toHaveTextContent('`dgc` was not found on PATH')
+    expect(await screen.findByTestId(AGENTS_TESTIDS.sessionError)).toHaveTextContent('dgc was not found on PATH')
   })
 
   it('a revealed session from main selects its tab; a closed one disappears', async () => {

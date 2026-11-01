@@ -152,7 +152,7 @@ describe('Settings › Agents', () => {
     await mount([claude], (f) => {
       f.backend.replies[AGENTS_IPC.checkProfile] = () => ({ resolution: { status: 'notFound' }, compatibility: null })
     })
-    expect(await card(claude.id).findByTestId(T.commandWarning)).toHaveTextContent('`claude` was not found on PATH')
+    expect(await card(claude.id).findByTestId(T.commandWarning)).toHaveTextContent('claude was not found on PATH')
   })
 
   it('reset for built-in only; delete for custom only', async () => {
@@ -237,7 +237,7 @@ describe('Settings › Agents', () => {
     const c = await expand(claude.id)
     await userEvent.type(c.getByTestId(T.commandInput), 'x')
     await waitFor(() => expect(calls(f, AGENTS_IPC.resolveCommand)).toEqual([{ command: 'claudex' }]))
-    expect(await c.findByText('`claudex` was not found on PATH')).toBeInTheDocument()
+    expect(await c.findByText('claudex was not found on PATH')).toBeInTheDocument()
   })
 
   it('behaviour switch updates confirmCloseRunning', async () => {

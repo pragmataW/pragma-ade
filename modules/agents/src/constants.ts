@@ -58,6 +58,10 @@ export const TEST_OUTPUT_CAP_BYTES = 262_144
 export const WAIT_STATUS_MS = 10_000
 export const WAIT_POLL_MS = 50
 /** Renderer: provider mark sizes (ui-notes "Agent marks"), debounce, branch slug. */
+/** Ended/failed session notice: full placeholder (no terminal) or a banner above the exited terminal. */
+export const NOTICE_VARIANT = { placeholder: 'placeholder', banner: 'banner' } as const
+export type NoticeVariant = (typeof NOTICE_VARIANT)[keyof typeof NOTICE_VARIANT]
+
 export const MARK_TAB = 18
 export const MARK_CARD = 20
 export const MARK_LARGE = 32
@@ -77,7 +81,7 @@ export const ICONS = {
   bot: 'bot',
   expand: 'chevron-down',
   collapse: 'chevron-up',
-  remove: 'trash-2',
+  remove: 'trash',
   check: 'circle-check',
 } as const
 /** The launcher shortcut, registered from main (renderer registrations would collide after a renderer reload). */
