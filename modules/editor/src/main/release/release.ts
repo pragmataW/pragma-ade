@@ -4,6 +4,7 @@ import {
   PINNED_VERSION,
   RELEASE_BASE_URL,
   SERVER_BIN,
+  UNSUPPORTED_PLATFORM,
 } from '../../constants'
 
 export interface ReleaseAsset {
@@ -65,6 +66,8 @@ export function resolveAsset(
 ): ResolvedAsset | { error: 'unsupportedPlatform' } {
   const key = `${platform}${ASSET_KEY_SEPARATOR}${arch}`
   const found = rel.assets[key]
-  if (!found) return { error: 'unsupportedPlatform' }
+  if (!found) return { error: UNSUPPORTED_PLATFORM }
   return { ...found, key, url: new URL(found.file, rel.baseUrl).href }
 }
+
+export const isResolved = (a: ResolvedAsset | { error: 'unsupportedPlatform' }): a is ResolvedAsset => 'url' in a

@@ -2,7 +2,15 @@ import { createHash } from 'node:crypto'
 import { createReadStream, createWriteStream, type WriteStream } from 'node:fs'
 import { mkdir, rename, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { ABORT_ERROR, CONTENT_LENGTH, HASH_ALGORITHM, HEX, PART_SUFFIX, PROGRESS_INTERVAL_MS } from '../../constants'
+import {
+  ABORT_ERROR,
+  CONTENT_LENGTH,
+  DOWNLOAD_FAILURE as F,
+  HASH_ALGORITHM,
+  HEX,
+  PART_SUFFIX,
+  PROGRESS_INTERVAL_MS,
+} from '../../constants'
 
 export interface DownloadOptions {
   url: string
@@ -22,8 +30,10 @@ export type DownloadResult =
   | { ok: false; reason: 'network'; message: string }
 
 class HttpStatusError extends Error {
-  constructor(readonly status: number) {
+  readonly status: number
+  constructor(status: number) {
     super(`HTTP ${status}`)
+    this.status = status
   }
 }
 
@@ -76,9 +86,9 @@ async function streamToPart(o: DownloadOptions, part: string): Promise<string> {
 }
 
 function failure(error: unknown, signal: AbortSignal | undefined): DownloadResult {
-  if (error instanceof HttpStatusError) return { ok: false, reason: 'http', status: error.status }
-  if (signal?.aborted || (error instanceof Error && error.name === ABORT_ERROR)) return { ok: false, reason: 'aborted' }
-  return { ok: false, reason: 'network', message: error instanceof Error ? error.message : String(error) }
+  if (error instanceof HttpStatusError) return { ok: false, reason: F.http, status: error.status }
+  if (signal?.aborted || (error instanceof Error && error.name === ABORT_ERROR)) return { ok: false, reason: F.aborted }
+  return { ok: false, reason: F.network, message: error instanceof Error ? error.message : String(error) }
 }
 
 /** Downloads to `${dest}.part`, verifies SHA-256, then renames to `dest`; on any failure no file is left behind. */
@@ -94,7 +104,7 @@ export async function downloadVerified(o: DownloadOptions): Promise<DownloadResu
   }
   if (actual !== o.expectedSha256.toLowerCase()) {
     await rm(part, { force: true })
-    return { ok: false, reason: 'checksumMismatch', actual }
+    return { ok: false, reason: F.checksumMismatch, actual }
   }
   await rename(part, o.dest)
   return { ok: true, sha256: actual }

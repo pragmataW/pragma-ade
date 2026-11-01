@@ -13,7 +13,10 @@ export interface HttpFixture {
 }
 
 /** Serves `body` at `/file`, a 302 to it at `/redirect`, a slow chunked copy at `/slow` and 404 elsewhere. */
-export async function startHttpFixture(body: Buffer, o: { chunk?: number; delayMs?: number } = {}): Promise<HttpFixture> {
+export async function startHttpFixture(
+  body: Buffer,
+  o: { chunk?: number; delayMs?: number } = {},
+): Promise<HttpFixture> {
   const chunk = o.chunk ?? 64 * 1024
   const delayMs = o.delayMs ?? 30
   const server: Server = createServer((req, res) => {

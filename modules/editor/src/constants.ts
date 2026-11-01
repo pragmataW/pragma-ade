@@ -32,3 +32,16 @@ export const HASH_ALGORITHM = 'sha256'
 export const HEX = 'hex'
 export const CONTENT_LENGTH = 'content-length'
 export const ABORT_ERROR = 'AbortError'
+export const INSTALL_MARKER = '.pragma-installed.json'
+export const TMP_DIR_INFIX = '.tmp-'
+export const RANDOM_SUFFIX_BYTES = 6
+export const EXEC_MODE = 0o755
+export const JSON_INDENT = 2
+export const UTF8 = 'utf8'
+export const DOWNLOAD_FAILURE = {
+  checksumMismatch: 'checksumMismatch',
+  aborted: 'aborted',
+  http: 'http',
+  network: 'network',
+} as const
+export const UNSUPPORTED_PLATFORM = 'unsupportedPlatform'
