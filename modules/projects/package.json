@@ -26,6 +26,7 @@
     "@parcel/watcher": "2.6.0",
     "@pragma/sdk": "workspace:*",
     "@pragma/ui": "workspace:*",
+    "class-variance-authority": "0.7.1",
     "zustand": "5.0.16"
   },
   "devDependencies": {

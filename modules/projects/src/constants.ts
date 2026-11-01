@@ -132,3 +132,31 @@ export const PARENT_PREFIX = '..'
 /** Watcher keys (one subscription per worktree and per repository git dir). */
 export const WATCH_KEY_PREFIX = { worktree: 'wt:', repo: 'repo:' } as const
 export const PICKER_TITLE_KEY = 'projects:addProject.pickerTitle'
+
+/** Renderer registrations (slot entry ids and orders). */
+export const SLOT_ENTRY_IDS = {
+  sidebar: 'projects',
+  breadcrumb: 'projects.breadcrumb',
+  branch: 'projects.branch',
+  changedFiles: 'projects.changedFiles',
+} as const
+export const SIDEBAR_ORDER = 10
+export const BREADCRUMB_ORDER = 10
+/** First status bar item (06 LSP, 08 dev URL, 11a context % come after it). */
+export const STATUSBAR_ORDER_BRANCH = 10
+export const BADGE_ORDER_CHANGED_FILES = 10
+export const ICON_PX = { small: 12, row: 14 } as const
+export const FOCUS_EVENT = 'focus'
+export const ERROR_KEY_PREFIX = 'projects:errors.'
+export const DRAG_ACTIVATION_PX = 5
+export const ICONS = {
+  add: 'plus',
+  collapsed: 'chevron-right',
+  expanded: 'chevron-down',
+  menu: 'ellipsis',
+  branch: 'git-branch',
+  dismiss: 'x',
+  newWorktree: 'git-branch-plus',
+} as const
+export const STATUS_PART_SEPARATOR = ' '
+export const GHOST_VARIANT = 'ghost'
