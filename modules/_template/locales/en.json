@@ -1,0 +1,8 @@
+{
+  "module": { "name": "Example" },
+  "greeting": "Hello, {{name}}",
+  "tab": { "title": "Example", "addItem": "Add item", "itemLabel": "Item {{n}}", "count": "{{count}} items" },
+  "settings": { "title": "Example", "name": "Name to greet", "nameHint": "Used by the Say hello command" },
+  "commands": { "sayHello": "Example: Say hello" },
+  "notifications": { "helloTitle": "Example" }
+}
