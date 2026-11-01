@@ -25,7 +25,8 @@
   "exports": {
     "./contract": "./src/contract/index.ts",
     "./client": "./src/client/index.ts",
-    "./bundle-hook": "./scripts/bundle-hook.mjs"
+    "./bundle-hook": "./scripts/bundle-hook.mjs",
+    "./main": "./src/main/index.ts"
   },
   "dependencies": {
     "@pragma/module-agents": "workspace:*",
