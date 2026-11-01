@@ -1,0 +1,84 @@
+{
+  "module": {
+    "name": "Comments"
+  },
+  "commands": {
+    "openDrawer": "Open comments"
+  },
+  "titlebar": {
+    "open": "Comments",
+    "badge_one": "{{count}} draft comment",
+    "badge_other": "{{count}} draft comments"
+  },
+  "toolbar": {
+    "open": "Open comments"
+  },
+  "drawer": {
+    "title": "Comments",
+    "description": "Review comments for the agents in this worktree.",
+    "tabs": {
+      "drafts": "Drafts",
+      "sent": "Sent"
+    },
+    "noWorktree": "Select a worktree to see its comments.",
+    "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
+    "emptySent": "No comments sent yet.",
+    "clearSelection": "Clear selection",
+    "sendSelected_one": "Send {{count}} comment",
+    "sendSelected_other": "Send {{count}} comments",
+    "sendAll_one": "Send {{count}} comment",
+    "sendAll_other": "Send all {{count}} comments",
+    "sentTo": "Sent to {{target}} · {{time}}",
+    "closedSession": "a closed session"
+  },
+  "row": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "select": "Select comment",
+    "source": {
+      "editor": "Editor",
+      "diff": "Diff",
+      "browser": "Browser"
+    }
+  },
+  "composer": {
+    "label": "Comment",
+    "placeholder": "Write a comment for the agent…",
+    "addDraft": "Add to drafts",
+    "sendNow": "Send now",
+    "save": "Save",
+    "cancel": "Cancel",
+    "hint": "⌘/Ctrl+Enter to add · ⌘/Ctrl+Shift+Enter to send"
+  },
+  "target": {
+    "title": "Send to which agent?",
+    "description": "This worktree has {{count}} running agent sessions.",
+    "send": "Send",
+    "cancel": "Cancel"
+  },
+  "launch": {
+    "title": "No agent running",
+    "description_one": "Start an agent in this worktree to deliver {{count}} comment.",
+    "description_other": "Start an agent in this worktree to deliver {{count}} comments.",
+    "start": "Start agent",
+    "cancel": "Cancel",
+    "waiting": "Waiting for the new agent session…"
+  },
+  "settings": {
+    "title": "Comments",
+    "submitAfterPaste": "Press Enter after sending comments",
+    "submitAfterPasteHint": "When off, comments are pasted into the agent's input and you submit them yourself."
+  },
+  "errors": {
+    "notFound": "Some comments no longer exist.",
+    "notDraft": "Some comments were already sent.",
+    "mixedWorktrees": "Comments from different worktrees cannot be sent together.",
+    "sessionNotRunning": "The selected agent session is no longer running.",
+    "wrongWorktree": "The selected agent session belongs to another worktree.",
+    "noDeliveryTarget": "This kind of agent session cannot receive comments.",
+    "deliveryFailed": "Could not deliver the comments.",
+    "alreadySending": "These comments are already being sent.",
+    "empty": "Select at least one comment.",
+    "agentNotReady": "The agent is not ready to receive multi-line text yet. Try again in a moment."
+  }
+}
