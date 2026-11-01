@@ -22,6 +22,8 @@ export interface AgentsState {
   activeSessionId: Record<string, string | null>
   launcher: { open: boolean; worktreeId: string | null }
   checks: Record<string, ProfileCheck>
+  /** The running session whose close is awaiting confirmation. */
+  closing: string | null
   init(): Promise<void>
   loadSessions(worktreeId: string): Promise<void>
   selectSession(worktreeId: string, id: string): void
@@ -58,6 +60,7 @@ export function createAgentsStore(ipc: AgentsIpcClient, warn: (m: string, e: unk
       activeSessionId: {},
       launcher: { open: false, worktreeId: null },
       checks: {},
+      closing: null,
       async init() {
         const [providers, profiles] = await Promise.all([
           ipc.invoke(agentsIpc.listProviders, undefined),

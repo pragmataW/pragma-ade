@@ -1,7 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Icon } from '@pragma/ui/components/icon'
-import { ICON_SM } from '../../constants'
+import { ICON_SM, ICONS } from '../../constants'
 import { AGENTS_TESTIDS, type ProfileCheck, RESOLUTION } from '../../contract'
 
 interface Warning {
@@ -39,7 +39,7 @@ export function ProfileWarning({
       data-testid={warning.testId}
       className={cn('flex items-center gap-1.5 text-warn', compact ? 'text-[11.5px]' : 'text-[12px]')}
     >
-      <Icon name="triangle-alert" size={ICON_SM} />
+      <Icon name={ICONS.warning} size={ICON_SM} />
       <span>{warning.text}</span>
     </div>
   )

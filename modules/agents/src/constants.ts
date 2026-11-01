@@ -66,3 +66,17 @@ export const BRANCH_PREFIX = 'agent/'
 export const BRANCH_SLUG_MAX = 40
 export const FALLBACK_MARK_ICON = 'bot'
 export const ICON_SM = 14
+/** Lucide icon names (kebab-case, drawn with `<Icon name>`). */
+export const ICONS = {
+  failed: 'circle-alert',
+  ended: 'circle-stop',
+  warning: 'triangle-alert',
+  close: 'x',
+  add: 'plus',
+  menu: 'ellipsis',
+  bot: 'bot',
+  expand: 'chevron-down',
+  collapse: 'chevron-up',
+  remove: 'trash-2',
+  check: 'circle-check',
+} as const

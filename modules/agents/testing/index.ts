@@ -5,6 +5,7 @@ import { type CapabilityContext, type Logger, z } from '@pragma/sdk'
 import { describe, expect, it } from 'vitest'
 import {
   type AgentProfile,
+  type AgentSession,
   BUILTIN_PROFILE_PREFIX,
   type CreateProfileInput,
   formatArgs,
@@ -106,6 +107,30 @@ export function aProfile(over: Partial<AgentProfile> = {}): AgentProfile {
     isBuiltin: false,
     sortOrder: 0,
     available: true,
+    ...over,
+  }
+}
+
+/** A complete session with sensible defaults (worktree `w1`, terminal mode, starting). */
+export function aSession(id: string, ordinal: number, over: Partial<AgentSession> = {}): AgentSession {
+  return {
+    id,
+    worktreeId: 'w1',
+    profileId: 'p1',
+    providerId: 'prov',
+    mode: TERMINAL_MODE,
+    ptyId: null,
+    title: id,
+    ordinal,
+    status: 'starting',
+    externalSessionId: null,
+    exitCode: null,
+    error: null,
+    createdAt: ordinal,
+    endedAt: null,
+    closedAt: null,
+    lastFocusedAt: null,
+    attachable: false,
     ...over,
   }
 }

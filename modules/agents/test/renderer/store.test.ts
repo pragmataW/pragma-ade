@@ -1,29 +1,10 @@
-import { aProfile } from '@pragma/module-agents/testing'
+import { aProfile, aSession } from '@pragma/module-agents/testing'
 import type { IpcContract } from '@pragma/sdk'
 import { expect, it } from 'vitest'
-import { AGENTS_IPC, type AgentSession } from '../../src/contract'
+import { AGENTS_IPC } from '../../src/contract'
 import { type AgentsIpcClient, createAgentsStore } from '../../src/renderer/store'
 
-const session = (id: string, ordinal: number, over: Partial<AgentSession> = {}): AgentSession => ({
-  id,
-  worktreeId: 'w1',
-  profileId: 'p1',
-  providerId: 'prov',
-  mode: 'terminal',
-  ptyId: null,
-  title: id,
-  ordinal,
-  status: 'starting',
-  externalSessionId: null,
-  exitCode: null,
-  error: null,
-  createdAt: ordinal,
-  endedAt: null,
-  closedAt: null,
-  lastFocusedAt: null,
-  attachable: false,
-  ...over,
-})
+const session = aSession
 
 function setup(replies: Record<string, unknown> = {}) {
   const calls: [string, unknown][] = []
