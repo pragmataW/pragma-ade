@@ -1,6 +1,29 @@
 {
   "app": { "title": "Pragma ADE" },
   "dialogs": { "confirm": "OK", "cancel": "Cancel" },
-  "commands": { "commandPalette": "Command palette", "openSettings": "Open settings" },
+  "commands": {
+    "commandPalette": "Command palette",
+    "openSettings": "Open settings",
+    "toggleSidebar": "Toggle sidebar",
+    "toggleRightPanel": "Toggle right panel",
+    "maximizeRightPanel": "Maximize right panel"
+  },
+  "titlebar": {
+    "search": "Search or run a command",
+    "paletteShortcut": "⌘K",
+    "toggleSidebar": "Toggle sidebar",
+    "toggleRightPanel": "Toggle right panel",
+    "maximizeRightPanel": "Maximize panel"
+  },
+  "sidebar": { "settings": "Settings" },
+  "center": { "empty": "Nothing open yet" },
+  "right": { "welcome": "Panels from modules appear here" },
+  "settings": { "back": "Back", "empty": "No settings pages" },
+  "palette": {
+    "title": "Command palette",
+    "description": "Search for a command to run",
+    "placeholder": "Type a command…",
+    "empty": "No commands found"
+  },
   "testing": { "dynamicTab": "Dynamic test tab" }
 }

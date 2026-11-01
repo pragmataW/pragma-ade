@@ -53,12 +53,14 @@ export function createRegistries(): Registries {
   const set = store.setState
   /** Until the user picks a view, the `default: true` view wins whenever it registers. */
   let viewChosen = false
+  /** Likewise the first tab by order is active until one is activated explicitly. */
+  let tabChosen = false
   return {
     store,
     registerRightTab(t) {
       set((s) => {
         const tabs = addSorted(s.tabs, t, 'right tab')
-        return { tabs, activeTab: s.activeTab ?? tabs[0]?.id ?? null }
+        return { tabs, activeTab: tabChosen && s.activeTab ? s.activeTab : (tabs[0]?.id ?? null) }
       })
       return toDisposable(() =>
         set((s) => {
@@ -68,7 +70,10 @@ export function createRegistries(): Registries {
         }),
       )
     },
-    activateRightTab: (id) => set({ activeTab: id }),
+    activateRightTab: (id) => {
+      tabChosen = true
+      set({ activeTab: id })
+    },
     setBadge: (tabId, count) =>
       set((s) => {
         const { [tabId]: _old, ...rest } = s.badges
