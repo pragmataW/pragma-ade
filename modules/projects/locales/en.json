@@ -1,1 +1,76 @@
-{ "module": { "name": "Projects" } }
+{
+  "module": { "name": "Projects" },
+  "sidebar": {
+    "title": "Projects",
+    "addProject": "Add project",
+    "empty": "Add a git repository to get started.",
+    "newWorktree": "New worktree",
+    "detached": "detached",
+    "mainCheckout": "main checkout",
+    "changedFiles_one": "{{count}} changed file",
+    "changedFiles_other": "{{count}} changed files",
+    "projectMenu": "Project actions",
+    "worktreeMenu": "Worktree actions",
+    "removeProject": "Remove from list",
+    "removeWorktree": "Remove worktree…",
+    "dismissError": "Dismiss"
+  },
+  "breadcrumb": { "separator": "›", "label": "{{project}} › {{branch}}" },
+  "statusbar": {
+    "branch": "Branch {{branch}}",
+    "ahead": "↑{{count}}",
+    "behind": "↓{{count}}",
+    "noUpstream": "no upstream",
+    "aheadBehindTooltip": "{{ahead}} ahead, {{behind}} behind {{upstream}}"
+  },
+  "addProject": { "pickerTitle": "Choose a git repository" },
+  "createWorktree": {
+    "title": "New worktree",
+    "branch": "Branch",
+    "branchHint": "Pick an existing branch or type a new name.",
+    "baseBranch": "Base branch",
+    "location": "Location",
+    "create": "Create worktree",
+    "cancel": "Cancel",
+    "creating": "Creating…"
+  },
+  "removeWorktree": {
+    "title": "Remove worktree {{branch}}?",
+    "body": "The folder {{path}} will be deleted from disk.",
+    "dirtyWarning_one": "This worktree has {{count}} uncommitted change. It will be lost.",
+    "dirtyWarning_other": "This worktree has {{count}} uncommitted changes. They will be lost.",
+    "unmerged_one": "Branch has {{count}} commit not in {{base}}.",
+    "unmerged_other": "Branch has {{count}} commits not in {{base}}.",
+    "deleteBranch": "Also delete branch {{branch}}",
+    "confirm": "Remove",
+    "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Projects",
+    "worktreesRoot": "Worktree folder",
+    "worktreesRootHint": "New worktrees are created in <folder>/<project>/<branch>. Use an absolute path or ~.",
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "commands": {
+    "addProject": "Projects: Add project",
+    "newWorktree": "Projects: New worktree",
+    "selectWorktree": "Projects: Select worktree"
+  },
+  "errors": {
+    "notAGitRepo": "This folder is not a git repository.",
+    "bareRepo": "Bare repositories are not supported.",
+    "pathNotFound": "The folder does not exist.",
+    "alreadyAdded": "This repository is already in the list.",
+    "projectNotFound": "Project not found.",
+    "worktreeNotFound": "Worktree not found.",
+    "invalidBranchName": "That is not a valid branch name.",
+    "branchNotFound": "That branch does not exist.",
+    "branchCheckedOut": "That branch is already checked out in another worktree.",
+    "pathExists": "The target folder already exists and is not empty.",
+    "cannotRemoveMain": "The main checkout cannot be removed.",
+    "gitNotFound": "git was not found on your PATH.",
+    "gitFailed": "git failed: {{detail}}",
+    "invalidSettings": "Use an absolute path or one starting with ~."
+  }
+}
