@@ -144,6 +144,13 @@ export class ServerProcess {
     this.#emit({ type: EV.stopped })
   }
 
+  /** Synchronous SIGKILL of the tree (process `exit` handler). */
+  killNow(): void {
+    this.#stopping = true
+    this.#stopHealth()
+    if (this.#child) killTree(this.#child, SIGNALS.kill)
+  }
+
   async restart(): Promise<void> {
     await this.stop()
     this.#crashes = []

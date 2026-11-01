@@ -1,3 +1,4 @@
+import { z } from '@pragma/sdk'
 import {
   ARCHIVE_STRIP_COMPONENTS,
   ASSET_KEY_SEPARATOR,
@@ -7,19 +8,18 @@ import {
   UNSUPPORTED_PLATFORM,
 } from '../../constants'
 
-export interface ReleaseAsset {
-  file: string
-  sha256: string
-  sizeBytes: number
-}
+export const ReleaseAssetSchema = z.object({ file: z.string(), sha256: z.string(), sizeBytes: z.number() })
+export type ReleaseAsset = z.infer<typeof ReleaseAssetSchema>
 
-export interface EditorRelease {
-  version: string
-  baseUrl: string
-  stripComponents: number
-  binPath: { posix: string; win32: string }
-  assets: Record<string, ReleaseAsset>
-}
+/** Also the shape of the test-only release override file (`TEST_ENV.releaseOverride`). */
+export const EditorReleaseSchema = z.object({
+  version: z.string(),
+  baseUrl: z.string(),
+  stripComponents: z.number().int().min(0),
+  binPath: z.object({ posix: z.string(), win32: z.string() }),
+  assets: z.record(z.string(), ReleaseAssetSchema),
+})
+export type EditorRelease = z.infer<typeof EditorReleaseSchema>
 
 /** VSCodium 1.143.17232 (VS Code 1.143.1, 2026-10-28); sha256 = GitHub asset digest (spike cross-checked one). */
 export const PINNED_RELEASE: EditorRelease = {
