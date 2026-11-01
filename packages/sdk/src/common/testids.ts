@@ -23,5 +23,7 @@ export const ShellTestIds = {
   settingsPage: (id: string) => `settings-page-${id}`,
   commandItem: (id: string) => `command-item-${id}`,
   testTabBody: (id: string) => `test-tab-body-${id}`,
+  testSortable: (id: string) => `test-sortable-${id}`,
+  testSortableItem: (item: string) => `test-sortable-item-${item}`,
   nativeSnapshot: (viewId: string) => `native-snapshot-${viewId}`,
 } as const

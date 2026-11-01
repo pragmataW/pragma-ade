@@ -98,3 +98,17 @@ export const REGISTRY_FIELDS = {
   testHooks: 'testHooks',
   provider: 'provider',
 } as const
+
+/** Module roots added on top of the defaults for the extension-proof E2E build (Task 22). */
+export const EXTENSION_PROOF_ROOTS = [
+  'test/architecture/fixtures/extension-proof/modules',
+  'test/architecture/fixtures/extension-proof/providers',
+] as const
+export const DESKTOP_APP_DIR = 'apps/desktop'
+export const ELECTRON_VITE_BIN = 'node_modules/.bin/electron-vite'
+export const E2E_BUILDS = [
+  { name: 'extension-proof', outDir: 'out-extension-proof', extensionProof: true },
+  { name: 'default', outDir: 'out', extensionProof: false },
+] as const
+export const WIN32 = 'win32'
+export const STDIO_INHERIT = 'inherit'

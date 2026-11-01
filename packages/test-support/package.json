@@ -10,6 +10,8 @@
     "./dom/setup": "./src/dom/setup.ts"
   },
   "dependencies": {
-    "@pragma/sdk": "workspace:*"
+    "@pragma/sdk": "workspace:*",
+    "@playwright/test": "1.64.1",
+    "electron": "45.2.1"
   }
 }

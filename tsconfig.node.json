@@ -24,6 +24,7 @@
     "packages/ui/test/**/*.ts",
     "packages/test-support/src/node/**/*",
     "packages/test-support/src/e2e/**/*",
+    "packages/*/e2e/**/*.ts",
     "modules/*/src/contract/**/*",
     "modules/*/src/main/**/*",
     "modules/*/src/lib/**/*",

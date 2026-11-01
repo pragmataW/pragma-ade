@@ -1,7 +1,6 @@
-import { CoreIpc, type DialogStubs, DialogStubsSchema } from '@pragma/sdk'
+import { CoreIpc, type DialogStubs, DialogStubsSchema, TEST_DIALOG_STUBS_ENV } from '@pragma/sdk'
 import { type MainHost, registerAppHandlers } from '@pragma/sdk/runtime/main'
 import { app } from 'electron'
-import { TEST_DIALOG_STUBS_ENV } from '../constants'
 
 export function initialDialogStubs(env: Record<string, string | undefined>): DialogStubs {
   const raw = env[TEST_DIALOG_STUBS_ENV]

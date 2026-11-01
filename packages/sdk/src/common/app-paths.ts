@@ -2,6 +2,11 @@ import { PLATFORM } from '../constants'
 
 export const APP_NAME = 'Pragma ADE'
 export const USER_DATA_ENV = 'PRAGMA_USER_DATA'
+/** `PRAGMA_TEST=1` turns on test mode (test hooks, `__pragmaTest`, dialog stubs). */
+export const TEST_MODE_ENV = 'PRAGMA_TEST'
+export const TEST_MODE_ENABLED = '1'
+/** JSON `DialogStubs` read by the shell at startup in test mode. */
+export const TEST_DIALOG_STUBS_ENV = 'PRAGMA_TEST_DIALOG_STUBS'
 
 const WIN_SEP = '\\'
 const POSIX_SEP = '/'

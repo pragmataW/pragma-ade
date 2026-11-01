@@ -12,6 +12,7 @@ import {
   PARENT_DIR,
   PNPM,
   RESOURCE_KIND,
+  STDIO_INHERIT,
   UTF8,
 } from './constants.ts'
 import type { DiscoveredModule } from './discover.ts'
@@ -30,7 +31,7 @@ const IGNORE_NODE_MODULES = '**/node_modules/**'
 /** Workspace deps are installed by `pnpm install`; skip pnpm's per-run verification (it would install in temp dirs). */
 const PNPM_RUN_ARGS = ['--config.verify-deps-before-run=false', '--dir']
 
-export const defaultRunner: Runner = (cmd, args, opts) => spawnSync(cmd, args, { cwd: opts.cwd, stdio: 'inherit' })
+export const defaultRunner: Runner = (cmd, args, opts) => spawnSync(cmd, args, { cwd: opts.cwd, stdio: STDIO_INHERIT })
 
 /** Builds ordered by module id; a module's sub-packages (sorted by dir) run before the module itself. */
 export function planBuilds(mods: readonly DiscoveredModule[]): BuildStep[] {

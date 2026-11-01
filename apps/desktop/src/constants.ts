@@ -2,9 +2,6 @@
 export const INVOKE_CHANNEL = 'pragma:invoke'
 export const EVENT_CHANNEL = 'pragma:event'
 
-export const TEST_ENV = 'PRAGMA_TEST'
-export const TEST_DIALOG_STUBS_ENV = 'PRAGMA_TEST_DIALOG_STUBS'
-export const ENABLED = '1'
 export const RENDERER_URL_ENV = 'ELECTRON_RENDERER_URL'
 
 export const WINDOW = { width: 1440, height: 900, minWidth: 1024, minHeight: 640 } as const

@@ -1,7 +1,7 @@
-import { APP_NAME } from '@pragma/sdk'
+import { APP_NAME, TEST_MODE_ENABLED, TEST_MODE_ENV } from '@pragma/sdk'
 import { createMainHost } from '@pragma/sdk/runtime/main'
 import { app, BrowserWindow } from 'electron'
-import { DARWIN, ENABLED, TEST_ENV } from '../constants'
+import { DARWIN } from '../constants'
 import { coreLocales, mainModules } from '../generated/modules.main'
 import { initialDialogStubs, registerShellHandlers } from './app-handlers'
 import { createStubbedDialogs } from './dialog-stubs'
@@ -17,7 +17,7 @@ const ACTIVATE = 'activate'
 const BEFORE_QUIT = 'before-quit'
 const ALL_CLOSED = 'window-all-closed'
 
-const testMode = process.env[TEST_ENV] === ENABLED
+const testMode = process.env[TEST_MODE_ENV] === TEST_MODE_ENABLED
 app.setName(APP_NAME)
 app.setPath(USER_DATA, resolveUserDataDir(process.env, app.getPath(USER_DATA)))
 
