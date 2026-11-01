@@ -1,0 +1,8 @@
+{
+  "module": {
+    "name": "OpenCode provider"
+  },
+  "provider": {
+    "name": "OpenCode"
+  }
+}

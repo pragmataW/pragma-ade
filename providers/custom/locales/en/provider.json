@@ -1,0 +1,8 @@
+{
+  "module": {
+    "name": "Custom agent provider"
+  },
+  "provider": {
+    "name": "Custom agent"
+  }
+}

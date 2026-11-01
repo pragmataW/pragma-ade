@@ -1,0 +1,8 @@
+{
+  "module": {
+    "name": "Claude Code provider"
+  },
+  "provider": {
+    "name": "Claude Code"
+  }
+}

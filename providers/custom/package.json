@@ -1,0 +1,22 @@
+{
+  "name": "@pragma/provider-custom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "pragma": {
+    "id": "custom",
+    "kind": "provider",
+    "displayNameKey": "custom:module.name",
+    "dependsOn": [],
+    "optionalDependsOn": [],
+    "core": false
+  },
+  "exports": {},
+  "dependencies": {
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}

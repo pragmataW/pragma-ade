@@ -1,0 +1,22 @@
+{
+  "name": "@pragma/provider-opencode",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "pragma": {
+    "id": "opencode",
+    "kind": "provider",
+    "displayNameKey": "opencode:module.name",
+    "dependsOn": [],
+    "optionalDependsOn": [],
+    "core": false
+  },
+  "exports": {},
+  "dependencies": {
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}

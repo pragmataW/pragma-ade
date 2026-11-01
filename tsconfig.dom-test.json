@@ -11,6 +11,7 @@
     "packages/test-support/src/dom/**/*",
     "modules/*/test/**/*.tsx",
     "providers/*/test/**/*.tsx",
+    "test/architecture/*.test.tsx",
     "packages/sdk/src/**/*",
     "packages/ui/src/**/*",
     "apps/desktop/src/renderer/**/*",
