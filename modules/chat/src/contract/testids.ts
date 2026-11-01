@@ -23,6 +23,7 @@ export const CHAT_TESTIDS = {
   usage: 'chat-usage',
   context: 'chat-context',
   launcherMode: (mode: string) => `chat-launcher-mode-${mode}`,
+  launcherUnsupported: 'chat-launcher-unsupported',
   errorRow: 'chat-error-row',
   workingLine: 'chat-working-line',
   jumpToLatest: 'chat-jump-to-latest',

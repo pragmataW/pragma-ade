@@ -2,3 +2,4 @@
 export * from './fake-chat-capability'
 export * from './fake-options'
 export * from './support'
+export * from './ui-support'

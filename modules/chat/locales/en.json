@@ -24,5 +24,13 @@
   "errors": {
     "unsupported": "Chat mode not supported: {{reason}}",
     "respondUnsupported": "This agent cannot answer this kind of request"
+  },
+  "settings": {
+    "title": "Chat",
+    "defaultMode": "Default mode for new agents",
+    "startupTimeout": "Chat startup timeout (ms)"
+  },
+  "usage": {
+    "context": "Context {{percent}}%"
   }
 }
