@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   FAKE_INIT,
   FAKE_PERMISSION_ID,
@@ -91,10 +91,10 @@ describe('fake-claude', () => {
   })
 
   it('not-stream-json prints plain text and never answers initialize', async () => {
-    const { fake } = runFake('not-stream-json', {})
+    const { fake, home } = runFake('not-stream-json', {})
     fake.send(initRequest())
-    await new Promise((r) => setTimeout(r, 300))
-    expect(fake.stdout()).toBe(FAKE_PLAIN_OUTPUT)
+    await vi.waitFor(() => expect(lastReport(home.report)?.controlRequests).toHaveLength(1), { timeout: 5000 })
+    await vi.waitFor(() => expect(fake.stdout()).toBe(FAKE_PLAIN_OUTPUT), { timeout: 5000 })
     expect(fake.frames()).toEqual([])
   })
 })

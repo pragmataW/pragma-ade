@@ -72,17 +72,19 @@ export interface ChatCapability {
   dispose?(): Promise<void> | void
 }
 
+const STARTUP_ERROR_NAME = 'ChatStartupError'
+
 /** A session that could not start; `reasonKey` is a `chat:unsupported.*` key. */
 export class ChatStartupError extends Error {
   readonly reasonKey: string
   readonly detail?: string
   constructor(reasonKey: string, detail?: string) {
     super(detail ? `${reasonKey}: ${detail}` : reasonKey)
-    this.name = 'ChatStartupError'
+    this.name = STARTUP_ERROR_NAME
     this.reasonKey = reasonKey
     this.detail = detail
   }
 }
 
 export const isChatStartupError = (e: unknown): e is ChatStartupError =>
-  e instanceof ChatStartupError || (e instanceof Error && e.name === 'ChatStartupError' && 'reasonKey' in e)
+  e instanceof ChatStartupError || (e instanceof Error && e.name === STARTUP_ERROR_NAME && 'reasonKey' in e)
