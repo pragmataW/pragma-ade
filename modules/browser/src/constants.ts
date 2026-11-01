@@ -20,6 +20,7 @@ export const PARTITION_REPLACEMENT = '_'
 export const PICKER_WORLD_ID = 1808
 export const PICK_TIMEOUT_MS = 120_000
 export const REACT_PROBE_TIMEOUT_MS = 500
+export const PICK_ATTR = 'data-pragma-pick'
 export const PICKER_ACCENT_FALLBACK = '#0078d4'
 export const ACCENT_TOKEN = 'ac'
 
@@ -72,7 +73,13 @@ export const SELECTOR_MAX_DEPTH = 10
 export const SELECTOR_MAX_CLASSES = 2
 export const DOM_PATH_MAX_DEPTH = 8
 export const REACT_MAX_FIBER_DEPTH = 35
-export const REACT_MAX_COMPONENTS = 3
+/** Framework plumbing skipped when naming the picked component (Orca's list). */
+export const REACT_SKIP_NAME_RES = [
+  '^.{0,2}$',
+  '^(Fragment|Root|Routes|Route|Outlet|Provider|Consumer|Profiler|Suspense)$',
+  '(Boundary|BoundaryHandler|Router|Provider|Consumer|Context|Wrapper)$',
+  '^(Inner|Outer|Client|Server|RSC|Dev|React|Hot)',
+]
 export const PROBE_NAME_MAX = 200
 export const PROBE_SOURCE_MAX = 300
 export const SELECTOR_MAX = 2000

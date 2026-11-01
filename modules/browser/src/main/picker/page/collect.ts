@@ -15,9 +15,8 @@ export function collectElementContext(el: Element, opts: CollectOpts): RawPicked
   const sensitive = new RegExp(opts.sensitiveAttrPattern, 'i')
   const VALUE = 'value'
   const redact = (node: Element): void => {
-    const type = node.getAttribute('type')?.toLowerCase()
-    if (node.tagName === 'INPUT' && (type === 'password' || type === 'hidden') && node.hasAttribute(VALUE))
-      node.setAttribute(VALUE, opts.redacted)
+    const secretInput = node.tagName === 'INPUT' && /^(password|hidden)$/i.test(node.getAttribute('type') ?? '')
+    if (secretInput && node.hasAttribute(VALUE)) node.setAttribute(VALUE, opts.redacted)
     for (const attr of Array.from(node.attributes))
       if (sensitive.test(attr.name)) node.setAttribute(attr.name, opts.redacted)
   }

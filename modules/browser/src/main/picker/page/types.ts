@@ -67,7 +67,8 @@ export interface PickerDebugState {
 }
 
 export interface InstalledPicker {
-  arm(): void
+  /** Shows the overlay; new options (nonce, accent) replace the current ones. */
+  arm(next?: OverlayOpts): void
   awaitPick(): Promise<PickOutcome>
   cancel(): void
   hideOverlay(): void
@@ -79,6 +80,10 @@ export interface InstalledPicker {
 export interface OverlayOpts extends CollectOpts {
   nonce: string
   accent: string
+  /** Hint shown in the page while armed (translated in main). */
+  hint: string
+  /** Attribute set to `nonce` on the picked element (the main-world probe finds it there). */
+  pickAttr: string
 }
 
 /** `globalThis.__pragmaPickerLib` (isolated world): the self-contained functions, installed once per page. */

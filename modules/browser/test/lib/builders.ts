@@ -75,8 +75,10 @@ import {
   TRUNCATION_TEMPLATE,
 } from '../../src/constants'
 import { collectElementContext } from '../../src/main/picker/page/collect'
+import { installPicker } from '../../src/main/picker/page/overlay'
 import { buildDomPath, buildSelector, selectorKit } from '../../src/main/picker/page/selector'
 import type { CollectOpts, PickerGlobal, PickerLib, SelectorOpts } from '../../src/main/picker/page/types'
+import type { PickerScriptOpts } from '../../src/main/picker/script'
 
 export const SEL: SelectorOpts = {
   maxDepth: SELECTOR_MAX_DEPTH,
@@ -101,6 +103,7 @@ export function installLib(extra: Partial<PickerLib> = {}): void {
     buildSelector,
     buildDomPath,
     collectElementContext,
+    installPicker,
     ...extra,
   } as PickerLib
 }
@@ -130,3 +133,49 @@ export const NESTED_FIXTURE = `
   <div class="card"><p class="title">odd</p></div>
 </main>
 <footer><p>f</p><p>g</p></footer>`
+
+export const SCRIPT_OPTS: PickerScriptOpts = {
+  ...OPTS,
+  nonce: 'nonce-1',
+  accent: '#0078d4',
+  hint: 'Pick',
+  pickAttr: 'data-pragma-pick',
+}
+
+/** Evaluates a built script the way Electron does (one expression). */
+export const run = <T>(code: string): T => new window.Function(`return (${code})`)() as T
+
+/** Points the (layout-less) document at `el` and sends the hover + press sequence a real click produces. */
+export function hoverAndClick(el: Element, opts: { click?: boolean } = {}): void {
+  document.elementsFromPoint = () => [el]
+  const init = { bubbles: true, cancelable: true, clientX: 5, clientY: 5 }
+  el.dispatchEvent(new MouseEvent('mousemove', init))
+  if (opts.click === false) return
+  for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click']) el.dispatchEvent(new MouseEvent(type, init))
+}
+
+/** Removes the picker, its marks and both globals. */
+export function resetPicker(): void {
+  const g = globalThis as PickerGlobal
+  g.__pragmaPicker?.teardown()
+  delete g.__pragmaPicker
+  delete g.__pragmaPickerLib
+}
+
+export interface FakeFiberSpec {
+  name: string
+  debugSource?: { fileName: string; lineNumber: number; columnNumber?: number }
+  debugStack?: string
+}
+
+/** A host fiber (`button`) whose parent is a component fiber named `name`. */
+export function fakeFiber(spec: FakeFiberSpec): object {
+  const type = { [spec.name]: () => null }[spec.name]
+  const component = { type, return: null, _debugSource: spec.debugSource, _debugStack: spec.debugStack }
+  return { type: 'button', return: component }
+}
+
+export function attachFiber(el: Element, fiber: object | null, nonce: string): void {
+  if (fiber) Object.assign(el, { __reactFiber$abc123: fiber })
+  el.setAttribute('data-pragma-pick', nonce)
+}
