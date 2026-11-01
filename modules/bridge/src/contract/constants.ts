@@ -34,7 +34,8 @@ export const BRIDGE_TYPE_RE = /^[a-z][a-z0-9-]*\.[A-Za-z][A-Za-z0-9.-]*$/
 export const MAX_REQUEST_ID_LENGTH = 128
 export const MIN_TOKEN_LENGTH = 16
 export const BRIDGE_CORE_REQUESTS = { hello: 'hello', subscribe: 'subscribe', ping: 'ping' } as const
-export const BRIDGE_TRANSPORTS = ['ws', 'http'] as const
+export const BRIDGE_TRANSPORT = { ws: 'ws', http: 'http' } as const
+export const BRIDGE_TRANSPORTS = [BRIDGE_TRANSPORT.ws, BRIDGE_TRANSPORT.http] as const
 export const BRIDGE_INFO_SOURCES = ['env', 'file'] as const
 
 export function joinBridgeType(namespace: string, name: string): string {

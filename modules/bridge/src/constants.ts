@@ -19,3 +19,23 @@ export const JSON_CONTENT_TYPE = 'application/json'
 export const NULL_ORIGIN = 'null'
 export const HTTP_PREFIX = 'http:'
 export const WS_PREFIX = 'ws:'
+export const HEADERS = {
+  contentType: 'content-type',
+  connection: 'connection',
+  contentLength: 'content-length',
+} as const
+export const CONNECTION_CLOSE = 'close'
+export const HTTP_METHOD_POST = 'POST'
+export const CLIENT_ID_PREFIX = { http: 'http:', ws: 'ws:' } as const
+export const HTTP_CLIENT_KIND = 'http'
+/** Node stream/socket event names. */
+export const NODE_EVENTS = {
+  data: 'data',
+  end: 'end',
+  error: 'error',
+  close: 'close',
+  message: 'message',
+  upgrade: 'upgrade',
+} as const
+/** Base for parsing a request path with `new URL`. */
+export const URL_PARSE_BASE = 'http://localhost'
