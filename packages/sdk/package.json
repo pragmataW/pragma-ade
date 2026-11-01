@@ -4,6 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./manifest": "./src/common/manifest.ts",
+    "./main": "./src/main/index.ts",
+    "./renderer": "./src/renderer/index.tsx",
+    "./db": "./src/db/index.ts",
+    "./runtime/main": "./src/runtime/main/index.ts",
+    "./runtime/renderer": "./src/runtime/renderer/index.tsx"
+  },
+  "dependencies": {
+    "@pragma/ui": "workspace:*",
+    "zod": "4.6.7"
   }
 }
