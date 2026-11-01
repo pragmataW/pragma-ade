@@ -71,6 +71,25 @@ test('setBadge shows and clears badge', async () => {
   act(() => r.host.registries.setBadge('a', null))
   expect(screen.queryByTestId(T.rightTabBadge('a'))).toBeNull()
 })
+test('tabs are icon-only: name in aria-label and tooltip, badge overlaid on the icon', async () => {
+  const r = await setup()
+  act(() => {
+    r.host.registries.registerRightTab({
+      id: 'named',
+      titleKey: 'core:right.welcome',
+      icon: 'terminal',
+      order: 1,
+      component: () => null,
+    })
+  })
+  act(() => r.host.registries.setBadge('named', 719))
+  const tab = screen.getByRole('tab', { name: 'Welcome' })
+  expect(tab).toHaveAttribute('data-testid', T.rightTab('named'))
+  expect(tab).toHaveAttribute('title', 'Welcome')
+  expect(tab).not.toHaveTextContent('Welcome')
+  expect(tab).toHaveTextContent(/^719$/)
+  expect(tab.querySelector('svg')).not.toBeNull()
+})
 test('snapshot event renders an img at bounds; cleared removes it', async () => {
   const r = await setup()
   const bounds = { x: 1, y: 2, width: 30, height: 40 }
