@@ -25,9 +25,6 @@ export const PTY_ID_POLL_MS = 100
 export const PTY_ID_POLL_MAX_MS = 2_000
 export const PENDING_TTL_MS = 600_000
 
-// Session states that can no longer receive comments
-export const ENDED_SESSION_STATUSES: readonly string[] = ['exited', 'error'] as const
-
 // Renderer slot entries and orders
 export const SLOT_ENTRY_IDS = { titlebar: 'comments.entry', toolbar: 'comments.badge' } as const
 export const SLOT_ORDER = 50
