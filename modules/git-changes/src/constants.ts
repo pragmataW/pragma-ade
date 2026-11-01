@@ -40,3 +40,7 @@ export const HUNK_SEPARATORS = 'line-info'
 export const GIT_FLAGS = ['-c', 'core.quotepath=false'] as const
 /** Test hook switch: register a fake `editor.openFile` recorder (PRAGMA_TEST only). */
 export const FAKE_EDITOR_ENV = 'PRAGMA_TEST_FAKE_EDITOR'
+
+/** Tree node ids: `d:<dir path>` / `f:<file path>`. */
+export const DIR_ID_PREFIX = 'd:'
+export const FILE_ID_PREFIX = 'f:'
