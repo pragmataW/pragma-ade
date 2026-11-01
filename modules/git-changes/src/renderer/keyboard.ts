@@ -1,6 +1,6 @@
 export const KEY_ACTIONS = ['nextFile', 'prevFile', 'nextChange', 'prevChange'] as const
 export type KeyAction = (typeof KEY_ACTIONS)[number]
-const [NEXT_FILE, PREV_FILE, NEXT_CHANGE, PREV_CHANGE] = KEY_ACTIONS
+export const [NEXT_FILE, PREV_FILE, NEXT_CHANGE, PREV_CHANGE] = KEY_ACTIONS
 
 export interface PanelKey {
   key: string

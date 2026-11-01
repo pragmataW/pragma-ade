@@ -1,0 +1,14 @@
+/* git-changes: status letters (ui-notes: M warn, A/U ok, D err + strikethrough, R info). */
+.gc-status-M {
+  color: var(--warn);
+}
+.gc-status-A,
+.gc-status-U {
+  color: var(--ok);
+}
+.gc-status-D {
+  color: var(--err);
+}
+.gc-status-R {
+  color: var(--info);
+}
