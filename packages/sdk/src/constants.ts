@@ -13,3 +13,4 @@ export const SHORTCUT_SCOPE = { global: 'global', app: 'app' } as const
 export const UTF8 = 'utf8'
 export const TEMP_SUFFIX_BYTES = 6
 export const JSON_INDENT = 2
+export const BUSY_TIMEOUT_MS = 5000
