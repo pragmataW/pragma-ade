@@ -54,3 +54,6 @@ export type WorktreeStatusInfo = z.infer<typeof WorktreeStatusInfoSchema>
 /** The event with `externalSessionId` set when `id` is non-empty (provider parsers use this). */
 export const withExternalSessionId = (event: AgentStatusEvent, id: string | undefined): AgentStatusEvent =>
   id ? { ...event, externalSessionId: id } : event
+
+/** A string cut to `HOOK_FIELD_MAX_CHARS` (schema limit), else undefined. */
+export const truncateEventField = (v: string | undefined): string | undefined => v?.slice(0, HOOK_FIELD_MAX_CHARS)
