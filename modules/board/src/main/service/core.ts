@@ -102,10 +102,11 @@ export function createBoardCore(deps: BoardCoreDeps) {
   }
 
   /** Sort-key bounds of a position; ids that no longer exist are ignored, `afterTaskId` wins. */
-  function taskBounds(position: TaskPosition | undefined): { afterKey?: string; beforeKey?: string } {
-    const after = position?.afterTaskId !== undefined ? repo.getTask(position.afterTaskId) : undefined
+  function taskBounds(position: TaskPosition | undefined, self?: number): { afterKey?: string; beforeKey?: string } {
+    const find = (id: number | undefined) => (id === undefined || id === self ? undefined : repo.getTask(id))
+    const after = find(position?.afterTaskId)
     if (after) return { afterKey: after.sortOrder }
-    const before = position?.beforeTaskId !== undefined ? repo.getTask(position.beforeTaskId) : undefined
+    const before = find(position?.beforeTaskId)
     return before ? { beforeKey: before.sortOrder } : {}
   }
 

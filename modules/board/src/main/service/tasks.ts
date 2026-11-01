@@ -1,11 +1,13 @@
 import {
   BOARD_ERROR,
   BoardError,
+  type ColumnRef,
   type CreateTaskInput,
   CreateTaskInputSchema,
   PRIORITY,
   type TaskDto,
   type TaskId,
+  type TaskPosition,
   type UpdateTaskPatch,
   UpdateTaskPatchSchema,
 } from '../../contract'
@@ -70,6 +72,17 @@ export function createTaskOps(core: BoardCore, labels: LabelOps) {
           updatedAt: core.now(),
         }),
       )
+      core.changed(board, [id])
+      return core.taskDto(row)
+    },
+    async moveTask(id: TaskId, column: ColumnRef, position?: TaskPosition): Promise<TaskDto> {
+      const task = core.requireTask(id)
+      const board = core.requireBoard(task.boardId)
+      const row = repo.transaction(() => {
+        const target = core.resolveColumn(board, column)
+        const sortOrder = resolveRank(repo.columnTaskKeys(target.id, id), core.taskBounds(position, id))
+        return repo.updateTask(id, { columnId: target.id, sortOrder, updatedAt: core.now() })
+      })
       core.changed(board, [id])
       return core.taskDto(row)
     },

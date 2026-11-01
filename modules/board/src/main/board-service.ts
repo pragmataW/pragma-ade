@@ -1,6 +1,7 @@
 import type { AgentSessionsService } from '@pragma/module-agents/contract'
 import type { GitService } from '@pragma/module-projects/contract'
 import { BOARD_ERROR, BoardError, type BoardService, type BoardSettings } from '../contract'
+import { createColumnOps } from './service/columns'
 import { type BoardCoreDeps, createBoardCore } from './service/core'
 import { createLabelOps } from './service/labels'
 import { createReads } from './service/reads'
@@ -22,6 +23,7 @@ export function createBoardService(deps: BoardServiceDeps) {
   const labels = createLabelOps(core)
   const tasks = createTaskOps(core, labels)
   const reads = createReads(core)
+  const columns = createColumnOps(core)
   const service: BoardService = {
     getBoard: reads.getBoard,
     getSnapshot: reads.getSnapshot,
@@ -33,13 +35,13 @@ export function createBoardService(deps: BoardServiceDeps) {
     createLabel: labels.createLabel,
     updateLabel: labels.updateLabel,
     deleteLabel: labels.deleteLabel,
-    moveTask: async () => notImplemented(),
+    moveTask: tasks.moveTask,
     linkSession: async () => notImplemented(),
     unlinkSession: async () => notImplemented(),
-    createColumn: async () => notImplemented(),
-    renameColumn: async () => notImplemented(),
-    moveColumn: async () => notImplemented(),
-    deleteColumn: async () => notImplemented(),
+    createColumn: columns.createColumn,
+    renameColumn: columns.renameColumn,
+    moveColumn: columns.moveColumn,
+    deleteColumn: columns.deleteColumn,
     prepareStart: async () => notImplemented(),
     checkBranch: async () => notImplemented(),
     startInNewWorktree: async () => notImplemented(),
