@@ -35,3 +35,7 @@ export const PATH_SEPARATOR_RE = /[\\/]/
 /** Size of a pty before its view measured itself. */
 export const DEFAULT_COLS = 80
 export const DEFAULT_ROWS = 24
+
+/** `terminal.openLink` accepts only web links (other schemes are rejected). */
+export const ALLOWED_LINK_PROTOCOLS = ['http:', 'https:'] as const
+export const UNSUPPORTED_LINK_MESSAGE = 'terminal: unsupported link scheme'

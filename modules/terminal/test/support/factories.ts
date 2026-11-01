@@ -1,6 +1,17 @@
 import { tmpdir } from 'node:os'
+import type { IpcContract } from '@pragma/sdk'
+import type { MainIpcApi } from '@pragma/sdk/main'
 import type { SpawnSpec } from '../../packages/pty-daemon/src/protocol'
-import type { PtyInfo, PtyService, PtySpawnOptions, TerminalPane, TerminalTab } from '../../src/contract'
+import type {
+  PtyAttachResult,
+  PtyDataPayload,
+  PtyExit,
+  PtyInfo,
+  PtyService,
+  PtySpawnOptions,
+  TerminalPane,
+  TerminalTab,
+} from '../../src/contract'
 
 const DEFAULT_SCROLLBACK = 1000
 
@@ -150,4 +161,59 @@ export function fakePtyService(): FakePtyService {
     snapshot: async () => ({ data: '', seq: 0, cols: 80, rows: 24 }),
   }
   return svc
+}
+
+export interface FakePtyFeed extends FakePtyService {
+  attach(ptyId: string): Promise<PtyAttachResult>
+  onAnyData(cb: (e: PtyDataPayload) => void): () => void
+  onAnyExit(cb: (e: PtyExit) => void): () => void
+  emitData(e: PtyDataPayload): void
+  emitExit(e: PtyExit): void
+}
+
+/** `fakePtyService()` plus the IPC feed (`attach`, any-data/any-exit) with emit controls. */
+export function fakePtyFeed(): FakePtyFeed {
+  const svc = fakePtyService()
+  const data = new Set<(e: PtyDataPayload) => void>()
+  const exits = new Set<(e: PtyExit) => void>()
+  const add = <T>(set: Set<T>, cb: T) => {
+    set.add(cb)
+    return () => set.delete(cb)
+  }
+  return Object.assign(svc, {
+    async attach(ptyId: string): Promise<PtyAttachResult> {
+      const info = svc.get(ptyId)
+      if (!info) return { found: false }
+      return { found: true, info, snapshot: await svc.snapshot(ptyId), exit: null }
+    },
+    onAnyData: (cb: (e: PtyDataPayload) => void) => add(data, cb),
+    onAnyExit: (cb: (e: PtyExit) => void) => add(exits, cb),
+    emitData: (e: PtyDataPayload) => {
+      for (const cb of data) cb(e)
+    },
+    emitExit: (e: PtyExit) => {
+      for (const cb of exits) cb(e)
+    },
+  })
+}
+
+/** A `MainIpcApi` that keeps handlers and published events in memory. */
+export function fakeIpc() {
+  const handlers = new Map<string, (input: unknown) => unknown>()
+  const published: { channel: string; payload: unknown }[] = []
+  const ipc: MainIpcApi = {
+    handle(c, h) {
+      handlers.set(c.channel, (input) => h(c.input.parse(input), { sender: 0 } as never))
+      return { dispose: () => handlers.delete(c.channel) }
+    },
+    publish(c, payload) {
+      published.push({ channel: c.channel, payload })
+    },
+  }
+  const call = async <O>(c: IpcContract<unknown, O> | { channel: string }, input: unknown): Promise<O> => {
+    const h = handlers.get(c.channel)
+    if (!h) throw new Error(`no handler for ${c.channel}`)
+    return (await h(input)) as O
+  }
+  return { ipc, handlers, published, call }
 }

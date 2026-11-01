@@ -281,7 +281,7 @@ importers:
         version: 4.6.7
     devDependencies:
       esbuild:
-        specifier: ^0.28.2
+        specifier: 0.28.2
         version: 0.28.2
 
   packages/sdk:
