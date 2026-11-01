@@ -1,4 +1,4 @@
-import type { LinkedSessionDto, TaskDto } from '../../src/contract'
+import type { BoardSection, LinkedSessionDto, TaskDto } from '../../src/contract'
 import type { BoardRepo } from '../../src/main/repo'
 import type { BoardRow, TaskInsert, TaskRow } from '../../src/main/schema'
 
@@ -67,5 +67,26 @@ export function aLinkedSession(sessionId: string, over: Partial<LinkedSessionDto
     profileDisplayNameKey: null,
     providerId: 'custom',
     ...over,
+  }
+}
+
+/** A board section: `columns` are names (ids `boardId * 10 + index`), `labels` are names (same id scheme + 100). */
+export function aSection(
+  boardId: number,
+  projectName: string,
+  columns: readonly string[] = ['Backlog', 'Todo', 'In Progress', 'Review', 'Done'],
+  labels: readonly string[] = [],
+): BoardSection {
+  const ids = (i: number) => boardId * 10 + i
+  return {
+    board: {
+      id: boardId,
+      projectId: `p${boardId}`,
+      name: projectName,
+      keyPrefix: projectName.slice(0, 3).toUpperCase(),
+    },
+    projectName,
+    columns: columns.map((name, i) => ({ id: ids(i), boardId, name, sortKey: `a${i}` })),
+    labels: labels.map((name, i) => ({ id: ids(i) + 100, boardId, name, color: 'gray' })),
   }
 }

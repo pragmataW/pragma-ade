@@ -18,3 +18,7 @@ export const MAX_BRANCH_SUFFIX = 50
 export const REMOTE_HEAD_RE = /\/HEAD$/
 /** Coalesces bursts of `board.changed` into one renderer push. */
 export const CHANGE_PUSH_DEBOUNCE_MS = 50
+export const WORKTREE_FILTERS = ['any', 'with', 'without'] as const
+/** Agent filter value for "tasks without a linked session". */
+export const NO_AGENT_FILTER_VALUE = 'none'
+export const VIEW_MODES = ['board', 'list'] as const
