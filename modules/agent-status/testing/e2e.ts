@@ -229,3 +229,69 @@ export async function expectActivityFallback(l: LaunchedApp, sessionId: string):
   await expect(tab).toHaveAttribute('data-status', 'working', FALLBACK_WAIT)
   await expect(tab).toHaveAttribute('data-status', 'idle', FALLBACK_WAIT)
 }
+
+export const REAL_AGENT_TIMEOUT_MS = 240_000
+const REAL_STATUS_WAIT = { timeout: 180_000 }
+const NUDGE_AFTER_MS = 20_000
+// biome-ignore lint/suspicious/noControlCharactersInRegex: strips terminal escape sequences
+const ANSI_RE = /\x1b\[[0-9;?]*[A-Za-z]/g
+/** 03's test hooks (`globalThis.__pragmaAgentsTest`), used only for failure diagnostics. */
+type AgentsOutputGlobal = { __pragmaAgentsTest: { getSessionOutput(id: string): string } }
+
+/**
+ * `@real-agent`: launches with the real HOME (the agents need the user's login), starts the built-in profile of
+ * `providerId` with `initialPrompt` and waits until the session status reaches `target`. If nothing happens within
+ * 20 s (e.g. Claude's folder-trust prompt), presses Enter once.
+ */
+export async function runRealSession(
+  start: (o?: LaunchOptions) => Promise<StatusApp>,
+  o: {
+    providerId: string
+    initialPrompt: string
+    target: string
+    env?: Record<string, string>
+    /** When the stuck session's output matches, the test is skipped with this reason instead of pressing Enter. */
+    skipWhenStuck?: { output: RegExp; reason: string }
+  },
+): Promise<{ app: StatusApp; sessionId: string }> {
+  const app = await start({ env: { HOME: os.homedir(), ZDOTDIR: os.homedir() } })
+  const l = app.launched
+  const profileId = `${BUILTIN_PROFILE_PREFIX}${o.providerId}`
+  if (o.env) await invokeIpc(l.window, agentsIpc.updateProfile, { id: profileId, patch: { env: o.env } })
+  const sessionId = await startSession(l, { profileId, worktreeId: app.worktreeId, initialPrompt: o.initialPrompt })
+  /** `idle` counts only after a completed turn (OpenCode reports idle as soon as its plugin is ready). */
+  const reached = async () => {
+    const info = await hooks(l).getStatus(sessionId)
+    if (!info) return false
+    return info.status === o.target && (o.target !== 'idle' || info.turnCompleted)
+  }
+  const busy = async () => (await hooks(l).getStatus(sessionId))?.status === 'working'
+  const deadline = Date.now() + NUDGE_AFTER_MS
+  while (Date.now() < deadline && !(await reached()) && !(await busy()))
+    await new Promise((r) => setTimeout(r, POLL_MS))
+  const sessionOutput = () =>
+    l.app.evaluate(
+      (_e, id) => (globalThis as unknown as AgentsOutputGlobal).__pragmaAgentsTest.getSessionOutput(id),
+      sessionId,
+    )
+  if (!(await reached()) && !(await busy())) {
+    const skip = o.skipWhenStuck
+    const plain = (await sessionOutput()).replace(ANSI_RE, '')
+    test.skip(skip?.output.test(plain) === true, skip?.reason)
+    await hooks(l).writeToSession(sessionId, ENTER)
+  }
+  try {
+    await expect.poll(reached, REAL_STATUS_WAIT).toBe(true)
+  } catch (e) {
+    const output = await sessionOutput()
+    throw new Error(`${String(e)}\nstatus: ${JSON.stringify(await hooks(l).getStatus(sessionId))}\noutput:\n${output}`)
+  }
+  return { app, sessionId }
+}
+
+/** The session finished a turn through hooks and carries a provider session id matching `externalId`. */
+export async function expectCompletedTurn(app: StatusApp, sessionId: string, externalId: RegExp): Promise<void> {
+  const info = await hooks(app.launched).getStatus(sessionId)
+  expect(info).toMatchObject({ source: 'hooks', turnCompleted: true })
+  expect(info?.externalSessionId).toMatch(externalId)
+}
