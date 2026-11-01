@@ -22,6 +22,8 @@ import { DeleteTaskButton } from './DeleteTaskButton'
 import { DescriptionField } from './DescriptionField'
 import { Field } from './Field'
 import { LabelPicker } from './LabelPicker'
+import { LinkedSessions } from './LinkedSessions'
+import { StartSection } from './StartSection'
 
 const update = (task: TaskDto, patch: UpdateTaskPatch) => runAction(boardActions.updateTask(task.id, patch))
 
@@ -111,6 +113,8 @@ function DrawerBody({ task, section }: { task: TaskDto; section: BoardSection })
           <LabelPicker task={task} labels={section.labels} onChange={(labels) => update(task, { labels })} />
         </Field>
       </div>
+      <StartSection task={task} />
+      <LinkedSessions task={task} />
       <DescriptionField value={task.descriptionMd} onSave={(descriptionMd) => update(task, { descriptionMd })} />
       <div className="flex flex-col gap-0.5 text-[11px] text-[var(--fa)]">
         <span>{t('board:drawer.created', { date: formatDateTime(task.createdAt, DATE_TIME_FORMAT) })}</span>

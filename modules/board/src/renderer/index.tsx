@@ -1,7 +1,8 @@
-import { ShellSlots } from '@pragma/sdk'
+import { SETTINGS_PAGE_ORDER, ShellSlots } from '@pragma/sdk'
 import { defineRendererModule } from '@pragma/sdk/renderer'
-import { SIDEBAR_ENTRY_ID, SIDEBAR_ENTRY_ORDER, VIEW_ICON } from '../constants'
-import { BOARD_VIEW_ID, type BoardSettings, boardIpcEvents, boardOpenCommand } from '../contract'
+import { SETTINGS_ICON, SIDEBAR_ENTRY_ID, SIDEBAR_ENTRY_ORDER, VIEW_ICON } from '../constants'
+import { BOARD_MODULE_ID, BOARD_VIEW_ID, type BoardSettings, boardIpcEvents, boardOpenCommand } from '../contract'
+import { BoardSettingsPage } from './components/BoardSettingsPage'
 import { BoardView } from './components/BoardView'
 import { SidebarBoardEntry } from './components/SidebarBoardEntry'
 import { showBoard } from './lib/navigation'
@@ -40,6 +41,13 @@ export default defineRendererModule<BoardSettings>({
       refreshCount().catch(warnCount)
     })
     ctx.ipc.subscribe(boardIpcEvents.sessionStatusChanged, patchSessionStatus)
+    ctx.settingsPages.register({
+      id: BOARD_MODULE_ID,
+      titleKey: 'board:settings.title',
+      order: SETTINGS_PAGE_ORDER.board,
+      icon: SETTINGS_ICON,
+      component: BoardSettingsPage,
+    })
     refreshCount().catch(warnCount)
   },
 })
