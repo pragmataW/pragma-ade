@@ -17,6 +17,18 @@ export const MODULE_STATE_REASONS = [
   'migration-error',
 ] as const
 export type ModuleStateReason = (typeof MODULE_STATE_REASONS)[number]
+export const MODULE_STATE = { active: 'active', disabled: 'disabled', failed: 'failed' } as const satisfies Record<
+  string,
+  ModuleState
+>
+export const MODULE_STATE_REASON = {
+  user: 'user',
+  missingDependency: 'missing-dependency',
+  cycle: 'cycle',
+  dependencyDisabled: 'dependency-disabled',
+  activateError: 'activate-error',
+  migrationError: 'migration-error',
+} as const satisfies Record<string, ModuleStateReason>
 
 export const AppInfoSchema = z.object({
   version: z.string(),

@@ -16,3 +16,13 @@ export const JSON_INDENT = 2
 export const BUSY_TIMEOUT_MS = 5000
 export const DEFAULT_LANGUAGE = 'en'
 export const SHELL_ENV_TIMEOUT_MS = 5000
+export const RENDERER_COMMAND_TIMEOUT_MS = 10_000
+export const APP_DIR_NAMES = {
+  logs: 'logs',
+  temp: 'pragma-ade',
+  modules: 'modules',
+  providers: 'providers',
+  database: 'pragma.db',
+  settings: 'settings.json',
+  mainLog: 'main.log',
+} as const

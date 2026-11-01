@@ -1,4 +1,4 @@
-import type { ModuleStateReason } from '../../common/core-ipc'
+import { MODULE_STATE_REASON, type ModuleStateReason } from '../../common/core-ipc'
 import type { ModuleManifest } from '../../common/manifest'
 
 export type GraphManifest = Pick<ModuleManifest, 'id' | 'dependsOn' | 'optionalDependsOn' | 'core'>
@@ -56,8 +56,12 @@ function staticExclusions(manifests: GraphManifest[], disabled: ReadonlySet<stri
   for (const m of manifests) {
     const missing = m.dependsOn.filter((d) => !ids.has(d))
     if (missing.length > 0)
-      excluded.set(m.id, { id: m.id, reason: 'missing-dependency', detail: missing.join(LIST_SEPARATOR) })
-    else if (disabled.has(m.id) && !m.core) excluded.set(m.id, { id: m.id, reason: 'user' })
+      excluded.set(m.id, {
+        id: m.id,
+        reason: MODULE_STATE_REASON.missingDependency,
+        detail: missing.join(LIST_SEPARATOR),
+      })
+    else if (disabled.has(m.id) && !m.core) excluded.set(m.id, { id: m.id, reason: MODULE_STATE_REASON.user })
   }
   return excluded
 }
@@ -69,7 +73,7 @@ function cascade(manifests: GraphManifest[], excluded: Map<string, ExcludedModul
     for (const m of manifests) {
       const dep = excluded.has(m.id) ? undefined : m.dependsOn.find((d) => excluded.has(d))
       if (dep === undefined) continue
-      excluded.set(m.id, { id: m.id, reason: 'dependency-disabled', detail: dep })
+      excluded.set(m.id, { id: m.id, reason: MODULE_STATE_REASON.dependencyDisabled, detail: dep })
       changed = true
     }
   }
@@ -90,7 +94,7 @@ export function resolveModuleGraph(
   const stuck = new Set(second.stuck)
   for (const id of second.stuck)
     if (reaches(id, id, byId, stuck))
-      excluded.set(id, { id, reason: 'cycle', detail: second.stuck.join(LIST_SEPARATOR) })
+      excluded.set(id, { id, reason: MODULE_STATE_REASON.cycle, detail: second.stuck.join(LIST_SEPARATOR) })
   cascade(list, excluded)
   const order = [...first.order, ...second.order].filter((id) => !excluded.has(id))
   return { order, excluded: [...excluded.values()].sort((a, b) => a.id.localeCompare(b.id)) }
