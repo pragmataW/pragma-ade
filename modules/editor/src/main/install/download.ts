@@ -52,10 +52,12 @@ const close = (out: WriteStream): Promise<void> =>
 function progressReporter(o: DownloadOptions, total: number): (received: number, final?: boolean) => void {
   const interval = o.progressIntervalMs ?? PROGRESS_INTERVAL_MS
   let last = Number.NEGATIVE_INFINITY
+  let reported = -1
   return (received, final = false) => {
     const now = Date.now()
-    if (!final && now - last < interval) return
+    if (received === reported || (!final && now - last < interval)) return
     last = now
+    reported = received
     o.onProgress?.(received, total || received)
   }
 }

@@ -192,10 +192,12 @@ export class EditorInstaller {
       expectedSha256: asset.sha256,
       signal: this.#abort.signal,
       fetchImpl: this.#deps.fetchImpl,
-      onProgress: (received, total) => {
-        this.#set({ state: EDITOR_STATE.downloading, version, received, total })
-        if (received >= total) this.#set({ state: EDITOR_STATE.verifying, version })
-      },
+      onProgress: (received, total) =>
+        this.#set(
+          received >= total
+            ? { state: EDITOR_STATE.verifying, version }
+            : { state: EDITOR_STATE.downloading, version, received, total },
+        ),
     })
     this.#abort = undefined
     if (r.ok) return

@@ -65,3 +65,22 @@ export const SERVER_FLAGS = {
 } as const
 export const TELEMETRY_OFF = 'off'
 export const NODE_EVENT = { error: 'error', data: 'data', end: 'end', exit: 'exit', close: 'close' } as const
+export const HEALTH_INTERVAL_MS = 15_000
+export const HEALTH_FAILURES = 2
+export const HEALTH_TIMEOUT_MS = 3000
+export const READY_POLL_MS = 200
+export const MAX_CRASHES = 3
+export const CRASH_WINDOW_MS = 60_000
+const BACKOFF_FIRST_MS = 1000
+const BACKOFF_SECOND_MS = 2000
+const BACKOFF_THIRD_MS = 4000
+export const BACKOFF_MS = [BACKOFF_FIRST_MS, BACKOFF_SECOND_MS, BACKOFF_THIRD_MS] as const
+export const STOP_TIMEOUT_MS = 5000
+export const SERVER_LOG_PREFIX = '[codium-server]'
+export const TOKEN_IN_URL_RE = /tkn=[^&\s]+/g
+export const TOKEN_REDACTED = 'tkn=<redacted>'
+export const VERSION_PATH = '/version'
+export const SIGNALS = { term: 'SIGTERM', kill: 'SIGKILL' } as const
+export const TASKKILL = { command: 'taskkill', args: ['/T', '/F', '/PID'] } as const
+export const PIPED_STDIO: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
+export const SERVER_EVENT = { ready: 'ready', restarting: 'restarting', failed: 'failed', stopped: 'stopped' } as const
