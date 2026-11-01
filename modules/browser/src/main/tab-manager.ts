@@ -220,6 +220,11 @@ export class BrowserTabManager {
     return guest && !guest.isDestroyed() ? guest : null
   }
 
+  /** The live view of a tab (null when discarded). */
+  getView(tabId: string): ViewLike | null {
+    return this.#tabs.get(tabId)?.view ?? null
+  }
+
   /** The tab whose live view hosts `guest` (shortcut dispatch). */
   tabIdOfGuest(guest: GuestLike): string | null {
     for (const [id, tab] of this.#tabs) if (tab.view?.webContents === guest) return id

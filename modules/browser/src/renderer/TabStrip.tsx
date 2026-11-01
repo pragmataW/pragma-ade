@@ -1,5 +1,6 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
+import { Icon } from '@pragma/ui/components/icon'
 import { useShallow } from 'zustand/react/shallow'
 import { FAVICON_PX, ICONS, TAB_STRIP_PX } from '../constants'
 import { BROWSER_DATA_ATTRS as A, BrowserIpc, type BrowserTabState, BROWSER_TEST_IDS as T } from '../contract'
@@ -30,7 +31,8 @@ function TabItem({ tab, active }: { tab: BrowserTabState; active: boolean }) {
           : 'text-[var(--mu)] hover:bg-[var(--hv)]',
       )}
     >
-      {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" width={FAVICON_PX} height={FAVICON_PX} /> : null}
+      {/* The shell CSP (img-src 'self' data:) blocks remote favicons, so tabs show a generic globe. */}
+      <Icon name={ICONS.globe} size={FAVICON_PX} className="shrink-0 text-[var(--fa)]" />
       <span className="truncate">{title}</span>
       <ToolButton
         icon={ICONS.close}
