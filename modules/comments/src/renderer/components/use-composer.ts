@@ -60,7 +60,7 @@ export function useComposer(p: CommentComposerProps) {
     })
   const cancel = () => p.onDone?.({ kind: COMPOSER_RESULT.cancelled })
 
-  /** ⌘/Ctrl+Enter → add (save when editing), ⌘/Ctrl+Shift+Enter → send now, Esc → cancel. */
+  /** ⌘/Ctrl+Enter → add (save when editing), ⌘/Ctrl+Shift+Enter → send now, Esc → cancel (both modes). */
   const shortcutAction = (e: KeyboardEvent): (() => unknown) | undefined => {
     if (e.key === ESCAPE_KEY) return cancel
     if (e.key !== ENTER_KEY || !(e.metaKey || e.ctrlKey)) return undefined
@@ -68,7 +68,7 @@ export function useComposer(p: CommentComposerProps) {
     if (!e.shiftKey) return addDraft
     return canSendNow ? sendNow : undefined
   }
-  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     const action = shortcutAction(e)
     if (!action) return
     e.preventDefault()

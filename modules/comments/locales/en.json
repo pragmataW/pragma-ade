@@ -23,6 +23,7 @@
     "noWorktree": "Select a worktree to see its comments.",
     "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
     "emptySent": "No comments sent yet.",
+    "selectAll": "Select all",
     "clearSelection": "Clear selection",
     "sendSelected_one": "Send {{count}} comment",
     "sendSelected_other": "Send {{count}} comments",
@@ -48,6 +49,7 @@
     "sendNow": "Send now",
     "save": "Save",
     "cancel": "Cancel",
+    "cancelHint": "Cancel (Esc)",
     "hint": "⌘/Ctrl+Enter to add · ⌘/Ctrl+Shift+Enter to send"
   },
   "target": {
@@ -67,7 +69,7 @@
   "settings": {
     "title": "Comments",
     "submitAfterPaste": "Press Enter after sending comments",
-    "submitAfterPasteHint": "When off, comments are pasted into the agent's input and you submit them yourself."
+    "submitAfterPasteHint": "Comments are submitted to the agent right after they are pasted. When off, they stay in the agent's input until you press Enter."
   },
   "errors": {
     "notFound": "Some comments no longer exist.",

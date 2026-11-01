@@ -5,6 +5,7 @@ import {
   CHANGE_SCROLL_OFFSET_PX,
   DIFF_CONTEXT_LINES,
   DIFF_EXPANSION_LINES,
+  DIFF_UNSAFE_CSS,
   HUNK_SEPARATORS,
   PIERRE_THEMES,
 } from '../../constants'
@@ -73,6 +74,7 @@ export function buildDiffOptions({
     onLineSelectionEnd: (r) => {
       if (r) onRange(r)
     },
+    unsafeCSS: DIFF_UNSAFE_CSS,
   }
 }
 

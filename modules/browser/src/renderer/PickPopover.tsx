@@ -1,4 +1,4 @@
-import { CommentsUiServiceToken } from '@pragma/module-comments/contract'
+import { COMPOSER_SURFACE, CommentsUiServiceToken } from '@pragma/module-comments/contract'
 import { useT } from '@pragma/sdk/renderer'
 import { AnchoredPopover } from '@pragma/ui/components/anchored-popover'
 import { type ReactNode, useMemo, useState } from 'react'
@@ -87,6 +87,7 @@ export function PickPopover({ pick, area }: { pick: BrowserPick; area: Rect }) {
         <ui.CommentComposer
           worktreeId={pick.worktreeId}
           context={{ source: 'browser', element: context }}
+          surface={COMPOSER_SURFACE.plain}
           onDone={close}
         />
       </div>

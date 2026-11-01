@@ -52,9 +52,19 @@ function WaitingLine() {
   )
 }
 
-/** Selected ids in list order, or every draft when nothing is selected. */
+/** Selected ids in list order (drafts start selected; sending sends exactly the selection). */
 const idsToSend = (drafts: readonly Comment[], selection: ReadonlySet<string>): string[] =>
-  selection.size ? drafts.filter((c) => selection.has(c.id)).map((c) => c.id) : drafts.map((c) => c.id)
+  drafts.filter((c) => selection.has(c.id)).map((c) => c.id)
+
+function SelectionToggle({ allSelected }: { allSelected: boolean }) {
+  const t = useT()
+  const s = useCommentsStore.getState
+  return (
+    <QuietButton data-testid={T.selectionToggle} onClick={() => (allSelected ? s().clearSelection() : s().selectAll())}>
+      {t(allSelected ? 'comments:drawer.clearSelection' : 'comments:drawer.selectAll')}
+    </QuietButton>
+  )
+}
 
 function DraftsFooter({ drafts }: { drafts: Comment[] }) {
   const t = useT()
@@ -63,20 +73,15 @@ function DraftsFooter({ drafts }: { drafts: Comment[] }) {
   const preferredSessionId = useCommentsStore((s) => s.drawer.preferredSessionId)
   const [busy, run] = useBusy(SEND)
   const ids = idsToSend(drafts, selection)
+  const allSelected = drafts.length > 0 && ids.length === drafts.length
   const send = () => run(() => flow.send(ids, { preferredSessionId }))
-  const label = selection.size
-    ? t('comments:drawer.sendSelected', { count: ids.length })
-    : t('comments:drawer.sendAll', { count: ids.length })
+  const label = t(allSelected ? 'comments:drawer.sendAll' : 'comments:drawer.sendSelected', { count: ids.length })
   return (
     <div className="flex flex-col gap-2 border-t px-4 py-3">
       <ErrorLine />
       <WaitingLine />
       <div className="flex items-center justify-end gap-2">
-        {selection.size ? (
-          <QuietButton onClick={() => useCommentsStore.getState().clearSelection()}>
-            {t('comments:drawer.clearSelection')}
-          </QuietButton>
-        ) : null}
+        {drafts.length ? <SelectionToggle allSelected={allSelected} /> : null}
         <PrimaryButton data-testid={T.sendButton} disabled={busy || ids.length === 0} onClick={() => void send()}>
           {label}
         </PrimaryButton>

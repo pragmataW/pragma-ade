@@ -20,6 +20,12 @@ export const DIFF_CONTEXT_LINES = 3
 export const DIFF_EXPANSION_LINES = 20
 export const CHANGE_SCROLL_OFFSET_PX = 4
 export const MERGE_BASE_SHORT_LEN = 7
+/**
+ * Injected into the diff's shadow root (`unsafe` layer): annotation rows (comment cards, the composer) keep their own
+ * background inside a selected range instead of the line-selection tint.
+ */
+export const DIFF_UNSAFE_CSS =
+  '[data-line-annotation][data-selected-line],[data-gutter-buffer=annotation][data-selected-line]{--diffs-line-bg:var(--diffs-annotation-bg)}'
 
 /** Right tab. */
 export const TAB_ID = 'git-changes'

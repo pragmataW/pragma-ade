@@ -16,6 +16,7 @@ export const COMMENTS_TESTIDS = {
   rowEdit: 'comment-row-edit',
   rowDelete: 'comment-row-delete',
   sendButton: 'comments-send',
+  selectionToggle: 'comments-selection-toggle',
   error: 'comments-error',
   targetPicker: 'comments-target-picker',
   targetOption: 'comments-target-option',
