@@ -179,3 +179,202 @@ export function attachFiber(el: Element, fiber: object | null, nonce: string): v
   if (fiber) Object.assign(el, { __reactFiber$abc123: fiber })
   el.setAttribute('data-pragma-pick', nonce)
 }
+
+// ── Main side: fake guest, host and manager ──────────────────────────────────────────────────────────────────
+import type { Rect } from '@pragma/sdk'
+import type { BrowserSettings as Settings } from '../../src/contract'
+import type { BrowserHost, GuestLike, ImageLike, ViewLike } from '../../src/main/guest'
+import { browserSettingsDefaults } from '../../src/main/settings'
+import { BrowserTabManager } from '../../src/main/tab-manager'
+
+export type IsolatedReply = unknown | ((code: string) => unknown)
+
+export interface FakeGuest extends GuestLike {
+  calls: string[]
+  loaded: string[]
+  url: string
+  devtools: boolean
+  zoomFactor: number
+  history: { back: boolean; forward: boolean }
+  destroyed: boolean
+  windowOpen?: (d: { url: string }) => { action: 'deny' }
+  /** Fires the listeners of `event`. */
+  emit(event: string, ...args: unknown[]): void
+  /** Replies of `executeJavaScriptInIsolatedWorld`, in order; when empty the call resolves to true. */
+  isolatedReplies: IsolatedReply[]
+  isolatedCalls: { worldId: number; code: string }[]
+  mainWorldCalls: string[]
+  mainWorldReply: unknown
+  capture: { image: ImageLike | null; error?: Error }
+}
+
+let guestIds = 0
+
+export function fakeImage(size = { width: 800, height: 600 }, empty = false): ImageLike & { crops: Rect[] } {
+  const crops: Rect[] = []
+  return {
+    crops,
+    isEmpty: () => empty,
+    getSize: () => size,
+    crop(rect) {
+      crops.push(rect)
+      return this
+    },
+    toPNG: () => Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]),
+  }
+}
+
+export function fakeGuest(): FakeGuest {
+  const listeners = new Map<string, ((...a: unknown[]) => void)[]>()
+  const g: FakeGuest = {
+    id: ++guestIds,
+    calls: [],
+    loaded: [],
+    url: '',
+    devtools: false,
+    zoomFactor: 1,
+    history: { back: false, forward: false },
+    destroyed: false,
+    isolatedReplies: [],
+    isolatedCalls: [],
+    mainWorldCalls: [],
+    mainWorldReply: null,
+    capture: { image: fakeImage() },
+    emit(event, ...args) {
+      for (const cb of listeners.get(event) ?? []) cb(...args)
+    },
+    async loadURL(url) {
+      g.loaded.push(url)
+      g.url = url
+    },
+    getURL: () => g.url,
+    getTitle: () => '',
+    isLoading: () => false,
+    navigationHistory: {
+      canGoBack: () => g.history.back,
+      canGoForward: () => g.history.forward,
+      goBack: () => void g.calls.push('goBack'),
+      goForward: () => void g.calls.push('goForward'),
+    },
+    reload: () => void g.calls.push('reload'),
+    stop: () => void g.calls.push('stop'),
+    setZoomFactor(f) {
+      g.zoomFactor = f
+    },
+    getZoomFactor: () => g.zoomFactor,
+    openDevTools() {
+      g.devtools = true
+    },
+    closeDevTools() {
+      g.devtools = false
+    },
+    isDevToolsOpened: () => g.devtools,
+    setWindowOpenHandler(h) {
+      g.windowOpen = h
+    },
+    on(event, cb) {
+      listeners.set(event, [...(listeners.get(event) ?? []), cb])
+    },
+    isDestroyed: () => g.destroyed,
+    close() {
+      g.calls.push('close')
+      g.destroyed = true
+      g.emit('destroyed')
+    },
+    async executeJavaScript(code) {
+      g.mainWorldCalls.push(code)
+      return g.mainWorldReply
+    },
+    async executeJavaScriptInIsolatedWorld(worldId, scripts) {
+      const code = scripts[0]?.code ?? ''
+      g.isolatedCalls.push({ worldId, code })
+      const reply = g.isolatedReplies.length ? g.isolatedReplies.shift() : true
+      return typeof reply === 'function' ? (reply as (c: string) => unknown)(code) : reply
+    },
+    async capturePage() {
+      if (g.capture.error) throw g.capture.error
+      return g.capture.image ?? fakeImage({ width: 0, height: 0 }, true)
+    },
+  }
+  return g
+}
+
+export interface FakeHost extends BrowserHost {
+  calls: string[]
+  guests: FakeGuest[]
+  externals: string[]
+  clock: number
+  /** The guest of the view attached as `browser:<tabId>`. */
+  guestOf(tabId: string): FakeGuest
+}
+
+export function fakeHost(): FakeHost {
+  const byView = new Map<string, FakeGuest>()
+  const host: FakeHost = {
+    calls: [],
+    guests: [],
+    externals: [],
+    clock: 1_000_000,
+    createView(partition) {
+      host.calls.push(`createView:${partition}`)
+      const guest = fakeGuest()
+      host.guests.push(guest)
+      return { webContents: guest }
+    },
+    attach(viewId, view: ViewLike) {
+      host.calls.push(`attach:${viewId}`)
+      byView.set(viewId, view.webContents as FakeGuest)
+      return { dispose: () => host.detach(viewId) }
+    },
+    detach: (viewId) => void host.calls.push(`detach:${viewId}`),
+    show: (viewId) => void host.calls.push(`show:${viewId}`),
+    hide: (viewId) => void host.calls.push(`hide:${viewId}`),
+    freeze: async (viewId) => void host.calls.push(`freeze:${viewId}`),
+    unfreeze: async (viewId) => void host.calls.push(`unfreeze:${viewId}`),
+    async openExternal(url) {
+      host.externals.push(url)
+    },
+    clearPartition: async (p) => void host.calls.push(`clearPartition:${p}`),
+    now: () => host.clock,
+    guestOf(tabId) {
+      const g = byView.get(`browser:${tabId}`)
+      if (!g) throw new Error(`no guest for ${tabId}`)
+      return g
+    },
+  }
+  return host
+}
+
+export const flush = () => new Promise<void>((r) => setTimeout(r, 0))
+
+/** A manager over a fake host; `emits` collects every published snapshot. */
+export function setupManager(over: Partial<Settings> = {}) {
+  const host = fakeHost()
+  const settings: Settings = { ...browserSettingsDefaults, ...over }
+  const emits: BrowserSnapshot[] = []
+  const manager = new BrowserTabManager(
+    host,
+    () => settings,
+    (s) => emits.push(s),
+  )
+  const last = async (): Promise<BrowserSnapshot> => {
+    await flush()
+    const s = emits.at(-1)
+    if (!s) throw new Error('no snapshot emitted')
+    return s
+  }
+  return { host, settings, manager, emits, last }
+}
+
+/** A navigation event like Electron's `will-*` events. */
+export const navEvent = (url: string, isMainFrame = true) => {
+  const e = {
+    url,
+    isMainFrame,
+    prevented: false,
+    preventDefault() {
+      e.prevented = true
+    },
+  }
+  return e
+}
