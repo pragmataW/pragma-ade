@@ -115,3 +115,16 @@ export const COLUMNS = {
   value: 'value',
 } as const
 export const ACTIVE_WORKTREE_STATE_KEY = 'activeWorktreeId'
+
+/** File watching (`@parcel/watcher`). */
+export const WATCH_DEBOUNCE_MS = 300
+export const CHANGED_PATHS_CAP = 500
+/** The main checkout's `.git` dir is covered by the git-dir watcher. */
+export const WORKTREE_IGNORE = ['.git', '.git/**', 'node_modules', '**/node_modules/**']
+export const GIT_DIR_IGNORE = ['objects/**', 'logs/**', 'lfs/**', 'hooks/**', '**/*.lock']
+export const POSIX_SEP = '/'
+export const WINDOWS_SEP_RE = /\\/g
+/** Git-dir files whose change means "the main checkout's HEAD/index moved". */
+export const ROOT_HEAD_FILES = ['HEAD', 'index', 'ORIG_HEAD', 'MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD']
+export const GIT_DIR_PATHS = { worktrees: 'worktrees/', packedRefs: 'packed-refs' } as const
+export const PARENT_PREFIX = '..'

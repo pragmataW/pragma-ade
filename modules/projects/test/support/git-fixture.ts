@@ -15,6 +15,9 @@ export interface FixtureRepo {
 const README = 'README.md'
 const README_TEXT = '# fixture\n'
 
+/** Realpath (macOS `/var` → `/private/var`). */
+export const canonical = (p: string): string => realpathSync.native(p)
+
 /** Isolation-only git env (no global/system config, fixed author); merged over `process.env` by callers. */
 export function gitTestEnv(): Record<string, string> {
   const env = isolatedGitEnv()
