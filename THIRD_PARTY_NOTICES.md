@@ -6,6 +6,7 @@ Code copied from third-party projects keeps its original license header and is l
 |---|---|---|
 | [shadcn/ui](https://github.com/shadcn-ui/ui) | MIT | `packages/ui/src/vendor/*` (generated with the shadcn CLI 4.23.0) |
 | [stablyai/orca](https://github.com/stablyai/orca) | MIT | `modules/browser/src/main/navigation-policy.ts`, `modules/browser/src/main/picker/page/{selector,collect,overlay,react-probe}.ts`, `modules/browser/src/main/picker/capture.ts` (phase 08, adapted) |
+| [onurravli/voltran](https://github.com/onurravli/voltran) | Apache-2.0 | `providers/opencode/packages/hooks/src/{plugin,records}.ts` (subscribe loop, child-session filter and event mapping adapted from `packages/daemon/src/opencode-plugin/index.ts`) |
 
 ## stablyai/orca — MIT License
 

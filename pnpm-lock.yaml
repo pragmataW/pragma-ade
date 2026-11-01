@@ -155,6 +155,55 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
 
+  modules/agent-status:
+    dependencies:
+      '@pragma/module-agents':
+        specifier: workspace:*
+        version: link:../agents
+      '@pragma/module-bridge':
+        specifier: workspace:*
+        version: link:../bridge
+      '@pragma/module-projects':
+        specifier: workspace:*
+        version: link:../projects
+      '@pragma/module-terminal':
+        specifier: workspace:*
+        version: link:../terminal
+      '@pragma/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@pragma/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+      zustand:
+        specifier: 5.0.16
+        version: 5.0.16(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.1
+        version: 1.64.1
+      '@pragma/test-support':
+        specifier: workspace:*
+        version: link:../../packages/test-support
+      '@testing-library/react':
+        specifier: 16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 14.6.8
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
+
   modules/agents:
     dependencies:
       '@pragma/module-projects':
@@ -188,6 +237,31 @@ importers:
       '@testing-library/user-event':
         specifier: 14.6.8
         version: 14.6.8(@testing-library/dom@10.4.2)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
+
+  modules/bridge:
+    dependencies:
+      '@pragma/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      ws:
+        specifier: 8.22.0
+        version: 8.22.0
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.1
+        version: 1.64.1
+      '@pragma/test-support':
+        specifier: workspace:*
+        version: link:../../packages/test-support
+      '@types/ws':
+        specifier: 8.18.2
+        version: 8.18.2
       vitest:
         specifier: 5.0.5
         version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
@@ -564,9 +638,18 @@ importers:
 
   providers/claude:
     dependencies:
+      '@pragma/module-agent-status':
+        specifier: workspace:*
+        version: link:../../modules/agent-status
       '@pragma/module-agents':
         specifier: workspace:*
         version: link:../../modules/agents
+      '@pragma/module-bridge':
+        specifier: workspace:*
+        version: link:../../modules/bridge
+      '@pragma/provider-claude-hooks':
+        specifier: workspace:*
+        version: link:packages/hooks
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -576,6 +659,22 @@ importers:
       react:
         specifier: 19.3.1
         version: 19.3.1
+
+  providers/claude/packages/hooks:
+    dependencies:
+      '@pragma/module-agent-status':
+        specifier: workspace:*
+        version: link:../../../../modules/agent-status
+    devDependencies:
+      '@pragma/module-bridge':
+        specifier: workspace:*
+        version: link:../../../../modules/bridge
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
 
   providers/custom:
     dependencies:
@@ -594,9 +693,18 @@ importers:
 
   providers/opencode:
     dependencies:
+      '@pragma/module-agent-status':
+        specifier: workspace:*
+        version: link:../../modules/agent-status
       '@pragma/module-agents':
         specifier: workspace:*
         version: link:../../modules/agents
+      '@pragma/module-bridge':
+        specifier: workspace:*
+        version: link:../../modules/bridge
+      '@pragma/provider-opencode-hooks':
+        specifier: workspace:*
+        version: link:packages/hooks
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -606,6 +714,19 @@ importers:
       react:
         specifier: 19.3.1
         version: 19.3.1
+
+  providers/opencode/packages/hooks:
+    dependencies:
+      '@pragma/module-agent-status':
+        specifier: workspace:*
+        version: link:../../../../modules/agent-status
+    devDependencies:
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
 
   test/architecture/fixtures/extension-proof/modules/probe:
     dependencies:
@@ -2324,6 +2445,9 @@ packages:
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
+
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
     engines: {node: '>=16.20.0'}
@@ -3814,6 +3938,18 @@ packages:
     resolution: {integrity: sha512-Tb2FUhB4vUsGQlfSquQLYkApkuPAFQXGFzxWKHHumVz2dK+X1RUm/HnID4+TfIGYJ1kTcwOaCk/buYCEJr6YjQ==}
     engines: {node: '>=20.11'}
     hasBin: true
+
+  ws@8.22.0:
+    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
@@ -5356,6 +5492,10 @@ snapshots:
   '@types/unist@2.0.11': {}
 
   '@types/unist@3.0.3': {}
+
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 24.19.2
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
@@ -6900,6 +7040,8 @@ snapshots:
       - '@noble/hashes'
 
   why-is-node-running@3.2.1: {}
+
+  ws@8.22.0: {}
 
   xml-name-validator@5.0.0: {}
 

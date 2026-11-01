@@ -13,7 +13,10 @@
   },
   "exports": {},
   "dependencies": {
+    "@pragma/module-agent-status": "workspace:*",
     "@pragma/module-agents": "workspace:*",
+    "@pragma/module-bridge": "workspace:*",
+    "@pragma/provider-opencode-hooks": "workspace:*",
     "@pragma/sdk": "workspace:*",
     "@pragma/ui": "workspace:*"
   },
