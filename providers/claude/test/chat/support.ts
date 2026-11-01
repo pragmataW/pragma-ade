@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AgentProfile } from '@pragma/module-agents/contract'
 import { aProfile } from '@pragma/module-agents/testing'
+import type { ChatEvent, ChatSessionContext } from '@pragma/module-chat/contract'
 import { afterEach } from 'vitest'
+import { ClaudeChatSession } from '../../src/main/chat/session'
 import {
   FAKE_CLAUDE_ENV,
   fakeClaudePath,
@@ -128,3 +130,80 @@ export const initRequest = (id = 'init-1') => ({
   request_id: id,
   request: { subtype: 'initialize' },
 })
+
+export interface StartedSession {
+  session: ClaudeChatSession
+  events: ChatEvent[]
+  home: ReturnType<typeof tempClaudeHome>
+  report(): FakeReport | undefined
+  waitForEvent(pred: (e: ChatEvent) => boolean, timeoutMs?: number): Promise<ChatEvent>
+  send(text: string): Promise<void>
+}
+
+export interface SessionSetup {
+  args?: string[]
+  env?: Record<string, string>
+  command?: string
+  ctx?: Partial<ChatSessionContext>
+  home?: ReturnType<typeof tempClaudeHome>
+}
+
+const STARTUP_MS = 5000
+const sessions: ClaudeChatSession[] = []
+afterEach(async () => {
+  await Promise.allSettled(sessions.splice(0).map((s) => s.close()))
+})
+
+/** The context a real `ClaudeChatSession` gets: fake CLI profile, temp HOME/CLAUDE_CONFIG_DIR, an event collector. */
+export function sessionContext(scenario: ScenarioName, setup: SessionSetup = {}) {
+  const home = setup.home ?? tempClaudeHome()
+  const events: ChatEvent[] = []
+  const ctx: ChatSessionContext = {
+    sessionId: 's1',
+    profile: profileFor(setup.command ?? fakeClaudePath, setup.args ?? []),
+    worktreePath: home.worktree,
+    env: {
+      ...(process.env as Record<string, string>),
+      HOME: home.home,
+      CLAUDE_CONFIG_DIR: home.configDir,
+      ...fakeEnv(scenario, home.report),
+      ...setup.env,
+    },
+    startupTimeoutMs: STARTUP_MS,
+    emit: (e) => void events.push(e),
+    ...setup.ctx,
+  }
+  return { ctx, events, home }
+}
+
+export function collector(events: ChatEvent[]) {
+  return async (pred: (e: ChatEvent) => boolean, timeoutMs = WAIT_MS): Promise<ChatEvent> => {
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const hit = events.find(pred)
+      if (hit) return hit
+      if (Date.now() > deadline) throw new Error(`event not seen; got ${events.map((e) => e.kind).join(',')}`)
+      await new Promise((r) => setTimeout(r, POLL_MS))
+    }
+  }
+}
+
+/** A started real session (closed after the test). */
+export async function startSession(scenario: ScenarioName, setup: SessionSetup = {}): Promise<StartedSession> {
+  const { ctx, events, home } = sessionContext(scenario, setup)
+  const session = await ClaudeChatSession.start(ctx)
+  sessions.push(session)
+  return {
+    session,
+    events,
+    home,
+    report: () => lastReport(home.report),
+    waitForEvent: collector(events),
+    send: (text) => session.send({ text, images: [] }),
+  }
+}
+
+export const isKind =
+  <K extends ChatEvent['kind']>(kind: K, extra: (e: Extract<ChatEvent, { kind: K }>) => boolean = () => true) =>
+  (e: ChatEvent) =>
+    e.kind === kind && extra(e as Extract<ChatEvent, { kind: K }>)

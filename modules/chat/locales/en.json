@@ -2,5 +2,27 @@
   "module": {
     "name": "Chat",
     "description": "Runs agent sessions in a rich chat view."
+  },
+  "launcher": {
+    "mode": "Mode",
+    "chat": "Chat",
+    "terminal": "Terminal",
+    "unsupported": "Chat mode not supported: {{reason}}"
+  },
+  "unsupported": {
+    "noProtocol": "the CLI did not start the stream-json protocol in time",
+    "exitedEarly": "the CLI exited before the session started",
+    "commandNotFound": "command not found",
+    "noCapability": "this agent has no chat support",
+    "profileDisabled": "the profile is disabled"
+  },
+  "option": {
+    "model": "Model",
+    "effort": "Effort",
+    "permissionMode": "Permissions"
+  },
+  "errors": {
+    "unsupported": "Chat mode not supported: {{reason}}",
+    "respondUnsupported": "This agent cannot answer this kind of request"
   }
 }

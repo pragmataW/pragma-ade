@@ -19,7 +19,10 @@ if (argv.includes('--version')) {
   process.exit(0)
 }
 
+/** `--name value` or `--name=value` (the SDK uses the latter). */
 const flag = (name) => {
+  const inline = argv.find((a) => a.startsWith(`${name}=`))
+  if (inline) return inline.slice(name.length + 1)
   const at = argv.indexOf(name)
   return at >= 0 ? argv[at + 1] : undefined
 }

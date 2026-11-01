@@ -48,9 +48,13 @@ export const SIGKILL = 'SIGKILL'
 export const ENOENT = 'ENOENT'
 export const PART_ID_SEPARATOR = ':'
 export const JOIN_NEWLINE = '\n'
+export const BEHAVIOR = { allow: 'allow', deny: 'deny' } as const
+export const ABORT_EVENT = 'abort'
 export const DENY_MESSAGE = 'User denied this action'
 export const PERMISSION_CANCELLED_MESSAGE = 'Cancelled by the user'
 export const DEFAULT_PERMISSION_MODE = 'default'
+/** The init model entry that stands for the CLI's default model. */
+export const DEFAULT_MODEL_VALUE = 'default'
 export const SYSTEM_PRESET = { type: 'preset', preset: 'claude_code' } as const
 export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
 export const PERMISSION_MODES = ['default', 'acceptEdits', 'plan', 'auto', 'bypassPermissions'] as const
