@@ -378,3 +378,52 @@ export const navEvent = (url: string, isMainFrame = true) => {
   }
   return e
 }
+
+// ── Fake MainContext (IPC, commands, events, services) ───────────────────────────────────────────────────────
+import { CommentsServiceToken } from '@pragma/module-comments/contract'
+import type { CommandDef, IpcContract, Logger, ServiceToken } from '@pragma/sdk'
+import type { MainContext } from '@pragma/sdk/main'
+import { createEventBus } from '@pragma/sdk/runtime/main'
+
+const noop = () => undefined
+export const silentLog: Logger = { debug: noop, info: noop, warn: noop, error: noop, child: () => silentLog }
+
+export function fakeMainCtx(opts: { comments?: boolean } = {}) {
+  const handlers = new Map<string, (input: unknown) => unknown>()
+  const published: { channel: string; payload: unknown }[] = []
+  const commands = new Map<string, (args: unknown) => unknown>()
+  const executed: { id: string; args: unknown }[] = []
+  const services = new Map<string, unknown>(opts.comments === false ? [] : [[CommentsServiceToken.id, {}]])
+  const events = createEventBus(silentLog)
+  const ctx = {
+    ipc: {
+      handle(c: IpcContract<unknown, unknown>, h: (i: unknown, meta: unknown) => unknown) {
+        handlers.set(c.channel, (i) => h(c.input.parse(i), {}))
+        return { dispose: noop }
+      },
+      publish: (c: { channel: string }, payload: unknown) => void published.push({ channel: c.channel, payload }),
+    },
+    commands: {
+      register(def: CommandDef<unknown>, h: (a: unknown) => unknown) {
+        commands.set(def.id, (a) => h(def.args.parse(a)))
+        return { dispose: noop }
+      },
+      async execute(id: string, args?: unknown) {
+        executed.push({ id, args })
+        return commands.get(id)?.(args)
+      },
+    },
+    events,
+    services: {
+      tryGet: (t: ServiceToken<unknown>) => services.get(t.id),
+      get: (t: ServiceToken<unknown>) => services.get(t.id),
+    },
+    log: silentLog,
+  } as unknown as MainContext
+  const invoke = async <I, O>(c: IpcContract<I, O>, input: I): Promise<O> => {
+    const h = handlers.get(c.channel)
+    if (!h) throw new Error(`no handler ${c.channel}`)
+    return (await h(input)) as O
+  }
+  return { ctx, invoke, published, executed, commands }
+}

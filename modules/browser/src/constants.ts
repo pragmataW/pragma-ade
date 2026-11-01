@@ -95,6 +95,18 @@ export const LEGACY_CONSOLE_LEVELS = ['debug', 'info', 'warning', 'error'] as co
 // Security
 export const ALLOWED_PERMISSIONS = ['fullscreen', 'clipboard-sanitized-write'] as const
 
+// Shortcuts (Electron accelerator syntax, §10.4); the single source for the in-guest handler and the app shortcut
+export const SHORTCUTS = {
+  togglePicker: ['CmdOrCtrl+Shift+C'],
+  focusAddress: ['CmdOrCtrl+L'],
+  reload: ['CmdOrCtrl+R', 'F5'],
+  devtools: ['CmdOrCtrl+Alt+I', 'F12'],
+  zoomIn: ['CmdOrCtrl+=', 'CmdOrCtrl+Plus'],
+  zoomOut: ['CmdOrCtrl+-'],
+  zoomReset: ['CmdOrCtrl+0'],
+} as const
+export const KEY_DOWN = 'keyDown'
+
 // Address bar
 export const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'] as const
 export const LOCALHOST = 'localhost'

@@ -218,6 +218,12 @@ export class BrowserTabManager {
     return guest && !guest.isDestroyed() ? guest : null
   }
 
+  /** The tab whose live view hosts `guest` (shortcut dispatch). */
+  tabIdOfGuest(guest: GuestLike): string | null {
+    for (const [id, tab] of this.#tabs) if (tab.view?.webContents === guest) return id
+    return null
+  }
+
   worktreeOf(tabId: string): string {
     return this.#tab(tabId).state.worktreeId
   }

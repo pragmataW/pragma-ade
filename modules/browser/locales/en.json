@@ -1,3 +1,8 @@
 {
-  "module": { "name": "Browser" }
+  "module": {
+    "name": "Browser"
+  },
+  "commands": {
+    "togglePicker": "Browser: Pick element"
+  }
 }
