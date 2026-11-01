@@ -13,8 +13,15 @@
   color: var(--info);
 }
 
-/* Diff text (ui-notes: JetBrains Mono 12px / 20px); custom properties inherit into the open shadow root. */
+/*
+ * Diff text (ui-notes: JetBrains Mono 12px / 20px); custom properties inherit into the open shadow root.
+ * The surface is the panel token, not the shiki theme's own background (pierre-dark is near-black): this rule
+ * sits on the <diffs-container> host, so it beats the library's `:host` declarations. Context rows, gutter,
+ * separators and the add/del tints are all mixed from --diffs-bg, so they follow the active palette too.
+ */
 .gc-diff {
+  --diffs-bg: var(--pn);
+  --diffs-fg-number-override: var(--fa);
   --diffs-font-family: var(--font-code);
   --diffs-font-size: 12px;
   --diffs-line-height: 20px;
