@@ -7,8 +7,8 @@ import { discoverModuleDir } from '../../scripts/lib/discover.ts'
 import { REPO_ROOT } from './lib/workspace.ts'
 
 const PROVIDERS = [
-  { id: 'claude', command: 'claude', monogram: 'CL', moduleName: 'Claude Code provider', name: 'Claude Code' },
-  { id: 'opencode', command: 'opencode', monogram: 'OC', moduleName: 'OpenCode provider', name: 'OpenCode' },
+  { id: 'claude', command: 'claude', monogram: undefined, moduleName: 'Claude Code provider', name: 'Claude Code' },
+  { id: 'opencode', command: 'opencode', monogram: undefined, moduleName: 'OpenCode provider', name: 'OpenCode' },
   { id: 'custom', command: '', monogram: '>_', moduleName: 'Custom agent provider', name: 'Custom agent' },
 ]
 const dirOf = (id: string): string => join(REPO_ROOT, 'providers', id)
@@ -39,9 +39,10 @@ describe.each(PROVIDERS)('provider $id', (p) => {
     expect(record.locales.en).toMatchObject({ module: { name: p.moduleName }, provider: { name: p.name } })
   })
 
-  it('declares its monogram in constants', () => {
+  it('declares a monogram in constants only when it has no official logo', () => {
     const constants = readFileSync(join(dirOf(p.id), 'src/constants.ts'), 'utf8')
-    expect(constants).toContain(`MONOGRAM = '${p.monogram}'`)
+    if (p.monogram) expect(constants).toContain(`MONOGRAM = '${p.monogram}'`)
+    else expect(constants).not.toContain('MONOGRAM')
   })
 })
 
