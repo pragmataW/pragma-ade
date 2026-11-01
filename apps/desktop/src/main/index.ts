@@ -1,7 +1,7 @@
 import { APP_NAME, TEST_MODE_ENABLED, TEST_MODE_ENV } from '@pragma/sdk'
 import { createMainHost } from '@pragma/sdk/runtime/main'
 import { app, BrowserWindow } from 'electron'
-import { DARWIN, DISPOSE_TIMEOUT_MS } from '../constants'
+import { DARWIN, DISPOSE_TIMEOUT_MS, E2E_HEADED_ENABLED, E2E_HEADED_ENV, HIDDEN_ACTIVATION_POLICY } from '../constants'
 import { coreLocales, mainModules } from '../generated/modules.main'
 import { initialDialogStubs, registerShellHandlers } from './app-handlers'
 import { createStubbedDialogs } from './dialog-stubs'
@@ -18,11 +18,14 @@ const BEFORE_QUIT = 'before-quit'
 const ALL_CLOSED = 'window-all-closed'
 
 const testMode = process.env[TEST_MODE_ENV] === TEST_MODE_ENABLED
+// E2E runs stay off-screen so the machine stays usable while suites run in parallel.
+const hiddenWindow = testMode && process.env[E2E_HEADED_ENV] !== E2E_HEADED_ENABLED
 app.setName(APP_NAME)
 app.setPath(USER_DATA, resolveUserDataDir(process.env, app.getPath(USER_DATA)))
 
 async function main(): Promise<void> {
   await app.whenReady()
+  if (hiddenWindow && process.platform === DARWIN) app.setActivationPolicy(HIDDEN_ACTIVATION_POLICY)
   const transport = createElectronTransport()
   const platform = createElectronPlatform()
   const stubbed = createStubbedDialogs(platform.dialogs, testMode ? initialDialogStubs(process.env) : {})
@@ -43,7 +46,7 @@ async function main(): Promise<void> {
   registerCoreShortcuts(host.shortcuts)
 
   const openWindow = (): BrowserWindow => {
-    const win = createMainWindow({ title: host.i18n.t('core:app.title') })
+    const win = createMainWindow({ title: host.i18n.t('core:app.title'), hidden: hiddenWindow })
     viewContainer?.setWindow(win)
     host.nativeViews.reattachAll()
     installAppShortcutForwarding(win, host.shortcuts, host.commands)
