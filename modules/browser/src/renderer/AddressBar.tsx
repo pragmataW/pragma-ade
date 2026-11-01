@@ -32,7 +32,9 @@ export function AddressBar({ tab }: { tab: BrowserTabState | null }) {
   const dev = devUrlLabel(tab)
 
   useEffect(() => {
-    if (focusTick > 0 || !tab) ref.current?.select()
+    const input = ref.current
+    // Only a visible bar takes focus (hidden right-panel tabs stay mounted; stealing focus there breaks the app).
+    if (input && input.offsetParent !== null && (focusTick > 0 || !tab)) input.select()
   }, [focusTick, tab])
 
   const submit = (input: string) => {
