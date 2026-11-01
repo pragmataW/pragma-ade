@@ -36,3 +36,7 @@ export const SORT_ORDER_STEP = 10
 /** Session titles derived from the first prompt line. */
 export const TITLE_MAX_CHARS = 40
 export const ELLIPSIS = '…'
+/** Per-session temp dirs live under `<userData>/agents/tmp`; dirs are 0700, files 0600. */
+export const TEMP_ROOT_SEGMENTS = ['agents', 'tmp'] as const
+export const TEMP_DIR_MODE = 0o700
+export const TEMP_FILE_MODE = 0o600
