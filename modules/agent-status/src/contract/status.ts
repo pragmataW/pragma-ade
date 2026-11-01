@@ -50,3 +50,7 @@ export type StatusSummary = z.infer<typeof StatusSummarySchema>
 
 export const WorktreeStatusInfoSchema = StatusSummarySchema.extend({ worktreeId: z.string() })
 export type WorktreeStatusInfo = z.infer<typeof WorktreeStatusInfoSchema>
+
+/** The event with `externalSessionId` set when `id` is non-empty (provider parsers use this). */
+export const withExternalSessionId = (event: AgentStatusEvent, id: string | undefined): AgentStatusEvent =>
+  id ? { ...event, externalSessionId: id } : event

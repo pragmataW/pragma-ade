@@ -497,9 +497,18 @@ importers:
 
   providers/claude:
     dependencies:
+      '@pragma/module-agent-status':
+        specifier: workspace:*
+        version: link:../../modules/agent-status
       '@pragma/module-agents':
         specifier: workspace:*
         version: link:../../modules/agents
+      '@pragma/module-bridge':
+        specifier: workspace:*
+        version: link:../../modules/bridge
+      '@pragma/provider-claude-hooks':
+        specifier: workspace:*
+        version: link:packages/hooks
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
