@@ -14,8 +14,24 @@ export const DEFAULT_KILL_SIGNAL: KillSignal = 'SIGTERM'
 /** Used for terminal-panel closes and daemon shutdown. */
 export const HANGUP_SIGNAL: KillSignal = 'SIGHUP'
 
-export const PTY_STATUSES = ['running', 'exited'] as const
+export const PTY_STATUS = { running: 'running', exited: 'exited' } as const
+export const PTY_STATUSES = [PTY_STATUS.running, PTY_STATUS.exited] as const
 export type PtyStatus = (typeof PTY_STATUSES)[number]
+
+/** Request `type`s (main → daemon). */
+export const REQ = {
+  spawn: 'spawn',
+  write: 'write',
+  paste: 'paste',
+  resize: 'resize',
+  kill: 'kill',
+  snapshot: 'snapshot',
+  readText: 'readText',
+  list: 'list',
+  shutdown: 'shutdown',
+} as const
+/** Message `kind`s (daemon → main). */
+export const MSG = { response: 'response', ready: 'ready', data: 'data', modes: 'modes', exit: 'exit' } as const
 
 export const DAEMON_ERROR_CODES = ['NOT_FOUND', 'CWD_NOT_FOUND', 'SPAWN_FAILED', 'BAD_REQUEST', 'INTERNAL'] as const
 export type DaemonErrorCode = (typeof DAEMON_ERROR_CODES)[number]
@@ -71,15 +87,15 @@ const id = z.number().int()
 const ref = { id, ptyId }
 
 export const DaemonRequestSchema = z.discriminatedUnion('type', [
-  z.object({ id, type: z.literal('spawn'), spec: SpawnSpecSchema }),
-  z.object({ ...ref, type: z.literal('write'), data: z.string() }),
-  z.object({ ...ref, type: z.literal('paste'), text: z.string() }),
-  z.object({ ...ref, type: z.literal('resize'), cols, rows }),
-  z.object({ ...ref, type: z.literal('kill'), signal: z.enum(KILL_SIGNALS).optional() }),
-  z.object({ ...ref, type: z.literal('snapshot') }),
-  z.object({ ...ref, type: z.literal('readText') }),
-  z.object({ id, type: z.literal('list') }),
-  z.object({ id, type: z.literal('shutdown') }),
+  z.object({ id, type: z.literal(REQ.spawn), spec: SpawnSpecSchema }),
+  z.object({ ...ref, type: z.literal(REQ.write), data: z.string() }),
+  z.object({ ...ref, type: z.literal(REQ.paste), text: z.string() }),
+  z.object({ ...ref, type: z.literal(REQ.resize), cols, rows }),
+  z.object({ ...ref, type: z.literal(REQ.kill), signal: z.enum(KILL_SIGNALS).optional() }),
+  z.object({ ...ref, type: z.literal(REQ.snapshot) }),
+  z.object({ ...ref, type: z.literal(REQ.readText) }),
+  z.object({ id, type: z.literal(REQ.list) }),
+  z.object({ id, type: z.literal(REQ.shutdown) }),
 ])
 export type DaemonRequest = z.infer<typeof DaemonRequestSchema>
 export type DaemonRequestType = DaemonRequest['type']
@@ -94,16 +110,16 @@ export const DaemonErrorSchema = z.object({ code: z.enum(DAEMON_ERROR_CODES), me
 export type DaemonError = z.infer<typeof DaemonErrorSchema>
 
 export const DaemonResponseSchema = z.discriminatedUnion('ok', [
-  z.object({ kind: z.literal('response'), id, ok: z.literal(true), result: z.unknown() }),
-  z.object({ kind: z.literal('response'), id, ok: z.literal(false), error: DaemonErrorSchema }),
+  z.object({ kind: z.literal(MSG.response), id, ok: z.literal(true), result: z.unknown() }),
+  z.object({ kind: z.literal(MSG.response), id, ok: z.literal(false), error: DaemonErrorSchema }),
 ])
 export type DaemonResponse = z.infer<typeof DaemonResponseSchema>
 
 export const DaemonEventSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('ready'), pid: z.number().int(), protocolVersion: z.number().int() }),
-  z.object({ kind: z.literal('data'), ptyId, seq: z.number().int(), data: z.string() }),
-  z.object({ kind: z.literal('modes'), ptyId, bracketedPaste: z.boolean() }),
-  z.object({ kind: z.literal('exit'), ptyId, exitCode: z.number().nullable(), signal: z.number().nullable() }),
+  z.object({ kind: z.literal(MSG.ready), pid: z.number().int(), protocolVersion: z.number().int() }),
+  z.object({ kind: z.literal(MSG.data), ptyId, seq: z.number().int(), data: z.string() }),
+  z.object({ kind: z.literal(MSG.modes), ptyId, bracketedPaste: z.boolean() }),
+  z.object({ kind: z.literal(MSG.exit), ptyId, exitCode: z.number().nullable(), signal: z.number().nullable() }),
 ])
 export type DaemonEvent = z.infer<typeof DaemonEventSchema>
 

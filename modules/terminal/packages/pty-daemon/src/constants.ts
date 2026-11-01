@@ -20,3 +20,9 @@ export const COALESCE_MAX_BYTES = 65_536
 export const KILL_ESCALATION_MS = 3000
 export const ESCALATION_SIGNAL = 'SIGKILL'
 export const UNICODE_VERSION = '11'
+
+/** Shutdown: hang up every pty, SIGKILL whatever is left after this grace period. */
+export const SHUTDOWN_GRACE_MS = 2000
+/** Response id used when a malformed request has no usable id. */
+export const UNKNOWN_REQUEST_ID = -1
+export const EXIT_OK = 0

@@ -15,6 +15,8 @@ import {
   type DaemonEvent,
   DEFAULT_KILL_SIGNAL,
   type KillSignal,
+  MSG,
+  PTY_STATUS,
   type PtyInfo,
   type PtySnapshot,
   type SpawnSpec,
@@ -94,7 +96,7 @@ export class PtySession {
       tags: spec.tags,
       cols,
       rows,
-      status: 'running',
+      status: PTY_STATUS.running,
       exitCode: null,
       signal: null,
       createdAt: Date.now(),
@@ -109,7 +111,7 @@ export class PtySession {
   }
 
   get #running(): boolean {
-    return this.#info.status === 'running' && !this.#disposed
+    return this.#info.status === PTY_STATUS.running && !this.#disposed
   }
 
   write(data: string): void {
@@ -130,7 +132,7 @@ export class PtySession {
 
   /** Sends `signal` (escalating to SIGKILL) and resolves with the info of the confirmed exit. */
   kill(signal: KillSignal = DEFAULT_KILL_SIGNAL): Promise<PtyInfo> {
-    if (this.#info.status === 'exited') return Promise.resolve(this.info)
+    if (this.#info.status === PTY_STATUS.exited) return Promise.resolve(this.info)
     const exited = new Promise<PtyInfo>((resolve) => this.#exitWaiters.push(resolve))
     this.#signal(signal)
     if (this.#escalation === undefined)
@@ -160,7 +162,7 @@ export class PtySession {
 
   dispose(): void {
     if (this.#disposed) return
-    if (this.#info.status === 'running') this.#signal(ESCALATION_SIGNAL)
+    if (this.#info.status === PTY_STATUS.running) this.#signal(ESCALATION_SIGNAL)
     this.#disposed = true
     clearTimeout(this.#timer)
     clearTimeout(this.#escalation)
@@ -200,7 +202,7 @@ export class PtySession {
     this.#pendingBytes = 0
     const seq = ++this.#seq
     this.#term.write(data, () => this.#afterParse(seq))
-    this.#emit({ kind: 'data', ptyId: this.#info.ptyId, seq, data })
+    this.#emit({ kind: MSG.data, ptyId: this.#info.ptyId, seq, data })
   }
 
   #afterParse(seq: number): void {
@@ -209,15 +211,15 @@ export class PtySession {
     const bracketedPaste = this.#term.modes.bracketedPasteMode
     if (bracketedPaste === this.#info.bracketedPaste) return
     this.#info = { ...this.#info, bracketedPaste }
-    this.#emit({ kind: 'modes', ptyId: this.#info.ptyId, bracketedPaste })
+    this.#emit({ kind: MSG.modes, ptyId: this.#info.ptyId, bracketedPaste })
   }
 
   #onExit(e: { exitCode: number; signal?: number }): void {
     this.#flush()
     clearTimeout(this.#escalation)
-    this.#info = { ...this.#info, status: 'exited', ...normalizeExit(e) }
+    this.#info = { ...this.#info, status: PTY_STATUS.exited, ...normalizeExit(e) }
     const { ptyId, exitCode, signal } = this.#info
-    this.#emit({ kind: 'exit', ptyId, exitCode, signal })
+    this.#emit({ kind: MSG.exit, ptyId, exitCode, signal })
     for (const resolve of this.#exitWaiters.splice(0)) resolve(this.info)
   }
 }
