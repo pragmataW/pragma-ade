@@ -1,0 +1,6 @@
+export const PROVIDER_ID = 'probe-provider'
+export const MONOGRAM = 'PP'
+export const DEFAULT_COMMAND = 'probe'
+export const PONG = 'pong'
+export const DISPOSED_MARKER = 'disposed.txt'
+export const DISPOSED_TEXT = '1'

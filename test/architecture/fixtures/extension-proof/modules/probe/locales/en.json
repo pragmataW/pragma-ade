@@ -1,0 +1,6 @@
+{
+  "module": { "name": "Probe" },
+  "tab": { "title": "Probe", "body": "Probe tab content" },
+  "slot": { "label": "Probe slot" },
+  "popover": { "body": "Probe popover" }
+}

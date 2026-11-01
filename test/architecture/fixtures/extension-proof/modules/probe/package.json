@@ -1,0 +1,41 @@
+{
+  "name": "@pragma/module-probe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"require('fs').mkdirSync('build-output',{recursive:true});require('fs').writeFileSync('build-output/marker.txt','built')\""
+  },
+  "pragma": {
+    "id": "probe",
+    "kind": "feature",
+    "displayNameKey": "probe:module.name",
+    "dependsOn": [],
+    "optionalDependsOn": [],
+    "core": false,
+    "build": "build",
+    "buildOutputs": [
+      "build-output"
+    ],
+    "package": {
+      "extraResources": [
+        {
+          "from": "build-output",
+          "to": "assets"
+        }
+      ]
+    }
+  },
+  "exports": {
+    "./main": "./src/main/index.ts",
+    "./renderer": "./src/renderer/index.tsx",
+    "./contract": "./src/contract/index.ts"
+  },
+  "dependencies": {
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}

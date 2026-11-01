@@ -1,0 +1,22 @@
+{
+  "name": "@pragma/provider-probe-provider",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "pragma": {
+    "id": "probe-provider",
+    "kind": "provider",
+    "displayNameKey": "probe-provider:module.name",
+    "dependsOn": [],
+    "optionalDependsOn": [],
+    "core": false
+  },
+  "exports": {},
+  "dependencies": {
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}

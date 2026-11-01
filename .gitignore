@@ -9,3 +9,4 @@ coverage/
 report/
 *.log
 .DS_Store
+build-output/
