@@ -8,6 +8,8 @@ import {
   GitChangesTestIds as T,
   VIEW_MODES,
 } from '../contract'
+import { ReviewBar } from './comments/ReviewBar'
+import { useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { EmptyState } from './EmptyState'
 import { keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
@@ -57,6 +59,7 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   const { nodes, ordered } = useDisplay(files, settings.viewMode)
   const selected = files.find((f) => f.path === view.selectedPath) ?? null
   const diffRef = useRef<DiffViewHandle>(null)
+  const review = useDiffReview(worktreeId, selected, view.composer)
 
   useEffect(() => {
     if (okList) useGitChangesStore.getState().reconcile(worktreeId, ordered)
@@ -95,15 +98,28 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
               nodes={nodes}
               selectedPath={view.selectedPath}
               onSelect={(path) => store.select(worktreeId, path)}
+              commentCounts={review.counts}
             />
           }
           right={
             selected ? (
-              <DiffView ref={diffRef} worktreeId={worktreeId} mode={view.mode} file={selected} settings={settings} />
+              <DiffView
+                ref={diffRef}
+                worktreeId={worktreeId}
+                mode={view.mode}
+                file={selected}
+                settings={settings}
+                composer={view.composer}
+                composerRange={review.composerRange}
+                annotations={review.annotations}
+                renderAnnotation={review.renderAnnotation}
+                onRange={review.onRange}
+              />
             ) : null
           }
         />
       </Body>
+      <ReviewBar comments={review.comments} fileName={selected?.path ?? ''} />
     </div>
   )
 }

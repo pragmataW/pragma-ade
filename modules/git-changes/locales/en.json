@@ -74,5 +74,20 @@
       "tooLarge": "File too large to show ({{size}}, limit {{limit}})",
       "unreadable": "This file cannot be shown"
     }
+  },
+  "comments": {
+    "lines": "L{{start}}–{{end}}",
+    "line": "L{{start}}",
+    "pending": "Pending",
+    "sent": "Sent",
+    "edit": "Edit"
+  },
+  "review": {
+    "pending_one": "{{count}} pending comment · {{file}}",
+    "pending_other": "{{count}} pending comments · {{file}}",
+    "discard": "Discard",
+    "confirmDiscard": "Discard {{count}}? Click again",
+    "send_one": "Send {{count}} comment to agent",
+    "send_other": "Send {{count}} comments to agent"
   }
 }

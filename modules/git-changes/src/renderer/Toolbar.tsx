@@ -10,7 +10,7 @@ import {
   SelectTrigger,
 } from '@pragma/ui/components/select'
 import { ToggleGroup, ToggleGroupItem } from '@pragma/ui/components/toggle-group'
-import { MERGE_BASE_SHORT_LEN } from '../constants'
+import { MERGE_BASE_SHORT_LEN, ROLE_ALERT, SIZE_SM, VARIANT_GHOST, VARIANT_OUTLINE } from '../constants'
 import {
   type BaseBranchOption,
   CHANGE_LIST_STATE,
@@ -41,8 +41,6 @@ export interface ToolbarProps {
 
 const [TREE, LIST] = VIEW_MODES
 const [UNIFIED, SPLIT] = DIFF_STYLES
-const SMALL = 'sm'
-const GHOST = 'ghost'
 const SECONDARY = 'secondary'
 const MODE_LABEL_KEYS = {
   uncommitted: 'git-changes:mode.uncommitted',
@@ -66,8 +64,8 @@ function ModeToggle({ worktreeId, mode, lists, onModeChange }: Omit<ToolbarProps
   return (
     <ToggleGroup
       type="single"
-      variant="outline"
-      size={SMALL}
+      variant={VARIANT_OUTLINE}
+      size={SIZE_SM}
       value={mode}
       aria-label={t('git-changes:mode.label')}
       onValueChange={(v) => {
@@ -105,7 +103,7 @@ function BranchInfo({ list }: { list: ChangeList }) {
   const key =
     list.state === CHANGE_LIST_STATE.baseNotFound ? 'git-changes:errors.baseNotFound' : 'git-changes:errors.noMergeBase'
   return (
-    <span data-testid={T.baseError} role="alert" className="truncate text-[var(--err)] text-xs">
+    <span data-testid={T.baseError} role={ROLE_ALERT} className="truncate text-[var(--err)] text-xs">
       {t(key, { base: list.baseBranch })}
     </span>
   )
@@ -124,7 +122,7 @@ function BasePicker({ worktreeId, list }: { worktreeId: string; list: ChangeList
     <div className="flex min-w-0 items-center gap-1.5">
       <Select value={list.baseBranch} onValueChange={choose}>
         <SelectTrigger
-          size={SMALL}
+          size={SIZE_SM}
           data-testid={T.basePicker}
           aria-label={t('git-changes:toolbar.baseLabel')}
           className="h-7 gap-1 px-2 font-mono text-xs"
@@ -166,8 +164,8 @@ function PrefToggle({
 }) {
   return (
     <Button
-      size={SMALL}
-      variant={pressed ? SECONDARY : GHOST}
+      size={SIZE_SM}
+      variant={pressed ? SECONDARY : VARIANT_GHOST}
       data-testid={testId}
       aria-pressed={pressed}
       onClick={onClick}

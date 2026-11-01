@@ -5,7 +5,15 @@ import { useT } from '@pragma/sdk/renderer'
 import { Button } from '@pragma/ui/components/button'
 import { ChevronDown, ChevronUp, SquareArrowOutUpRight } from '@pragma/ui/icons'
 import { type ReactNode, type Ref, useImperativeHandle, useMemo, useRef } from 'react'
-import { CHANGE_SCROLL_OFFSET_PX, DIFF_ICON_PX, EDITOR_OPEN_FILE_COMMAND, FILES_TAB_ID } from '../../constants'
+import {
+  CHANGE_SCROLL_OFFSET_PX,
+  DIFF_ICON_PX,
+  EDITOR_OPEN_FILE_COMMAND,
+  FILES_TAB_ID,
+  SIZE_ICON_SM,
+  SIZE_SM,
+  VARIANT_GHOST,
+} from '../../constants'
 import {
   type ChangedFile,
   type ChangeMode,
@@ -53,8 +61,6 @@ const DIFFS_CONTAINER = 'diffs-container'
 const LINE_TYPE_SELECTOR = '[data-line-type]'
 const LINE_TYPE_ATTR = 'data-line-type'
 const RENAME_ARROW = ' → '
-const SMALL = 'icon-sm'
-const GHOST = 'ghost'
 const [NEXT, PREV] = CHANGE_DIRECTIONS
 const NO_ANNOTATIONS: DiffLineAnnotation<DiffAnnotationMeta>[] = []
 
@@ -110,8 +116,8 @@ function OpenInEditor(props: { worktreeId: string; file: ChangedFile; line: () =
   }
   return (
     <Button
-      size="sm"
-      variant={GHOST}
+      size={SIZE_SM}
+      variant={VARIANT_GHOST}
       data-testid={T.openInEditor}
       disabled={props.file.status === FILE_STATUS.D}
       onClick={() => void open().catch((e: unknown) => console.warn('git-changes: open in editor failed', e))}
@@ -140,8 +146,8 @@ function DiffHeader(props: { file: ChangedFile; onJump(d: ChangeDirection): void
         <span className="text-[var(--del-tx)]">{`−${file.deletions}`}</span>
       </span>
       <Button
-        size={SMALL}
-        variant={GHOST}
+        size={SIZE_ICON_SM}
+        variant={VARIANT_GHOST}
         data-testid={T.prevChange}
         aria-label={t('git-changes:diff.prevChange')}
         title={t('git-changes:diff.prevChange')}
@@ -150,8 +156,8 @@ function DiffHeader(props: { file: ChangedFile; onJump(d: ChangeDirection): void
         <ChevronUp size={DIFF_ICON_PX} aria-hidden />
       </Button>
       <Button
-        size={SMALL}
-        variant={GHOST}
+        size={SIZE_ICON_SM}
+        variant={VARIANT_GHOST}
         data-testid={T.nextChange}
         aria-label={t('git-changes:diff.nextChange')}
         title={t('git-changes:diff.nextChange')}

@@ -49,3 +49,9 @@ export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14
 export const TREE_RESIZE_STEP_PX = 16
 export const DIFF_ICON_PX = 14
+/** Repeated UI attribute values. */
+export const ROLE_ALERT = 'alert'
+export const VARIANT_OUTLINE = 'outline'
+export const VARIANT_GHOST = 'ghost'
+export const SIZE_SM = 'sm'
+export const SIZE_ICON_SM = 'icon-sm'

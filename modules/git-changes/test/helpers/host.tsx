@@ -12,7 +12,7 @@ import { type RendererModule, useRendererHost } from '@pragma/sdk/renderer'
 import type { ModuleRecord } from '@pragma/sdk/runtime/main'
 import { loadModuleRecord } from '@pragma/test-support'
 import { type RenderedWithHost, rendererRecordOf, renderWithRendererHost } from '@pragma/test-support/dom'
-import { useSyncExternalStore } from 'react'
+import { type ReactElement, useSyncExternalStore } from 'react'
 import { fileContentsIpc, listBranchesIpc, listChangesIpc, setBaseBranchIpc } from '../../src/contract'
 import renderer from '../../src/renderer/index'
 import { setRendererCtx } from '../../src/renderer/lib/sdk'
@@ -40,7 +40,7 @@ function polyfillPointer(): void {
 type Answer = (input: never) => unknown
 export type Answers = Partial<Record<string, Answer>>
 
-const fakeRecord = (id: string, main: MainModule<unknown>): ModuleRecord => ({
+const fakeRecord = (id: string, main: MainModule<unknown>, locales: ModuleRecord['locales'] = {}): ModuleRecord => ({
   manifest: {
     id,
     kind: 'feature',
@@ -54,7 +54,7 @@ const fakeRecord = (id: string, main: MainModule<unknown>): ModuleRecord => ({
   dir: MODULE_DIR,
   extraResources: [],
   migrations: [],
-  locales: {},
+  locales,
   main,
 })
 
@@ -118,6 +118,10 @@ export async function mountPanel(
     changedFiles?: Record<string, number>
     ui?: Partial<CommentsUiService>
     commentContracts?: IpcContract<unknown, unknown>[]
+    /** The `comments` namespace (e.g. send error texts). */
+    commentLocales?: Record<string, unknown>
+    /** Rendered instead of the Git Changes tab. */
+    render?: ReactElement
   } = {},
 ): Promise<PanelHarness> {
   polyfillPointer()
@@ -128,7 +132,9 @@ export async function mountPanel(
   const ownMain = { ...answeringMain(OWN_CONTRACTS, answers, calls), settings: own.main?.settings }
   const ownRecord: ModuleRecord = { ...own, main: ownMain, testHooks: undefined }
   const projects = fakeRecord('projects', { activate: () => undefined })
-  const comments = fakeRecord('comments', answeringMain(opts.commentContracts ?? [], answers, calls))
+  const comments = fakeRecord('comments', answeringMain(opts.commentContracts ?? [], answers, calls), {
+    en: (opts.commentLocales ?? {}) as ModuleRecord['locales'][string],
+  })
   const projectsService = fakeProjects(opts.active === undefined ? aWorktree() : opts.active, opts.changedFiles ?? {})
   const projectsRenderer: RendererModule<never> = {
     activate: (ctx) => void ctx.services.provide(ProjectsRendererServiceToken, projectsService),
@@ -142,7 +148,7 @@ export async function mountPanel(
   const commentsRenderer: RendererModule<never> = {
     activate: (ctx) => void ctx.services.provide(CommentsUiServiceToken, ui),
   }
-  const r = await renderWithRendererHost(<GitChangesTab />, {
+  const r = await renderWithRendererHost(opts.render ?? <GitChangesTab />, {
     mainModules: [projects, comments, ownRecord],
     records: [
       rendererRecordOf(projects, projectsRenderer),
