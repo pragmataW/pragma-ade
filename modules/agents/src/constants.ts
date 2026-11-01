@@ -33,3 +33,6 @@ export const EMPTY_ENV_JSON = '{}'
 export const LAUNCH_CAPABILITY = 'launch'
 /** New custom profiles go after the last one. */
 export const SORT_ORDER_STEP = 10
+/** Session titles derived from the first prompt line. */
+export const TITLE_MAX_CHARS = 40
+export const ELLIPSIS = '…'
