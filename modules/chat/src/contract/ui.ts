@@ -61,6 +61,8 @@ export interface ComposerMenuProps {
   onClose(): void
   activeIndex: number
   setCount(n: number): void
+  /** Increments on Enter/Tab: the menu then picks its active item. */
+  pickRequest: number
 }
 
 export interface ComposerExtension {

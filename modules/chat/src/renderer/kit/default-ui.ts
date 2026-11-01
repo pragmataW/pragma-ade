@@ -1,7 +1,35 @@
 import type { ChatUiDefinition } from '../../contract'
+import { defaultComposerExtensions } from './composer/extensions'
+import { ContextMeter } from './controls/ContextMeter'
+import { ModelPicker } from './controls/ModelPicker'
+import { StopButton } from './controls/StopButton'
+import { UsageMeter } from './controls/UsageMeter'
+import { AssistantText } from './parts/AssistantText'
+import { ErrorRow } from './parts/ErrorRow'
+import { FileEditDiff } from './parts/FileEditDiff'
+import { SessionExitNotice, TurnEndNotice } from './parts/Notices'
+import { PermissionCard } from './parts/PermissionCard'
+import { ThinkingBlock } from './parts/ThinkingBlock'
+import { TodoList } from './parts/TodoList'
+import { ToolCallCard } from './parts/ToolCallCard'
+import { UserMessage } from './parts/UserMessage'
 
 /** The kit's definition for providers without a `chatUi` capability (all core parts). */
 export const defaultChatUi: ChatUiDefinition = {
-  parts: {},
+  parts: {
+    message: UserMessage,
+    'text-delta': AssistantText,
+    thinking: ThinkingBlock,
+    'tool-call': ToolCallCard,
+    'file-edit': FileEditDiff,
+    todo: TodoList,
+    'permission-request': PermissionCard,
+    error: ErrorRow,
+    'turn-end': TurnEndNotice,
+    'session-exit': SessionExitNotice,
+  },
+  header: [UsageMeter],
+  composerToolbar: [ModelPicker, ContextMeter, StopButton],
+  composerExtensions: defaultComposerExtensions,
   groupToolCalls: true,
 }

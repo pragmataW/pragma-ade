@@ -1,7 +1,9 @@
 import type { AgentSessionViewProps } from '@pragma/module-agents/contract'
-import { useEffect } from 'react'
+import { type KeyboardEvent, useEffect } from 'react'
 import { CHAT_TESTIDS, type ChatSessionApi, type ChatSlotComponent, type ChatUiDefinition } from '../../contract'
 import { useChatHost } from '../host-adapter'
+import { Composer } from '../kit/composer/Composer'
+import { isBusy } from '../kit/controls/StopButton'
 import { defaultChatUi } from '../kit/default-ui'
 import { AssistantTurnHeader } from '../kit/parts/AssistantTurnHeader'
 import { MessageList } from '../kit/parts/MessageList'
@@ -22,10 +24,20 @@ function SlotRow({ slots, session }: { slots: ChatSlotComponent[] | undefined; s
   )
 }
 
+const ESCAPE = 'Escape'
+
+/** Esc (focus within the chat, no open menu) interrupts a working or waiting agent. */
+function onEscape(e: KeyboardEvent, api: ChatSessionApi): void {
+  if (e.key !== ESCAPE || e.defaultPrevented || !isBusy(api.status)) return
+  e.preventDefault()
+  void api.interrupt()
+}
+
 function ChatLayout({ api, definition }: { api: ChatSessionApi; definition: ChatUiDefinition }) {
   const turnHeader = definition.turnHeader === undefined ? AssistantTurnHeader : definition.turnHeader
   return (
-    <div className="flex h-full min-h-0 flex-col bg-bg">
+    // biome-ignore lint/a11y/noStaticElementInteractions: Esc anywhere in the chat interrupts (menus stop it first)
+    <div className="flex h-full min-h-0 flex-col bg-bg" onKeyDown={(e) => onEscape(e, api)}>
       {definition.header?.length ? (
         <div className="flex h-8 shrink-0 items-center justify-end gap-3 border-b border-bd bg-pn px-3">
           <SlotRow slots={definition.header} session={api} />
@@ -45,8 +57,9 @@ function ChatLayout({ api, definition }: { api: ChatSessionApi; definition: Chat
           </div>
         ) : null}
       </div>
-      <div className="mx-auto w-full max-w-[740px] px-4">
+      <div className="mx-auto flex w-full max-w-[740px] flex-col gap-1 px-4 pb-3">
         <WorkingLine session={api} />
+        <Composer session={api} extensions={definition.composerExtensions} toolbar={definition.composerToolbar} />
       </div>
     </div>
   )

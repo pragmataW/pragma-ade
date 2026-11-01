@@ -17,8 +17,36 @@ import { ChatSessionView } from './view/ChatView'
 import { LauncherModeOption } from './view/LauncherModeOption'
 import { StatusbarContext } from './view/StatusbarContext'
 
+export type {
+  ChatPartComponent,
+  ChatPartProps,
+  ChatSessionApi,
+  ChatSlotComponent,
+  ChatSlotProps,
+  ChatTurnHeaderProps,
+  ChatUiDefinition,
+  ComposerApi,
+  ComposerExtension,
+  ComposerMenuProps,
+} from '../contract'
 export { ChatHostProvider, useChatHost } from './host-adapter'
+export { Composer } from './kit/composer/Composer'
+export { ComposerAttachments } from './kit/composer/ComposerAttachments'
+export {
+  defaultComposerExtensions,
+  fileMentionExtension,
+  imageAttachmentsExtension,
+  slashCommandsExtension,
+} from './kit/composer/extensions'
+export { FileMention } from './kit/composer/FileMention'
+export { QueueChips } from './kit/composer/QueueChips'
+export { readImageFiles } from './kit/composer/read-images'
+export { SlashCommandMenu } from './kit/composer/SlashCommandMenu'
 export { ContextMeter, ContextMeterView, contextPercent } from './kit/controls/ContextMeter'
+export { ModelPicker } from './kit/controls/ModelPicker'
+export { createOptionPicker, OptionPicker } from './kit/controls/OptionPicker'
+export { StopButton } from './kit/controls/StopButton'
+export { UsageMeter } from './kit/controls/UsageMeter'
 export { defaultChatUi } from './kit/default-ui'
 export { AssistantText } from './kit/parts/AssistantText'
 export { AssistantTurnHeader } from './kit/parts/AssistantTurnHeader'

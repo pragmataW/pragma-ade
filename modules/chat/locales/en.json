@@ -19,7 +19,9 @@
   "option": {
     "model": "Model",
     "effort": "Effort",
-    "permissionMode": "Permissions"
+    "permissionMode": "Permissions",
+    "increase": "Increase",
+    "decrease": "Decrease"
   },
   "errors": {
     "unsupported": "Chat mode not supported: {{reason}}",
@@ -31,7 +33,8 @@
     "startupTimeout": "Chat startup timeout (ms)"
   },
   "usage": {
-    "context": "Context {{percent}}%"
+    "context": "Context {{percent}}%",
+    "tokens": "{{input}} in · {{output}} out"
   },
   "list": {
     "jumpToLatest": "Jump to latest"
@@ -84,5 +87,15 @@
   "working": {
     "thinking": "Thinking…",
     "meta": "{{elapsed}} · esc to interrupt"
+  },
+  "composer": {
+    "placeholder": "Message the agent — / for commands, @ for files",
+    "send": "Send",
+    "stop": "Stop",
+    "queued": "Queued",
+    "removeQueued": "Remove from queue",
+    "attachImage": "Attach image",
+    "removeImage": "Remove image",
+    "imageTooLarge": "Image is larger than 5 MB"
   }
 }

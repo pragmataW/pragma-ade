@@ -8,6 +8,13 @@ import { chatTestI18n, type StubChatHost, stubChatHost } from '../../testing'
 
 afterEach(cleanup)
 
+/** jsdom has no ResizeObserver (Radix popper, the virtualizer). */
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 /** jsdom has no layout: give every element a viewport-sized box so the virtualized list renders a window. */
 const BOX = { width: 740, height: 800 }
 for (const [prop, value] of [
