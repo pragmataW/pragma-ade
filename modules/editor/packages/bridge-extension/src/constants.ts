@@ -8,3 +8,46 @@ export const MESSAGES = {
   offline: 'Pragma bridge is not connected.',
 } as const
 export const RECONNECT = { enabled: true } as const
+export const CONFIG = {
+  workbench: 'workbench',
+  colorTheme: 'colorTheme',
+  colorCustomizations: 'colorCustomizations',
+  startupEditor: 'startupEditor',
+  enableExperiments: 'enableExperiments',
+  tipsEnabled: 'tips.enabled',
+  telemetry: 'telemetry',
+  telemetryLevel: 'telemetryLevel',
+  update: 'update',
+  mode: 'mode',
+  extensions: 'extensions',
+  autoUpdate: 'autoUpdate',
+} as const
+export const STATE_KEYS = {
+  managedColorKeys: 'pragma.managedColorKeys',
+  defaultsVersion: 'pragma.defaultsVersion',
+} as const
+export const DEFAULT_VALUES = { none: 'none', off: 'off' } as const
+export const OUTSIDE_FOLDER_WARNING = 'Pragma: the file is outside this worktree and was not opened: '
+/** ui-notes palette token → workbench color ids (`workbench.colorCustomizations`). */
+export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
+  bg: ['editor.background', 'tab.activeBackground', 'editorGutter.background'],
+  sb: ['sideBar.background', 'activityBar.background', 'titleBar.activeBackground', 'statusBar.background'],
+  pn: ['panel.background', 'editorGroupHeader.tabsBackground', 'tab.inactiveBackground'],
+  el: ['input.background', 'dropdown.background', 'editorWidget.background'],
+  hv: ['list.hoverBackground', 'list.activeSelectionBackground'],
+  bd: ['panel.border', 'sideBar.border', 'editorGroup.border', 'tab.border'],
+  bd2: ['input.border'],
+  tx: ['foreground', 'editor.foreground'],
+  mu: ['descriptionForeground'],
+  ac: [
+    'focusBorder',
+    'button.background',
+    'badge.background',
+    'activityBarBadge.background',
+    'tab.activeBorderTop',
+    'progressBar.background',
+  ],
+  acfg: ['button.foreground', 'badge.foreground', 'activityBarBadge.foreground'],
+  act: ['textLink.foreground'],
+  acs: ['editor.selectionHighlightBackground'],
+}

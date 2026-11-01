@@ -42,7 +42,9 @@ export function permissionAllowed(permission: string, requestingUrl: string, por
 /** `window.open` from the workbench: http(s) goes to the OS browser, everything else is denied. */
 export function windowOpenDecision(url: string): { action: 'openExternal' } | { action: 'deny' } {
   const protocol = parse(url)?.protocol
-  return protocol && (EXTERNAL_PROTOCOLS as readonly string[]).includes(protocol) ? { action: WINDOW_OPEN.openExternal } : DENY
+  return protocol && (EXTERNAL_PROTOCOLS as readonly string[]).includes(protocol)
+    ? { action: WINDOW_OPEN.openExternal }
+    : DENY
 }
 
 /** A webview asset request on `*.vscode-cdn.net` → the same file under the local server root; null otherwise. */

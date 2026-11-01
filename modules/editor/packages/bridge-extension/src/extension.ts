@@ -1,5 +1,8 @@
 import * as vscode from 'vscode'
 import { BridgeConnection } from './bridgeConnection'
+import { applyFirstRunDefaults } from './defaults'
+import { handleOpenFile } from './handlers/openFile'
+import { applyTheme } from './handlers/theme'
 import { createVscodeApi } from './vscodeApi'
 
 let connection: BridgeConnection | undefined
@@ -8,12 +11,16 @@ let connection: BridgeConnection | undefined
 export function activate(context: vscode.ExtensionContext): void {
   const api = createVscodeApi(vscode, context)
   const version = String((context.extension.packageJSON as { version?: string }).version)
-  connection = new BridgeConnection(api, { extensionVersion: version })
-  context.subscriptions.push({ dispose: () => connection?.dispose() })
-  void connection
+  const conn = new BridgeConnection(api, { extensionVersion: version })
+  connection = conn
+  context.subscriptions.push({ dispose: () => conn.dispose() })
+  void conn
     .start({
-      openFile: async () => undefined,
-      setTheme: async () => undefined,
+      openFile: (m) => handleOpenFile(api, conn.folderPath ?? '', m),
+      setTheme: async (m) => {
+        await applyFirstRunDefaults(api, m.themeName)
+        await applyTheme(api, m)
+      },
     })
     .catch((e: unknown) => api.log(String(e)))
 }
