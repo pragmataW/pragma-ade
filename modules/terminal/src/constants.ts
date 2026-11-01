@@ -39,3 +39,10 @@ export const DEFAULT_ROWS = 24
 /** `terminal.openLink` accepts only web links (other schemes are rejected). */
 export const ALLOWED_LINK_PROTOCOLS = ['http:', 'https:'] as const
 export const UNSUPPORTED_LINK_MESSAGE = 'terminal: unsupported link scheme'
+
+/** Right-panel tab (§4.5): id, lucide icon name, order. */
+export const RIGHT_TAB_ID = 'terminal'
+export const RIGHT_TAB_ICON = 'square-terminal'
+export const RIGHT_TAB_ORDER = 10
+/** A view sends its new size to the pty after this quiet period. */
+export const RESIZE_DEBOUNCE_MS = 50

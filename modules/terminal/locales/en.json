@@ -1,1 +1,12 @@
-{ "module": { "name": "Terminal" } }
+{
+  "module": { "name": "Terminal" },
+  "panel": { "title": "Terminal" },
+  "empty": { "noWorktree": "Select a worktree to open a terminal" },
+  "status": {
+    "exited": "Exited (code {{code}})",
+    "exitedSignal": "Exited (signal {{signal}})",
+    "daemonRestarted": "Session ended — terminal service restarted",
+    "notFound": "This terminal session is no longer available",
+    "error": "Could not start terminal: {{message}}"
+  }
+}
