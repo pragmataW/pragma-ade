@@ -1,12 +1,29 @@
 {
-  "module": { "name": "Terminal" },
-  "panel": { "title": "Terminal" },
-  "empty": { "noWorktree": "Select a worktree to open a terminal" },
+  "module": {
+    "name": "Terminal"
+  },
+  "panel": {
+    "title": "Terminal"
+  },
+  "empty": {
+    "noWorktree": "Select a worktree to open a terminal"
+  },
   "status": {
     "exited": "Exited (code {{code}})",
     "exitedSignal": "Exited (signal {{signal}})",
     "daemonRestarted": "Session ended — terminal service restarted",
     "notFound": "This terminal session is no longer available",
     "error": "Could not start terminal: {{message}}"
+  },
+  "search": {
+    "placeholder": "Find",
+    "results": "{{current}} of {{total}}",
+    "noResults": "No results",
+    "next": "Next match",
+    "previous": "Previous match",
+    "close": "Close find"
+  },
+  "link": {
+    "hint": "Cmd/Ctrl+click to open"
   }
 }

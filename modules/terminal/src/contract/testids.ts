@@ -5,4 +5,7 @@ export const TerminalTestIds = {
   status: 'terminal-status',
   panel: 'terminal-panel',
   empty: 'terminal-empty',
+  searchBar: 'terminal-search-bar',
+  searchInput: 'terminal-search-input',
+  searchResults: 'terminal-search-results',
 } as const

@@ -5,6 +5,8 @@ import { useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'rea
 import { PTY_EXIT_REASON, type TerminalSettings, TerminalTestIds, type TerminalViewProps } from '../../contract'
 import { getRuntime, readSettings } from '../runtime'
 import { ACTIVE_RENDERERS, type ActiveRenderer } from './renderer-choice'
+import { SearchBar } from './SearchBar'
+import { useTerminalFeatures } from './use-terminal-features'
 import { type SessionCallbacks, useTerminalSession } from './use-terminal-session'
 import { useXtermTheme } from './use-xterm-theme'
 import { INITIAL_VIEW_STATE, VIEW_STATE, type ViewExit, type ViewState, viewReducer } from './view-state'
@@ -56,9 +58,14 @@ export function TerminalView({ ptyId, className, autoFocus = false, onExit, onTi
   const [state, dispatch] = useReducer(viewReducer, INITIAL_VIEW_STATE)
   const [renderer, setRenderer] = useState<ActiveRenderer>(ACTIVE_RENDERERS.dom)
   const host = useRef<HTMLDivElement>(null)
+  const features = useTerminalFeatures()
   const callbacks = useRef<SessionCallbacks>({ onRenderer: setRenderer })
-  callbacks.current = { ...callbacks.current, onExit, onTitleChange, onRenderer: setRenderer }
-  useTerminalSession({ ptyId, host, settings, theme, autoFocus, dispatch, callbacks })
+  callbacks.current = { onExit, onTitleChange, onRenderer: setRenderer, onTerminal: features.onTerminal }
+  const term = useTerminalSession({ ptyId, host, settings, theme, autoFocus, dispatch, callbacks })
+  const closeSearch = () => {
+    features.closeSearch()
+    term.current?.focus()
+  }
   const banner = bannerText(state, t)
   return (
     <div
@@ -70,6 +77,12 @@ export function TerminalView({ ptyId, className, autoFocus = false, onExit, onTi
       style={{ background: theme.background }}
     >
       <div ref={host} className="min-h-0 flex-1 overflow-hidden px-2 pt-1" />
+      {features.searchOpen && features.search && <SearchBar search={features.search} onClose={closeSearch} />}
+      {features.linkHovered && (
+        <div className="pointer-events-none absolute right-3 bottom-2 rounded-[var(--radius-chip)] border border-bd bg-el px-2 py-0.5 text-[11px] text-mu">
+          {t('terminal:link.hint')}
+        </div>
+      )}
       {banner && (
         <div
           data-testid={TerminalTestIds.status}
