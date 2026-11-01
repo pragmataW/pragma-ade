@@ -9,3 +9,7 @@ export const CAPABILITY_KIND = 'capability'
 export const SIDES = { main: 'main', renderer: 'renderer' } as const
 
 export const SHORTCUT_SCOPE = { global: 'global', app: 'app' } as const
+
+export const UTF8 = 'utf8'
+export const TEMP_SUFFIX_BYTES = 6
+export const JSON_INDENT = 2
