@@ -18,6 +18,8 @@ export interface EditorTestHooks {
   evalInWorkbench(worktreeId: string, js: string): Promise<unknown>
   openFile(args: OpenFileArgs): Promise<OpenFileResult>
   probeHits(): number
+  /** A trusted key press inside the worktree's workbench (`webContents.sendInputEvent`). */
+  sendKey(worktreeId: string, keyCode: string, modifiers: string[]): Promise<void>
 }
 export type EditorTestGlobal = { [TEST_HOOKS_GLOBAL]: EditorTestHooks }
 
@@ -59,6 +61,14 @@ export function createEditorTestHooks(ctx: MainContext): EditorTestHooks {
     evalInWorkbench: (worktreeId, js) => native(worktreeId).webContents.executeJavaScript(js, true),
     openFile: (args) => getEditorRuntime().service.openFile(args),
     probeHits: () => hits,
+    async sendKey(worktreeId, keyCode, modifiers) {
+      const wc = native(worktreeId).webContents
+      const mods = modifiers as ('meta' | 'alt' | 'shift' | 'control')[]
+      wc.focus()
+      wc.sendInputEvent({ type: 'keyDown', keyCode, modifiers: mods })
+      wc.sendInputEvent({ type: 'keyUp', keyCode, modifiers: mods })
+      await wc.executeJavaScript('new Promise((r) => requestAnimationFrame(() => r(true)))')
+    },
   }
 }
 
