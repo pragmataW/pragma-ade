@@ -1,0 +1,41 @@
+/** `data-testid`s other modules' E2E tests may use (§10.1.6). */
+export const PROJECTS_TESTIDS = {
+  sidebar: 'projects-sidebar',
+  add: 'projects-add',
+  empty: 'projects-empty',
+  error: 'projects-error',
+  errorDismiss: 'projects-error-dismiss',
+  projectGroup: 'projects-project-group',
+  projectHeader: 'projects-project-header',
+  projectMenu: 'projects-project-menu',
+  projectRemove: 'projects-project-remove',
+  projectNewWorktree: 'projects-project-new-worktree',
+  worktreeRow: 'projects-worktree-row',
+  worktreeMenu: 'projects-worktree-menu',
+  worktreeRemove: 'projects-worktree-remove',
+  changedCount: 'projects-changed-count',
+  breadcrumb: 'projects-breadcrumb',
+  createDialog: 'projects-create-dialog',
+  createBranch: 'projects-create-branch',
+  createBase: 'projects-create-base',
+  createPath: 'projects-create-path',
+  createSubmit: 'projects-create-submit',
+  createError: 'projects-create-error',
+  removeDialog: 'projects-remove-dialog',
+  removeDirtyWarning: 'projects-remove-dirty-warning',
+  removeUnmerged: 'projects-remove-unmerged',
+  removeDeleteBranch: 'projects-remove-delete-branch',
+  removeConfirm: 'projects-remove-confirm',
+  settingsRoot: 'projects-settings-root',
+  settingsSave: 'projects-settings-save',
+  statusbarBranch: 'projects-statusbar-branch',
+  statusbarAheadBehind: 'projects-statusbar-ahead-behind',
+} as const
+
+/** Data attributes on project groups and worktree rows (E2E locators). */
+export const PROJECTS_DATA_ATTRS = {
+  projectName: 'data-project-name',
+  branch: 'data-branch',
+  main: 'data-main',
+  active: 'data-active',
+} as const
