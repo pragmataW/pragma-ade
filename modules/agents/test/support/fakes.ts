@@ -57,7 +57,10 @@ export interface FakeSpawn {
 }
 
 /** A `PtyService` subset: records spawns and kill signals; the test fires exit/data. */
-export function fakePty(shellEnv: Record<string, string> = { PATH: '/usr/bin', HOME: '/home/u' }) {
+export function fakePty(
+  shellEnv: Record<string, string> = { PATH: '/usr/bin', HOME: '/home/u' },
+  opts: { exitOnKill?: boolean } = {},
+) {
   const spawns: FakeSpawn[] = []
   const signals: string[] = []
   const exitCbs = new Map<string, ((e: PtyExit) => void)[]>()
@@ -75,8 +78,10 @@ export function fakePty(shellEnv: Record<string, string> = { PATH: '/usr/bin', H
       spawns.push({ ptyId, opts })
       return ptyId
     },
-    async kill(_ptyId, signal) {
+    async kill(ptyId, signal) {
       signals.push(signal ?? 'SIGTERM')
+      if (opts.exitOnKill)
+        for (const cb of exitCbs.get(ptyId) ?? []) cb({ ptyId, exitCode: null, signal: 15, reason: 'killed' })
     },
     onExit(ptyId, cb) {
       exitCbs.set(ptyId, [...(exitCbs.get(ptyId) ?? []), cb])

@@ -49,3 +49,7 @@ export const DEFAULT_PTY_ROWS = 32
 export const PTY_TAG_SESSION = 'sessionId'
 export const SIGTERM = 'SIGTERM'
 export const SIGKILL = 'SIGKILL'
+/** Profile checks (`--version` probes): advisory, bounded, cached. */
+export const CHECK_TIMEOUT_MS = 5000
+export const EXEC_OUTPUT_CAP_BYTES = 65_536
+export const CHECK_CACHE_TTL_MS = 60_000
