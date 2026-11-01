@@ -20,8 +20,6 @@ import { setRuntime } from './runtime'
 import { AgentsSettingsPage } from './settings/AgentsSettingsPage'
 import { type AgentsStore, createAgentsStore } from './store'
 
-const APP_SCOPE = 'app'
-const OPEN_LAUNCHER_ACCELERATOR = 'CmdOrCtrl+T'
 const VIEW_ICON = 'bot'
 const TERMINAL_VIEW_ORDER = 10
 
@@ -48,13 +46,6 @@ function registerCommands(ctx: RendererContext<AgentsSettings>, store: AgentsSto
   ctx.commands.register(AGENTS_COMMANDS.focusSession, (a) => focusSession(ctx, store, a), {
     titleKey: 'agents:commands.focusSession',
     palette: false,
-  })
-  ctx.shortcuts.register({
-    id: AGENTS_COMMANDS.openLauncher,
-    accelerator: OPEN_LAUNCHER_ACCELERATOR,
-    scope: APP_SCOPE,
-    command: AGENTS_COMMANDS.openLauncher,
-    titleKey: 'agents:commands.openLauncher',
   })
 }
 

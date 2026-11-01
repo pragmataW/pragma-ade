@@ -69,3 +69,15 @@ it('newWorktreeDefaults uses the repo default branch', async () => {
     baseBranch: 'main',
   })
 })
+
+it('registers the CmdOrCtrl+T launcher shortcut from main (survives renderer reloads)', async () => {
+  const f = await activated()
+  expect(f.shortcuts).toEqual([
+    expect.objectContaining({
+      id: 'agents.openLauncher',
+      accelerator: 'CmdOrCtrl+T',
+      scope: 'app',
+      command: 'agents.openLauncher',
+    }),
+  ])
+})

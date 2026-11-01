@@ -26,12 +26,14 @@ export function fakeMainContext(db: TestDb) {
     [ProjectsServiceToken.id, projects.projects],
     [GitServiceToken.id, { defaultBaseBranch: async () => 'main' }],
   ])
+  const shortcuts: unknown[] = []
   const ctx = {
     db: db.db,
     log,
     providers: makeProviders(),
     events: createEventBus(log),
     commands: createCommandRegistry({ log }),
+    shortcuts: { register: (spec: unknown) => void shortcuts.push(spec) },
     i18n: { t: tUntitled },
     env: { getShellEnv: async () => ({ PATH: '/usr/bin' }), resolveCommand: async (c: string) => `/bin/${c}` },
     paths: { userData: db.dir },
@@ -55,5 +57,15 @@ export function fakeMainContext(db: TestDb) {
     if (!h) throw new Error(`no handler for ${c.channel}`)
     return c.output.parse(await h(c.input.parse(input), {}))
   }
-  return { ctx: ctx as unknown as MainContext<never>, handlers, published, services, pty, projects, log, invoke }
+  return {
+    ctx: ctx as unknown as MainContext<never>,
+    shortcuts,
+    handlers,
+    published,
+    services,
+    pty,
+    projects,
+    log,
+    invoke,
+  }
 }

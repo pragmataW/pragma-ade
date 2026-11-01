@@ -2,8 +2,9 @@ import { join } from 'node:path'
 import { GitServiceToken, ProjectsServiceToken, worktreeRemoved } from '@pragma/module-projects/contract'
 import { PtyServiceToken } from '@pragma/module-terminal/contract'
 import { defineMainModule, type MainContext } from '@pragma/sdk/main'
-import { TEMP_ROOT_SEGMENTS } from '../constants'
+import { OPEN_LAUNCHER_SHORTCUT, TEMP_ROOT_SEGMENTS } from '../constants'
 import {
+  AGENTS_COMMANDS,
   AgentSessionsServiceToken,
   type AgentsSettings,
   agentsCommands,
@@ -59,6 +60,13 @@ async function activate(ctx: MainContext<AgentsSettings>): Promise<void> {
   ctx.services.provide(AgentSessionsServiceToken, service)
   registerAgentsIpc(ctx, { service, profiles, checker, resolve, projects, git: ctx.services.get(GitServiceToken) })
   ctx.commands.register(agentsCommands.newSession, (args) => service.startSession(args))
+  // `app` scope: matched in the renderer, which runs its `agents.openLauncher` command.
+  ctx.shortcuts.register({
+    id: AGENTS_COMMANDS.openLauncher,
+    ...OPEN_LAUNCHER_SHORTCUT,
+    command: AGENTS_COMMANDS.openLauncher,
+    titleKey: 'agents:commands.openLauncher',
+  })
   ctx.events.on(worktreeRemoved, ({ worktreeId }) => {
     void service
       .listSessions(worktreeId)

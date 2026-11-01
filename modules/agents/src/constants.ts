@@ -80,3 +80,5 @@ export const ICONS = {
   remove: 'trash-2',
   check: 'circle-check',
 } as const
+/** The launcher shortcut, registered from main (renderer registrations would collide after a renderer reload). */
+export const OPEN_LAUNCHER_SHORTCUT = { accelerator: 'CmdOrCtrl+T', scope: 'app' } as const
