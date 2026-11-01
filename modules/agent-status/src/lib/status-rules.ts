@@ -51,3 +51,14 @@ export function shouldNotify(
 ): boolean {
   return o.enabled && !o.appFocused && next === S.waiting && prev !== S.waiting
 }
+
+/** Status bar counts across all tracked sessions. */
+export function countActive(sessions: ReadonlyArray<Pick<SessionStatusInfo, 'status'>>): {
+  working: number
+  waiting: number
+} {
+  return {
+    working: sessions.filter((s) => s.status === S.working).length,
+    waiting: sessions.filter((s) => s.status === S.waiting).length,
+  }
+}

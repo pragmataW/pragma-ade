@@ -21,5 +21,22 @@
       "label": "Idle after silence (seconds)",
       "hint": "Used for agents without status hooks."
     }
+  },
+  "status": {
+    "starting": "Starting",
+    "working": "Working",
+    "waiting": "Waiting for input",
+    "done": "Done",
+    "idle": "Idle",
+    "error": "Error",
+    "exited": "Exited"
+  },
+  "unread": {
+    "label_one": "{{count}} unread update",
+    "label_other": "{{count}} unread updates"
+  },
+  "statusbar": {
+    "working": "{{formatted}} working",
+    "waiting": "{{formatted}} waiting"
   }
 }
