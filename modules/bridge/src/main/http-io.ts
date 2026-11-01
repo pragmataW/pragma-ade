@@ -5,10 +5,8 @@ import { BRIDGE_MAX_BODY_BYTES } from '../contract'
 export class BodyTooLargeError extends Error {}
 
 /** Writes a JSON response. */
-export function sendJson(res: ServerResponse, status: number, body: unknown, close = false): void {
-  const headers: Record<string, string> = { [HEADERS.contentType]: JSON_CONTENT_TYPE }
-  if (close) headers[HEADERS.connection] = CONNECTION_CLOSE
-  res.writeHead(status, headers)
+export function sendJson(res: ServerResponse, status: number, body: unknown): void {
+  res.writeHead(status, { [HEADERS.contentType]: JSON_CONTENT_TYPE })
   res.end(JSON.stringify(body))
 }
 
@@ -18,7 +16,10 @@ export function sendStatus(res: ServerResponse, status: number): void {
   res.end()
 }
 
-/** Reads the body up to the limit; rejects with `BodyTooLargeError` (and stops buffering) beyond it. */
+/**
+ * Reads the body up to the limit; beyond it rejects with `BodyTooLargeError`, stops buffering and drains the rest
+ * (closing the socket while the client is still uploading would reset the connection before it reads the 413).
+ */
 export function readBody(req: IncomingMessage, limit = BRIDGE_MAX_BODY_BYTES): Promise<string> {
   return new Promise((resolve, reject) => {
     if (Number(req.headers[HEADERS.contentLength] ?? 0) > limit) {

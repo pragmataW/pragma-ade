@@ -1,4 +1,6 @@
+import { connect, type Socket } from 'node:net'
 import { describe, expect, it, vi } from 'vitest'
+import { BRIDGE_MAX_BODY_BYTES, BRIDGE_PATHS } from '../src/contract'
 import { demoHandlers, demoNs } from './support/namespaces'
 import { bearer, connectRaw, hello, postRaw, useBridgeServers } from './support/servers'
 
@@ -35,6 +37,32 @@ describe('bridge http', () => {
     const res = await postRaw(s.url, body, headers, opts)
     expect(res.status).toBe(status)
     if (code) expect(res.body).toMatchObject({ type: 'bridge.error', error: { code } })
+  })
+
+  it('oversize: answers 413 at once and keeps reading the upload (no reset), so the connection stays usable', async () => {
+    const s = await startDemo()
+    const socket: Socket = connect(s.port, '127.0.0.1')
+    let received = ''
+    socket.on('data', (c: Buffer) => {
+      received += c.toString()
+    })
+    const errors: Error[] = []
+    socket.on('error', (e) => errors.push(e))
+    const head = (length: number) =>
+      `POST ${BRIDGE_PATHS.hook} HTTP/1.1\r\nHost: 127.0.0.1:${s.port}\r\nAuthorization: Bearer ${s.token}\r\n` +
+      `Content-Type: application/json\r\nContent-Length: ${length}\r\n\r\n`
+    const oversize = BRIDGE_MAX_BODY_BYTES + 1
+    socket.write(head(oversize))
+    await vi.waitFor(() => expect(received).toContain(' 413 '))
+    // the client only now sends the body: the server must drain it instead of closing the socket under it
+    await new Promise<void>((resolve, reject) =>
+      socket.write(Buffer.alloc(oversize, 32), (e) => (e ? reject(e) : resolve())),
+    )
+    const body = echo('2')
+    socket.write(`${head(Buffer.byteLength(body))}${body}`)
+    await vi.waitFor(() => expect(received).toContain('"id":"2"'))
+    expect(errors).toEqual([])
+    socket.destroy()
   })
 
   it('valid request returns the handler result', async () => {

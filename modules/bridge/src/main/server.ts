@@ -89,7 +89,7 @@ export async function createBridgeServer(opts: CreateBridgeServerOptions = {}): 
     } catch (e) {
       if (!(e instanceof BodyTooLargeError)) throw e
       const err = resultError(undefined, BRIDGE_ERROR.payload_too_large, `body over ${BRIDGE_MAX_BODY_BYTES} bytes`)
-      return sendJson(res, HTTP_STATUS.payloadTooLarge, err, true)
+      return sendJson(res, HTTP_STATUS.payloadTooLarge, err)
     }
     const envelope = BridgeEnvelopeSchema.safeParse(parseJson(body))
     if (!envelope.success)
