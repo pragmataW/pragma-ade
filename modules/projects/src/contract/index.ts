@@ -1,0 +1,11 @@
+/** Public contract of `@pragma/module-projects` (§10.1.1): no Node or Electron imports. */
+export * from './commands'
+export * from './errors'
+export * from './events'
+export * from './git'
+export * from './ids'
+export * from './ipc'
+export * from './service'
+export * from './slots'
+export * from './testids'
+export * from './types'
