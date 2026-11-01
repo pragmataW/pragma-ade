@@ -4,7 +4,6 @@ export const COMMENTS_MODULE_ID = 'comments'
 
 // Limits
 export const COMMENT_BODY_MAX_CHARS = 20_000
-export const SENT_LIST_LIMIT = 100
 export const FORMAT_LIMITS = {
   snippetMaxLines: 40,
   snippetMaxChars: 4000,
@@ -27,7 +26,8 @@ export const PTY_ID_POLL_MAX_MS = 2_000
 export const PENDING_TTL_MS = 600_000
 
 // Renderer slot entries and orders
-export const SLOT_ENTRY_IDS = { titlebar: 'comments.entry', toolbar: 'comments.badge' } as const
+/** `host` mounts the drawer and dialogs (no visible UI); `toolbar` is the single entry button. */
+export const SLOT_ENTRY_IDS = { host: 'comments.host', toolbar: 'comments.badge' } as const
 export const SLOT_ORDER = 50
 
 // Formatter (agent-facing, fixed English; §6)

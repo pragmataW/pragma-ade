@@ -17,7 +17,7 @@ const SESSIONS = [
 ]
 const SENT_OK: SendResult = { status: 'sent', sessionId: 'a', commentIds: [], sentAt: 1 }
 
-async function open(opts: { drafts?: Comment[]; sent?: Comment[]; activeWorktreeId?: string | null } = {}) {
+async function open(opts: { drafts?: Comment[]; activeWorktreeId?: string | null } = {}) {
   r = mountRenderer(opts)
   r.fakeIpc.respond(commentsIpc.send, () => SENT_OK)
   r.fakeIpc.respond(commentsIpc.resolveTarget, () => ({ kind: 'choose', sessions: SESSIONS, defaultSessionId: 'a' }))
@@ -106,16 +106,15 @@ describe('CommentsDrawer', () => {
     expect(screen.getByTestId(T.composerSave)).toBeInTheDocument()
   })
 
-  test('sent tab lists newest first with the session title', async () => {
-    const sent = [
-      makeComment({ id: 'n', status: 'sent', sentAt: 20, targetSessionId: 'b', body: 'Newer' }),
-      makeComment({ id: 'o', status: 'sent', sentAt: 10, targetSessionId: 'gone', body: 'Older' }),
-    ]
-    await open({ sent })
-    act(() => r.store.getState().setTab('sent'))
-    await waitFor(() => expect(screen.getByText(/Sent to Agent B/)).toBeInTheDocument())
-    expect(rows().map((el) => el.dataset.commentId)).toEqual(['n', 'o'])
-    expect(screen.getByText(/Sent to a closed session/)).toBeInTheDocument()
+  test('a single drafts list, no tabs; a delivered draft disappears on reload (it was deleted)', async () => {
+    await open({ drafts: [draftA(), draftB()] })
+    expect(screen.queryAllByRole('tab')).toEqual([])
+    fireEvent.click(screen.getByTestId(T.sendButton))
+    await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toHaveLength(1))
+    r.data.drafts = []
+    await act(() => r.store.getState().reload())
+    expect(rows()).toEqual([])
+    expect(screen.getByText(en.drawer.emptyDrafts)).toBeInTheDocument()
   })
 
   test('target picker preselects the default and sends to the chosen session', async () => {

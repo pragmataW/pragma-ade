@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'vitest'
-import { COMMENTS_EVENTS, COMMENTS_IPC_EVENTS, type DeliveryRequest, SENT_LIST_LIMIT } from '../src/contract'
+import { COMMENTS_EVENTS, COMMENTS_IPC_EVENTS, type DeliveryRequest } from '../src/contract'
 import { DeliveryRegistry } from '../src/main/delivery-registry'
 import { createCommentsRepository } from '../src/main/repository'
 import { createCommentsService } from '../src/main/service'
@@ -56,7 +56,6 @@ describe('drafts', () => {
   test('addDraft stores a draft, emits comment.created, publishes comments.changed', async () => {
     const { service, emitted, upstream } = setup()
     const c = await service.addDraft(makeInput())
-    expect(c.status).toBe('draft')
     expect(emitted).toEqual([[COMMENTS_EVENTS.created, { comment: c }]])
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toEqual([{ worktreeId: WT }])
     expect(await service.listDrafts(WT)).toEqual([c])
@@ -68,13 +67,13 @@ describe('drafts', () => {
     expect(await service.listDrafts(WT)).toEqual([])
   })
 
-  test('update edits a draft; update/remove of a sent comment throw notDraft', async () => {
+  test('update edits a draft; once sent (deleted) update/remove throw notFound', async () => {
     const { service, drafts, ids } = setup()
     const [c] = await drafts(1)
     expect((await service.update(c?.id as string, { body: 'edited' })).body).toBe('edited')
     await service.send(ids(await service.listDrafts(WT)))
-    await expect(service.update(c?.id as string, { body: 'x' })).rejects.toMatchObject({ key: 'notDraft' })
-    await expect(service.remove(c?.id as string)).rejects.toMatchObject({ key: 'notDraft' })
+    await expect(service.update(c?.id as string, { body: 'x' })).rejects.toMatchObject({ key: 'notFound' })
+    await expect(service.remove(c?.id as string)).rejects.toMatchObject({ key: 'notFound' })
     await expect(service.remove('missing')).rejects.toMatchObject({ key: 'notFound' })
   })
 
@@ -84,31 +83,6 @@ describe('drafts', () => {
     await service.remove(c?.id as string)
     expect(await service.listDrafts(WT)).toEqual([])
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toHaveLength(2)
-  })
-
-  test('listSent newest first, default limit SENT_LIST_LIMIT', async () => {
-    const { service, drafts, repo } = setup()
-    const [a, b] = await drafts(2)
-    await service.send([a?.id as string])
-    await service.send([b?.id as string])
-    expect((await service.listSent(WT)).map((c) => c.id)).toEqual([b?.id, a?.id])
-    const limits: (number | undefined)[] = []
-    const spy = {
-      ...repo,
-      list: (...args: Parameters<typeof repo.list>) => {
-        limits.push(args[2])
-        return repo.list(...args)
-      },
-    }
-    const svc = createCommentsService({
-      repo: spy,
-      upstream: createFakeUpstream(),
-      registry: new DeliveryRegistry(),
-      events: { emit: () => undefined },
-      settings: () => ({ submitAfterPaste: false }),
-    })
-    await svc.listSent(WT)
-    expect(limits).toEqual([SENT_LIST_LIMIT])
   })
 })
 
@@ -135,7 +109,7 @@ describe('resolveTarget', () => {
 })
 
 describe('send', () => {
-  test('one running session delivers the formatted text and marks sent', async () => {
+  test('one running session delivers the formatted text and deletes the delivered comments', async () => {
     const { service, drafts, ids, delivered, emitted } = setup()
     const cs = await drafts(2)
     const r = await service.send(ids(cs).reverse())
@@ -143,8 +117,7 @@ describe('send', () => {
     expect(delivered).toHaveLength(1)
     expect(delivered[0]?.text).toBe(service.format(cs))
     expect(delivered[0]).toMatchObject({ sessionId: 's1', worktreeId: WT, mode: 'terminal', ptyId: 'pty-s1' })
-    const sent = await service.listSent(WT)
-    expect(sent.every((c) => c.targetSessionId === 's1' && c.sentAt !== null)).toBe(true)
+    expect(await service.listDrafts(WT)).toEqual([])
     const sentAt = r.status === 'sent' ? r.sentAt : -1
     expect(emitted.at(-1)).toEqual([
       COMMENTS_EVENTS.sent,
@@ -168,11 +141,23 @@ describe('send', () => {
     await service.send(commentIds, undefined, { promptUser: false })
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.sendRequested)).toHaveLength(1)
     expect(delivered).toEqual([])
+    expect(ids(await service.listDrafts(WT))).toEqual(commentIds)
   })
 
-  test('no session → noSession', async () => {
+  test('only the delivered comments are deleted; the rest stay drafts', async () => {
+    const { service, drafts, upstream } = setup()
+    const [a, b] = await drafts(2)
+    const before = upstream.publishedOn(COMMENTS_IPC_EVENTS.changed).length
+    await service.send([a?.id as string])
+    expect(await service.listDrafts(WT)).toEqual([b])
+    expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toHaveLength(before + 1)
+  })
+
+  test('no session → noSession, drafts kept', async () => {
     const { service, drafts, ids } = setup([])
-    expect(await service.send(ids(await drafts(1)))).toEqual({ status: 'noSession' })
+    const cs = await drafts(1)
+    expect(await service.send(ids(cs))).toEqual({ status: 'noSession' })
+    expect(await service.listDrafts(WT)).toEqual(cs)
   })
 
   test('target exited → sessionNotRunning, drafts unchanged', async () => {
@@ -196,7 +181,7 @@ describe('send', () => {
       'mixedWorktrees',
     ],
     [
-      'sent id',
+      'already sent (deleted) id',
       async (x: Ctx) => {
         const cs = x.ids(await x.drafts(1))
         await x.service.send(cs)
@@ -204,7 +189,7 @@ describe('send', () => {
         return cs
       },
       undefined,
-      'notDraft',
+      'notFound',
     ],
   ])('validation failure (%s) delivers nothing', async (_n, makeIds, target, errorKey) => {
     const x = setup([makeSession({ id: 's1' }), makeSession({ id: 'other', worktreeId: OTHER_WT })])

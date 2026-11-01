@@ -8,9 +8,6 @@ export type CommentSource = (typeof COMMENT_SOURCES)[number]
 export const DIFF_SIDE = { old: 'old', new: 'new' } as const
 export const DIFF_SIDES = [DIFF_SIDE.old, DIFF_SIDE.new] as const
 export type DiffSide = (typeof DIFF_SIDES)[number]
-export const COMMENT_STATUS = { draft: 'draft', sent: 'sent' } as const
-export const COMMENT_STATUSES = [COMMENT_STATUS.draft, COMMENT_STATUS.sent] as const
-export type CommentStatus = (typeof COMMENT_STATUSES)[number]
 
 const SLASH = '/'
 const toLf = (s: string): string => s.replace(CRLF_RE, NEWLINE)
@@ -85,13 +82,10 @@ export const CommentPatchSchema = z.object({
 })
 export type CommentPatch = z.input<typeof CommentPatchSchema>
 
-/** A stored comment; timestamps are epoch ms. */
+/** A stored comment, always a draft (a delivered comment is deleted); timestamps are epoch ms. */
 export const CommentSchema = CommentInputBaseSchema.extend({
   id: z.string(),
-  status: z.enum(COMMENT_STATUSES),
-  targetSessionId: z.string().nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),
-  sentAt: z.number().nullable(),
 })
 export type Comment = z.infer<typeof CommentSchema>

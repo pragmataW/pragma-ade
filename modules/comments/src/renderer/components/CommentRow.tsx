@@ -1,7 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { FileCode, GitCompare, MousePointerClick, Pencil, Trash2 } from '@pragma/ui/icons'
-import { type ReactNode, useState } from 'react'
+import { useState } from 'react'
 import {
   type Comment,
   type CommentContext,
@@ -66,16 +66,8 @@ function RowActions({ comment, onEdit }: { comment: Comment; onEdit(): void }) {
   )
 }
 
-/** One comment: checkbox (drafts), source icon, location, two-line body preview, Edit/Delete or a footer line. */
-export function CommentRow({
-  comment,
-  selectable,
-  footer,
-}: {
-  comment: Comment
-  selectable: boolean
-  footer?: ReactNode
-}) {
+/** One draft: checkbox, source icon, location, two-line body preview, Edit/Delete. */
+export function CommentRow({ comment }: { comment: Comment }) {
   const t = useT()
   const [editing, setEditing] = useState(false)
   const selected = useCommentsStore((s) => s.selection.has(comment.id))
@@ -98,25 +90,22 @@ export function CommentRow({
       data-comment-id={comment.id}
       className={cn('flex items-start gap-2 border-b px-4 py-2.5', selected && 'bg-accent/40')}
     >
-      {selectable ? (
-        <input
-          type="checkbox"
-          data-testid={T.rowSelect}
-          aria-label={t('comments:row.select')}
-          className="mt-1 accent-primary"
-          checked={selected}
-          onChange={toggle}
-        />
-      ) : null}
+      <input
+        type="checkbox"
+        data-testid={T.rowSelect}
+        aria-label={t('comments:row.select')}
+        className="mt-1 accent-primary"
+        checked={selected}
+        onChange={toggle}
+      />
       <SourceIcon source={comment.source} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-mono text-[12px]">{locationLabel(comment)}</div>
         <p className="line-clamp-2 whitespace-pre-wrap break-words text-[12.5px] text-muted-foreground">
           {comment.body}
         </p>
-        {footer ? <div className="mt-1 text-[11px] text-muted-foreground">{footer}</div> : null}
       </div>
-      {selectable ? <RowActions comment={comment} onEdit={() => setEditing(true)} /> : null}
+      <RowActions comment={comment} onEdit={() => setEditing(true)} />
     </li>
   )
 }

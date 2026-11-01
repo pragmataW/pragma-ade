@@ -4,7 +4,7 @@ import { IconButton } from '../lib/buttons'
 
 const ICON_PX = 15
 
-/** The comments button shared by the titlebar entry and the session toolbar: icon plus a draft-count badge. */
+/** The session toolbar's comments button: icon plus a draft-count badge. */
 export function CommentsIconButton(props: { count: number; label: string; testId: string; onClick(): void }) {
   return (
     <IconButton

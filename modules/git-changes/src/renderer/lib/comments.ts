@@ -1,7 +1,6 @@
 import type { AnnotationSide } from '@pierre/diffs/react'
 import {
   COMMENT_SOURCE,
-  COMMENT_STATUS,
   type Comment,
   CommentsUiServiceToken,
   commentsIpc,
@@ -24,15 +23,11 @@ export const toAnnotationSide = (d: DiffSide | undefined): AnnotationSide =>
 
 const NO_COMMENTS: Comment[] = []
 
-/** The worktree's diff comments (drafts and sent), reloaded on `comments.changed` for that worktree. */
+/** The worktree's diff drafts (05 deletes delivered comments), reloaded on `comments.changed` for that worktree. */
 export function useDiffComments(worktreeId: string): Comment[] {
   const loaded = useKeyedLatest(worktreeId, async () => {
-    const { ipc } = getRendererCtx()
-    const [drafts, sent] = await Promise.all([
-      ipc.invoke(commentsIpc.listDrafts, { worktreeId }),
-      ipc.invoke(commentsIpc.listSent, { worktreeId }),
-    ])
-    return [...drafts, ...sent].filter((c) => c.source === COMMENT_SOURCE.diff)
+    const drafts = await getRendererCtx().ipc.invoke(commentsIpc.listDrafts, { worktreeId })
+    return drafts.filter((c) => c.source === COMMENT_SOURCE.diff)
   })
   const { reload } = loaded
   useEffect(() => {
@@ -44,12 +39,10 @@ export function useDiffComments(worktreeId: string): Comment[] {
   return loaded.data ?? NO_COMMENTS
 }
 
-export const isDraft = (c: Comment): boolean => c.status === COMMENT_STATUS.draft
-
 /** Draft count per file path (the tree's comment marker). */
 export function draftCounts(comments: readonly Comment[]): Record<string, number> {
   const counts: Record<string, number> = {}
-  for (const c of comments) if (isDraft(c) && c.filePath) counts[c.filePath] = (counts[c.filePath] ?? 0) + 1
+  for (const c of comments) if (c.filePath) counts[c.filePath] = (counts[c.filePath] ?? 0) + 1
   return counts
 }
 
