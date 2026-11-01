@@ -130,8 +130,8 @@ Built-in line commands: `/exit [code]`; plugins add more (`/name rest` calls `fn
 ## E2E
 
 `e2e/profiles.e2e.ts`, `e2e/launch.e2e.ts` (fake agent) and `e2e/real-agents.e2e.ts` (`@real-agent`, run with
-`pnpm e2e:real`; real Claude Code / OpenCode with an empty temp HOME, no prompt sent). `e2e/support/app.ts` starts the
-app through a wrapper that adds `-ApplePersistenceIgnoreState YES` (macOS otherwise may block a launch with the
+`pnpm e2e:real`; real Claude Code / OpenCode with an empty temp HOME, no prompt sent). The shared `launchApp`
+(`@pragma/test-support/e2e`) passes `-ApplePersistenceIgnoreState YES` (macOS otherwise may block a launch with the
 "reopen windows?" alert after an earlier Electron run was killed).
 
 ## Integration notes

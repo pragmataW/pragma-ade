@@ -14,6 +14,11 @@ export const BUILD_OUT_DIRS: Record<BuildVariant, string> = {
   'extension-proof': 'out-extension-proof',
 }
 export const ELECTRON_PACKAGE = 'electron'
+/**
+ * Cocoa reads `-ApplePersistenceIgnoreState YES` from argv: macOS otherwise may block a launch with the modal
+ * "reopen windows?" alert after an earlier Electron run was killed (`firstWindow` then times out, `close()` hangs).
+ */
+export const NO_STATE_RESTORE_ARGS: readonly string[] = ['-ApplePersistenceIgnoreState', 'YES']
 export const CONSOLE_EVENT = 'console'
 export const DARWIN = 'darwin'
 export const PALETTE_KEYS = { darwin: 'Meta+K', other: 'Control+K' } as const

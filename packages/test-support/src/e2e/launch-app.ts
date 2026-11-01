@@ -22,6 +22,7 @@ import {
   ELECTRON_PACKAGE,
   LAUNCH_TIMEOUT_MS,
   MAIN_ENTRY,
+  NO_STATE_RESTORE_ARGS,
 } from './constants'
 import { writeDisabledModules } from './settings-file'
 
@@ -56,10 +57,12 @@ function processEnv(): Record<string, string> {
   return out
 }
 
+/** The main script (when not packaged) comes first: Electron takes the first positional argument as the app. */
 function launchArgs(opts: LaunchOptions): { executablePath: string; args: string[] } {
-  if (opts.executablePath) return { executablePath: opts.executablePath, args: [] }
+  if (opts.executablePath) return { executablePath: opts.executablePath, args: [...NO_STATE_RESTORE_ARGS] }
   const outDir = BUILD_OUT_DIRS[opts.variant ?? BUILD_VARIANTS.default]
-  return { executablePath: electronBinary(), args: [join(findRepoRoot(), DESKTOP_DIR, outDir, MAIN_ENTRY)] }
+  const main = join(findRepoRoot(), DESKTOP_DIR, outDir, MAIN_ENTRY)
+  return { executablePath: electronBinary(), args: [main, ...NO_STATE_RESTORE_ARGS] }
 }
 
 /** Waits for the first window that is the shell (not devtools) and for `shellReady`. */

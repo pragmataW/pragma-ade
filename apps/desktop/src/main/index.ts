@@ -1,7 +1,7 @@
 import { APP_NAME, TEST_MODE_ENABLED, TEST_MODE_ENV } from '@pragma/sdk'
 import { createMainHost } from '@pragma/sdk/runtime/main'
 import { app, BrowserWindow } from 'electron'
-import { DARWIN } from '../constants'
+import { DARWIN, DISPOSE_TIMEOUT_MS } from '../constants'
 import { coreLocales, mainModules } from '../generated/modules.main'
 import { initialDialogStubs, registerShellHandlers } from './app-handlers'
 import { createStubbedDialogs } from './dialog-stubs'
@@ -57,11 +57,24 @@ async function main(): Promise<void> {
     if (process.platform !== DARWIN) app.quit()
   })
   let disposed = false
-  app.on(BEFORE_QUIT, () => {
+  // Quit waits for dispose: native addons (@parcel/watcher) abort the process when their pending unsubscribe work
+  // completes during environment teardown, and that crash makes macOS show a launch-blocking "reopen windows?" alert.
+  app.on(BEFORE_QUIT, (event) => {
     if (disposed) return
     disposed = true
-    void host.dispose()
+    event.preventDefault()
+    void disposeWithin(host.dispose(), DISPOSE_TIMEOUT_MS, (error) =>
+      host.log.error('dispose failed on quit', error),
+    ).finally(() => app.quit())
   })
+}
+
+function disposeWithin(work: Promise<void>, timeoutMs: number, onError: (error: unknown) => void): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, timeoutMs)
+  })
+  return Promise.race([work.catch(onError), timeout]).finally(() => clearTimeout(timer))
 }
 
 const hasWindows = (): boolean => BrowserWindow.getAllWindows().length > 0

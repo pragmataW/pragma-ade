@@ -10,6 +10,8 @@ export const PRELOAD_FILE = '../preload/index.cjs'
 export const RENDERER_FILE = '../renderer/index.html'
 export const DARWIN = 'darwin'
 export const KEY_DOWN = 'keyDown'
+/** Upper bound for awaiting module deactivation on quit; a hung module must not keep the app alive. */
+export const DISPOSE_TIMEOUT_MS = 5_000
 
 export const PALETTE_ACCELERATOR = 'CmdOrCtrl+K'
 export const SETTINGS_ACCELERATOR = 'CmdOrCtrl+,'
