@@ -91,3 +91,27 @@ export const PROJECT_SLUG_FALLBACK = 'project'
 export const HOME_PREFIX_RE = /^~(?=$|[\\/])[\\/]?/
 export const DEDUPE_FIRST_SUFFIX = 2
 export const DEDUPE_SEPARATOR = '-'
+
+/** SQLite tables (`migrations/0101_projects.sql`) and shared column names. */
+export const TABLES = {
+  projects: 'projects_projects',
+  worktrees: 'projects_worktrees',
+  state: 'projects_state',
+} as const
+export const COLUMNS = {
+  id: 'id',
+  name: 'name',
+  repoPath: 'repo_path',
+  defaultBaseBranch: 'default_base_branch',
+  createdAt: 'created_at',
+  sortOrder: 'sort_order',
+  archivedAt: 'archived_at',
+  projectId: 'project_id',
+  path: 'path',
+  branch: 'branch',
+  baseBranch: 'base_branch',
+  isMain: 'is_main',
+  key: 'key',
+  value: 'value',
+} as const
+export const ACTIVE_WORKTREE_STATE_KEY = 'activeWorktreeId'
