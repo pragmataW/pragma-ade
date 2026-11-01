@@ -127,6 +127,26 @@ export const TAB_STRIP_PX = 28
 export const TOOLBAR_PX = 32
 export const VIEW_INSET_TOP_PX = TAB_STRIP_PX + TOOLBAR_PX
 export const POPOVER_WIDTH = 340
+export const TOOL_ICON_PX = 14
+export const EMPTY_ICON_PX = 28
+export const BUTTON_TYPE = 'button'
+export const GHOST_VARIANT = 'ghost'
+export const FAVICON_PX = 12
+export const DEFAULT_LOCALHOST_URL = 'http://localhost:3000/'
+/** Lucide icon names (`<Icon name>`). */
+export const ICONS = {
+  back: 'arrow-left',
+  forward: 'arrow-right',
+  reload: 'rotate-cw',
+  stop: 'x',
+  close: 'x',
+  add: 'plus',
+  zoomIn: 'zoom-in',
+  zoomOut: 'zoom-out',
+  pick: 'square-dashed-mouse-pointer',
+  devtools: 'code-xml',
+  globe: 'globe',
+} as const
 
 // Settings bounds
 export const SETTINGS_LIMITS = {

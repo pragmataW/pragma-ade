@@ -223,6 +223,10 @@ describe('BrowserTabManager', () => {
     expect(() => manager.navigate(t, '  ')).toThrow(/invalidInput/)
   })
 
+  it.each(['file:///etc/hosts', 'javascript:alert(1)', 'mailto:a@b.c'])('openTab refuses %s', (url) =>
+    expect(() => setupManager().manager.openTab('wtA', url)).toThrow(/invalidInput/),
+  )
+
   it('unknown tabs throw tabNotFound', () =>
     expect(() => setupManager().manager.closeTab('nope')).toThrow(expect.objectContaining({ code: 'tabNotFound' })))
 

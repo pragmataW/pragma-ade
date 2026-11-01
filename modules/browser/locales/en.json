@@ -6,6 +6,60 @@
     "togglePicker": "Browser: Pick element"
   },
   "picker": {
-    "banner": "Click an element to comment on it. Press Esc to cancel."
+    "banner": "Click an element to comment on it. Press Esc to cancel.",
+    "toggle": "Pick element",
+    "unavailable": "Enable the Comments module to pick elements",
+    "cancel": "Cancel"
+  },
+  "tab": {
+    "title": "Browser"
+  },
+  "tabs": {
+    "new": "New tab",
+    "close": "Close tab",
+    "untitled": "New tab"
+  },
+  "toolbar": {
+    "back": "Back",
+    "forward": "Forward",
+    "reload": "Reload",
+    "stop": "Stop",
+    "devtools": "Toggle DevTools",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Reset zoom ({{percent}}%)"
+  },
+  "address": {
+    "placeholder": "Enter URL, port or search",
+    "suggestLocalhost": "Open {{url}}",
+    "devServer": "Local dev server"
+  },
+  "empty": {
+    "noWorktree": "Select a worktree to browse its app",
+    "noTabs": "No tabs open",
+    "openLocalhost": "Open localhost:3000"
+  },
+  "error": {
+    "loadFailed": "Couldn't load page: {{description}}"
+  },
+  "status": {
+    "devUrl": "Local dev server running"
+  },
+  "settings": {
+    "title": "Browser",
+    "searchUrl": "Search URL ({query} is replaced)",
+    "consoleBufferSize": "Console messages kept per tab",
+    "consoleErrorsInComment": "Console errors attached to a comment",
+    "maxLiveViews": "Tabs kept loaded in the background",
+    "screenshotRetentionDays": "Keep element screenshots (days)",
+    "reactProbe": "Detect React component and source"
+  },
+  "pick": {
+    "title": "Comment on element",
+    "domPath": "DOM path",
+    "source": "Source",
+    "component": "Component",
+    "attachShotAndStyles": "Attach screenshot and computed styles",
+    "includeConsole": "Include console errors ({{count}})"
   }
 }

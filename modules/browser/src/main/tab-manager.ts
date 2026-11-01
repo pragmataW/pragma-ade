@@ -106,6 +106,8 @@ export class BrowserTabManager {
   }
 
   openTab(worktreeId: string, url?: string): string {
+    if (url !== undefined && classifyNavigation(url) !== NAVIGATION_CLASS.internal)
+      throw new BrowserError(BROWSER_ERROR_CODE.invalidInput, `cannot open "${url}"`)
     const id = randomUUID()
     const tab: Tab = {
       state: {
