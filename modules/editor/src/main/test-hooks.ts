@@ -9,7 +9,7 @@ import type { ServerInfo } from './server/serverController'
 export interface EditorTestHooks {
   status(): EditorStatus
   /** Runs a bridge-extension test op in the worktree's workbench. */
-  request(worktreeId: string, op: TestOp, args?: unknown): Promise<unknown>
+  request(worktreeId: string, op: TestOp, args?: unknown, timeoutMs?: number): Promise<unknown>
   openViews(): { worktreeId: string; webContentsId: number; shown: boolean }[]
   viewBounds(
     worktreeId: string,
@@ -44,11 +44,11 @@ export function createEditorTestHooks(ctx: MainContext): EditorTestHooks {
   })
   return {
     status: () => getEditorRuntime().server.status(),
-    async request(worktreeId, op, args) {
+    async request(worktreeId, op, args, timeoutMs) {
       const rt = getEditorRuntime()
       const wt = await rt.up.getWorktree(worktreeId)
       if (!wt) throw new NoEditorViewError(`unknown worktree ${worktreeId}`)
-      return rt.bridge.testRequest(normalizeFolderKey(wt.path), op, args)
+      return rt.bridge.testRequest(normalizeFolderKey(wt.path), op, args, timeoutMs)
     },
     openViews: () => getEditorRuntime().views.openViews(),
     viewBounds(worktreeId) {
