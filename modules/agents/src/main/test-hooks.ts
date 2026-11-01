@@ -27,6 +27,8 @@ export interface AgentsTestHooks {
   /** Pty output captured since `agentSession.started` (capped). */
   getSessionOutput(sessionId: string): string
   waitForSessionStatus(sessionId: string, status: AgentSessionStatus, timeoutMs?: number): Promise<AgentSession>
+  /** Runs a command from main (`ctx.commands.execute`; renderer commands are forwarded). */
+  executeCommand(id: string, args?: unknown): Promise<unknown>
 }
 export type AgentsTestGlobal = { __pragmaAgentsTest: AgentsTestHooks }
 
@@ -38,6 +40,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export function createAgentsTestHooks(
   rt: AgentsMainRuntime,
   events: Pick<MainContext['events'], 'on'>,
+  commands: Pick<MainContext['commands'], 'execute'>,
 ): AgentsTestHooks {
   const { service, profiles } = rt
   const output = new Map<string, string>()
@@ -63,6 +66,7 @@ export function createAgentsTestHooks(
     closeSession: (id) => service.closeSession(id),
     checkProfile: (id) => rt.checker.check(id),
     getSessionOutput: (sessionId) => output.get(sessionId) ?? '',
+    executeCommand: (id, args) => commands.execute(id, args),
     async waitForSessionStatus(sessionId, status, timeoutMs = WAIT_STATUS_MS) {
       const deadline = Date.now() + timeoutMs
       for (;;) {
@@ -77,5 +81,9 @@ export function createAgentsTestHooks(
 }
 
 export default defineTestHooks((ctx) => {
-  ;(globalThis as unknown as AgentsTestGlobal).__pragmaAgentsTest = createAgentsTestHooks(getMainRuntime(), ctx.events)
+  ;(globalThis as unknown as AgentsTestGlobal).__pragmaAgentsTest = createAgentsTestHooks(
+    getMainRuntime(),
+    ctx.events,
+    ctx.commands,
+  )
 })

@@ -10,7 +10,7 @@ const db = perTestDb()
 async function hooks() {
   const f = fakeMainContext(db())
   await mainModule.activate(f.ctx)
-  return { ...f, hooks: createAgentsTestHooks(getMainRuntime(), f.ctx.events) }
+  return { ...f, hooks: createAgentsTestHooks(getMainRuntime(), f.ctx.events, f.ctx.commands) }
 }
 
 it('getSessionOutput accumulates pty data', async () => {
@@ -45,4 +45,10 @@ it('profile hooks publish agents.profilesChanged so the renderer refreshes', asy
   expect(changes().at(-1)?.payload).toMatchObject({
     profiles: expect.arrayContaining([expect.objectContaining({ command: 'dgc' })]),
   })
+})
+
+it('executeCommand runs a command through main', async () => {
+  const h = await hooks()
+  const s = (await h.hooks.executeCommand('agents.newSession', { worktreeId: 'w1' })) as { worktreeId: string }
+  expect(s.worktreeId).toBe('w1')
 })
