@@ -5,9 +5,24 @@ export const DAEMON_ENTRY_REL_PATH = 'packages/pty-daemon/dist/pty-daemon.cjs'
 
 /** Default shell (Global Constraints): `$SHELL`, else the platform fallback, else `/bin/sh`. */
 export const SHELL_ENV = 'SHELL'
-export const SHELL_FALLBACKS: Partial<Record<NodeJS.Platform, string>> = { darwin: '/bin/zsh', linux: '/bin/bash' }
+export const SHELL_FALLBACKS: Partial<Record<string, string>> = { darwin: '/bin/zsh', linux: '/bin/bash' }
 export const POSIX_SHELL = '/bin/sh'
-export const LOGIN_SHELL_ARGS: Partial<Record<NodeJS.Platform, string[]>> = { darwin: ['-l'] }
+export const LOGIN_SHELL_ARGS: Partial<Record<string, string[]>> = { darwin: ['-l'] }
 export const PWSH_EXE = 'pwsh.exe'
 export const POWERSHELL_EXE = 'powershell.exe'
 export const WIN32 = 'win32'
+
+/** Daemon crash restarts: delay per consecutive restart, capped per window. */
+const RESTART_DELAY_FIRST_MS = 250
+const RESTART_DELAY_SECOND_MS = 1000
+const RESTART_DELAY_LATER_MS = 3000
+export const RESTART_DELAYS_MS = [RESTART_DELAY_FIRST_MS, RESTART_DELAY_SECOND_MS, RESTART_DELAY_LATER_MS] as const
+export const MAX_RESTARTS_PER_MINUTE = 5
+export const RESTART_WINDOW_MS = 60_000
+export const HOST_SHUTDOWN_TIMEOUT_MS = 3000
+export const RUN_AS_NODE_ENV = 'ELECTRON_RUN_AS_NODE'
+export const RUN_AS_NODE_ON = '1'
+export const DAEMON_STDIO: ['ignore', 'pipe', 'pipe', 'ipc'] = ['ignore', 'pipe', 'pipe', 'ipc']
+export const KILL_NOW_SIGNAL = 'SIGKILL'
+export const EXIT_EVENT = 'exit'
+export const DAEMON_UNAVAILABLE = 'pty-daemon is not available'
