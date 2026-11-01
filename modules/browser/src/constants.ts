@@ -55,7 +55,9 @@ export const PNG_EXT = '.png'
 export const MS_PER_DAY = 86_400_000
 
 // Clamping and redaction
-export const TRUNCATION_MARKER = (n: number): string => `…[truncated ${n} chars]`
+export const TRUNCATION_TEMPLATE = '…[truncated {n} chars]'
+export const TRUNCATION_COUNT = '{n}'
+export const TRUNCATION_MARKER = (n: number): string => TRUNCATION_TEMPLATE.replace(TRUNCATION_COUNT, String(n))
 export const REDACTED = '[redacted]'
 export const SENSITIVE_PARAM_RE =
   /^(token|access_token|id_token|refresh_token|auth|code|key|api_key|apikey|secret|password|passwd|pwd|session|sessionid|sid|signature|sig)$/i
@@ -67,6 +69,7 @@ export const HASHY_CLASS_RES = [
   '^(?=[A-Za-z0-9]*[0-9])(?=[A-Za-z0-9]*[A-Z])[A-Za-z0-9]{8,}$',
 ] as const
 export const SELECTOR_MAX_DEPTH = 10
+export const SELECTOR_MAX_CLASSES = 2
 export const DOM_PATH_MAX_DEPTH = 8
 export const REACT_MAX_FIBER_DEPTH = 35
 export const REACT_MAX_COMPONENTS = 3
