@@ -17,6 +17,7 @@
   },
   "exports": {
     "./contract": "./src/contract/index.ts",
+    "./main": "./src/main/index.ts",
     "./client": "./src/client/index.ts",
     "./testing": "./testing/index.ts"
   },
