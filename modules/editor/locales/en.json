@@ -15,7 +15,14 @@
     "starting": "Starting editor…",
     "noWorktree": "Select a worktree to open its files.",
     "retry": "Retry",
-    "redownload": "Re-download"
+    "redownload": "Re-download",
+    "short": {
+      "downloading": "Downloading editor",
+      "verifying": "Verifying editor",
+      "extracting": "Installing editor",
+      "starting": "Starting editor",
+      "error": "Editor error"
+    }
   },
   "errors": {
     "checksumMismatch": "The download did not match the expected checksum and was not installed.",
@@ -30,8 +37,11 @@
   },
   "lsp": {
     "ok": "{{language}} · ✓",
-    "problems_one": "{{language}} · {{errors}} errors, {{warnings}} warnings",
-    "problems_other": "{{language}} · {{errors}} errors, {{warnings}} warnings"
+    "problems": "{{language}} · {{errors}}, {{warnings}}",
+    "errors_one": "{{count}} error",
+    "errors_other": "{{count}} errors",
+    "warnings_one": "{{count}} warning",
+    "warnings_other": "{{count}} warnings"
   },
   "settings": {
     "title": "Editor",
