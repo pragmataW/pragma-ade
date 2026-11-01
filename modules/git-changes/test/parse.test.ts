@@ -3,7 +3,9 @@ import { countLines, mergeChanges, parseNameStatusZ, parseNumstatZ } from '../sr
 
 describe('-z parsers', () => {
   it('parseNameStatusZ maps statuses, renames and copies', () => {
-    expect(parseNameStatusZ('M\0src/a.ts\0R087\0old.txt\0new.txt\0D\0gone.txt\0C100\0a\0b\0T\0t.sh\0U\0u.ts\0')).toEqual([
+    expect(
+      parseNameStatusZ('M\0src/a.ts\0R087\0old.txt\0new.txt\0D\0gone.txt\0C100\0a\0b\0T\0t.sh\0U\0u.ts\0'),
+    ).toEqual([
       { status: 'M', path: 'src/a.ts' },
       { status: 'R', path: 'new.txt', oldPath: 'old.txt' },
       { status: 'D', path: 'gone.txt' },

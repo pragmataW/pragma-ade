@@ -16,7 +16,6 @@ const NUL = '\0'
 const TAB = '\t'
 const NEWLINE = '\n'
 const BINARY_COUNT = '-'
-const LOCALE = 'en'
 const RENAME = 'R'
 const COPY = 'C'
 /** Tokens per record: status + path, status + old + new; numstat: counts+path, counts + old + new. */
@@ -79,7 +78,11 @@ export function parseNumstatZ(out: string): Map<string, LineCounts> {
   return counts
 }
 
-export const comparePaths = (a: string, b: string): number => a.localeCompare(b, LOCALE)
+/** Code-unit order, the order git itself lists paths in (`README.md` before `assets/`). */
+export const comparePaths = (a: string, b: string): number => {
+  if (a === b) return 0
+  return a < b ? -1 : 1
+}
 
 /** Name-status entries with their line counts (0/0 when numstat has none), sorted by path. */
 export function mergeChanges(nameStatus: NameStatusEntry[], numstat: Map<string, LineCounts>): ChangedFile[] {
