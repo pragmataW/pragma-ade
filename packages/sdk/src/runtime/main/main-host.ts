@@ -153,7 +153,11 @@ export async function createMainHost(opts: MainHostOptions): Promise<MainHost> {
   const graph = resolveModuleGraph(manifests, { disabled: coreSettings().modules.disabled })
   registerProviders(core, opts.records, new Set(graph.order))
   const { statuses, active } = await activateAll(core, records, graph)
-  const statusList = (): ModuleStatus[] => [...statuses.values()].sort((a, b) => a.id.localeCompare(b.id))
+  const rank = new Map(graph.order.map((id, i) => [id, i]))
+  const rankOf = (id: string): number => rank.get(id) ?? graph.order.length
+  /** Activation order first (the renderer activates in this order), then the excluded modules by id. */
+  const statusList = (): ModuleStatus[] =>
+    [...statuses.values()].sort((a, b) => rankOf(a.id) - rankOf(b.id) || a.id.localeCompare(b.id))
 
   const setModuleEnabled = (id: string, enabled: boolean): SetEnabledResult => {
     const record = records.get(id)

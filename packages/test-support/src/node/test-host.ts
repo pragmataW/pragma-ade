@@ -11,6 +11,7 @@ import {
   type ModuleRecord,
   type NativeViewLike,
   type PragmaBridge,
+  registerAppHandlers,
 } from '@pragma/sdk/runtime/main'
 import { createIpcClient, type IpcClient } from '@pragma/sdk/runtime/renderer'
 import { CORE_TEST_LOCALES, TEST_APP_VERSION } from './constants'
@@ -59,6 +60,7 @@ export interface TestModuleHost {
 }
 
 const SETTINGS_FILE = 'settings.json'
+const RELAUNCH_LOG = 'relaunch requested'
 
 /** The real main host in-process, with a fake platform, an in-memory IPC pipe and a temp userData. */
 export async function createTestModuleHost(opts: {
@@ -88,6 +90,15 @@ export async function createTestModuleHost(opts: {
     testMode: opts.testMode ?? true,
     appVersion: TEST_APP_VERSION,
     log,
+  })
+  registerAppHandlers(host, {
+    info: {
+      version: TEST_APP_VERSION,
+      platform: platform.platform,
+      testMode: opts.testMode ?? true,
+      packaged: platform.isPackaged,
+    },
+    relaunch: () => log.info(RELAUNCH_LOG),
   })
   return {
     host,

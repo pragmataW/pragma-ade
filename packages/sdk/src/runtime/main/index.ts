@@ -1,6 +1,7 @@
 export * from '../shared/i18n-resources'
 export { createMemoryTransport, type IpcMeta, type IpcTransport, type PragmaBridge } from '../shared/memory-transport'
 export * from './activation'
+export * from './app-handlers'
 export * from './command-bridge'
 export * from './database'
 export * from './event-bus'

@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"]
+  },
+  "include": [
+    "apps/desktop/test/**/*.tsx",
+    "packages/sdk/test/**/*.tsx",
+    "packages/ui/test/**/*.tsx",
+    "packages/test-support/src/dom/**/*",
+    "modules/*/test/**/*.tsx",
+    "providers/*/test/**/*.tsx",
+    "packages/sdk/src/**/*",
+    "packages/ui/src/**/*",
+    "apps/desktop/src/renderer/**/*",
+    "apps/desktop/src/generated/modules.renderer.ts",
+    "modules/*/src/**/*",
+    "providers/*/src/**/*",
+    "test/architecture/fixtures/extension-proof/*/*/src/**/*"
+  ],
+  "exclude": ["test/architecture/fixtures/violations/**/*", "scripts/test/fixtures/**", "**/node_modules/**"]
+}

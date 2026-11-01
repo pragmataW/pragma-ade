@@ -18,12 +18,14 @@
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.4",
     "i18next": "26.6.0",
-    "react-i18next": "17.1.9"
+    "react-i18next": "17.1.9",
+    "zustand": "5.0.16"
   },
   "devDependencies": {
     "@types/better-sqlite3": "9.6.0"
   },
   "peerDependencies": {
-    "react": "19.3.1"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   }
 }
