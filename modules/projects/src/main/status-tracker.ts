@@ -28,12 +28,14 @@ export class StatusTracker {
   readonly #known = new Map<string, Known>()
   readonly #running = new Map<string, { done: Promise<void>; again: boolean }>()
   readonly #epochs = new Map<string, number>()
+  #disposed = false
 
   constructor(opts: StatusTrackerOptions) {
     this.#opts = opts
   }
 
   refresh(worktreeId: string, path: string): Promise<void> {
+    if (this.#disposed) return Promise.resolve()
     const running = this.#running.get(worktreeId)
     if (running) {
       running.again = true
@@ -44,7 +46,7 @@ export class StatusTracker {
       do {
         state.again = false
         await this.#runOnce(worktreeId, path)
-      } while (state.again)
+      } while (state.again && !this.#disposed)
       this.#running.delete(worktreeId)
     })()
     this.#running.set(worktreeId, state)
@@ -60,13 +62,28 @@ export class StatusTracker {
       this.#opts.log?.warn(`git status failed in ${path}`, error)
       return
     }
-    if ((this.#epochs.get(worktreeId) ?? 0) !== epoch) return
+    if (this.#disposed || (this.#epochs.get(worktreeId) ?? 0) !== epoch) return
     const next: Known = { changedFiles: status.entries.length, ...syncOf(status), branch: status.branch }
     const prev = this.#known.get(worktreeId)
     this.#known.set(worktreeId, next)
     const { branch: _branch, ...update } = next
-    if (!prev || !sameStatus(prev, next)) this.#opts.onStatus(worktreeId, update)
-    if (prev && prev.branch !== next.branch) this.#opts.onBranch(worktreeId, next.branch)
+    if (!prev || !sameStatus(prev, next)) this.#notify(() => this.#opts.onStatus(worktreeId, update))
+    if (prev && prev.branch !== next.branch) this.#notify(() => this.#opts.onBranch(worktreeId, next.branch))
+  }
+
+  /** A failing listener must not reject `refresh` (callers fire-and-forget it). */
+  #notify(call: () => void): void {
+    try {
+      call()
+    } catch (error) {
+      this.#opts.log?.warn('status listener failed', error)
+    }
+  }
+
+  /** Stops new runs and waits for the ones in flight; later `refresh` calls are no-ops. */
+  async dispose(): Promise<void> {
+    this.#disposed = true
+    await Promise.all([...this.#running.values()].map((r) => r.done))
   }
 
   get(worktreeId: string): number | null {

@@ -23,6 +23,8 @@ export interface WatchingDeps {
 export function createWatching(deps: WatchingDeps) {
   const { repo, git, watcher, tracker, log } = deps
   const gitDirNames = new Map<string, string | null>()
+  /** In-flight or finished git-dir subscriptions, so a second caller also waits until the watch is live. */
+  const repoWatches = new Map<string, Promise<void>>()
 
   const refresh = (w: Worktree): Promise<void> => tracker.refresh(w.id, w.path)
 
@@ -63,6 +65,21 @@ export function createWatching(deps: WatchingDeps) {
     }
   }
 
+  /** True when the watch is live; false (already logged) lets a later call retry. */
+  async function subscribeGitDir(project: Project): Promise<boolean> {
+    const main = repo.listWorktrees(project.id).find((w) => w.isMain)
+    if (!main) return false
+    try {
+      const { commonDir } = await git.gitDirs(main.path)
+      await watcher.watch(repoKey(project.id), commonDir, GIT_DIR_IGNORE, (paths) => {
+        onGitDirBatch(project.id, paths).catch((error: unknown) => log.warn('git dir batch failed', error))
+      })
+    } catch (error) {
+      log.warn(`cannot watch git dir of ${project.repoPath}`, error)
+    }
+    return watcher.has(repoKey(project.id))
+  }
+
   return {
     refresh,
     async watchWorktree(w: Worktree): Promise<void> {
@@ -77,20 +94,20 @@ export function createWatching(deps: WatchingDeps) {
       tracker.forget(id)
       await watcher.unwatch(worktreeKey(id))
     },
-    async watchRepoGitDir(project: Project): Promise<void> {
-      if (watcher.has(repoKey(project.id))) return
-      const main = repo.listWorktrees(project.id).find((w) => w.isMain)
-      if (!main) return
-      try {
-        const { commonDir } = await git.gitDirs(main.path)
-        await watcher.watch(repoKey(project.id), commonDir, GIT_DIR_IGNORE, (paths) => {
-          onGitDirBatch(project.id, paths).catch((error: unknown) => log.warn('git dir batch failed', error))
-        })
-      } catch (error) {
-        log.warn(`cannot watch git dir of ${project.repoPath}`, error)
-      }
+    /** Resolves once the repository's common git dir is watched (or the attempt was logged as failed). */
+    watchRepoGitDir(project: Project): Promise<void> {
+      const existing = repoWatches.get(project.id)
+      if (existing) return existing
+      const started = subscribeGitDir(project).then((live) => {
+        if (!live) repoWatches.delete(project.id)
+      })
+      repoWatches.set(project.id, started)
+      return started
     },
-    unwatchRepo: (projectId: string): Promise<void> => watcher.unwatch(repoKey(projectId)),
+    async unwatchRepo(projectId: string): Promise<void> {
+      repoWatches.delete(projectId)
+      await watcher.unwatch(repoKey(projectId))
+    },
   }
 }
 export type Watching = ReturnType<typeof createWatching>

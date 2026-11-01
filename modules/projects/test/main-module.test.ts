@@ -94,6 +94,26 @@ describe('projects main module', () => {
     expect(await statusOf(id, (s) => s.ahead === 1)).toMatchObject({ upstream: 'origin/main', ahead: 1, behind: 0 })
   })
 
+  it('a commit made while the git dir watch is still subscribing is published', async () => {
+    let release = (): void => undefined
+    const gate = new Promise<void>((r) => {
+      release = r
+    })
+    const held = await startProjectsHost({ beforeGitDirs: () => gate })
+    try {
+      const clone = cleanups.track(await makeClone(repo))
+      const project = unwrap(await held.t.ipc.invoke(projectsIpc.addProject, { path: clone.dir }))
+      const [main] = await held.service.listWorktrees(project.id)
+      await sleep(300)
+      await clone.commitAll('during subscribe')
+      release()
+      await waitFor(() => held.statuses.find((s) => s.worktreeId === main?.id && s.ahead === 1), STATUS_WAIT_MS)
+    } finally {
+      release()
+      await held.dispose()
+    }
+  })
+
   it('one file write triggers at most two status runs (no self-trigger)', async () => {
     const project = await addRepo(repo.dir)
     const [main] = await h.service.listWorktrees(project.id)
@@ -104,6 +124,25 @@ describe('projects main module', () => {
     await sleep(1500)
     expect(h.statusCalls.count).toBeGreaterThan(0)
     expect(h.statusCalls.count).toBeLessThanOrEqual(2)
+  })
+
+  it('deactivate waits for a status run in flight and publishes nothing after it', async () => {
+    let release = (): void => undefined
+    const gate = new Promise<void>((r) => {
+      release = r
+    })
+    const held = await startProjectsHost({ beforeStatus: () => gate })
+    unwrap(await held.t.ipc.invoke(projectsIpc.addProject, { path: repo.dir }))
+    await waitFor(() => held.statusCalls.count > 0)
+    let disposed = false
+    const disposing = held.dispose().then(() => {
+      disposed = true
+    })
+    await sleep(200)
+    expect(disposed).toBe(false)
+    release()
+    await disposing
+    expect(held.statuses).toEqual([])
   })
 
   it('updateSettings validates and stores', async () => {

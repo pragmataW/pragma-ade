@@ -1,3 +1,4 @@
+import { memoryLogger } from '@pragma/test-support'
 import { describe, expect, it } from 'vitest'
 import type { GitService, GitStatus } from '../src/contract'
 import { StatusTracker } from '../src/main/status-tracker'
@@ -89,5 +90,39 @@ describe('StatusTracker', () => {
     const t = new StatusTracker({ git, onStatus: () => undefined, onBranch: () => undefined })
     await expect(t.refresh('w', '/w')).resolves.toBeUndefined()
     expect(t.get('w')).toBeNull()
+  })
+
+  it('a throwing listener is logged and does not reject refresh', async () => {
+    const f = fakeGit()
+    const log = memoryLogger()
+    const t = new StatusTracker({
+      git: f.git,
+      log,
+      onStatus: () => {
+        throw new Error('db closed')
+      },
+      onBranch: () => undefined,
+    })
+    const p = t.refresh('w', '/w')
+    await f.release(status())
+    await expect(p).resolves.toBeUndefined()
+    expect(log.messages('warn')).toContain('status listener failed')
+  })
+
+  it('dispose waits for the run in flight, drops its result and makes later refreshes no-ops', async () => {
+    const x = tracker()
+    const first = x.t.refresh('w', '/w')
+    void x.t.refresh('w', '/w')
+    let disposed = false
+    const disposing = x.t.dispose().then(() => {
+      disposed = true
+    })
+    await new Promise((r) => setTimeout(r, 5))
+    expect(disposed).toBe(false)
+    await x.release(status())
+    await Promise.all([first, disposing])
+    expect(x.statuses).toEqual([])
+    await x.t.refresh('w', '/w')
+    expect(x.calls()).toBe(1)
   })
 })

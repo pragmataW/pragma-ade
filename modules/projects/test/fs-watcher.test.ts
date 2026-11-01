@@ -63,4 +63,10 @@ describe('FsWatcher', () => {
     await sleep(250)
     expect(batches).toHaveLength(1)
   })
+
+  it('refuses new subscriptions after closeAll', async () => {
+    await watcher.closeAll()
+    await watcher.watch('late', dir, WORKTREE_IGNORE, record)
+    expect(watcher.has('late')).toBe(false)
+  })
 })

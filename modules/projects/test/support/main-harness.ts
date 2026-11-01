@@ -39,17 +39,29 @@ function probeRecord(onActivate: (ctx: MainContext) => void): ModuleRecord {
   }
 }
 
-/** The real main host with the projects module (spied git, isolated git env) plus a probe module. */
-export async function startProjectsHost() {
+/** The real main host with the projects module (spied git, isolated git env) plus a probe module (see `ProjectsHostOptions`). */
+export interface ProjectsHostOptions {
+  /** Awaited before every `git status` (hold a run in flight). */
+  beforeStatus?: () => Promise<void>
+  /** Awaited before every `git rev-parse` of the git dirs (hold the git-dir watch). */
+  beforeGitDirs?: () => Promise<void>
+}
+
+export async function startProjectsHost(opts: ProjectsHostOptions = {}) {
   const cleanups = createCleanups()
   const scratch = cleanups.track(createTempUserData())
   const real = createGitService({ baseEnv: gitTestEnv() })
   const statusCalls = { count: 0 }
   const git: GitService = {
     ...real,
-    status: (cwd) => {
+    status: async (cwd) => {
       statusCalls.count++
+      await opts.beforeStatus?.()
       return real.status(cwd)
+    },
+    gitDirs: async (cwd) => {
+      await opts.beforeGitDirs?.()
+      return real.gitDirs(cwd)
     },
   }
   const dialogReplies: { openFolder: string | null } = { openFolder: null }

@@ -26,13 +26,15 @@ const toPosix = (p: string): string => p.replace(WINDOWS_SEP_RE, POSIX_SEP)
 export class FsWatcher {
   readonly #opts: FsWatcherOptions
   readonly #entries = new Map<string, Entry>()
+  #closed = false
 
   constructor(opts: FsWatcherOptions) {
     this.#opts = opts
   }
 
-  /** Idempotent per key; a missing dir or a subscribe failure is logged, never thrown. */
+  /** Idempotent per key; resolves once the subscription is live. A missing dir or a subscribe failure is logged, never thrown; after `closeAll` it is a no-op. */
   async watch(key: string, dir: string, ignore: readonly string[], onBatch: OnBatch): Promise<void> {
+    if (this.#closed) return
     if (this.#entries.has(key)) {
       await this.#entries.get(key)?.ready
       return
@@ -84,7 +86,9 @@ export class FsWatcher {
     return this.#entries.has(key)
   }
 
+  /** Unwatches everything and refuses new subscriptions (module deactivate). */
   async closeAll(): Promise<void> {
+    this.#closed = true
     await Promise.all([...this.#entries.keys()].map((key) => this.unwatch(key)))
   }
 }
