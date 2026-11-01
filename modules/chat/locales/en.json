@@ -1,0 +1,6 @@
+{
+  "module": {
+    "name": "Chat",
+    "description": "Runs agent sessions in a rich chat view."
+  }
+}
