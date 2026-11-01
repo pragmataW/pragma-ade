@@ -16,7 +16,7 @@
     "pretypecheck": "pnpm gen -- --no-build",
     "test": "vitest run",
     "pretest": "pnpm gen",
-    "gen": "node -e \"\"",
+    "gen": "node scripts/gen-modules.ts",
     "predev": "pnpm gen",
     "prebuild": "pnpm gen",
     "package:mac": "node scripts/package/index.ts mac",

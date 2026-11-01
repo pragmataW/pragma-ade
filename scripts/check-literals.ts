@@ -1,7 +1,8 @@
 import { relative, resolve } from 'node:path'
+import { PARENT_DIR } from './lib/constants.ts'
 import { checkLiterals } from './lib/literals.ts'
 
-const repoRoot = resolve(import.meta.dirname, '..')
+const repoRoot = resolve(import.meta.dirname, PARENT_DIR)
 const { findings, allowances } = checkLiterals({ repoRoot })
 const rel = (file: string): string => relative(repoRoot, file)
 
