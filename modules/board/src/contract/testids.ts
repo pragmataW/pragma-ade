@@ -36,7 +36,7 @@ export const BOARD_TESTIDS = {
   cardSession: 'task-card-session',
   cardBadges: 'task-card-badges',
   drawer: 'task-drawer',
-  drawerKey: 'task-drawer-key',
+  drawerKeyChip: 'task-drawer-key',
   drawerTitle: 'task-drawer-title',
   drawerDescription: 'task-drawer-description',
   drawerPreviewToggle: 'task-drawer-preview-toggle',
@@ -73,10 +73,10 @@ export const BOARD_TESTIDS = {
 /** Data attributes on board elements (E2E locators). */
 export const BOARD_TESTID_ATTRS = {
   columnName: 'data-column-name',
-  columnKey: 'data-column-key',
+  columnKeyAttr: 'data-column-key',
   columnId: 'data-column-id',
   taskId: 'data-task-id',
-  taskKey: 'data-task-key',
+  taskKeyAttr: 'data-task-key',
   selected: 'data-selected',
   labelName: 'data-label-name',
   priority: 'data-priority',

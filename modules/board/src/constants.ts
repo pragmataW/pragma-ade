@@ -16,3 +16,5 @@ export const DIGITS_RE = /^\d+$/
 /** `prepareStart` tries `<branch>-2` … `<branch>-50` before giving up on a free suggestion. */
 export const MAX_BRANCH_SUFFIX = 50
 export const REMOTE_HEAD_RE = /\/HEAD$/
+/** Coalesces bursts of `board.changed` into one renderer push. */
+export const CHANGE_PUSH_DEBOUNCE_MS = 50
