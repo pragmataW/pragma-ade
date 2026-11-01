@@ -423,6 +423,9 @@ importers:
 
   providers/claude:
     dependencies:
+      '@pragma/module-agents':
+        specifier: workspace:*
+        version: link:../../modules/agents
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -435,6 +438,9 @@ importers:
 
   providers/custom:
     dependencies:
+      '@pragma/module-agents':
+        specifier: workspace:*
+        version: link:../../modules/agents
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -447,6 +453,9 @@ importers:
 
   providers/opencode:
     dependencies:
+      '@pragma/module-agents':
+        specifier: workspace:*
+        version: link:../../modules/agents
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk

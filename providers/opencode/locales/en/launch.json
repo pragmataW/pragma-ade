@@ -1,0 +1,5 @@
+{
+  "launch": {
+    "minVersion": "OpenCode {{required}} required (found {{found}})"
+  }
+}

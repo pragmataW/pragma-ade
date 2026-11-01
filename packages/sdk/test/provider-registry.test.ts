@@ -13,7 +13,7 @@ import {
 } from '../src/runtime/shared/provider-registry'
 import { memoryLogger } from './lib/builders'
 
-declare module '../src/common/providers' {
+declare module '../src/index' {
   interface CapabilityMap {
     fakePing: { ping(): string }
   }

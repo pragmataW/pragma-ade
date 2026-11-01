@@ -21,7 +21,8 @@ describe.each(PROVIDERS)('provider $id', (p) => {
     expect(mod.manifest).toMatchObject({ kind: 'provider', core: false, dependsOn: [], optionalDependsOn: [] })
     expect(mod.provider?.iconFile).toBe(join(dirOf(p.id), 'src/renderer/icon.tsx'))
     expect(mod.provider?.settingsFile).toBe(join(dirOf(p.id), 'src/main/settings.ts'))
-    expect(mod.provider?.mainCapabilities).toEqual([])
+    // later phases add their own `<key>.capability.ts` files (§3); the skeleton itself declares none
+    for (const cap of mod.provider?.mainCapabilities ?? []) expect(cap.file).toMatch(/\.capability\.ts$/)
   })
 
   it('loads a record with the descriptor, the shared settings section and provider.json', async () => {
@@ -34,8 +35,8 @@ describe.each(PROVIDERS)('provider $id', (p) => {
       defaultArgs: [],
     })
     expect(record.provider?.settings).toBe(PROVIDER_SETTINGS_SECTION)
-    expect(record.provider?.capabilities).toEqual([])
-    expect(record.locales.en).toEqual({ module: { name: p.moduleName }, provider: { name: p.name } })
+    for (const cap of record.provider?.capabilities ?? []) expect(cap.providerId).toBe(p.id)
+    expect(record.locales.en).toMatchObject({ module: { name: p.moduleName }, provider: { name: p.name } })
   })
 
   it('declares its monogram in constants', () => {
