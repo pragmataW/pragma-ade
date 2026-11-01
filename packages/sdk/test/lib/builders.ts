@@ -1,20 +1,14 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { createTestModuleHost, type FakePlatform } from '@pragma/test-support'
 import { afterAll } from 'vitest'
-import type { Logger } from '../../src/common/logger'
 import type { ModuleManifest } from '../../src/common/manifest'
 import { type CapabilityRegistration, defineProvider } from '../../src/common/providers'
 import type { SettingsSection } from '../../src/common/settings'
 import type { MainModule, TestHooks } from '../../src/main/types'
-import { type LogLevel, type LogSink, loggerFromSinks } from '../../src/runtime/main/logger'
-import { createMainHost } from '../../src/runtime/main/main-host'
-import type { NativeViewLike } from '../../src/runtime/main/native-view-host'
 import type { ModuleRecord } from '../../src/runtime/main/types'
-import { createIpcClient } from '../../src/runtime/renderer/ipc-client'
 import type { LocaleTree } from '../../src/runtime/shared/i18n-resources'
-import { createMemoryTransport } from '../../src/runtime/shared/memory-transport'
-import { createFakePlatform, type FakePlatform } from './fake-platform'
 
 export function manifest(id: string, partial: Partial<ModuleManifest> = {}): ModuleManifest {
   return {
@@ -40,23 +34,7 @@ export function tempDir(prefix = 'pragma-sdk-'): string {
   return dir
 }
 
-export interface LogLine {
-  level: LogLevel
-  scope: string
-  message: string
-  details: unknown[]
-}
-
-export type MemoryLogger = Logger & { lines: LogLine[]; messages(level?: LogLevel): string[] }
-
-export function memoryLogger(): MemoryLogger {
-  const lines: LogLine[] = []
-  const sink: LogSink = { write: (level, scope, message, details) => lines.push({ level, scope, message, details }) }
-  return Object.assign(loggerFromSinks([sink]), {
-    lines,
-    messages: (level?: LogLevel) => lines.filter((l) => !level || l.level === level).map((l) => l.message),
-  })
-}
+export { type MemoryLogger, memoryLogger } from '@pragma/test-support'
 
 export type FeatureRecordOptions = {
   /** Any `defineMainModule(...)` result, whatever its settings type. */
@@ -103,29 +81,15 @@ export function providerRecord(
   }
 }
 
-export function fakeViewContainer() {
-  const views = new Set<NativeViewLike>()
-  return { views, add: (v: NativeViewLike) => views.add(v), remove: (v: NativeViewLike) => views.delete(v) }
-}
-
 export async function startHost(
   records: ModuleRecord[],
   opts: { userDataDir?: string; testMode?: boolean; platform?: FakePlatform } = {},
 ) {
-  const { transport, bridge } = createMemoryTransport()
-  const platform = opts.platform ?? createFakePlatform()
-  const userDataDir = opts.userDataDir ?? tempDir()
-  const log = memoryLogger()
-  const host = await createMainHost({
-    records,
-    coreLocales: { en: { dialogs: { confirm: 'OK', cancel: 'Cancel' } } },
-    userDataDir,
-    transport,
-    viewContainer: fakeViewContainer(),
-    platform,
+  const t = await createTestModuleHost({
+    modules: records,
+    userDataDir: opts.userDataDir ?? tempDir(),
     testMode: opts.testMode ?? false,
-    appVersion: '0.0.0-test',
-    log,
+    platform: opts.platform,
   })
-  return { host, bridge, client: createIpcClient(bridge, log), platform, userDataDir, log }
+  return { host: t.host, bridge: t.bridge, client: t.ipc, platform: t.platform, userDataDir: t.userDataDir, log: t.log }
 }

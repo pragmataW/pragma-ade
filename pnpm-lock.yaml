@@ -112,7 +112,11 @@ importers:
         specifier: 9.6.0
         version: 9.6.0
 
-  packages/test-support: {}
+  packages/test-support:
+    dependencies:
+      '@pragma/sdk':
+        specifier: workspace:*
+        version: link:../sdk
 
   packages/ui: {}
 

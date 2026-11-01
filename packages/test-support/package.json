@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/node/index.ts"
+    ".": "./src/node/index.ts",
+    "./e2e": "./src/e2e/index.ts",
+    "./dom": "./src/dom/index.ts",
+    "./dom/setup": "./src/dom/setup.ts"
+  },
+  "dependencies": {
+    "@pragma/sdk": "workspace:*"
   }
 }
