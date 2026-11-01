@@ -1,10 +1,12 @@
 import type { AgentStatusService } from '../contract'
+import type { Notifier } from './notifier'
 import type { StatusStore } from './status-store'
 
 /** The live objects of the activated module (read by test hooks only). */
 export interface AgentStatusRuntime {
   store: StatusStore
   service: AgentStatusService
+  notifier: Notifier
   dispose(): Promise<void>
 }
 

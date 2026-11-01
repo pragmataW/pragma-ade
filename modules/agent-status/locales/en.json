@@ -2,5 +2,24 @@
   "module": {
     "name": "Agent status",
     "description": "Shows whether each agent is working, waiting for you, or idle."
+  },
+  "notification": {
+    "waitingTitle": "{{agent}} is waiting for you",
+    "waitingBody": "{{branch}}"
+  },
+  "commands": {
+    "openSession": "Agent status: Open session"
+  },
+  "settings": {
+    "title": "Notifications",
+    "notifications": {
+      "label": "Notify me when an agent is waiting for input",
+      "hint": "Shown only while the Pragma ADE window is not focused."
+    },
+    "fallback": {
+      "section": "Agent status detection",
+      "label": "Idle after silence (seconds)",
+      "hint": "Used for agents without status hooks."
+    }
   }
 }
