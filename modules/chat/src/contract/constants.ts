@@ -102,8 +102,6 @@ export const TRUNCATION_MARKER = '\n… [output truncated]'
 /** `<provider-id>.<name>` */
 export const CUSTOM_EVENT_TYPE_RE = /^[a-z0-9-]+\.[a-z0-9_.-]+$/
 export const CUSTOM_PART_PREFIX = 'custom:'
-/** agent-status `turnFailed.message` limit. */
-export const STATUS_MESSAGE_MAX = 500
 
 export const MIN_STARTUP_TIMEOUT_MS = 1000
 export const DEFAULT_STARTUP_TIMEOUT_MS = 20_000
