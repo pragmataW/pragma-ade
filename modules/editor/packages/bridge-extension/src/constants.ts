@@ -74,3 +74,19 @@ export const COMMENT_MESSAGES = {
   author: 'You',
 } as const
 export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const
+/** Index = `vscode.DiagnosticSeverity` (Error 0, Warning 1, Information 2, Hint 3). */
+export const SEVERITIES = ['error', 'warning', 'info', 'hint'] as const
+export type Severity = (typeof SEVERITIES)[number]
+export const SEVERITY = { error: 'error', warning: 'warning' } as const satisfies Record<string, Severity>
+export const TAB_KINDS = { text: 'text', webview: 'webview', other: 'other' } as const
+export type TabKind = (typeof TAB_KINDS)[keyof typeof TAB_KINDS]
+export const LANGUAGE_STATUS_DEBOUNCE_MS = 300
+export const TEST_MODE = { env: 'PRAGMA_TEST', enabled: '1' } as const
+export const TEST_ARG = {
+  id: 'id',
+  path: 'path',
+  lineStart: 'lineStart',
+  lineEnd: 'lineEnd',
+  body: 'body',
+} as const
+export const TEST_RESPONSE = 'testResponse'

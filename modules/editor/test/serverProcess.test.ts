@@ -6,6 +6,7 @@ import { runOnce, type ServerEvent, ServerProcess } from '../src/main/server/ser
 import { choosePort, writeConnectionToken } from '../src/main/server/serverState'
 import { fakeLogPath, fakeServerCommand, isAlive, readFakeLog } from './support/fakeServer'
 import { tempDir } from './support/httpFixture'
+import { until } from './support/wait'
 
 const tmp = tempDir()
 let n = 0
@@ -44,14 +45,6 @@ async function make(
 }
 
 const onceMarker = (): string => join(tmp.dir, `once-${++n}`)
-
-const until = async (cond: () => boolean, ms = 8000): Promise<void> => {
-  const end = Date.now() + ms
-  while (!cond()) {
-    if (Date.now() > end) throw new Error('condition not met')
-    await new Promise((r) => setTimeout(r, 25))
-  }
-}
 
 describe('ServerProcess', () => {
   it('start resolves after /version is up and emits ready; stdout token is redacted', async () => {

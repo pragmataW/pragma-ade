@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode'
-import { COMMENT_MESSAGES, LOG_CHANNEL } from './constants'
+import { COMMENT_MESSAGES, LOG_CHANNEL, SEVERITIES, type Severity, TAB_KINDS, type TabKind } from './constants'
 
 export interface GlobalStateLike {
   get<T>(k: string): T | undefined
@@ -35,6 +35,19 @@ export interface CommentControllerSpec {
   ranges(doc: DocumentInfo): [number, number][]
 }
 
+export interface DiagnosticInfo {
+  severity: Severity
+  message: string
+  /** 1-based. */
+  line: number
+}
+
+export interface TabInfo {
+  label: string
+  kind: TabKind
+  viewType?: string
+}
+
 /** The narrow port over `vscode` the handlers use (tests use a hand fake). */
 export interface VscodeApi {
   env: Record<string, string | undefined>
@@ -53,6 +66,15 @@ export interface VscodeApi {
   registerReplyCommand(id: string, handler: (reply: { thread: ThreadLike; text: string }) => unknown): Disposable
   /** Full text lines and language of a document. */
   readDocument(uri: ThreadLike['uri']): Promise<{ lines: string[]; languageId: string }>
+  diagnostics(absPath: string): DiagnosticInfo[]
+  executeCommand(id: string, args: unknown[]): Promise<unknown>
+  tabs(): TabInfo[]
+  extensionActive(id: string): boolean
+  /** 1-based cursor of the active text editor. */
+  activeEditor(): { path: string; line: number; column: number } | null
+  activeDocument(): { languageId: string; path: string } | undefined
+  onDidChangeActiveEditor(cb: () => void): Disposable
+  onDidChangeDiagnostics(cb: () => void): Disposable
 }
 
 const toThread = (vs: typeof vscode, t: vscode.CommentThread, author: string): ThreadLike => ({
@@ -64,6 +86,13 @@ const toThread = (vs: typeof vscode, t: vscode.CommentThread, author: string): T
   },
   dispose: () => t.dispose(),
 })
+
+function tabInfo(vs: typeof vscode, tab: vscode.Tab): TabInfo {
+  if (tab.input instanceof vs.TabInputText) return { label: tab.label, kind: TAB_KINDS.text }
+  if (tab.input instanceof vs.TabInputWebview)
+    return { label: tab.label, kind: TAB_KINDS.webview, viewType: tab.input.viewType }
+  return { label: tab.label, kind: TAB_KINDS.other }
+}
 
 const zeroBased = (n: number | undefined): number => Math.max(0, (n ?? 1) - 1)
 
@@ -113,5 +142,26 @@ export function createVscodeApi(vs: typeof vscode, ctx: vscode.ExtensionContext)
       const doc = await vs.workspace.openTextDocument(vs.Uri.file(uri.fsPath))
       return { lines: doc.getText().split(/\r?\n/), languageId: doc.languageId }
     },
+    diagnostics: (absPath) =>
+      vs.languages.getDiagnostics(vs.Uri.file(absPath)).map((d) => ({
+        severity: SEVERITIES[d.severity] ?? SEVERITIES[0],
+        message: d.message,
+        line: d.range.start.line + 1,
+      })),
+    executeCommand: (id, args) => Promise.resolve(vs.commands.executeCommand(id, ...args)),
+    tabs: () => vs.window.tabGroups.all.flatMap((g) => g.tabs.map((t) => tabInfo(vs, t))),
+    extensionActive: (id) => vs.extensions.getExtension(id)?.isActive ?? false,
+    activeEditor() {
+      const e = vs.window.activeTextEditor
+      if (!e) return null
+      const p = e.selection.active
+      return { path: e.document.uri.fsPath, line: p.line + 1, column: p.character + 1 }
+    },
+    activeDocument() {
+      const d = vs.window.activeTextEditor?.document
+      return d ? { languageId: d.languageId, path: d.uri.fsPath } : undefined
+    },
+    onDidChangeActiveEditor: (cb) => vs.window.onDidChangeActiveTextEditor(() => cb()),
+    onDidChangeDiagnostics: (cb) => vs.languages.onDidChangeDiagnostics(() => cb()),
   }
 }

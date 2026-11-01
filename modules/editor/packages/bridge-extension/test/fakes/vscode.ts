@@ -1,4 +1,4 @@
-import type { CommentControllerSpec, ThreadLike, VscodeApi } from '../../src/vscodeApi'
+import type { CommentControllerSpec, DiagnosticInfo, TabInfo, ThreadLike, VscodeApi } from '../../src/vscodeApi'
 
 /** A recording fake of the `VscodeApi` port. */
 export interface FakeApi extends VscodeApi {
@@ -12,6 +12,12 @@ export interface FakeApi extends VscodeApi {
   controllers: CommentControllerSpec[]
   commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
   documents: Map<string, { lines: string[]; languageId: string }>
+  diags: Map<string, DiagnosticInfo[]>
+  tabList: TabInfo[]
+  executed: { id: string; args: unknown[] }[]
+  current: { doc?: { languageId: string; path: string }; editor: { path: string; line: number; column: number } | null }
+  /** Fires the active-editor and diagnostics listeners. */
+  fireChange(): void
 }
 
 /** A recording comment thread. */
@@ -43,6 +49,15 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
   const commands: FakeApi['commands'] = new Map()
   const documents: FakeApi['documents'] = new Map()
   const disposable = { dispose: () => undefined }
+  const diags: FakeApi['diags'] = new Map()
+  const tabList: TabInfo[] = []
+  const executed: FakeApi['executed'] = []
+  const current: FakeApi['current'] = { editor: null }
+  const listeners = new Set<() => void>()
+  const listen = (cb: () => void) => {
+    listeners.add(cb)
+    return { dispose: () => void listeners.delete(cb) }
+  }
   return {
     env: o.env ?? {},
     workspaceFolderPath: () => o.folder,
@@ -68,6 +83,21 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
       return disposable
     },
     readDocument: async (uri) => documents.get(uri.fsPath) ?? { lines: [], languageId: 'plaintext' },
+    diagnostics: (path) => diags.get(path) ?? [],
+    executeCommand: async (id, args) => void executed.push({ id, args }),
+    tabs: () => tabList,
+    extensionActive: (id) => id === 'pragma.pragma-bridge',
+    activeEditor: () => current.editor,
+    activeDocument: () => current.doc,
+    onDidChangeActiveEditor: listen,
+    onDidChangeDiagnostics: listen,
+    fireChange: () => {
+      for (const cb of listeners) cb()
+    },
+    diags,
+    tabList,
+    executed,
+    current,
     controllers,
     commands,
     documents,

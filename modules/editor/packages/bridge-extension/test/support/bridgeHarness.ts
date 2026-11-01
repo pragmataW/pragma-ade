@@ -1,6 +1,7 @@
 import { BRIDGE_ENV } from '@pragma/module-bridge/contract'
 import { startTestBridgeServer, type TestBridgeServer } from '@pragma/module-bridge/testing'
 import { type EditorHello, type EditorTheme, editorBridge } from '@pragma/module-editor/contract'
+import { vi } from 'vitest'
 import { BridgeConnection, type EditorEventHandlers } from '../../src/bridgeConnection'
 import { type FakeApi, fakeApi } from '../fakes/vscode'
 
@@ -39,10 +40,11 @@ export function connectionFor(server: TestBridgeServer, folder = '/Work/Repo') {
   return { api, conn }
 }
 
-export const until = async (cond: () => boolean, ms = 5000): Promise<void> => {
-  const end = Date.now() + ms
-  while (!cond()) {
-    if (Date.now() > end) throw new Error('condition not met')
-    await new Promise((r) => setTimeout(r, 20))
-  }
-}
+/** Waits until `cond` holds (vitest polling). */
+export const until = (cond: () => boolean, timeout = 5000): Promise<void> =>
+  vi.waitFor(
+    () => {
+      if (!cond()) throw new Error('condition not met')
+    },
+    { timeout, interval: 20 },
+  )
