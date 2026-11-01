@@ -5,7 +5,16 @@ export const EVENT_SAMPLES: Record<ChatEventKind, ChatEvent> = {
   'session-info': { kind: 'session-info', externalSessionId: 'ext', commands: [{ name: 'help', description: 'Help' }] },
   options: {
     kind: 'options',
-    options: [{ key: 'model', type: 'enum', labelKey: 'chat:option.model', values: [{ value: null }], default: null, current: null }],
+    options: [
+      {
+        key: 'model',
+        type: 'enum',
+        labelKey: 'chat:option.model',
+        values: [{ value: null }],
+        default: null,
+        current: null,
+      },
+    ],
   },
   message: { kind: 'message', messageId: 'm1', role: 'user', text: 'hi', attachments: [], origin: 'live' },
   'turn-start': { kind: 'turn-start', turnId: 't1' },

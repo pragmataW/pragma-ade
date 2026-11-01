@@ -9,7 +9,14 @@ import type {
   SessionPatch,
 } from '@pragma/module-agents/contract'
 import { aProfile, aSession } from '@pragma/module-agents/testing'
-import { CHAT_MODE, type ChatEvent, type ChatEventEnvelope } from '../src/contract'
+import {
+  CHAT_MODE,
+  type ChatEvent,
+  type ChatEventEnvelope,
+  type ChatTranscript,
+  emptyTranscript,
+  reduceTranscript,
+} from '../src/contract'
 import type { ChatAgentsApi } from '../src/main/agents-adapter'
 
 export const TEST_SESSION_ID = 's1'
@@ -84,3 +91,7 @@ export function stubAgentsApi(over: { session?: Partial<AgentSession>; profile?:
   }
   return api
 }
+
+/** The transcript of `events` (seq 1..n), as the renderer would build it live. */
+export const makeTranscript = (events: ChatEvent[]): ChatTranscript =>
+  makeEnvelopes(events).reduce(reduceTranscript, emptyTranscript())

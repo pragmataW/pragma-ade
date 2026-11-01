@@ -6,8 +6,8 @@ import {
   CHAT_PERMISSION_OUTCOMES,
   CHAT_TOOL_KINDS,
   CUSTOM_EVENT_TYPE_RE,
-  EVENT_KIND as K,
   FILE_CHANGES,
+  EVENT_KIND as K,
   MESSAGE_ORIGINS,
   RESPONSE_OUTCOMES,
   SESSION_EXIT_REASONS,
@@ -135,7 +135,11 @@ export const chatEventSchema = z.discriminatedUnion('kind', [
     fatal: z.boolean(),
   }),
   z.object({ kind: z.literal(K.turnEnd), turnId: z.string().optional(), reason: z.enum(TURN_END_REASONS) }),
-  z.object({ kind: z.literal(K.sessionExit), exitCode: z.number().int().nullable(), reason: z.enum(SESSION_EXIT_REASONS) }),
+  z.object({
+    kind: z.literal(K.sessionExit),
+    exitCode: z.number().int().nullable(),
+    reason: z.enum(SESSION_EXIT_REASONS),
+  }),
   /** Core-emitted only. */
   z.object({ kind: z.literal(K.queue), queued: z.array(queuedMessageSchema) }),
   z.object({

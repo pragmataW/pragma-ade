@@ -49,5 +49,8 @@ export function validateOptionValue(d: ChatOptionDescriptor, v: unknown): v is C
 }
 
 /** The descriptor list with `current` of `key` replaced. */
-export const withCurrent = (list: ChatOptionDescriptor[], key: string, value: ChatOptionValue): ChatOptionDescriptor[] =>
-  list.map((d) => (d.key === key ? { ...d, current: value } : d))
+export const withCurrent = (
+  list: ChatOptionDescriptor[],
+  key: string,
+  value: ChatOptionValue,
+): ChatOptionDescriptor[] => list.map((d) => (d.key === key ? { ...d, current: value } : d))

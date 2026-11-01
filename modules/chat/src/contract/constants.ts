@@ -95,7 +95,8 @@ export const ATTACHMENT_KINDS = ['image'] as const
 /** Limits applied by adapters and the kit (RF5). */
 export const MAX_TOOL_OUTPUT_CHARS = 32_768
 export const MAX_DIFF_CHARS = 400_000
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+/** 5 MB */
+export const MAX_IMAGE_BYTES = 5_242_880
 export const IMAGE_MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
 export const TRUNCATION_MARKER = '\n… [output truncated]'
 /** `<provider-id>.<name>` */

@@ -3,7 +3,11 @@ import { type ChatEvent, type ChatSessionStatus, nextStatus } from '../../src/co
 import { EVENT_SAMPLES as E } from './samples'
 
 const ANY: ChatSessionStatus[] = ['starting', 'working', 'waiting', 'idle', 'exited', 'error']
-const exit = (reason: 'closed' | 'crashed' | 'startup_failed'): ChatEvent => ({ kind: 'session-exit', exitCode: 1, reason })
+const exit = (reason: 'closed' | 'crashed' | 'startup_failed'): ChatEvent => ({
+  kind: 'session-exit',
+  exitCode: 1,
+  reason,
+})
 
 const rows: [ChatSessionStatus, ChatEvent, number, ChatSessionStatus][] = [
   ['starting', E['session-info'], 0, 'idle'],
