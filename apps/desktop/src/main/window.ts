@@ -8,8 +8,12 @@ const WILL_NAVIGATE = 'will-navigate'
 const DENY = { action: 'deny' } as const
 const DID_FINISH_LOAD = 'did-finish-load'
 
-/** The single app window: sandboxed renderer, no navigation away from the app, no popups. */
-export function createMainWindow(opts: { title: string }): BrowserWindow {
+/**
+ * The single app window: sandboxed renderer, no navigation away from the app, no popups.
+ * `hidden` (E2E runs) never shows the window and keeps it painting at full speed while hidden.
+ */
+export function createMainWindow(opts: { title: string; hidden?: boolean }): BrowserWindow {
+  const hidden = opts.hidden === true
   const isMac = process.platform === DARWIN
   const win = new BrowserWindow({
     width: WINDOW.width,
@@ -25,9 +29,10 @@ export function createMainWindow(opts: { title: string }): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: !hidden,
     },
   })
-  win.once(READY_TO_SHOW, () => win.show())
+  if (!hidden) win.once(READY_TO_SHOW, () => win.show())
   win.webContents.setWindowOpenHandler(() => DENY)
   const devUrl = process.env[RENDERER_URL_ENV]
   const appUrl = devUrl ?? new URL(`file://${join(import.meta.dirname, RENDERER_FILE)}`).href
