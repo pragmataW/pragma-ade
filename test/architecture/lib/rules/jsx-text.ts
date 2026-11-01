@@ -6,6 +6,8 @@ const RULE = 'jsx-text'
 const LETTER = /\p{L}/u
 const TEXT_ATTRIBUTES = new Set(['title', 'placeholder', 'aria-label', 'alt', 'label', 'aria-description'])
 const RENDERER_ROOTS = /^(apps|packages|modules|providers)\//
+/** Generated shadcn sources are never edited; the wrappers turn their built-in English text off. */
+const VENDOR = /^packages\/ui\/src\/vendor\//
 
 function literalText(node: unknown): string | undefined {
   if (!isNode(node)) return undefined
@@ -37,7 +39,9 @@ function finding(node: AstNode, parent: AstNode | undefined): string | undefined
 /** No user-visible literal text in JSX (§1.7): everything goes through i18n keys. */
 export function checkJsxText(files: readonly SourceFile[]): Violation[] {
   const out: Violation[] = []
-  const tsx = files.filter((f) => f.rel.endsWith('.tsx') && RENDERER_ROOTS.test(f.rel) && !isTestCode(f.rel))
+  const tsx = files.filter(
+    (f) => f.rel.endsWith('.tsx') && RENDERER_ROOTS.test(f.rel) && !VENDOR.test(f.rel) && !isTestCode(f.rel),
+  )
   for (const file of tsx) {
     walk(file.parsed.program, (node, parent) => {
       const message = finding(node, parent)

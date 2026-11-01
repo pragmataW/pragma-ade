@@ -1,0 +1,27 @@
+/* Shiki css-variables theme → ui-notes syntax tokens, so palette/mode/density changes restyle code without re-highlighting. */
+:root {
+  --shiki-foreground: var(--tx);
+  --shiki-background: var(--el);
+  --shiki-token-keyword: var(--syn-kw);
+  --shiki-token-function: var(--syn-fn);
+  --shiki-token-string: var(--syn-str);
+  --shiki-token-string-expression: var(--syn-str);
+  --shiki-token-constant: var(--syn-num);
+  --shiki-token-comment: var(--syn-comment);
+  --shiki-token-link: var(--syn-tag);
+  --shiki-token-parameter: var(--tx);
+  --shiki-token-punctuation: var(--tx);
+}
+
+.pragma-markdown pre,
+.pragma-markdown code {
+  font-family: var(--font-code);
+}
+
+.pragma-markdown pre.shiki,
+.pragma-markdown pre {
+  background: var(--el);
+  border-radius: var(--radius-card);
+  padding: 8px 12px;
+  overflow-x: auto;
+}

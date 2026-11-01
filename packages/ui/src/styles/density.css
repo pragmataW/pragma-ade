@@ -1,0 +1,25 @@
+/* Density metrics; mirrors DENSITY_METRICS in src/constants/tokens.ts (checked by test/tokens.test.ts). */
+
+:root {
+  --control-h: 28px;
+  --icon-btn: 26px;
+  --row-h: 22px;
+  --gap: 8px;
+  --text-base: 13px;
+}
+
+:root[data-density="compact"] {
+  --control-h: 28px;
+  --icon-btn: 26px;
+  --row-h: 22px;
+  --gap: 8px;
+  --text-base: 13px;
+}
+
+:root[data-density="comfortable"] {
+  --control-h: 32px;
+  --icon-btn: 30px;
+  --row-h: 26px;
+  --gap: 10px;
+  --text-base: 14px;
+}

@@ -19,8 +19,7 @@ export interface ViewContainer {
   remove(view: NativeViewLike): void
 }
 
-export const OVERLAY_GUARD_MODES = ['hide', 'snapshot'] as const
-export type OverlayGuardMode = (typeof OVERLAY_GUARD_MODES)[number]
+export { OVERLAY_GUARD_MODES, type OverlayGuardMode } from '@pragma/ui/constants/overlay'
 
 export type PublishFn = <P>(c: IpcEventContract<P>, payload: P) => void
 

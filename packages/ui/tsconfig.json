@@ -1,0 +1,10 @@
+{
+  "//": "Used only by the shadcn CLI to resolve aliases; type checking runs from the root tsconfig.web.json.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": { "@pragma/ui/*": ["./src/*"] }
+  },
+  "include": ["src/**/*"]
+}

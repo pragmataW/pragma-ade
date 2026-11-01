@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "../";
+
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+/* shadcn variable names, aliased to the ui-notes tokens. */
+:root {
+  --background: var(--bg);
+  --foreground: var(--tx);
+  --card: var(--el);
+  --card-foreground: var(--tx);
+  --popover: var(--el);
+  --popover-foreground: var(--tx);
+  --primary: var(--ac);
+  --primary-foreground: var(--acfg);
+  --secondary: var(--hv);
+  --secondary-foreground: var(--tx);
+  --accent: var(--hv);
+  --accent-foreground: var(--tx);
+  --muted: var(--pn);
+  --muted-foreground: var(--mu);
+  --destructive: var(--err);
+  --destructive-foreground: var(--acfg);
+  --border: var(--bd);
+  --input: var(--bd2);
+  --ring: var(--ac);
+  --radius: var(--radius-button);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sb: var(--sb);
+  --color-pn: var(--pn);
+  --color-el: var(--el);
+  --color-hv: var(--hv);
+  --color-bd: var(--bd);
+  --color-bd2: var(--bd2);
+  --color-tx: var(--tx);
+  --color-mu: var(--mu);
+  --color-fa: var(--fa);
+  --color-ac: var(--ac);
+  --color-acfg: var(--acfg);
+  --color-acs: var(--acs);
+  --color-act: var(--act);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+  --color-info: var(--info);
+  --color-add-bg: var(--add-bg);
+  --color-add-gutter: var(--add-gutter);
+  --color-add-tx: var(--add-tx);
+  --color-del-bg: var(--del-bg);
+  --color-del-gutter: var(--del-gutter);
+  --color-del-tx: var(--del-tx);
+  --color-syn-kw: var(--syn-kw);
+  --color-syn-fn: var(--syn-fn);
+  --color-syn-str: var(--syn-str);
+  --color-syn-type: var(--syn-type);
+  --color-syn-num: var(--syn-num);
+  --color-syn-comment: var(--syn-comment);
+  --color-syn-tag: var(--syn-tag);
+  --color-picker: var(--picker);
+  --color-scrim: var(--scrim);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-code);
+  --radius-sm: var(--radius-chip);
+  --radius-md: var(--radius-button);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-popover);
+  --radius-2xl: var(--radius-dialog);
+}
+
+@layer base {
+  * {
+    border-color: var(--bd);
+  }
+  html,
+  body {
+    background: var(--bg);
+    color: var(--tx);
+    font-family: var(--font-ui);
+    font-size: var(--text-base);
+  }
+  code,
+  kbd,
+  pre {
+    font-family: var(--font-code);
+  }
+}

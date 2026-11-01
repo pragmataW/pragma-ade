@@ -71,6 +71,17 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/ui/src/styles/tokens.css"],
+      "formatter": {
+        "enabled": false
+      }
     }
-  ]
+  ],
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  }
 }
