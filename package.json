@@ -9,7 +9,9 @@
   "scripts": {
     "lint:biome": "biome check .",
     "lint:dup": "jscpd .",
-    "lint": "pnpm lint:biome && pnpm lint:dup",
+    "lint:literals": "node scripts/check-literals.ts",
+    "lint:arch": "vitest run --project node test/architecture",
+    "lint": "pnpm lint:biome && pnpm lint:dup && pnpm lint:literals && pnpm lint:arch",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json",
     "pretypecheck": "pnpm gen -- --no-build",
     "test": "vitest run",
