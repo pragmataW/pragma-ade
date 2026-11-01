@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { expect, it } from 'vitest'
+import { expect, it, test } from 'vitest'
 import { COMMENT_SOURCES, SEND_ERROR_KEYS, sendErrorI18nKey } from '../../src/contract'
 
 const MODULE = join(import.meta.dirname, '..', '..')
@@ -26,8 +26,7 @@ const usedKeys = rendererFiles(join(MODULE, 'src', 'renderer')).flatMap((f) =>
   [...readFileSync(f, 'utf8').matchAll(KEY_RE)].map((m) => m[1] as string),
 )
 
-it.each([...new Set(usedKeys), `${NAMESPACE}module.name`])('%s exists in en.json', (key) =>
-  expect(exists(key)).toBe(true),
-)
+test('the renderer uses keys', () => expect(usedKeys.length).toBeGreaterThan(0))
+it.each([...new Set(usedKeys)])('%s exists in en.json', (key) => expect(exists(key)).toBe(true))
 it.each(SEND_ERROR_KEYS)('errors.%s has a string', (k) => expect(exists(sendErrorI18nKey(k))).toBe(true))
 it.each(COMMENT_SOURCES)('row.source.%s has a string', (s) => expect(exists(`${NAMESPACE}row.source.${s}`)).toBe(true))

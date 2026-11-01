@@ -4,6 +4,7 @@ import type { Comment, CommentContext } from './dto'
 import type { OpenDrawerArgs } from './ipc'
 import type { SendResult } from './results'
 
+export const COMPOSER_RESULT = { drafted: 'drafted', sent: 'sent', saved: 'saved', cancelled: 'cancelled' } as const
 export type ComposerResult =
   | { kind: 'drafted'; comment: Comment }
   | { kind: 'sent'; comment: Comment; result: SendResult }

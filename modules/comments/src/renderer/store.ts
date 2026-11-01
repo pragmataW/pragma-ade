@@ -35,6 +35,8 @@ export interface CommentsState {
   closeTargetPicker(): void
   closeLaunchSuggestion(): void
   setLaunchWaiting(): void
+  /** Opens the drawer with an error (a composer's "Send now" failed). */
+  showError(key: SendErrorKey): void
   /** The single place mapping a SendResult onto the state. */
   applyResult(worktreeId: string | null, commentIds: string[], r: SendResult): void
 }
@@ -115,6 +117,11 @@ export const useCommentsStore: UseBoundStore<StoreApi<CommentsState>> = create<C
   closeLaunchSuggestion: () => set({ launchSuggestion: null }),
   setLaunchWaiting: () =>
     set((s) => (s.launchSuggestion ? { launchSuggestion: { ...s.launchSuggestion, waiting: true } } : s)),
+
+  showError(key) {
+    get().openDrawer()
+    set({ lastError: key })
+  },
 
   applyResult(worktreeId, commentIds, r) {
     switch (r.status) {
