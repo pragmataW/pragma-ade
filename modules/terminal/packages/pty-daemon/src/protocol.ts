@@ -7,9 +7,12 @@ export const MAX_ROWS = 500
 /** Terminal type announced to programs (main sets `TERM`, the daemon names the pty). */
 export const TERM_NAME = 'xterm-256color'
 
-export const KILL_SIGNALS = ['SIGTERM', 'SIGKILL', 'SIGINT'] as const
+/** `SIGHUP` widens the contract (§10.3): what a terminal sends when its window closes; interactive shells ignore SIGTERM. */
+export const KILL_SIGNALS = ['SIGTERM', 'SIGKILL', 'SIGINT', 'SIGHUP'] as const
 export type KillSignal = (typeof KILL_SIGNALS)[number]
 export const DEFAULT_KILL_SIGNAL: KillSignal = 'SIGTERM'
+/** Used for terminal-panel closes and daemon shutdown. */
+export const HANGUP_SIGNAL: KillSignal = 'SIGHUP'
 
 export const PTY_STATUSES = ['running', 'exited'] as const
 export type PtyStatus = (typeof PTY_STATUSES)[number]

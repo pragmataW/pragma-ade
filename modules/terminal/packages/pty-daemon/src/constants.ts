@@ -12,3 +12,11 @@ export const PREBUILDS_DIR = 'prebuilds'
 export const BUILD_RELEASE_DIR = ['build', 'Release'] as const
 export const WIN32 = 'win32'
 export const IGNORED_FS_ERRORS: readonly string[] = ['ENOENT', 'EACCES', 'EPERM']
+
+/** Output coalescing: flush after this delay or once this many bytes are pending, whichever comes first. */
+export const COALESCE_MS = 4
+export const COALESCE_MAX_BYTES = 65_536
+/** A `kill()` that does not end the process escalates to SIGKILL after this delay. */
+export const KILL_ESCALATION_MS = 3000
+export const ESCALATION_SIGNAL = 'SIGKILL'
+export const UNICODE_VERSION = '11'
