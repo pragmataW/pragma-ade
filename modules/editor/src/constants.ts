@@ -84,3 +84,6 @@ export const SIGNALS = { term: 'SIGTERM', kill: 'SIGKILL' } as const
 export const TASKKILL = { command: 'taskkill', args: ['/T', '/F', '/PID'] } as const
 export const PIPED_STDIO: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
 export const SERVER_EVENT = { ready: 'ready', restarting: 'restarting', failed: 'failed', stopped: 'stopped' } as const
+export const URL_PARAMS = { folder: 'folder', token: 'tkn' } as const
+export const WIN_DRIVE_PATH_RE = /^[A-Za-z]:[\\/]/
+export const BACKSLASH_RE = /\\/g
