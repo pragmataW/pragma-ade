@@ -8,6 +8,7 @@ import {
   type PtyInfo,
   type PtySnapshot,
   REQ,
+  type SpawnSpec,
   TERM_NAME,
 } from '@pragma/terminal-pty-daemon/protocol'
 import { COLORTERM_VALUE, PATH_SEPARATOR_RE, RUN_AS_NODE_ENV, TERM_PROGRAM_NAME } from '../constants'
@@ -54,6 +55,8 @@ class ListenerMap<T> {
   }
 }
 
+type ExitResult = { exitCode: number | null; signal: number | null }
+
 const ANY = '*'
 const spawnCodes = new Set<string>([PTY_SPAWN_ERROR.cwdNotFound, PTY_SPAWN_ERROR.spawnFailed])
 
@@ -76,6 +79,9 @@ export class PtyServiceImpl implements PtyService {
   readonly #killing = new Set<string>()
   readonly #data = new ListenerMap<PtyDataPayload>()
   readonly #exitCbs = new ListenerMap<PtyExit>()
+  /** Exits of ptys whose `spawn` reply is resolved but not yet registered (see `#register`). */
+  readonly #earlyExits = new Map<string, ExitResult>()
+  #spawning = 0
 
   constructor(deps: PtyServiceDeps) {
     this.#deps = deps
@@ -107,11 +113,29 @@ export class PtyServiceImpl implements PtyService {
         cols: opts.cols,
         rows: opts.rows,
       }
-      const info = await this.#deps.host.request<PtyInfo>({ type: REQ.spawn, spec })
-      this.#infos.set(info.ptyId, info)
-      return info.ptyId
+      return (await this.#register(spec)).ptyId
     } catch (error) {
       throw toSpawnError(error)
+    }
+  }
+
+  /**
+   * Sends `spawn` and records the pty. Node emits each IPC message on its own `nextTick` and runs promise continuations
+   * only after them, so when the reply and the pty's `exit` arrive in one chunk (a command that exits at once, a busy
+   * machine) the exit is handled before the `await` below resumes. Such exits wait in `#earlyExits` until then.
+   */
+  async #register(spec: SpawnSpec): Promise<PtyInfo> {
+    this.#spawning++
+    try {
+      const info = await this.#deps.host.request<PtyInfo>({ type: REQ.spawn, spec })
+      this.#infos.set(info.ptyId, info)
+      const early = this.#earlyExits.get(info.ptyId)
+      if (early) this.#settleExit(info.ptyId, early)
+      return info
+    } finally {
+      this.#spawning--
+      // without a spawn in flight, what is left belongs to ptys that were already forgotten
+      if (this.#spawning === 0) this.#earlyExits.clear()
     }
   }
 
@@ -242,9 +266,12 @@ export class PtyServiceImpl implements PtyService {
         if (info) this.#infos.set(e.ptyId, { ...info, bracketedPaste: e.bracketedPaste })
         return
       }
-      case MSG.exit:
-        this.#settleExit(e.ptyId, { exitCode: e.exitCode, signal: e.signal })
+      case MSG.exit: {
+        const result = { exitCode: e.exitCode, signal: e.signal }
+        if (!this.#infos.has(e.ptyId) && this.#spawning > 0) this.#earlyExits.set(e.ptyId, result)
+        else this.#settleExit(e.ptyId, result)
         return
+      }
       case MSG.ready:
         return
       default: {
@@ -255,13 +282,9 @@ export class PtyServiceImpl implements PtyService {
   }
 
   /** Records an exit once (reason `killed` while a kill is in flight) and notifies listeners. */
-  #settleExit(
-    ptyId: string,
-    result: { exitCode: number | null; signal: number | null },
-    reason?: PtyExit['reason'],
-  ): void {
+  #settleExit(ptyId: string, result: ExitResult, reason?: PtyExit['reason']): void {
     const info = this.#infos.get(ptyId)
-    // the daemon answers `spawn` before any event of that pty, so an unknown id was already forgotten
+    // unknown here: forgotten after `kill` (exits racing a spawn reply are held back by `#register`)
     if (!info || this.#exits.has(ptyId)) return
     this.#infos.set(ptyId, { ...info, status: PTY_STATUS.exited, ...result })
     const why = reason ?? (this.#killing.has(ptyId) ? PTY_EXIT_REASON.killed : PTY_EXIT_REASON.exited)

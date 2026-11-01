@@ -1,5 +1,16 @@
+import { memoryLogger } from '@pragma/test-support'
 import { afterEach, expect, test } from 'vitest'
-import { type PtyExit, PtySpawnError } from '../src/contract'
+import {
+  type DaemonEvent,
+  MSG,
+  PTY_STATUS,
+  type PtyInfo,
+  REQ,
+  type SpawnSpec,
+} from '../packages/pty-daemon/src/protocol'
+import { type PtyExit, PtySpawnError, TERMINAL_SETTINGS_DEFAULTS } from '../src/contract'
+import type { DaemonHost } from '../src/main/daemon-host'
+import { PtyServiceImpl } from '../src/main/pty-service'
 import { waitFor } from './support/process'
 import { output, SHELL_ENV_MARK, stopPtyServices, tempDir, testPtyService } from './support/pty-service'
 
@@ -151,4 +162,56 @@ test('list filters by tags', async () => {
   await pty.spawn({ ...sleep, tags: { owner: 'agents' } })
   expect(pty.list({ tags: { owner: 'terminal' } }).map((i) => i.ptyId)).toEqual([a])
   expect(pty.list()).toHaveLength(2)
+})
+
+/** A host whose `spawn` reply and the pty's `exit` are delivered in one turn, as Node does for one IPC chunk. */
+function coalescingHost(exitCode: number) {
+  let emit: (e: DaemonEvent) => void = () => {}
+  const host = {
+    onEvent(cb: (e: DaemonEvent) => void) {
+      emit = cb
+      return () => {}
+    },
+    onCrash: () => () => {},
+    request(req: { type: string; spec?: SpawnSpec }) {
+      if (req.type !== REQ.spawn || !req.spec) return Promise.resolve(undefined)
+      const { cwd, command, args, tags, cols, rows } = req.spec
+      const info: PtyInfo = {
+        ptyId: 'p1',
+        pid: 1,
+        cwd,
+        command,
+        args,
+        tags,
+        cols,
+        rows,
+        status: PTY_STATUS.running,
+        exitCode: null,
+        signal: null,
+        createdAt: 0,
+        bracketedPaste: false,
+      }
+      return new Promise((resolve) => {
+        resolve(info)
+        emit({ kind: MSG.exit, ptyId: info.ptyId, exitCode, signal: null })
+      })
+    },
+  }
+  return host as unknown as DaemonHost
+}
+
+test('an exit arriving with the spawn reply is not lost', async () => {
+  const pty = new PtyServiceImpl({
+    host: coalescingHost(3),
+    shellEnv: async () => ({}),
+    resolveCommand: async (c) => c,
+    settings: () => TERMINAL_SETTINGS_DEFAULTS,
+    platform: process.platform,
+    exists: () => true,
+    log: memoryLogger(),
+  })
+  const id = await pty.spawn({ cwd: tempDir(), command: '/usr/bin/true', ...SIZE })
+  expect(pty.get(id)?.status).toBe('exited')
+  const exit = await new Promise<PtyExit>((resolve) => pty.onExit(id, resolve))
+  expect(exit).toEqual({ ptyId: id, exitCode: 3, signal: null, reason: 'exited' })
 })

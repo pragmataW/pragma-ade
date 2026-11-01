@@ -6,14 +6,26 @@ interface EventMessage {
   payload: unknown
 }
 
+type Subscriber = (payload: unknown) => void
+
+/** One `ipcRenderer` listener fans events out by channel (no MaxListeners warning however many subscribers). */
+const subscribers = new Map<string, Set<Subscriber>>()
+ipcRenderer.on(EVENT_CHANNEL, (_event: IpcRendererEvent, message: EventMessage) => {
+  for (const cb of [...(subscribers.get(message.channel) ?? [])]) cb(message.payload)
+})
+
 /** The whole preload surface: `window.pragma = { invoke, subscribe }` (§1.8, §4.3). No module-specific code. */
 contextBridge.exposeInMainWorld('pragma', {
   invoke: (channel: string, input: unknown) => ipcRenderer.invoke(INVOKE_CHANNEL, { channel, input }),
-  subscribe(channel: string, cb: (payload: unknown) => void): () => void {
-    const listener = (_event: IpcRendererEvent, message: EventMessage) => {
-      if (message.channel === channel) cb(message.payload)
+  subscribe(channel: string, cb: Subscriber): () => void {
+    // A fresh wrapper per call, so subscribing the same callback twice needs two unsubscribes (as before).
+    const entry: Subscriber = (payload) => cb(payload)
+    const set = subscribers.get(channel) ?? new Set<Subscriber>()
+    subscribers.set(channel, set)
+    set.add(entry)
+    return () => {
+      set.delete(entry)
+      if (set.size === 0 && subscribers.get(channel) === set) subscribers.delete(channel)
     }
-    ipcRenderer.on(EVENT_CHANNEL, listener)
-    return () => ipcRenderer.off(EVENT_CHANNEL, listener)
   },
 })
