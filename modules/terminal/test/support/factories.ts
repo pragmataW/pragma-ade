@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
 import type { SpawnSpec } from '../../packages/pty-daemon/src/protocol'
-import type { TerminalPane, TerminalTab } from '../../src/contract'
+import type { PtyInfo, PtyService, PtySpawnOptions, TerminalPane, TerminalTab } from '../../src/contract'
 
 const DEFAULT_SCROLLBACK = 1000
 
@@ -88,4 +88,66 @@ export function tab(overrides: Partial<TerminalTab> = {}): TerminalTab {
     activePaneId: panes[0]?.id ?? '',
     ...overrides,
   }
+}
+
+export interface FakePtyService extends PtyService {
+  spawned: PtySpawnOptions[]
+  killed: { ptyId: string; signal?: string }[]
+  /** Makes the next spawn reject with this message. */
+  failNextSpawn(message: string): void
+}
+
+/** An in-memory `PtyService`: spawns get ids `pty-<n>`, `kill` removes them from `list()`. */
+export function fakePtyService(): FakePtyService {
+  const infos = new Map<string, PtyInfo>()
+  let failure: string | undefined
+  let n = 0
+  const svc: FakePtyService = {
+    spawned: [],
+    killed: [],
+    failNextSpawn: (message) => {
+      failure = message
+    },
+    async spawn(opts) {
+      if (failure) {
+        const message = failure
+        failure = undefined
+        throw new Error(message)
+      }
+      svc.spawned.push(opts)
+      const ptyId = `pty-${++n}`
+      infos.set(ptyId, {
+        ptyId,
+        pid: n,
+        cwd: opts.cwd,
+        command: opts.command ?? '/bin/sh',
+        args: opts.args ?? [],
+        tags: opts.tags ?? {},
+        cols: opts.cols,
+        rows: opts.rows,
+        status: 'running',
+        exitCode: null,
+        signal: null,
+        createdAt: n,
+        bracketedPaste: false,
+      })
+      return ptyId
+    },
+    async kill(ptyId, signal) {
+      svc.killed.push({ ptyId, signal })
+      infos.delete(ptyId)
+    },
+    list: (filter) =>
+      [...infos.values()].filter((i) => Object.entries(filter?.tags ?? {}).every(([k, v]) => i.tags[k] === v)),
+    get: (ptyId) => infos.get(ptyId),
+    write: () => undefined,
+    paste: () => undefined,
+    resize: () => undefined,
+    isBracketedPasteEnabled: () => false,
+    onData: () => () => undefined,
+    onExit: () => () => undefined,
+    getShellEnv: async () => ({}),
+    snapshot: async () => ({ data: '', seq: 0, cols: 80, rows: 24 }),
+  }
+  return svc
 }

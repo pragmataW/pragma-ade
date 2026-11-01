@@ -31,3 +31,7 @@ export const DAEMON_UNAVAILABLE = 'pty-daemon is not available'
 export const COLORTERM_VALUE = 'truecolor'
 export const TERM_PROGRAM_NAME = 'PragmaADE'
 export const PATH_SEPARATOR_RE = /[\\/]/
+
+/** Size of a pty before its view measured itself. */
+export const DEFAULT_COLS = 80
+export const DEFAULT_ROWS = 24
