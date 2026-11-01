@@ -1,0 +1,32 @@
+/** `data-testid` values, exported for other modules' E2E tests (§10.1.6). */
+export const BROWSER_TEST_IDS = {
+  panel: 'browser-panel',
+  tabStrip: 'browser-tab-strip',
+  tab: 'browser-tab',
+  tabClose: 'browser-tab-close',
+  newTab: 'browser-new-tab',
+  addressBar: 'browser-address-bar',
+  addressSuggestion: 'browser-address-suggestion',
+  devServerDot: 'browser-dev-server-dot',
+  back: 'browser-back',
+  forward: 'browser-forward',
+  reload: 'browser-reload',
+  devtools: 'browser-devtools',
+  zoomIn: 'browser-zoom-in',
+  zoomOut: 'browser-zoom-out',
+  zoomReset: 'browser-zoom-reset',
+  pickToggle: 'browser-pick-toggle',
+  pickerBanner: 'browser-picker-banner',
+  pickerCancel: 'browser-picker-cancel',
+  pickPopover: 'browser-pick-popover',
+  pickIncludeConsole: 'browser-pick-include-console',
+  pickAttachShot: 'browser-pick-attach-shot',
+  viewArea: 'browser-view-area',
+  emptyState: 'browser-empty-state',
+  openLocalhost: 'browser-open-localhost',
+  loadError: 'browser-load-error',
+  devUrlStatus: 'browser-dev-url-status',
+  settingsPage: 'browser-settings-page',
+} as const
+/** `data-*` attributes on tab elements. */
+export const BROWSER_DATA_ATTRS = { tabId: 'data-tab-id', active: 'data-active', armed: 'data-armed' } as const

@@ -1,0 +1,46 @@
+{
+  "name": "@pragma/module-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --root ../.. modules/browser/test",
+    "e2e": "playwright test --config ../../playwright.config.ts modules/browser/e2e"
+  },
+  "pragma": {
+    "id": "browser",
+    "kind": "feature",
+    "displayNameKey": "browser:module.name",
+    "dependsOn": [
+      "projects"
+    ],
+    "optionalDependsOn": [
+      "comments"
+    ],
+    "core": false
+  },
+  "exports": {
+    "./contract": "./src/contract/index.ts",
+    "./main": "./src/main/index.ts",
+    "./renderer": "./src/renderer/index.tsx"
+  },
+  "dependencies": {
+    "@pragma/module-comments": "workspace:*",
+    "@pragma/module-projects": "workspace:*",
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*",
+    "class-variance-authority": "0.7.1",
+    "zustand": "5.0.16"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@pragma/module-agents": "workspace:*",
+    "@pragma/test-support": "workspace:*",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}
