@@ -1,6 +1,6 @@
 /** Shared helpers for every Claude chat test (fake CLI processes, reports, temp Claude homes). */
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AgentProfile } from '@pragma/module-agents/contract'
@@ -8,6 +8,7 @@ import { aProfile } from '@pragma/module-agents/testing'
 import type { ChatEvent, ChatSessionContext } from '@pragma/module-chat/contract'
 import { afterEach } from 'vitest'
 import { ClaudeChatSession } from '../../src/main/chat/session'
+import { type FakeReport, lastReport } from '../../testing/fake-claude-stream/report'
 import {
   FAKE_CLAUDE_ENV,
   fakeClaudePath,
@@ -15,18 +16,7 @@ import {
   scenarioPath,
 } from '../../testing/fake-claude-stream/scenario'
 
-export interface FakeReport {
-  pid: number
-  startedAt: number
-  argv: string[]
-  cwd: string
-  env: Record<string, string>
-  sessionId: string
-  userMessages: { at: number; frame: Record<string, unknown> }[]
-  controlRequests: { request_id: string; request: Record<string, unknown> }[]
-  controlResponses: { response: { request_id: string; response?: Record<string, unknown> } }[]
-  results: { at: number; subtype: string }[]
-}
+export { type FakeReport, lastReport, readReport } from '../../testing/fake-claude-stream/report'
 
 const cleanups: (() => void)[] = []
 afterEach(() => {
@@ -49,17 +39,6 @@ export function tempClaudeHome() {
   for (const d of [configDir, worktree]) mkdirSync(d, { recursive: true })
   return { root, home, configDir, worktree, report: join(root, 'report.jsonl') }
 }
-
-/** Every report line (one per state change, all processes). */
-export function readReport(path: string): FakeReport[] {
-  if (!existsSync(path)) return []
-  return readFileSync(path, 'utf8')
-    .split('\n')
-    .filter((l) => l.length > 0)
-    .map((l) => JSON.parse(l) as FakeReport)
-}
-/** The latest state of the last process. */
-export const lastReport = (path: string): FakeReport | undefined => readReport(path).at(-1)
 
 /** Env that points the fake at a scenario and a report. */
 export const fakeEnv = (scenario: ScenarioName, report: string, extra: Record<string, string> = {}) => ({

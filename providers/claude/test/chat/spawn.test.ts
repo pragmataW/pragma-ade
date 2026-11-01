@@ -3,16 +3,12 @@ import type { SpawnOptions } from '@anthropic-ai/claude-agent-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import { buildClaudeChildEnv } from '../../src/main/chat/env'
 import { createClaudeProcessSpawn, type SpawnDeps } from '../../src/main/chat/spawn'
+import { flagValue, normalizeArgv } from '../../testing/fake-claude-stream/report'
 import { startSession } from './support'
 
 const SDK_FLAGS = ['--output-format', 'stream-json', '--verbose', '--input-format', 'stream-json']
-/** `--flag=value` and `--flag value` spellings normalized (the SDK uses the former). */
-const normalize = (argv: string[]) =>
-  argv.flatMap((a) => (a.startsWith('--') && a.includes('=') ? a.split(/=(.*)/s).slice(0, 2) : [a]))
-const after = (argv: string[], flag: string) => {
-  const n = normalize(argv)
-  return n.includes(flag) ? n[n.indexOf(flag) + 1] : undefined
-}
+const normalize = normalizeArgv
+const after = flagValue
 
 describe('Claude chat spawn contract (real SDK + fake CLI)', () => {
   it('inserts profile args before SDK flags', async () => {
