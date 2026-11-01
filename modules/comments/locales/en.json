@@ -49,6 +49,7 @@
     "sendNow": "Send now",
     "save": "Save",
     "cancel": "Cancel",
+    "cancelHint": "Cancel (Esc)",
     "hint": "⌘/Ctrl+Enter to add · ⌘/Ctrl+Shift+Enter to send"
   },
   "target": {

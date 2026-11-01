@@ -53,6 +53,27 @@ describe('CommentComposer', () => {
     if (channel) expect(r.fakeIpc.callsOn(channel)).toHaveLength(1)
   })
 
+  it.each([
+    ['add mode', {}],
+    ['edit mode', { editCommentId: 'c9', initialBody: 'old' }],
+  ])('%s: Cancel button and Esc (from any control) report cancelled', async (_n, props) => {
+    const { onDone } = setup(props)
+    const cancel = screen.getByTestId(T.composerCancel)
+    expect(cancel).toHaveTextContent(en.composer.cancel)
+    fireEvent.click(cancel)
+    fireEvent.keyDown(cancel, { key: 'Escape' })
+    await waitFor(() => expect(kinds(onDone)).toEqual(['cancelled', 'cancelled']))
+    expect(r.fakeIpc.callsOn(commentsIpc.addDraft.channel)).toHaveLength(0)
+  })
+
+  it.each([
+    ['card (default)', {}, true],
+    ['plain', { surface: 'plain' as const }, false],
+  ])('surface %s', (_n, props, card) => {
+    setup(props)
+    expect(screen.getByTestId(T.composer).classList.contains('bg-card')).toBe(card)
+  })
+
   test('Send now with several agents → picker opens, onDone drafted', async () => {
     const { onDone, type } = setup()
     r.fakeIpc.respond(commentsIpc.send, () => ({ status: 'needsTarget', sessions: [], defaultSessionId: 'a' }))
