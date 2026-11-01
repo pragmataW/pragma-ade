@@ -160,3 +160,18 @@ export const ICONS = {
 } as const
 export const STATUS_PART_SEPARATOR = ' '
 export const GHOST_VARIANT = 'ghost'
+/** Projects settings page: between Shortcuts (40) and Agents (50) (§10.4). */
+export const SETTINGS_PAGE_ORDER = 45
+export const SETTINGS_PAGE_ID = 'projects'
+export const PATH_SUGGEST_DEBOUNCE_MS = 200
+export const BUTTON_VARIANTS = { outline: 'outline', destructive: 'destructive' } as const
+export const FIELD_IDS = {
+  branch: 'projects-create-branch-input',
+  branchList: 'projects-create-branch-list',
+  base: 'projects-create-base-select',
+  path: 'projects-create-path-input',
+  deleteBranch: 'projects-remove-delete-branch-input',
+  root: 'projects-settings-root-input',
+} as const
+export const BUTTON_TYPES = { button: 'button', submit: 'submit' } as const
+export const ALERT_ROLE = 'alert'

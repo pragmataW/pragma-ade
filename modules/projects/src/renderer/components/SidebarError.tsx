@@ -1,6 +1,6 @@
 import { useT } from '@pragma/sdk/renderer'
 import { Icon } from '@pragma/ui/components/icon'
-import { ICON_PX, ICONS } from '../../constants'
+import { ALERT_ROLE, ICON_PX, ICONS } from '../../constants'
 import { PROJECTS_TESTIDS as T } from '../../contract'
 import { useRuntime, useUi } from '../lib/runtime'
 import { useErrorText } from '../lib/use-error-text'
@@ -16,7 +16,7 @@ export function SidebarError() {
   return (
     <div
       data-testid={T.error}
-      role="alert"
+      role={ALERT_ROLE}
       className="mx-1.5 my-1 flex items-start gap-2 rounded-[var(--radius-card)] border border-err px-2 py-1.5 text-err text-[12px]"
     >
       <span className="min-w-0 flex-1 break-words">{text(error)}</span>

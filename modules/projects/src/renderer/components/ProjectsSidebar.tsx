@@ -7,7 +7,9 @@ import { DRAG_ACTIVATION_PX, GHOST_VARIANT, ICON_PX, ICONS } from '../../constan
 import { type Project, projectsIpc, PROJECTS_TESTIDS as T } from '../../contract'
 import { addProjectFlow, sidebarAction } from '../lib/actions'
 import { useProjects, useRuntime } from '../lib/runtime'
+import { CreateWorktreeDialog } from './CreateWorktreeDialog'
 import { ProjectGroup } from './ProjectGroup'
+import { RemoveWorktreeDialog } from './RemoveWorktreeDialog'
 import { SidebarError } from './SidebarError'
 
 /** Projects in their stored order; dropping one persists the new order. */
@@ -61,6 +63,8 @@ export function ProjectsSidebar() {
         </p>
       )}
       <SortableProjects projects={projects} />
+      <CreateWorktreeDialog />
+      <RemoveWorktreeDialog />
     </section>
   )
 }
