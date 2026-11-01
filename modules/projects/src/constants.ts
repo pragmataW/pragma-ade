@@ -35,3 +35,51 @@ export const REMOTE_HEAD_SUFFIX = '/HEAD'
 export const NUL = '\0'
 export const NEWLINE = '\n'
 export const SPACE = ' '
+
+export const GIT_BINARY = 'git'
+export const GIT_MAX_BUFFER_BYTES = 67_108_864 // 64 MiB
+export const GIT_ENV = {
+  terminalPrompt: 'GIT_TERMINAL_PROMPT',
+  optionalLocks: 'GIT_OPTIONAL_LOCKS',
+  lcAll: 'LC_ALL',
+} as const
+export const GIT_ENV_OFF = '0'
+export const GIT_LOCALE = 'C'
+/** Prefixed to every git invocation: paths are printed verbatim (no octal quoting). */
+export const GIT_GLOBAL_ARGS = ['-c', 'core.quotepath=false'] as const
+export const ENOENT = 'ENOENT'
+export const GIT_TRUE = 'true'
+export const DOT_GIT = '.git'
+export const ORIGIN_PREFIX = 'origin/'
+export const FALLBACK_BASE_BRANCHES = ['main', 'master'] as const
+export const HEAD = 'HEAD'
+export const COMMIT_PEEL = '^{commit}'
+export const MERGE_BASE_NONE_EXIT = 1
+export const BRANCH_CHECKED_OUT_RE = /already checked out|is already used by worktree/
+export const PATH_EXISTS_RE = /^fatal: '.+' already exists/m
+
+const ABSOLUTE_PATHS = '--path-format=absolute'
+/** git argument vectors (one place for every command spelling). */
+export const GIT_ARGS = {
+  status: ['status', '--porcelain=v2', '-z', '--branch', '--untracked-files=all'],
+  isBare: ['rev-parse', '--is-bare-repository'],
+  absoluteGitDir: ['rev-parse', '--absolute-git-dir'],
+  commonDir: ['rev-parse', ABSOLUTE_PATHS, '--git-common-dir'],
+  topLevel: ['rev-parse', '--show-toplevel'],
+  gitDirs: ['rev-parse', ABSOLUTE_PATHS, '--git-dir', '--git-common-dir'],
+  verifyCommit: ['rev-parse', '--verify', '--quiet'],
+  originHead: ['symbolic-ref', '--quiet', 'refs/remotes/origin/HEAD'],
+  currentBranch: ['symbolic-ref', '--short', 'HEAD'],
+  mergeBase: ['merge-base'],
+  show: ['show'],
+  worktreeList: ['worktree', 'list', '--porcelain', '-z'],
+  worktreeAdd: ['worktree', 'add'],
+  worktreeRemove: ['worktree', 'remove'],
+  worktreePrune: ['worktree', 'prune'],
+  branchList: ['for-each-ref', '--format=%(refname)%00%(worktreepath)%00', 'refs/heads', 'refs/remotes'],
+  branchDelete: ['branch'],
+  checkBranchName: ['check-ref-format', '--branch'],
+  countCommits: ['rev-list', '--count'],
+} as const
+export const GIT_FLAGS = { newBranch: '-b', force: '--force', deleteMerged: '-d', deleteForce: '-D' } as const
+export const UTF8 = 'utf8'
