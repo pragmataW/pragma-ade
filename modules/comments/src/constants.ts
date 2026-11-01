@@ -16,7 +16,8 @@ export const FORMAT_LIMITS = {
 export type FormatLimits = { readonly [K in keyof typeof FORMAT_LIMITS]: number }
 
 // Timings
-export const SUBMIT_DELAY_MS = 30
+/** Paste → Enter pause; TUIs (Claude Code, OpenCode) ignore an Enter that arrives while they still handle the paste. */
+export const SUBMIT_DELAY_MS = 200
 export const BRACKETED_WAIT_MS = 2_000
 export const BRACKETED_POLL_MS = 100
 export const READY_QUIET_MS = 500

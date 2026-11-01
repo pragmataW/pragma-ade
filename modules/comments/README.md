@@ -18,7 +18,7 @@ The shared review-comment pipeline (phase 05): draft storage, batching, choosing
 | `send(ids, targetSessionId?, { promptUser? })` | Returns a `SendResult`: `sent`, `needsTarget`, `noSession` or `failed` (`errorKey` ∈ `SEND_ERROR_KEYS`, i18n via `sendErrorI18nKey`). Without a target it sends when exactly one session runs; otherwise, unless `promptUser === false`, it publishes `comments.sendRequested` and the drawer asks the user. Concurrent sends of the same ids are rejected with `alreadySending`. |
 | `sendOnNextSession(worktreeId, ids)` / `cancelPending(worktreeId)` | Deliver to the next session started in that worktree (once its output went quiet; entries expire after 10 min). |
 | `format(comments)` | The fixed English agent template (`Review comments:` + numbered items). |
-| `registerDeliveryTarget(mode, deliver)` | Delivery by session **mode**, never by provider. 05 registers `terminal` (bracketed paste via `PtyService.paste`, refused with `agentNotReady` while the program has not enabled mode 2004; optional Enter when the `submitAfterPaste` setting is on). Returns unregister; a duplicate mode throws. |
+| `registerDeliveryTarget(mode, deliver)` | Delivery by session **mode**, never by provider. 05 registers `terminal` (bracketed paste via `PtyService.paste`, refused with `agentNotReady` while the program has not enabled mode 2004; Enter after the paste while the `submitAfterPaste` setting is on (default)). Returns unregister; a duplicate mode throws. |
 
 11c registers `chat`:
 
@@ -52,7 +52,7 @@ const ui = ctx.services.get(CommentsUiServiceToken)
 - Renderer IPC events: `comments.changed`, `comments.sendRequested`, `comments.pendingDelivered`.
 - Command `comments.openDrawer` (renderer, palette), args `OpenDrawerArgsSchema`.
 - Slots used: `titlebar.right` (drafts button + drawer + dialogs), `agentSession.toolbar` (draft badge, prefers that session as target).
-- Settings › Comments (order 70): `submitAfterPaste` (default off).
+- Settings › Comments (order 70): `submitAfterPaste` (default on; Enter follows the paste after `SUBMIT_DELAY_MS`).
 
 ## Testing
 

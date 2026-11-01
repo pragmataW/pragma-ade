@@ -16,7 +16,7 @@ function useCommentsSettings(): CommentsSettings {
   return { ...COMMENTS_SETTINGS_DEFAULTS, ...value }
 }
 
-/** Settings › Comments: "Press Enter after sending comments" (default off). */
+/** Settings › Comments: "Press Enter after sending comments" (default on). */
 export function CommentsSettingsPage() {
   const t = useT()
   const { submitAfterPaste } = useCommentsSettings()
