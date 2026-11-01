@@ -1,0 +1,30 @@
+{
+  "name": "@pragma/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build"
+  },
+  "dependencies": {
+    "better-sqlite3": "13.0.3"
+  },
+  "devDependencies": {
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/sortable": "10.0.0",
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "45.2.1",
+    "electron-vite": "6.0.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-resizable-panels": "4.16.0",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.5",
+    "zustand": "5.0.16"
+  }
+}

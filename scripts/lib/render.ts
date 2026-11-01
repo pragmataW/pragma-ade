@@ -139,7 +139,7 @@ function renderFile(
     typeImport,
     ...imports.lines,
     '',
-    `export const coreLocales: Record<string, object> = ${json(ctx.coreLocales)}`,
+    `export const coreLocales: Record<string, Record<string, unknown>> = ${json(ctx.coreLocales)}`,
     '',
     `export const ${exportName}: ${recordType}[] = [`,
     ...body,

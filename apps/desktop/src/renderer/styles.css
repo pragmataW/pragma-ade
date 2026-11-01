@@ -1,0 +1,15 @@
+@import "@pragma/ui/styles.css";
+
+@source "../../../../modules";
+@source "../../../../providers";
+@source "../../../../packages/ui/src";
+@source "../../../../packages/sdk/src";
+@source "../";
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}

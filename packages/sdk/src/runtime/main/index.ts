@@ -1,5 +1,16 @@
+export * from '../shared/command-registry'
 export * from '../shared/i18n-resources'
-export { createMemoryTransport, type IpcMeta, type IpcTransport, type PragmaBridge } from '../shared/memory-transport'
+export {
+  createMemoryTransport,
+  type InvokeHandler,
+  type IpcMeta,
+  type IpcRequest,
+  type IpcTransport,
+  type PragmaBridge,
+} from '../shared/memory-transport'
+export * from '../shared/provider-registry'
+export * from '../shared/service-registry'
+export * from '../shared/shortcut-registry'
 export * from './activation'
 export * from './app-handlers'
 export * from './command-bridge'

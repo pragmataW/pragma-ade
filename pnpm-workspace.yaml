@@ -14,3 +14,4 @@ allowBuilds:
   "@parcel/watcher": true
 minimumReleaseAgeExclude:
   - i18next@26.6.0
+  - react-resizable-panels@4.16.0

@@ -1,0 +1,41 @@
+import { join } from 'node:path'
+import { palettes } from '@pragma/ui/tokens'
+import { BrowserWindow } from 'electron'
+import { DARWIN, PRELOAD_FILE, RENDERER_FILE, RENDERER_URL_ENV, TRAFFIC_LIGHT_POSITION, WINDOW } from '../constants'
+
+const READY_TO_SHOW = 'ready-to-show'
+const WILL_NAVIGATE = 'will-navigate'
+const DENY = { action: 'deny' } as const
+const DID_FINISH_LOAD = 'did-finish-load'
+
+/** The single app window: sandboxed renderer, no navigation away from the app, no popups. */
+export function createMainWindow(opts: { title: string }): BrowserWindow {
+  const isMac = process.platform === DARWIN
+  const win = new BrowserWindow({
+    width: WINDOW.width,
+    height: WINDOW.height,
+    minWidth: WINDOW.minWidth,
+    minHeight: WINDOW.minHeight,
+    title: opts.title,
+    show: false,
+    backgroundColor: palettes.vscode.dark.bg,
+    ...(isMac ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: TRAFFIC_LIGHT_POSITION } : {}),
+    webPreferences: {
+      preload: join(import.meta.dirname, PRELOAD_FILE),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  })
+  win.once(READY_TO_SHOW, () => win.show())
+  win.webContents.setWindowOpenHandler(() => DENY)
+  const devUrl = process.env[RENDERER_URL_ENV]
+  const appUrl = devUrl ?? new URL(`file://${join(import.meta.dirname, RENDERER_FILE)}`).href
+  win.webContents.on(WILL_NAVIGATE, (event, url) => {
+    if (!url.startsWith(appUrl)) event.preventDefault()
+  })
+  win.webContents.on(DID_FINISH_LOAD, () => void win.webContents.setVisualZoomLevelLimits(1, 1))
+  if (devUrl) void win.loadURL(devUrl)
+  else void win.loadFile(join(import.meta.dirname, RENDERER_FILE))
+  return win
+}

@@ -325,7 +325,7 @@ describe('registry output', () => {
       import m1_cap0 from '../../../../providers/p/src/main/ping.capability'
       import m1_settings from '../../../../providers/p/src/main/settings'
 
-      export const coreLocales: Record<string, object> = {"en":{"app":{"title":"T"}}}
+      export const coreLocales: Record<string, Record<string, unknown>> = {"en":{"app":{"title":"T"}}}
 
       export const mainModules: ModuleRecord[] = [
         {

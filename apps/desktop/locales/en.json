@@ -1,0 +1,6 @@
+{
+  "app": { "title": "Pragma ADE" },
+  "dialogs": { "confirm": "OK", "cancel": "Cancel" },
+  "commands": { "commandPalette": "Command palette", "openSettings": "Open settings" },
+  "testing": { "dynamicTab": "Dynamic test tab" }
+}

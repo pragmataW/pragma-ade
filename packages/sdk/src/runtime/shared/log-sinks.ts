@@ -7,8 +7,12 @@ export interface LogSink {
   write(level: LogLevel, scope: string, message: string, details: unknown[]): void
 }
 
+const DEBUG: LogLevel = 'debug'
+
+/** Console output (debug lines go only to file sinks). */
 export const consoleSink: LogSink = {
   write(level, scope, message, details) {
+    if (level === DEBUG) return
     const prefix = scope ? `[${scope}] ` : ''
     console[level](`${prefix}${message}`, ...details)
   },
