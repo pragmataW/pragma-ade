@@ -1,5 +1,7 @@
 /** Shared unit-test fakes (§9: no copy-pasted setup). */
 import type { AgentSessionStartedPayload } from '@pragma/module-agents/contract'
+import type { MainIpcApi } from '@pragma/sdk/main'
+import type { IpcClient } from '@pragma/sdk/runtime/renderer'
 import type { CommentsUpstream, SessionRef } from '../src/main/upstream'
 
 type Listener<A> = (a: A) => void
@@ -70,3 +72,48 @@ export function createFakeUpstream(initial: SessionRef[] = []) {
   })
 }
 export type FakeUpstream = ReturnType<typeof createFakeUpstream>
+
+type Handler = (input: unknown, meta: unknown) => unknown
+type Contract = { channel: string; input?: { parse(v: unknown): unknown } }
+
+/**
+ * Both IPC sides in one fake: main `handle` registers handlers; renderer `invoke` runs a handler, else a scripted
+ * response (`respond`); `subscribe`/`emit` stand in for main → renderer events. `calls` records every invoke.
+ */
+export function createFakeIpc() {
+  const handlers = new Map<string, Handler>()
+  const scripted = new Map<string, (input: unknown) => unknown>()
+  const subs = new Map<string, Set<(p: unknown) => void>>()
+  const calls: [string, unknown][] = []
+  const fake = {
+    handlers,
+    calls,
+    callsOn: (channel: string) => calls.filter(([c]) => c === channel).map(([, i]) => i),
+    handle(c: Contract, h: Handler) {
+      handlers.set(c.channel, h)
+      return { dispose: () => void handlers.delete(c.channel) }
+    },
+    respond(c: Contract, fn: (input: unknown) => unknown) {
+      scripted.set(c.channel, fn)
+    },
+    async invoke(c: Contract, input: unknown): Promise<never> {
+      calls.push([c.channel, input])
+      const h = handlers.get(c.channel)
+      if (h) return (await h(c.input ? c.input.parse(input) : input, {})) as never
+      const fn = scripted.get(c.channel)
+      return (fn ? await fn(input) : undefined) as never
+    },
+    subscribe(c: Contract, cb: (p: unknown) => void) {
+      const set = subs.get(c.channel) ?? new Set()
+      subs.set(c.channel, set)
+      set.add(cb)
+      return { dispose: () => void set.delete(cb) }
+    },
+    emit(c: Contract, payload: unknown) {
+      for (const cb of [...(subs.get(c.channel) ?? [])]) cb(payload)
+    },
+  }
+  return fake as Omit<typeof fake, keyof Typed> & Typed
+}
+type Typed = { handle: MainIpcApi['handle']; invoke: IpcClient['invoke']; subscribe: IpcClient['subscribe'] }
+export type FakeIpc = ReturnType<typeof createFakeIpc>

@@ -11,6 +11,9 @@ import { PtyServiceToken } from '@pragma/module-terminal/contract'
 import type { MainContext } from '@pragma/sdk/main'
 import type { TargetSession } from '../contract'
 
+/** The session mode 03 runs in a pty; 05 registers the terminal delivery target for it. */
+export { TERMINAL_MODE } from '@pragma/module-agents/contract'
+
 export type SessionRef = Pick<AgentSession, 'id' | 'worktreeId' | 'title' | 'mode' | 'status' | 'ptyId' | 'closedAt'>
 
 /** Open and not exited/errored (03's `isRunningStatus`). */
