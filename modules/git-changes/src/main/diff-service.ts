@@ -9,10 +9,13 @@ import {
   type ChangeMode,
   FILE_STATUS,
   FILE_VERSION_KIND,
+  type FileContentsInput,
+  type FileDiffContents,
+  type FileVersion,
   type OkChangeList,
 } from '../contract'
 import { comparePaths, countLines, mergeChanges, parseNameStatusZ, parseNumstatZ } from './parse'
-import { readDiskSide, resolveInside, sniffFile } from './read-side'
+import { readDiskSide, readRevSide, resolveInside, sniffFile } from './read-side'
 
 export type GitPort = Pick<GitService, 'run' | 'mergeBase' | 'show' | 'countCommits'>
 export type FsPort = Pick<typeof nodeFs, 'lstat' | 'readFile' | 'open'>
@@ -28,6 +31,7 @@ export interface ListChangesInput {
   mode: ChangeMode
   baseBranch: string
 }
+export type FileContentsRequest = Omit<FileContentsInput, 'worktreeId'> & { cwd: string; baseBranch: string }
 
 const HEAD = 'HEAD'
 const COMMIT_PEEL = '^{commit}'
@@ -41,6 +45,8 @@ const GIT_ARGS = {
   endOfRevs: '--',
 } as const
 const NUL = '\0'
+const ABSENT: FileVersion = { kind: FILE_VERSION_KIND.absent }
+const NO_OLD_SIDE = new Set<string>([FILE_STATUS.A, FILE_STATUS.U])
 
 type ListHeader = Pick<ChangeList, 'worktreeId' | 'mode' | 'baseBranch'>
 type MissingBaseState = Exclude<ChangeList['state'], typeof CHANGE_LIST_STATE.ok>
@@ -72,6 +78,19 @@ export class DiffService {
     }
   }
 
+  /**
+   * Both sides of one file. Old: HEAD (or the empty tree) in uncommitted mode, the merge-base in branch mode, at
+   * `oldPath ?? path`. New: the disk file in uncommitted mode, `HEAD:path` in branch mode.
+   */
+  async getFileContents(input: FileContentsRequest): Promise<FileDiffContents> {
+    resolveInside(input.cwd, input.path)
+    if (input.oldPath) resolveInside(input.cwd, input.oldPath)
+    const max = this.#max()
+    const [oldSide, newSide] = await Promise.all([this.readOld(input, max), this.readNew(input, max)])
+    const { path, oldPath, status } = input
+    return { path, ...(oldPath ? { oldPath } : {}), status, old: oldSide, new: newSide }
+  }
+
   /** `HEAD` / `<base>^{commit}` as a sha, or null when it does not resolve. */
   protected async resolveRev(cwd: string, rev: string): Promise<string | null> {
     const r = await this.git(cwd, [...GIT_ARGS.verify, rev === HEAD ? HEAD : `${rev}${COMMIT_PEEL}`], true)
@@ -90,6 +109,25 @@ export class DiffService {
 
   protected git(cwd: string, args: readonly string[], allowFailure = false) {
     return this.#git.run(cwd, [...GIT_FLAGS, ...args], allowFailure ? ALLOW : {})
+  }
+
+  private async readOld(input: FileContentsRequest, max: number): Promise<FileVersion> {
+    if (NO_OLD_SIDE.has(input.status)) return ABSENT
+    const rev = await this.oldRev(input.cwd, input.mode, input.baseBranch)
+    return rev ? readRevSide(this.#git, input.cwd, rev, input.oldPath ?? input.path, max) : ABSENT
+  }
+
+  private readNew(input: FileContentsRequest, max: number): Promise<FileVersion> {
+    if (input.status === FILE_STATUS.D) return Promise.resolve(ABSENT)
+    return input.mode === CHANGE_MODE.branch
+      ? readRevSide(this.#git, input.cwd, HEAD, input.path, max)
+      : readDiskSide(this.#fs, input.cwd, input.path, max)
+  }
+
+  private async oldRev(cwd: string, mode: ChangeMode, baseBranch: string): Promise<string | null> {
+    if (mode === CHANGE_MODE.uncommitted) return (await this.resolveRev(cwd, HEAD)) ?? EMPTY_TREE_SHA
+    const base = await this.branchBase(cwd, baseBranch)
+    return base.found ? base.mergeBase : null
   }
 
   private async listUncommitted(cwd: string, header: ListHeader, head: string | null): Promise<ChangeList> {

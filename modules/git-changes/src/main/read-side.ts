@@ -1,13 +1,15 @@
 import { isAbsolute, relative, resolve } from 'node:path'
-import { BINARY_SNIFF_BYTES } from '../constants'
+import { BINARY_SNIFF_BYTES, GIT_FLAGS } from '../constants'
 import { FILE_VERSION_KIND, type FileVersion } from '../contract'
-import type { FsPort } from './diff-service'
+import type { FsPort, GitPort } from './diff-service'
 
 const UTF8 = 'utf8'
 const ENOENT = 'ENOENT'
 const READ_ONLY = 'r'
 const PARENT = '..'
 const NUL = '\0'
+const CAT_FILE_SIZE = ['cat-file', '-s'] as const
+const REV_PATH_SEPARATOR = ':'
 
 /** A relative path that resolves outside the worktree. */
 export class InvalidPathError extends Error {
@@ -57,4 +59,24 @@ export async function readDiskSide(fs: FsPort, cwd: string, rel: string, max: nu
     if (isEnoent(error)) return { kind: FILE_VERSION_KIND.absent }
     throw error
   }
+}
+
+/** A committed side: absent (no such object) / tooLarge / binary / text (git's bytes as UTF-8, untrimmed). */
+export async function readRevSide(
+  git: GitPort,
+  cwd: string,
+  rev: string,
+  path: string,
+  max: number,
+): Promise<FileVersion> {
+  const size = await git.run(cwd, [...GIT_FLAGS, ...CAT_FILE_SIZE, `${rev}${REV_PATH_SEPARATOR}${path}`], {
+    allowFailure: true,
+  })
+  if (size.exitCode !== 0) return { kind: FILE_VERSION_KIND.absent }
+  const bytes = Number(size.stdout.trim())
+  if (bytes > max) return { kind: FILE_VERSION_KIND.tooLarge, bytes }
+  const contents = await git.show(cwd, rev, path)
+  if (contents === null) return { kind: FILE_VERSION_KIND.absent }
+  if (looksBinary(contents)) return { kind: FILE_VERSION_KIND.binary }
+  return { kind: FILE_VERSION_KIND.text, contents }
 }
