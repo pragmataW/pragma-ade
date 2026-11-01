@@ -1,0 +1,44 @@
+{
+  "name": "@pragma/provider-opencode-hooks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./records": "./src/records.ts"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run --root ../../../.. providers/opencode/packages/hooks/test"
+  },
+  "pragma": {
+    "build": "build",
+    "buildInputs": [
+      "src/**",
+      "build.mjs",
+      "package.json",
+      "../../../../modules/agent-status/src/client/**",
+      "../../../../modules/agent-status/src/contract/constants.ts",
+      "../../../../modules/agent-status/scripts/**",
+      "../../../../modules/bridge/src/client/**",
+      "../../../../modules/bridge/src/contract/constants.ts"
+    ],
+    "buildOutputs": [
+      "dist/plugin/index.js"
+    ],
+    "package": {
+      "extraResources": [
+        {
+          "from": "dist/plugin",
+          "to": "hooks/plugin"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "@pragma/module-agent-status": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "vitest": "5.0.5"
+  }
+}
