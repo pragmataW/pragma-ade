@@ -2,7 +2,115 @@
   "module": {
     "name": "Agents"
   },
+  "center": {
+    "empty": {
+      "title": "No agents running in this worktree",
+      "action": "New agent"
+    },
+    "noWorktree": "Select a worktree to start an agent"
+  },
+  "tabs": {
+    "label": "{{profile}} · {{title}}",
+    "new": "New agent",
+    "close": "Close tab",
+    "ended": "Ended",
+    "failed": "Failed to start"
+  },
   "session": {
-    "untitled": "Session {{n}}"
+    "untitled": "Session {{n}}",
+    "ended": {
+      "title": "This session has ended",
+      "exitCode": "Exit code {{code}}",
+      "restart": "Start again",
+      "close": "Close tab"
+    },
+    "failed": {
+      "title": "The agent could not be started"
+    },
+    "menu": {
+      "label": "Session actions",
+      "stop": "Stop agent",
+      "restart": "Restart",
+      "close": "Close tab"
+    }
+  },
+  "close": {
+    "title": "Stop this agent?",
+    "body": "The agent is still running. Closing the tab stops it.",
+    "confirm": "Stop and close",
+    "cancel": "Cancel"
+  },
+  "launcher": {
+    "title": "New agent",
+    "promptLabel": "First prompt (optional)",
+    "promptPlaceholder": "Describe the task… (Enter to start, Shift+Enter for a new line)",
+    "runIn": {
+      "label": "Run in",
+      "current": "Current worktree",
+      "newWorktree": "New worktree from {{base}}"
+    },
+    "branch": "Branch",
+    "configure": "Configure agents…",
+    "cancel": "Cancel",
+    "start": "Start session",
+    "noProfiles": "No enabled agents. Enable one in Settings › Agents.",
+    "agent": "Agent"
+  },
+  "settings": {
+    "title": "Agents",
+    "default": "Default",
+    "disabled": "Disabled",
+    "unavailable": "Provider unavailable",
+    "setDefault": "Set default",
+    "enabled": "Enabled",
+    "defaultCannotDisable": "The default agent cannot be disabled",
+    "command": "Command",
+    "arguments": "Arguments",
+    "environment": "Environment",
+    "addVariable": "Add variable",
+    "removeVariable": "Remove",
+    "variableName": "Name",
+    "variableValue": "Value",
+    "reset": "Reset to {{command}}",
+    "check": "Test launch",
+    "found": "Found at {{path}}",
+    "foundVersion": "Found at {{path}} · v{{version}}",
+    "commandNotFound": "`{{command}}` was not found on PATH",
+    "commandNotExecutable": "{{path}} is not executable",
+    "addCustom": "Add custom agent",
+    "delete": "Delete",
+    "behaviour": "Behaviour",
+    "confirmCloseRunning": "Ask before closing a running agent",
+    "expand": "Show details",
+    "newProfile": {
+      "title": "Add custom agent",
+      "provider": "Provider",
+      "name": "Name",
+      "create": "Add agent",
+      "cancel": "Cancel"
+    }
+  },
+  "errors": {
+    "worktreeNotFound": "The worktree no longer exists",
+    "profileNotFound": "This agent profile no longer exists",
+    "profileDisabled": "This agent profile is disabled",
+    "noDefaultProfile": "No default agent is set",
+    "providerUnavailable": "The agent provider is not available (module disabled or missing)",
+    "modeUnavailable": "This session view is not available",
+    "commandNotFound": "`{{command}}` was not found on PATH",
+    "spawnFailed": "The agent could not be started: {{message}}",
+    "argsInvalid": "The arguments cannot be parsed (check quotes and trailing backslashes)",
+    "envInvalid": "Variable names must be letters, digits and _ and may not start with PRAGMA_",
+    "cannotDeleteBuiltin": "Built-in agents cannot be deleted",
+    "cannotResetCustom": "Only built-in agents can be reset",
+    "cannotDisableDefault": "The default agent cannot be disabled",
+    "cannotDefaultDisabled": "A disabled agent cannot be the default",
+    "sessionNotFound": "The session no longer exists",
+    "stopFailed": "The agent did not stop",
+    "worktreeCreateFailed": "The worktree could not be created: {{message}}"
+  },
+  "commands": {
+    "openLauncher": "Agents: New agent",
+    "focusSession": "Agents: Focus session"
   }
 }

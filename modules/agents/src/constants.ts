@@ -57,3 +57,12 @@ export const CHECK_CACHE_TTL_MS = 60_000
 export const TEST_OUTPUT_CAP_BYTES = 262_144
 export const WAIT_STATUS_MS = 10_000
 export const WAIT_POLL_MS = 50
+/** Renderer: provider mark sizes (ui-notes "Agent marks"), debounce, branch slug. */
+export const MARK_TAB = 18
+export const MARK_CARD = 20
+export const MARK_LARGE = 32
+export const COMMAND_CHECK_DEBOUNCE_MS = 400
+export const BRANCH_PREFIX = 'agent/'
+export const BRANCH_SLUG_MAX = 40
+export const FALLBACK_MARK_ICON = 'bot'
+export const ICON_SM = 14
