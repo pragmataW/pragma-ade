@@ -255,8 +255,10 @@ export class BoardError extends Error {
   }
 }
 
+export const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e))
+
 /** Serializable form of any error; unknown errors become `validation` with their message. */
 export function toBoardErrorDto(e: unknown, fallback: BoardErrorCode = BOARD_ERROR.validation): BoardErrorDto {
   if (e instanceof BoardError) return { code: e.code, message: e.message }
-  return { code: fallback, message: e instanceof Error ? e.message : String(e) }
+  return { code: fallback, message: errorMessage(e) }
 }

@@ -13,3 +13,6 @@ export const FIRST_DUPLICATE_SUFFIX = 2
 /** `PRA-12` (prefix letters/digits, task number). */
 export const TASK_KEY_RE = /^(?<prefix>[A-Za-z0-9]+)-(?<number>\d+)$/
 export const DIGITS_RE = /^\d+$/
+/** `prepareStart` tries `<branch>-2` … `<branch>-50` before giving up on a free suggestion. */
+export const MAX_BRANCH_SUFFIX = 50
+export const REMOTE_HEAD_RE = /\/HEAD$/
