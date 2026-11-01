@@ -34,6 +34,12 @@ export function defineIpcEvent<P>(c: { channel: string; payload: ZodType<P> }): 
 
 export const IPC_ERROR_CODES = ['NO_HANDLER', 'INVALID_INPUT', 'INVALID_OUTPUT', 'HANDLER_ERROR'] as const
 export type IpcErrorCode = (typeof IPC_ERROR_CODES)[number]
+export const IPC_ERROR = {
+  noHandler: 'NO_HANDLER',
+  invalidInput: 'INVALID_INPUT',
+  invalidOutput: 'INVALID_OUTPUT',
+  handlerError: 'HANDLER_ERROR',
+} as const satisfies Record<string, IpcErrorCode>
 
 export const IpcErrorPayloadSchema = z.object({ code: z.enum(IPC_ERROR_CODES), message: z.string() })
 export type IpcErrorPayload = z.infer<typeof IpcErrorPayloadSchema>

@@ -99,9 +99,10 @@ describe('ProviderRegistry', () => {
   })
 })
 
+const Icon = () => null
+
 test('renderer registry returns icon and rendererCapability', () => {
   const registry = new RendererProviderRegistry(memoryLogger())
-  const Icon = () => null
   registry.add('p', descriptor('p'), Icon, [defineRendererCapability('p', 'fakeBadge', { label: 'L' })])
   const api = registry.api()
   expect(api.icon('p')).toBe(Icon)
