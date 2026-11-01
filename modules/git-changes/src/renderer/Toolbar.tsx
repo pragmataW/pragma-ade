@@ -42,6 +42,7 @@ export interface ToolbarProps {
 const [TREE, LIST] = VIEW_MODES
 const [UNIFIED, SPLIT] = DIFF_STYLES
 const SECONDARY = 'secondary'
+const POPPER = 'popper'
 const MODE_LABEL_KEYS = {
   uncommitted: 'git-changes:mode.uncommitted',
   branch: 'git-changes:mode.branch',
@@ -129,7 +130,7 @@ function BasePicker({ worktreeId, list }: { worktreeId: string; list: ChangeList
         >
           {t('git-changes:toolbar.vsBase', { base: list.baseBranch })}
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position={POPPER}>
           {BRANCH_KINDS.map((kind) => {
             const items = options.filter((o) => o.kind === kind)
             if (items.length === 0) return null
