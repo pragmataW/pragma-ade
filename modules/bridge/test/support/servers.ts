@@ -22,7 +22,10 @@ export interface RawResponse {
   body: unknown
 }
 
-/** A raw HTTP request (full control over Host/Origin headers). */
+/**
+ * A raw HTTP request (full control over Host/Origin headers). Settles once the response ended AND the body was fully
+ * written: the server may answer early (413) while still draining the upload, and closing it then would break the pipe.
+ */
 export function postRaw(
   url: string,
   body: string | Buffer,
@@ -30,7 +33,11 @@ export function postRaw(
   opts: { method?: string; path?: string } = {},
 ): Promise<RawResponse> {
   const target = new URL(opts.path ?? BRIDGE_PATHS.hook, url)
-  return new Promise((resolve, reject) => {
+  let sent!: () => void
+  const written = new Promise<void>((r) => {
+    sent = r
+  })
+  const response = new Promise<RawResponse>((resolve, reject) => {
     const req = request(target, { method: opts.method ?? 'POST', headers }, (res) => {
       const chunks: Buffer[] = []
       res.on('data', (c: Buffer) => chunks.push(c))
@@ -44,7 +51,11 @@ export function postRaw(
       })
     })
     req.on('error', reject)
-    req.end(body)
+    req.end(body, sent)
+  })
+  return response.then(async (r) => {
+    await written
+    return r
   })
 }
 
