@@ -56,7 +56,7 @@ function TabButton({ tab, active }: { tab: TerminalTab; active: boolean }) {
       <Icon name="square-terminal" size={TAB_ICON_PX} />
       {editing ? <RenameInput tab={tab} onDone={() => setEditing(false)} /> : <span>{tabLabel(tab, t)}</span>}
       {status && (
-        <span data-testid={TerminalTestIds.tabStatus} className="text-[11px] text-fa">
+        <span data-testid={TerminalTestIds.tabStatus} title={status} className="max-w-40 truncate text-[11px] text-fa">
           {status}
         </span>
       )}
