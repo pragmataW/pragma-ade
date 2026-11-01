@@ -42,6 +42,16 @@ export const applySelected = (state: ProjectsState, p: { worktreeId: string | nu
 export const selectWorktreesOf = (s: ProjectsSnapshot, projectId: string): Worktree[] =>
   s.worktrees.filter((w) => w.projectId === projectId)
 
+/**
+ * Sidebar filter (case-insensitive substring): a project whose name matches keeps all its worktrees,
+ * otherwise only worktrees whose branch matches. An empty query keeps everything.
+ */
+export function filterWorktrees(project: Project, worktrees: Worktree[], query: string): Worktree[] {
+  const q = query.trim().toLowerCase()
+  if (!q || project.name.toLowerCase().includes(q)) return worktrees
+  return worktrees.filter((w) => (w.branch ?? '').toLowerCase().includes(q))
+}
+
 export const selectActiveWorktree = (s: ProjectsSnapshot): Worktree | null =>
   s.worktrees.find((w) => w.id === s.activeWorktreeId) ?? null
 

@@ -1,3 +1,4 @@
+import { Label } from '@pragma/ui/components/label'
 import type { ReactNode } from 'react'
 
 /** A labelled form row (label above the control, optional hint below). */
@@ -14,9 +15,9 @@ export function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="font-medium text-[12px]">
+      <Label htmlFor={id} className="text-[12px]">
         {label}
-      </label>
+      </Label>
       {children}
       {hint && <p className="text-[11px] text-mu">{hint}</p>}
     </div>

@@ -2,6 +2,9 @@
 export const PROJECTS_TESTIDS = {
   sidebar: 'projects-sidebar',
   add: 'projects-add',
+  filterToggle: 'projects-filter-toggle',
+  filterInput: 'projects-filter-input',
+  noMatches: 'projects-no-matches',
   empty: 'projects-empty',
   error: 'projects-error',
   errorDismiss: 'projects-error-dismiss',

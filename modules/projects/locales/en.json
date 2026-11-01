@@ -1,12 +1,18 @@
 {
-  "module": { "name": "Projects" },
+  "module": {
+    "name": "Projects"
+  },
   "sidebar": {
     "title": "Projects",
     "addProject": "Add project",
+    "filter": "Filter worktrees",
+    "filterPlaceholder": "Project or branch",
+    "noMatches": "No matching worktrees.",
     "empty": "Add a git repository to get started.",
     "newWorktree": "New worktree",
     "detached": "detached",
     "mainCheckout": "main checkout",
+    "fromBase": "from {{base}}",
     "changedFiles_one": "{{count}} changed file",
     "changedFiles_other": "{{count}} changed files",
     "projectMenu": "Project actions",
@@ -15,7 +21,9 @@
     "removeWorktree": "Remove worktree…",
     "dismissError": "Dismiss"
   },
-  "breadcrumb": { "separator": "›", "label": "{{project}} › {{branch}}" },
+  "breadcrumb": {
+    "separator": "›"
+  },
   "statusbar": {
     "branch": "Branch {{branch}}",
     "ahead": "↑{{count}}",
@@ -23,7 +31,9 @@
     "noUpstream": "no upstream",
     "aheadBehindTooltip": "{{ahead}} ahead, {{behind}} behind {{upstream}}"
   },
-  "addProject": { "pickerTitle": "Choose a git repository" },
+  "addProject": {
+    "pickerTitle": "Choose a git repository"
+  },
   "createWorktree": {
     "title": "New worktree",
     "branch": "Branch",

@@ -8,6 +8,7 @@ import { PROJECTS_DATA_ATTRS as A, type Project, projectsIpc, PROJECTS_TESTIDS a
 import { sidebarAction } from '../lib/actions'
 import { useProjects, useRuntime } from '../lib/runtime'
 import { useErrorText } from '../lib/use-error-text'
+import { filterWorktrees } from '../store'
 import { PlainButton } from './PlainButton'
 import { ProjectMenu } from './ProjectMenu'
 import { WorktreeRow } from './WorktreeRow'
@@ -19,7 +20,7 @@ function NewWorktreeRow({ projectId }: { projectId: string }) {
     <PlainButton
       data-testid={T.projectNewWorktree}
       onClick={() => runtime.ui.setState({ createFor: projectId })}
-      className="flex h-[var(--row-h)] w-full items-center gap-1.5 rounded-[var(--radius-button)] pl-[22px] text-left text-mu text-[12px] hover:bg-hv hover:text-tx"
+      className="flex h-[var(--row-h)] w-full items-center gap-1.5 rounded-[var(--radius-button)] pl-[44px] text-left text-mu text-[12px] hover:bg-hv hover:text-tx"
     >
       <Icon name={ICONS.add} size={ICON_PX.small} />
       {t('projects:sidebar.newWorktree')}
@@ -27,12 +28,23 @@ function NewWorktreeRow({ projectId }: { projectId: string }) {
   )
 }
 
-/** A collapsible, sortable project with its worktrees; clicking the header also re-syncs from git. */
-export function ProjectGroup({ project }: { project: Project }) {
+/**
+ * A collapsible, sortable project with its worktrees; clicking the header also re-syncs from git.
+ * With a filter `query`, only matching worktrees show and a project without matches is hidden.
+ */
+export function ProjectGroup({ project, query }: { project: Project; query: string }) {
   const runtime = useRuntime()
   const [collapsed, setCollapsed] = useState(false)
   const all = useProjects((s) => s.worktrees)
-  const worktrees = useMemo(() => all.filter((w) => w.projectId === project.id), [all, project.id])
+  const worktrees = useMemo(
+    () =>
+      filterWorktrees(
+        project,
+        all.filter((w) => w.projectId === project.id),
+        query,
+      ),
+    [all, project, query],
+  )
   const error = useProjects((s) => s.projectErrors[project.id])
   const errorText = useErrorText()
   const sortable = useSortable({ id: project.id })
@@ -40,6 +52,8 @@ export function ProjectGroup({ project }: { project: Project }) {
     setCollapsed((c) => !c)
     void sidebarAction(runtime, projectsIpc.syncProject, { projectId: project.id })
   }
+  const filtering = query.trim() !== ''
+  if (filtering && worktrees.length === 0) return null
   return (
     <div
       ref={sortable.setNodeRef}
@@ -54,7 +68,7 @@ export function ProjectGroup({ project }: { project: Project }) {
           {...sortable.listeners}
           aria-expanded={!collapsed}
           onClick={toggle}
-          className="flex h-full min-w-0 flex-1 items-center gap-1 pl-1 text-left font-medium"
+          className="flex h-full min-w-0 flex-1 items-center gap-[4px] pl-[4px] text-left font-medium"
         >
           <Icon name={collapsed ? ICONS.collapsed : ICONS.expanded} size={ICON_PX.row} className="text-mu" />
           <span className="truncate">{project.name}</span>
@@ -67,7 +81,7 @@ export function ProjectGroup({ project }: { project: Project }) {
           {worktrees.map((w) => (
             <WorktreeRow key={w.id} worktree={w} />
           ))}
-          <NewWorktreeRow projectId={project.id} />
+          {!filtering && <NewWorktreeRow projectId={project.id} />}
         </div>
       )}
     </div>

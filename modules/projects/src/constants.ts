@@ -157,7 +157,10 @@ export const ICONS = {
   branch: 'git-branch',
   dismiss: 'x',
   settings: 'folder-git-2',
+  filter: 'list-filter',
 } as const
+/** Closes and clears the sidebar filter. */
+export const FILTER_CLEAR_KEY = 'Escape'
 export const STATUS_PART_SEPARATOR = ' '
 export const GHOST_VARIANT = 'ghost'
 /** Projects settings page: between Shortcuts (40) and Agents (50) (§10.4). */

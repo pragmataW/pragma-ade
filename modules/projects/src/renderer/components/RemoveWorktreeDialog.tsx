@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pragma/ui/components/dialog'
+import { Label } from '@pragma/ui/components/label'
+import { Switch } from '@pragma/ui/components/switch'
 import { useState } from 'react'
 import { BUTTON_TYPES, BUTTON_VARIANTS, FIELD_IDS } from '../../constants'
 import { projectsIpc, PROJECTS_TESTIDS as T, type Worktree } from '../../contract'
@@ -42,17 +44,17 @@ function RemoveWorktreeForm({ worktree, onDone }: { worktree: Worktree; onDone()
         </p>
       )}
       {worktree.branch !== null && (
-        <label htmlFor={FIELD_IDS.deleteBranch} className="flex items-center gap-2 text-[12px]">
-          <input
+        <div className="flex items-center gap-2">
+          <Switch
             id={FIELD_IDS.deleteBranch}
-            type="checkbox"
             data-testid={T.removeDeleteBranch}
             checked={deleteBranch}
-            onChange={(e) => setDeleteBranch(e.target.checked)}
-            className="accent-[var(--ac)]"
+            onCheckedChange={setDeleteBranch}
           />
-          {t('projects:removeWorktree.deleteBranch', { branch })}
-        </label>
+          <Label htmlFor={FIELD_IDS.deleteBranch} className="font-normal text-[12px]">
+            {t('projects:removeWorktree.deleteBranch', { branch })}
+          </Label>
+        </div>
       )}
       {deleteBranch && unmerged > 0 && (
         <p data-testid={T.removeUnmerged} className="text-[12px] text-warn">

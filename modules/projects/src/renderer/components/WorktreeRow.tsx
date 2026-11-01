@@ -13,9 +13,17 @@ import { useProjects, useRuntime } from '../lib/runtime'
 import { PlainButton } from './PlainButton'
 import { WorktreeMenu } from './WorktreeMenu'
 
-/** ui-notes: 2-line ~40px row, worktrees indented 22px; selected = hover bg + 2px accent inset on the left. */
-const rowVariants = cva('group flex h-10 items-center rounded-[var(--radius-button)] pr-1 hover:bg-hv', {
-  variants: { active: { true: 'bg-hv shadow-[inset_2px_0_0_var(--ac)]', false: '' } },
+/**
+ * ui-notes: 2-line ~40px row (px, not rem: the root font is 13px), content indented 22px past the project
+ * name (`ProjectGroup` puts the name at 22px); selected = hover bg + a straight 2px accent bar on the left.
+ */
+const rowVariants = cva('group relative flex h-[40px] items-center rounded-[var(--radius-button)] pr-1 hover:bg-hv', {
+  variants: {
+    active: {
+      true: "bg-hv before:absolute before:inset-y-[6px] before:left-0 before:w-[2px] before:bg-[var(--ac)] before:content-['']",
+      false: '',
+    },
+  },
 })
 
 export function WorktreeRow({ worktree }: { worktree: Worktree }) {
@@ -33,7 +41,7 @@ export function WorktreeRow({ worktree }: { worktree: Worktree }) {
     <div data-testid={T.worktreeRow} {...attrs} className={rowVariants({ active })}>
       <PlainButton
         onClick={select}
-        className="flex h-full min-w-0 flex-1 flex-col justify-center gap-0.5 pl-[22px] text-left"
+        className="flex h-full min-w-0 flex-1 flex-col justify-center gap-[2px] pl-[44px] text-left"
       >
         <span className="flex w-full items-center gap-1.5">
           <Slot id={S.worktreeRowLeading} props={props} />
@@ -48,7 +56,11 @@ export function WorktreeRow({ worktree }: { worktree: Worktree }) {
             id={S.worktreeRowSubtitle}
             props={props}
             single
-            fallback={worktree.isMain ? t('projects:sidebar.mainCheckout') : null}
+            fallback={
+              worktree.isMain
+                ? t('projects:sidebar.mainCheckout')
+                : t('projects:sidebar.fromBase', { base: worktree.baseBranch })
+            }
           />
         </span>
       </PlainButton>

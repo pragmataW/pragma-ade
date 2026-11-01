@@ -56,7 +56,7 @@ function CreateWorktreeForm({ project, onDone }: { project: Project; onDone(): v
           autoFocus
           value={branch}
           onChange={(e) => setBranch(e.target.value)}
-          className="[font-family:var(--font-code)]"
+          className="[font-family:var(--font-code)] [&::-webkit-calendar-picker-indicator]:hidden!"
         />
         <datalist id={FIELD_IDS.branchList}>
           {names.map((n) => (

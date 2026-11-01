@@ -14,6 +14,7 @@ import {
   applyStatus,
   createProjectsStore,
   EMPTY_PROJECTS_STATE,
+  filterWorktrees,
   type ProjectsIpc,
   selectActiveWorktree,
   selectProjectOf,
@@ -132,5 +133,33 @@ describe('createProjectsRendererService', () => {
     await service.selectWorktree('f')
     expect(f.invoked.at(-1)).toEqual({ channel: PROJECTS_CHANNELS.selectWorktree, input: { worktreeId: 'f' } })
     off()
+  })
+})
+
+describe('filterWorktrees', () => {
+  const named = { ...project, name: 'pragma-ade' }
+  const trees = [
+    aWorktree('p', { id: 'm', branch: 'main', isMain: true }),
+    aWorktree('p', { id: 'f', branch: 'feat/Login' }),
+  ]
+
+  it('keeps everything for an empty or blank query', () => {
+    expect(filterWorktrees(named, trees, '')).toEqual(trees)
+    expect(filterWorktrees(named, trees, '  ')).toEqual(trees)
+  })
+
+  it('keeps every worktree when the project name matches', () => {
+    expect(filterWorktrees(named, trees, 'ADE')).toEqual(trees)
+  })
+
+  it('otherwise keeps only branches that match, case-insensitively', () => {
+    expect(filterWorktrees(named, trees, 'login').map((w) => w.id)).toEqual(['f'])
+    expect(filterWorktrees(named, trees, 'nope')).toEqual([])
+  })
+
+  it('a detached worktree matches only through the project name', () => {
+    const detached = [aWorktree('p', { id: 'd', branch: null })]
+    expect(filterWorktrees(named, detached, 'd')).toEqual(detached)
+    expect(filterWorktrees(named, detached, 'x')).toEqual([])
   })
 })
