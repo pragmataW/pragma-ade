@@ -17,7 +17,7 @@ Checked against the merged code on `main` (projects 01, comments 05, agents 03, 
 | Event `worktree.changed` | Payload has an extra `reason: 'files' \| 'head' \| 'baseBranch'`. Commits and ref changes fire it (`reason: 'head'`, git common-dir watcher in `projects/src/main/watching.ts`), so no focus refetch is needed. |
 | `ProjectsRendererServiceToken` → `getActiveWorktree`, `getSnapshot().changedFiles`, `subscribe` | As planned. |
 | `CommentsUiServiceToken` → `CommentComposer`, `openDrawer(args?)`, `send(ids, opts?)` | As planned (`send` takes an optional `{ preferredSessionId }`). `CommentContext` is `z.input` of `CommentContextSchema`. |
-| Comments IPC `commentsIpc.listDrafts/listSent/remove`, event `commentsIpcEvents.changed` | As planned; `Comment.filePath`, `lineStart`, `lineEnd`, `diffSide` are optional. |
+| Comments IPC `commentsIpc.listDrafts/remove`, event `commentsIpcEvents.changed` | `Comment.filePath`, `lineStart`, `lineEnd`, `diffSide` are optional. Since 2026-11-02 05 deletes delivered comments (no `listSent`, no `Comment.status`): the diff shows drafts only, a sent comment's card, tree marker and review bar disappear. |
 | SDK `defineIpc`, `defineIpcEvent`, `ctx.ipc.publish`, `ctx.panels.registerRightTab/activateRightTab/setBadge`, `ctx.theme.get().resolved`, `useLatestAsync(fn(signal), deps) → {data, error, loading, reload}`, `useT`, `useModuleSettings`, `useRendererContext`, `useTheme` | As planned. `useLatestAsync` keeps the previous `data` while a new key loads, so 07 tags results with their key. |
 | Test support `createFixtureRepo` (sync; `git()` trims stdout), `createTempUserData`, `launchApp({ env, disabledModules })`, `invoke`/`invokeIpc`, `executeCommand`, `openCommandPalette`; agents `createFakeAgentProfile`, `waitForFakeAgentLog`, `readFakeAgentLog` | As planned (no `fakeAgentCommand`; the profile helper covers it). |
 | CSS tokens `--ok --warn --err --info`, `--add-tx`, `--del-tx`, `--font-code` | Present in `packages/ui/src/styles/tokens.css`. |
@@ -57,6 +57,6 @@ Modes: `uncommitted` = HEAD (or the empty tree) ↔ working tree incl. untracked
 ## Consumes
 
 - projects (01): `GitServiceToken` (`run`, `mergeBase`, `show`, `countCommits`), `ProjectsServiceToken` (`getWorktree`, `listBranches`, `setBaseBranch`), event `worktree.changed`, `ProjectsRendererServiceToken` (active worktree, `changedFiles`).
-- comments (05): `CommentsUiServiceToken` (`CommentComposer`, `openDrawer`, `send`), `commentsIpc.listDrafts/listSent/remove`, `commentsIpcEvents.changed`, `Comment.diffSide`.
+- comments (05): `CommentsUiServiceToken` (`CommentComposer`, `openDrawer`, `send`), `commentsIpc.listDrafts/remove`, `commentsIpcEvents.changed`, `Comment.diffSide`.
 - editor (06, optional): command `editor.openFile {worktreeId, path, line}`; "Open in editor" only appears when the command exists, then the `files` tab is activated.
 - Libraries: `@pierre/diffs` 1.6.2 (Apache-2.0, `MultiFileDiff`), `react-arborist` 4.0.1 (MIT) with `react-dnd` / `react-dnd-html5-backend` 16.0.1.

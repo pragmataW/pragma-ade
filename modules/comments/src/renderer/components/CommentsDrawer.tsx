@@ -1,28 +1,11 @@
 import { useT } from '@pragma/sdk/renderer'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pragma/ui/components/tabs'
-import { useEffect, useState } from 'react'
-import {
-  type Comment,
-  commentsIpc,
-  DRAWER_TABS,
-  type DrawerTab,
-  sendErrorI18nKey,
-  COMMENTS_TESTIDS as T,
-  TARGET_KIND,
-  type TargetResolution,
-} from '../../contract'
+import { type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
 import { SEND, useBusy } from '../lib/use-busy'
-import { runtime } from '../runtime'
 import { useCommentsStore } from '../store'
 import { useSendFlow } from '../use-send-flow'
 import { CommentRow } from './CommentRow'
-
-const [DRAFTS, SENT] = DRAWER_TABS
-const SENT_TIME = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' })
-const TAB_TESTIDS = { drafts: T.drawerTabDrafts, sent: T.drawerTabSent } as const satisfies Record<DrawerTab, string>
-const TAB_KEYS = { drafts: 'comments:drawer.tabs.drafts', sent: 'comments:drawer.tabs.sent' } as const
 
 function Empty({ children }: { children: string }) {
   return <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">{children}</p>
@@ -90,14 +73,15 @@ function DraftsFooter({ drafts }: { drafts: Comment[] }) {
   )
 }
 
-function DraftsTab() {
+/** The worktree's drafts; a delivered comment is deleted, so there is no sent list. */
+function DraftsList() {
   const t = useT()
   const drafts = useCommentsStore((s) => s.drafts)
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ul className="min-h-0 flex-1 overflow-y-auto">
         {drafts.map((c) => (
-          <CommentRow key={c.id} comment={c} selectable />
+          <CommentRow key={c.id} comment={c} />
         ))}
       </ul>
       {drafts.length ? null : <Empty>{t('comments:drawer.emptyDrafts')}</Empty>}
@@ -106,80 +90,7 @@ function DraftsTab() {
   )
 }
 
-const titlesOf = (r: TargetResolution): Map<string, string> => {
-  if (r.kind === TARGET_KIND.single) return new Map([[r.session.id, r.session.title]])
-  if (r.kind === TARGET_KIND.choose) return new Map(r.sessions.map((s) => [s.id, s.title]))
-  return new Map()
-}
-
-/** Titles of the worktree's running sessions (sent rows to closed sessions say "a closed session"). */
-function useSessionTitles(worktreeId: string): ReadonlyMap<string, string> {
-  const [titles, setTitles] = useState<ReadonlyMap<string, string>>(new Map())
-  useEffect(() => {
-    let live = true
-    runtime()
-      .ipc.invoke(commentsIpc.resolveTarget, { worktreeId })
-      .then((r) => live && setTitles(titlesOf(r)))
-      .catch((e: unknown) => console.warn('comments: resolveTarget failed', e))
-    return () => {
-      live = false
-    }
-  }, [worktreeId])
-  return titles
-}
-
-function SentTab({ worktreeId }: { worktreeId: string }) {
-  const t = useT()
-  const sent = useCommentsStore((s) => s.sent)
-  const titles = useSessionTitles(worktreeId)
-  if (!sent.length) return <Empty>{t('comments:drawer.emptySent')}</Empty>
-  return (
-    <ul className="min-h-0 flex-1 overflow-y-auto">
-      {sent.map((c) => {
-        const target = (c.targetSessionId && titles.get(c.targetSessionId)) || t('comments:drawer.closedSession')
-        const time = SENT_TIME.format(c.sentAt ?? c.updatedAt)
-        return (
-          <CommentRow
-            key={c.id}
-            comment={c}
-            selectable={false}
-            footer={t('comments:drawer.sentTo', { target, time })}
-          />
-        )
-      })}
-    </ul>
-  )
-}
-
-function DrawerTabs({ worktreeId }: { worktreeId: string }) {
-  const t = useT()
-  const tab = useCommentsStore((s) => s.drawer.tab)
-  const counts = { drafts: useCommentsStore((s) => s.drafts.length), sent: useCommentsStore((s) => s.sent.length) }
-  return (
-    <Tabs
-      value={tab}
-      onValueChange={(v) => useCommentsStore.getState().setTab(v as DrawerTab)}
-      className="flex min-h-0 flex-1 flex-col gap-0"
-    >
-      <TabsList className="mx-4 my-2">
-        {DRAWER_TABS.map((id) => (
-          <TabsTrigger key={id} value={id} data-testid={TAB_TESTIDS[id]}>
-            {t(TAB_KEYS[id])}
-            {counts[id] ? <span className="ml-1 text-muted-foreground">{counts[id]}</span> : null}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      <TabsContent value={DRAFTS} className="flex min-h-0 flex-1 flex-col">
-        <DraftsTab />
-      </TabsContent>
-      <TabsContent value={SENT} className="flex min-h-0 flex-1 flex-col">
-        <SentTab worktreeId={worktreeId} />
-      </TabsContent>
-    </Tabs>
-  )
-}
-
-/** The Comments drawer: a right-side sheet with Drafts and Sent for the active worktree. */
+/** The Comments drawer: a right-side sheet with the active worktree's drafts. */
 export function CommentsDrawer() {
   const t = useT()
   const open = useCommentsStore((s) => s.drawer.open)
@@ -191,7 +102,7 @@ export function CommentsDrawer() {
           <SheetTitle>{t('comments:drawer.title')}</SheetTitle>
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
         </SheetHeader>
-        {worktreeId ? <DrawerTabs worktreeId={worktreeId} /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
+        {worktreeId ? <DraftsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
       </SheetContent>
     </Sheet>
   )

@@ -18,7 +18,6 @@ export type TargetResolution = z.infer<typeof TargetResolutionSchema>
 
 export const SEND_ERROR_KEYS = [
   'notFound',
-  'notDraft',
   'mixedWorktrees',
   'sessionNotRunning',
   'wrongWorktree',

@@ -33,16 +33,15 @@ export interface SendOptions {
 export interface CommentsService {
   /** Rejects with a ZodError on invalid input. */
   addDraft(input: CommentInput): Promise<Comment>
-  /** CommentsError `notFound` | `notDraft`. */
+  /** CommentsError `notFound`. */
   update(id: string, patch: CommentPatch): Promise<Comment>
-  /** CommentsError `notFound` | `notDraft`. */
+  /** CommentsError `notFound`. */
   remove(id: string): Promise<void>
-  /** Oldest first. */
+  /** Oldest first. Every stored comment is a draft: a successful send deletes the delivered comments. */
   listDrafts(worktreeId: string): Promise<Comment[]>
-  /** Newest first; default limit `SENT_LIST_LIMIT`. */
-  listSent(worktreeId: string, opts?: { limit?: number }): Promise<Comment[]>
   resolveTarget(worktreeId: string, preferredSessionId?: string): Promise<TargetResolution>
   /**
+   * On `sent` the delivered comments are deleted; any other result keeps them as drafts.
    * With no target: sends when exactly one running session exists. Otherwise returns needsTarget/noSession and,
    * unless `opts.promptUser === false`, publishes `comments.sendRequested` so the UI asks the user.
    */

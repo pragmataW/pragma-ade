@@ -128,6 +128,28 @@ describe('PendingDeliveries', () => {
 describe('service wiring', () => {
   const db = perTestDb()
 
+  test('a pending send delivered to the launched agent deletes the comments', async () => {
+    const upstream = createFakeUpstream([makeSession({ id: 'new', ptyId: 'pty-new' })])
+    const registry = new DeliveryRegistry()
+    const delivered: string[][] = []
+    registry.register('terminal', async (req) => void delivered.push(req.comments.map((c) => c.id)))
+    const service = createCommentsService({
+      repo: createCommentsRepository(db().db),
+      upstream,
+      registry,
+      events: { emit: () => undefined },
+      settings: () => ({ submitAfterPaste: false }),
+      pendingOptions: { readyTimeoutMs: 1 },
+    })
+    const c = await service.addDraft(makeInput())
+    await service.sendOnNextSession(WT, [c.id])
+    upstream.emitSessionStarted(started())
+    await vi.waitFor(() => expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.pendingDelivered)).toHaveLength(1))
+    expect(delivered).toEqual([[c.id]])
+    expect(await service.listDrafts(WT)).toEqual([])
+    service.dispose()
+  })
+
   test('worktree.removed deletes that worktree comments and cancels its entry', async () => {
     const upstream = createFakeUpstream([makeSession({ id: 'new', ptyId: 'pty-new' })])
     const service = createCommentsService({

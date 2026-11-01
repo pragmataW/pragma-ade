@@ -7,7 +7,6 @@ export function registerCommentsIpc(ipc: Pick<MainContext['ipc'], 'handle'>, ser
   ipc.handle(I.update, ({ id, patch }) => service.update(id, patch))
   ipc.handle(I.remove, ({ id }) => service.remove(id))
   ipc.handle(I.listDrafts, ({ worktreeId }) => service.listDrafts(worktreeId))
-  ipc.handle(I.listSent, ({ worktreeId, limit }) => service.listSent(worktreeId, { limit }))
   ipc.handle(I.resolveTarget, ({ worktreeId, preferredSessionId }) =>
     service.resolveTarget(worktreeId, preferredSessionId),
   )

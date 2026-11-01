@@ -31,10 +31,10 @@ const ui = () => r.provided.get(CommentsUiServiceToken.id) as CommentsUiService
 const slot = (id: string) => r.slotEntries.find(([slotId]) => slotId === id)?.[1]
 
 describe('renderer module', () => {
-  test('activate registers both slots, the command, the settings page (order 70) and CommentsUiServiceToken', () => {
+  test('activate registers the host and the toolbar badge, the command, the settings page (order 70) and the UI service', () => {
     activate()
     expect(r.slotEntries.map(([id, e]) => [id, e.id])).toEqual([
-      ['titlebar.right', 'comments.entry'],
+      ['titlebar.right', 'comments.host'],
       ['agentSession.toolbar', 'comments.badge'],
     ])
     expect(r.commands.has(openDrawerCommand.id)).toBe(true)
@@ -52,10 +52,18 @@ describe('renderer module', () => {
     expect(await ui().send(['c2'])).toEqual(sent)
   })
 
-  test("openDrawer {tab:'sent'} opens the Sent tab", async () => {
+  test('the openDrawer command opens the drawer', async () => {
     activate()
-    await r.commands.execute(openDrawerCommand.id, { tab: 'sent' })
-    expect(r.store.getState().drawer).toMatchObject({ open: true, tab: 'sent' })
+    await r.commands.execute(openDrawerCommand.id, { worktreeId: WT })
+    expect(r.store.getState().drawer).toMatchObject({ open: true })
+  })
+
+  test('the titlebar host renders no button, only the (closed) drawer and dialogs', () => {
+    activate()
+    const Host = slot('titlebar.right')?.component as unknown as ComponentType
+    const { container } = renderUi(<Host />)
+    expect(container).toBeEmptyDOMElement()
+    expect(screen.queryAllByRole('button')).toEqual([])
   })
 
   test('ToolbarBadge click passes worktreeId + preferredSessionId', () => {
@@ -69,9 +77,9 @@ describe('renderer module', () => {
   it.each([0, 2])('badge count shown only when > 0 (%i)', async (n) => {
     activate({ drafts: Array.from({ length: n }, () => makeComment()) })
     await waitFor(() => expect(r.store.getState().drafts).toHaveLength(n))
-    const Entry = slot('titlebar.right')?.component as unknown as ComponentType
-    renderUi(<Entry />)
-    const button = screen.getByTestId(T.titlebarButton)
+    const Badge = slot('agentSession.toolbar')?.component as unknown as ComponentType<AgentSessionToolbarProps>
+    renderUi(<Badge session={makeSession()} />)
+    const button = screen.getByTestId(T.toolbarBadge)
     if (n) expect(button).toHaveTextContent(String(n))
     else expect(button).toHaveTextContent('')
   })

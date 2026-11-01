@@ -57,11 +57,8 @@ export function makeComment(overrides: Partial<Comment> = {}): Comment {
     snippet,
     language,
     body,
-    status: 'draft',
-    targetSessionId: null,
     createdAt: seq,
     updatedAt: seq,
-    sentAt: null,
     ...overrides,
   }
 }

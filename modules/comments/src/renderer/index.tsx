@@ -4,8 +4,8 @@ import { defineRendererModule } from '@pragma/sdk/renderer'
 import { COMMENTS_MODULE_ID, SLOT_ENTRY_IDS, SLOT_ORDER } from '../constants'
 import { type CommentsSettings, CommentsUiServiceToken, type OpenDrawerArgs, openDrawerCommand } from '../contract'
 import { CommentComposer } from './components/CommentComposer'
+import { CommentsHost } from './components/CommentsHost'
 import { CommentsSettingsPage } from './components/CommentsSettingsPage'
-import { TitlebarEntry } from './components/TitlebarEntry'
 import { ToolbarBadge } from './components/ToolbarBadge'
 import { setRuntime } from './runtime'
 import { useCommentsStore } from './store'
@@ -19,9 +19,9 @@ export default defineRendererModule<CommentsSettings>({
     setRuntime(ctx)
     useCommentsStore.getState().init()
     ctx.slots.register(ShellSlots.titlebarRight, {
-      id: SLOT_ENTRY_IDS.titlebar,
+      id: SLOT_ENTRY_IDS.host,
       order: SLOT_ORDER,
-      component: TitlebarEntry,
+      component: CommentsHost,
     })
     ctx.slots.register<AgentSessionToolbarProps>(AGENT_SLOTS.toolbar, {
       id: SLOT_ENTRY_IDS.toolbar,

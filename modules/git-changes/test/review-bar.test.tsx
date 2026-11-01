@@ -13,7 +13,7 @@ afterEach(async () => {
   h = undefined
 })
 
-const draft = (id: string, status: Comment['status'] = 'draft'): Comment => ({
+const draft = (id: string): Comment => ({
   id,
   worktreeId: WT_ID,
   source: 'diff',
@@ -22,13 +22,10 @@ const draft = (id: string, status: Comment['status'] = 'draft'): Comment => ({
   lineEnd: 12,
   diffSide: 'new',
   body: `comment ${id}`,
-  status,
-  targetSessionId: null,
   createdAt: 0,
   updatedAt: 0,
-  sentAt: null,
 })
-const DRAFTS = [draft('c1'), draft('c2'), draft('s1', 'sent')]
+const DRAFTS = [draft('c1'), draft('c2')]
 
 async function mountBar(send = vi.fn<CommentsUiService['send']>(async () => undefined)) {
   h = await mountPanel({
@@ -71,7 +68,7 @@ describe('ReviewBar', () => {
   })
 
   it('renders nothing without drafts', async () => {
-    h = await mountPanel({ render: <ReviewBar comments={[draft('s', 'sent')]} fileName="a" /> })
+    h = await mountPanel({ render: <ReviewBar comments={[]} fileName="a" /> })
     expect(screen.queryByTestId(T.reviewBar)).toBeNull()
   })
 })

@@ -215,16 +215,15 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
 export type FakeRendererCtx = ReturnType<typeof createFakeRendererCtx>
 
 /**
- * The renderer runtime over a fake context with a fresh store; `listDrafts`/`listSent` answer from `drafts`/`sent`.
+ * The renderer runtime over a fake context with a fresh store; `listDrafts` answers from `drafts`.
  * Call `init()` to start the store's subscriptions (disposed by `stop`).
  */
-export function mountRenderer(opts: { activeWorktreeId?: string | null; drafts?: Comment[]; sent?: Comment[] } = {}) {
+export function mountRenderer(opts: { activeWorktreeId?: string | null; drafts?: Comment[] } = {}) {
   const ctx = createFakeRendererCtx({
     activeWorktreeId: opts.activeWorktreeId === undefined ? WT : opts.activeWorktreeId,
   })
-  const data = { drafts: opts.drafts ?? [], sent: opts.sent ?? [] }
+  const data = { drafts: opts.drafts ?? [] }
   ctx.fakeIpc.respond(commentsIpc.listDrafts, () => data.drafts)
-  ctx.fakeIpc.respond(commentsIpc.listSent, () => data.sent)
   setRuntime(ctx)
   useCommentsStore.setState(useCommentsStore.getInitialState(), true)
   let off: (() => void) | undefined
