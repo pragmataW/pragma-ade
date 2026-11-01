@@ -83,3 +83,11 @@ export const GIT_ARGS = {
 } as const
 export const GIT_FLAGS = { newBranch: '-b', force: '--force', deleteMerged: '-d', deleteForce: '-D' } as const
 export const UTF8 = 'utf8'
+
+/** Branch and project folder names (SDK `slugify`, longer than its 48-char default for branch names). */
+export const BRANCH_SLUG_MAX_LENGTH = 80
+export const BRANCH_SLUG_FALLBACK = 'worktree'
+export const PROJECT_SLUG_FALLBACK = 'project'
+export const HOME_PREFIX_RE = /^~(?=$|[\\/])[\\/]?/
+export const DEDUPE_FIRST_SUFFIX = 2
+export const DEDUPE_SEPARATOR = '-'
