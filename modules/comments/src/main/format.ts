@@ -12,6 +12,7 @@ import {
   TRAILING_SPACE_RE,
 } from '../constants'
 import { type BrowserElementContext, COMMENT_SOURCE, type Comment, DIFF_SIDE } from '../contract'
+import { codeLocation } from '../lib/code-location'
 
 export type FormattableComment = Pick<
   Comment,
@@ -101,13 +102,6 @@ function truncateChars(text: string, max: number): { text: string; more: number 
 const ellipsize = (text: string, max: number): string => (text.length <= max ? text : text.slice(0, max) + ELLIPSIS)
 const code = (s: string): string => BACKTICK + s + BACKTICK
 
-function location(c: FormattableComment): string {
-  const path = c.filePath ?? ''
-  if (c.lineStart === undefined) return path
-  const range = c.lineEnd !== undefined && c.lineEnd !== c.lineStart ? `${c.lineStart}-${c.lineEnd}` : `${c.lineStart}`
-  return `${path}:${range}`
-}
-
 function snippetLines(c: FormattableComment, limits: FormatLimits): string[] {
   if (!c.snippet) return []
   const byLines = truncateLines(c.snippet, limits.snippetMaxLines)
@@ -122,7 +116,7 @@ function snippetLines(c: FormattableComment, limits: FormatLimits): string[] {
 
 function codeItem(c: FormattableComment, n: number, limits: FormatLimits): string[] {
   const old = c.diffSide === DIFF_SIDE.old ? TEMPLATE.oldVersion : ''
-  return [`${n}. ${code(location(c))}${old}`, ...snippetLines(c, limits)]
+  return [`${n}. ${code(codeLocation(c))}${old}`, ...snippetLines(c, limits)]
 }
 
 const bullet = (text: string): string => INDENT + TEMPLATE.bullet + text

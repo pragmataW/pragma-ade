@@ -1,8 +1,14 @@
 /** Shared unit-test fakes (§9: no copy-pasted setup). */
 import type { AgentSessionStartedPayload } from '@pragma/module-agents/contract'
+import { ProjectsRendererServiceToken, type ProjectsSnapshot, type Worktree } from '@pragma/module-projects/contract'
 import type { MainIpcApi } from '@pragma/sdk/main'
+import type { RendererContext, SettingsPage, SlotEntry } from '@pragma/sdk/renderer'
 import type { IpcClient } from '@pragma/sdk/runtime/renderer'
+import { type Comment, type CommentsSettings, commentsIpc } from '../src/contract'
 import type { CommentsUpstream, SessionRef } from '../src/main/upstream'
+import { setRuntime } from '../src/renderer/runtime'
+import { useCommentsStore } from '../src/renderer/store'
+import { WT } from './factories'
 
 type Listener<A> = (a: A) => void
 
@@ -117,3 +123,121 @@ export function createFakeIpc() {
 }
 type Typed = { handle: MainIpcApi['handle']; invoke: IpcClient['invoke']; subscribe: IpcClient['subscribe'] }
 export type FakeIpc = ReturnType<typeof createFakeIpc>
+
+/** The projects renderer service with a settable active worktree. */
+export function createFakeProjects(activeId: string | null = null) {
+  let active = activeId
+  const changes = listeners<void>()
+  return {
+    getActiveWorktree: () => (active ? ({ id: active } as Worktree) : null),
+    getSnapshot: () => ({}) as ProjectsSnapshot,
+    selectWorktree: async (id: string | null) => {
+      active = id
+      changes.emit()
+    },
+    subscribe: (cb: () => void) => changes.on(cb),
+    setActive(id: string | null) {
+      active = id
+      changes.emit()
+    },
+  }
+}
+
+/**
+ * A `RendererContext` subset for the comments renderer: fake IPC, a recording command registry, a services map
+ * (projects renderer service pre-provided), recording slots / settings pages and an in-memory settings section.
+ */
+export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null } = {}) {
+  const ipc = createFakeIpc()
+  const projects = createFakeProjects(opts.activeWorktreeId ?? null)
+  const provided = new Map<string, unknown>([[ProjectsRendererServiceToken.id, projects]])
+  const commandHandlers = new Map<string, (args: unknown) => unknown>()
+  const executed: [string, unknown][] = []
+  const slots: [string, SlotEntry<never>][] = []
+  const pages: SettingsPage[] = []
+  let settings: CommentsSettings = { submitAfterPaste: false }
+  const settingsSubs = listeners<CommentsSettings>()
+  const updates: unknown[] = []
+  const disposable = { dispose: () => undefined }
+  const recording =
+    <A extends unknown[]>(record: (...a: A) => void) =>
+    (...a: A) => {
+      record(...a)
+      return disposable
+    }
+  const ctx = {
+    ipc,
+    services: {
+      provide: recording((token: { id: string }, impl: unknown) => void provided.set(token.id, impl)),
+      get: (token: { id: string }) => provided.get(token.id),
+      tryGet: (token: { id: string }) => provided.get(token.id),
+    },
+    commands: {
+      register: (id: string | { id: string }, handler: (args: unknown) => unknown) => {
+        commandHandlers.set(typeof id === 'string' ? id : id.id, handler)
+        return disposable
+      },
+      execute: async (id: string, args?: unknown) => {
+        executed.push([id, args])
+        return commandHandlers.get(id)?.(args)
+      },
+      has: (id: string) => commandHandlers.has(id),
+    },
+    slots: { register: recording((slotId: string, e: SlotEntry<never>) => void slots.push([slotId, e])) },
+    settingsPages: { register: recording((p: SettingsPage) => void pages.push(p)) },
+    settings: {
+      get: () => settings,
+      set: async (v: CommentsSettings) => {
+        settings = v
+        settingsSubs.emit(v)
+        return v
+      },
+      update: async (patch: Partial<CommentsSettings>) => {
+        updates.push(patch)
+        settings = { ...settings, ...patch }
+        settingsSubs.emit(settings)
+        return settings
+      },
+      subscribe: (cb: (v: CommentsSettings) => void) => ({ dispose: settingsSubs.on(cb) }),
+      read: () => undefined,
+    },
+  }
+  return Object.assign(ctx as unknown as RendererContext<CommentsSettings>, {
+    fakeIpc: ipc,
+    projects,
+    provided,
+    executed,
+    slots,
+    pages,
+    updates,
+  })
+}
+export type FakeRendererCtx = ReturnType<typeof createFakeRendererCtx>
+
+/**
+ * The renderer runtime over a fake context with a fresh store; `listDrafts`/`listSent` answer from `drafts`/`sent`.
+ * Call `init()` to start the store's subscriptions (disposed by `stop`).
+ */
+export function mountRenderer(opts: { activeWorktreeId?: string | null; drafts?: Comment[]; sent?: Comment[] } = {}) {
+  const ctx = createFakeRendererCtx({
+    activeWorktreeId: opts.activeWorktreeId === undefined ? WT : opts.activeWorktreeId,
+  })
+  const data = { drafts: opts.drafts ?? [], sent: opts.sent ?? [] }
+  ctx.fakeIpc.respond(commentsIpc.listDrafts, () => data.drafts)
+  ctx.fakeIpc.respond(commentsIpc.listSent, () => data.sent)
+  setRuntime(ctx)
+  useCommentsStore.setState(useCommentsStore.getInitialState(), true)
+  let off: (() => void) | undefined
+  return Object.assign(ctx, {
+    data,
+    store: useCommentsStore,
+    init() {
+      off = useCommentsStore.getState().init()
+    },
+    stop() {
+      off?.()
+      setRuntime(undefined)
+    },
+  })
+}
+export type MountedRenderer = ReturnType<typeof mountRenderer>
