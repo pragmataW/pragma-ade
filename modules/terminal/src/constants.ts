@@ -46,3 +46,15 @@ export const RIGHT_TAB_ICON = 'square-terminal'
 export const RIGHT_TAB_ORDER = 10
 /** A view sends its new size to the pty after this quiet period. */
 export const RESIZE_DEBOUNCE_MS = 50
+
+/** Tab strip controls (ui-notes: icon buttons 26–28px). */
+export const TAB_CONTROL_SIZE_PX = 28
+export const TAB_ICON_PX = 14
+/** Commands (renderer side; palette titles `terminal:commands.*`). */
+export const TERMINAL_COMMANDS = {
+  newTab: 'terminal.newTab',
+  closeTab: 'terminal.closeTab',
+  splitVertical: 'terminal.splitVertical',
+  splitHorizontal: 'terminal.splitHorizontal',
+  focusSearch: 'terminal.focusSearch',
+} as const

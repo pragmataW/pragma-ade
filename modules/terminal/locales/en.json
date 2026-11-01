@@ -25,5 +25,25 @@
   },
   "link": {
     "hint": "Cmd/Ctrl+click to open"
+  },
+  "tab": {
+    "defaultTitle": "Terminal {{n}}",
+    "renameLabel": "Tab name",
+    "close": "Close tab"
+  },
+  "actions": {
+    "newTab": "New terminal",
+    "splitVertical": "Split side by side",
+    "splitHorizontal": "Split stacked"
+  },
+  "pane": {
+    "close": "Close pane"
+  },
+  "commands": {
+    "newTab": "Terminal: New Terminal",
+    "closeTab": "Terminal: Close Terminal",
+    "splitVertical": "Terminal: Split Side by Side",
+    "splitHorizontal": "Terminal: Split Stacked",
+    "focusSearch": "Terminal: Find"
   }
 }

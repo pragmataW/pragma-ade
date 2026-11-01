@@ -9,6 +9,8 @@ export interface WorkspaceState {
   layouts: Record<string, WorktreeTerminalLayout>
   /** Worktrees whose terminals were shown at least once in this renderer. */
   visited: string[]
+  /** Bumped by `terminal.focusSearch`; the active pane opens its find bar. */
+  searchRequest: number
 }
 
 export interface Workspace {
@@ -24,7 +26,12 @@ type Ctx = Pick<RendererContext<TerminalSettings>, 'ipc' | 'services'>
 export function createWorkspace(ctx: Ctx): Workspace {
   const projects: ProjectsRendererService = ctx.services.get(ProjectsRendererServiceToken)
   const activeId = () => projects.getActiveWorktree()?.id ?? null
-  const store = createStore<WorkspaceState>(() => ({ activeWorktreeId: activeId(), layouts: {}, visited: [] }))
+  const store = createStore<WorkspaceState>(() => ({
+    activeWorktreeId: activeId(),
+    layouts: {},
+    visited: [],
+    searchRequest: 0,
+  }))
   const setLayout = (layout: WorktreeTerminalLayout): void =>
     store.setState((s) => ({ layouts: { ...s.layouts, [layout.worktreeId]: layout } }))
   const offProjects = projects.subscribe(() => {

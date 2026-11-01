@@ -1,15 +1,17 @@
 import '@xterm/xterm/css/xterm.css'
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
-import { useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react'
-import { PTY_EXIT_REASON, type TerminalSettings, TerminalTestIds, type TerminalViewProps } from '../../contract'
+import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react'
+import { type TerminalSettings, TerminalTestIds, type TerminalViewProps } from '../../contract'
+import { exitText } from '../panel/labels'
 import { getRuntime, readSettings } from '../runtime'
 import { ACTIVE_RENDERERS, type ActiveRenderer } from './renderer-choice'
 import { SearchBar } from './SearchBar'
+import { StatusBanner } from './StatusBanner'
 import { useTerminalFeatures } from './use-terminal-features'
 import { type SessionCallbacks, useTerminalSession } from './use-terminal-session'
 import { useXtermTheme } from './use-xterm-theme'
-import { INITIAL_VIEW_STATE, VIEW_STATE, type ViewExit, type ViewState, viewReducer } from './view-state'
+import { INITIAL_VIEW_STATE, VIEW_STATE, type ViewState, viewReducer } from './view-state'
 
 function useTerminalSettings(): TerminalSettings {
   const { settings } = getRuntime()
@@ -25,12 +27,6 @@ function useTerminalSettings(): TerminalSettings {
 }
 
 type T = ReturnType<typeof useT>
-
-function exitText(exit: ViewExit, t: T): string {
-  if (exit.reason === PTY_EXIT_REASON.daemonRestarted) return t('terminal:status.daemonRestarted')
-  if (exit.signal !== null) return t('terminal:status.exitedSignal', { signal: exit.signal })
-  return t('terminal:status.exited', { code: exit.exitCode })
-}
 
 function bannerText(state: ViewState, t: T): string | null {
   switch (state.kind) {
@@ -51,7 +47,15 @@ function bannerText(state: ViewState, t: T): string | null {
 }
 
 /** A terminal bound to a pty: snapshot restore, live output, input and resize. Used by the panel and by agents. */
-export function TerminalView({ ptyId, className, autoFocus = false, onExit, onTitleChange }: TerminalViewProps) {
+/** `searchRequest` (panel-internal): a changed non-zero value opens the find bar (`terminal.focusSearch`). */
+export function TerminalView({
+  ptyId,
+  className,
+  autoFocus = false,
+  onExit,
+  onTitleChange,
+  searchRequest = 0,
+}: TerminalViewProps & { searchRequest?: number }) {
   const t = useT()
   const settings = useTerminalSettings()
   const theme = useXtermTheme(getRuntime().theme)
@@ -62,6 +66,10 @@ export function TerminalView({ ptyId, className, autoFocus = false, onExit, onTi
   const callbacks = useRef<SessionCallbacks>({ onRenderer: setRenderer })
   callbacks.current = { onExit, onTitleChange, onRenderer: setRenderer, onTerminal: features.onTerminal }
   const term = useTerminalSession({ ptyId, host, settings, theme, autoFocus, dispatch, callbacks })
+  const { openSearch } = features
+  useEffect(() => {
+    if (searchRequest > 0) openSearch()
+  }, [searchRequest, openSearch])
   const closeSearch = () => {
     features.closeSearch()
     term.current?.focus()
@@ -83,15 +91,7 @@ export function TerminalView({ ptyId, className, autoFocus = false, onExit, onTi
           {t('terminal:link.hint')}
         </div>
       )}
-      {banner && (
-        <div
-          data-testid={TerminalTestIds.status}
-          role="status"
-          className="border-t border-bd bg-pn px-3 py-1.5 text-[12px] text-mu"
-        >
-          {banner}
-        </div>
-      )}
+      {banner && <StatusBanner text={banner} />}
     </div>
   )
 }

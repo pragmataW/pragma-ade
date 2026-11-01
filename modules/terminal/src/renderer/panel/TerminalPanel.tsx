@@ -1,9 +1,11 @@
 import { useT } from '@pragma/sdk/renderer'
+import { cn } from '@pragma/ui'
 import { useEffect } from 'react'
 import { useStore } from 'zustand'
 import { TerminalTestIds } from '../../contract'
 import { getWorkspace } from '../runtime'
-import { TerminalView } from '../view/TerminalView'
+import { PaneArea } from './PaneArea'
+import { TabStrip } from './TabStrip'
 
 function EmptyPanel() {
   const t = useT()
@@ -17,20 +19,29 @@ function EmptyPanel() {
   )
 }
 
-/** Right-panel `terminal` tab: the active worktree's terminals. */
+/**
+ * Right-panel `terminal` tab: the active worktree's tabs. Every tab of that worktree stays mounted (hidden ones with
+ * `display:none`); another worktree's views unmount and re-attach from a snapshot when it is shown again.
+ */
 export function TerminalPanel() {
   const workspace = getWorkspace()
   const activeId = useStore(workspace.store, (s) => s.activeWorktreeId)
   const layout = useStore(workspace.store, (s) => (activeId ? s.layouts[activeId] : undefined))
+  const searchRequest = useStore(workspace.store, (s) => s.searchRequest)
   useEffect(() => {
     if (activeId) void workspace.ensureLayout(activeId)
   }, [activeId, workspace])
   if (!activeId) return <EmptyPanel />
-  const tab = layout?.tabs.find((t) => t.id === layout.activeTabId)
-  const pane = tab?.panes[0]
   return (
     <div data-testid={TerminalTestIds.panel} className="flex h-full min-h-0 flex-col bg-pn">
-      {pane?.ptyId ? <TerminalView key={pane.ptyId} ptyId={pane.ptyId} autoFocus /> : null}
+      {layout && <TabStrip layout={layout} />}
+      <div className="relative min-h-0 flex-1">
+        {layout?.tabs.map((tab) => (
+          <div key={tab.id} className={cn('absolute inset-0', tab.id !== layout.activeTabId && 'hidden')}>
+            <PaneArea tab={tab} searchRequest={tab.id === layout.activeTabId ? searchRequest : 0} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

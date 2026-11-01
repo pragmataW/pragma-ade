@@ -12,6 +12,7 @@ export interface TerminalFeatures {
   onTerminal(term: Terminal): () => void
   search: SearchAddon | null
   searchOpen: boolean
+  openSearch(): void
   closeSearch(): void
   linkHovered: boolean
 }
@@ -73,6 +74,7 @@ export function useTerminalFeatures(): TerminalFeatures {
       setSearchOpen(false)
     }
   }, [])
+  const openSearch = useCallback(() => setSearchOpen(true), [])
   const closeSearch = useCallback(() => setSearchOpen(false), [])
-  return { onTerminal, search, searchOpen, closeSearch, linkHovered }
+  return { onTerminal, search, searchOpen, openSearch, closeSearch, linkHovered }
 }
