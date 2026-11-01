@@ -71,6 +71,11 @@ function listeners<T>() {
   }
 }
 
+/** Daemon stdout/stderr, line by line, into the module log. */
+function pipeLines(stream: NodeJS.ReadableStream | null, log: (line: string) => void): void {
+  if (stream) createInterface({ input: stream }).on('line', (line) => log(line))
+}
+
 const internal = (message: string): DaemonRequestError => new DaemonRequestError(DAEMON_ERROR.internal, message)
 
 /** Forks the pty-daemon, correlates requests with responses, and restarts it after a crash. */
@@ -161,8 +166,8 @@ export class DaemonHost {
     })
     this.#child = child
     this.#ready = false
-    if (child.stdout) createInterface({ input: child.stdout }).on('line', (l) => this.#opts.log.info(l))
-    if (child.stderr) createInterface({ input: child.stderr }).on('line', (l) => this.#opts.log.warn(l))
+    pipeLines(child.stdout, this.#opts.log.info)
+    pipeLines(child.stderr, this.#opts.log.warn)
     child.on('message', (m) => this.#onMessage(child, m as DaemonMessage))
     child.once(EXIT_EVENT, (code, signal) => this.#onExit(child, { code, signal }))
     child.on('error', (error) => this.#opts.log.error('pty-daemon process error', error))

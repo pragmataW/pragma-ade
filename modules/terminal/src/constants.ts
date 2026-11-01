@@ -26,3 +26,8 @@ export const DAEMON_STDIO: ['ignore', 'pipe', 'pipe', 'ipc'] = ['ignore', 'pipe'
 export const KILL_NOW_SIGNAL = 'SIGKILL'
 export const EXIT_EVENT = 'exit'
 export const DAEMON_UNAVAILABLE = 'pty-daemon is not available'
+
+/** Spawn env overrides (after the login-shell env and `opts.env`). */
+export const COLORTERM_VALUE = 'truecolor'
+export const TERM_PROGRAM_NAME = 'PragmaADE'
+export const PATH_SEPARATOR_RE = /[\\/]/

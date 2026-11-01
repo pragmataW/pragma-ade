@@ -1,5 +1,6 @@
 import { tmpdir } from 'node:os'
 import type { SpawnSpec } from '../../packages/pty-daemon/src/protocol'
+import type { TerminalPane, TerminalTab } from '../../src/contract'
 
 const DEFAULT_SCROLLBACK = 1000
 
@@ -65,4 +66,26 @@ export function fakePty(): FakePty {
     },
   }
   return fake
+}
+
+let nextId = 1
+const uid = (prefix: string): string => `${prefix}-${nextId++}`
+
+/** A layout pane bound to a pty. */
+export function pane(overrides: Partial<TerminalPane> = {}): TerminalPane {
+  return { id: uid('pane'), ptyId: uid('pty'), exit: null, error: null, ...overrides }
+}
+
+/** A single-pane tab. */
+export function tab(overrides: Partial<TerminalTab> = {}): TerminalTab {
+  const panes = overrides.panes ?? [pane()]
+  return {
+    id: uid('tab'),
+    ordinal: 1,
+    customTitle: null,
+    split: 'none',
+    panes,
+    activePaneId: panes[0]?.id ?? '',
+    ...overrides,
+  }
 }
