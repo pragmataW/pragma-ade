@@ -1,15 +1,17 @@
+import { DENSITIES, PALETTE_IDS, THEME_MODES } from '@pragma/ui/tokens'
 import { z } from 'zod'
 import type { Disposable } from './disposable'
 import { createServiceToken } from './services'
 
-// TODO(Task 15): move PALETTE_IDS, THEME_MODES and DENSITIES into @pragma/ui/tokens and re-export them here.
-export const PALETTE_IDS = ['vscode', 'dark-brown', 'amber', 'indigo'] as const
-export const THEME_MODES = ['light', 'dark'] as const
-export const DENSITIES = ['compact', 'comfortable'] as const
-export type PaletteId = (typeof PALETTE_IDS)[number]
-export type ThemeMode = (typeof THEME_MODES)[number]
-export type Density = (typeof DENSITIES)[number]
-export type TokenName = string
+export {
+  DENSITIES,
+  type Density,
+  PALETTE_IDS,
+  type PaletteId,
+  THEME_MODES,
+  type ThemeMode,
+  type TokenName,
+} from '@pragma/ui/tokens'
 
 export const APPEARANCE_MODES = ['system', ...THEME_MODES] as const
 export type AppearanceMode = (typeof APPEARANCE_MODES)[number]

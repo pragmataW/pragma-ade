@@ -15,3 +15,4 @@ export const TEMP_SUFFIX_BYTES = 6
 export const JSON_INDENT = 2
 export const BUSY_TIMEOUT_MS = 5000
 export const DEFAULT_LANGUAGE = 'en'
+export const SHELL_ENV_TIMEOUT_MS = 5000
