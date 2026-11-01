@@ -1,0 +1,49 @@
+{
+  "module": {
+    "name": "Terminal"
+  },
+  "panel": {
+    "title": "Terminal"
+  },
+  "empty": {
+    "noWorktree": "Select a worktree to open a terminal"
+  },
+  "status": {
+    "exited": "Exited (code {{code}})",
+    "exitedSignal": "Exited (signal {{signal}})",
+    "daemonRestarted": "Session ended — terminal service restarted",
+    "notFound": "This terminal session is no longer available",
+    "error": "Could not start terminal: {{message}}"
+  },
+  "search": {
+    "placeholder": "Find",
+    "results": "{{current}} of {{total}}",
+    "noResults": "No results",
+    "next": "Next match",
+    "previous": "Previous match",
+    "close": "Close find"
+  },
+  "link": {
+    "hint": "Cmd/Ctrl+click to open"
+  },
+  "tab": {
+    "defaultTitle": "Terminal {{n}}",
+    "renameLabel": "Tab name",
+    "close": "Close tab"
+  },
+  "actions": {
+    "newTab": "New terminal",
+    "splitVertical": "Split side by side",
+    "splitHorizontal": "Split stacked"
+  },
+  "pane": {
+    "close": "Close pane"
+  },
+  "commands": {
+    "newTab": "Terminal: New Terminal",
+    "closeTab": "Terminal: Close Terminal",
+    "splitVertical": "Terminal: Split Side by Side",
+    "splitHorizontal": "Terminal: Split Stacked",
+    "focusSearch": "Terminal: Find"
+  }
+}
