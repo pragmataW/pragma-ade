@@ -1,0 +1,12 @@
+{
+  "protocol": false,
+  "preamble": [
+    {
+      "stderr": "wrapper: cannot start claude\n"
+    },
+    {
+      "exit": 1
+    }
+  ],
+  "turns": []
+}

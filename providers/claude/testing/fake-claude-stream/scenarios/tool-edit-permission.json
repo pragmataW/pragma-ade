@@ -1,0 +1,96 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"]
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitThinking": {
+          "messageId": "msg_edit_1",
+          "text": "The README needs an edit."
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_edit_1",
+          "id": "toolu_edit_1",
+          "name": "Edit",
+          "input": {
+            "file_path": "README.md",
+            "old_string": "# fixture",
+            "new_string": "# fixture (edited)"
+          }
+        }
+      },
+      {
+        "requestPermission": {
+          "requestId": "perm-edit-1",
+          "toolName": "Edit",
+          "input": {
+            "file_path": "README.md",
+            "old_string": "# fixture",
+            "new_string": "# fixture (edited)"
+          },
+          "toolUseId": "toolu_edit_1",
+          "suggestions": [
+            {
+              "type": "addRules",
+              "rules": [
+                {
+                  "toolName": "Edit"
+                }
+              ],
+              "behavior": "allow",
+              "destination": "session"
+            }
+          ]
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_edit_1",
+          "content": "The file README.md has been updated."
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_edit_2",
+          "text": "I updated the README.",
+          "chunks": 4
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ]
+}

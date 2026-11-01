@@ -13,9 +13,11 @@
   },
   "exports": {},
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.316",
     "@pragma/module-agent-status": "workspace:*",
     "@pragma/module-agents": "workspace:*",
     "@pragma/module-bridge": "workspace:*",
+    "@pragma/module-chat": "workspace:*",
     "@pragma/provider-claude-hooks": "workspace:*",
     "@pragma/sdk": "workspace:*",
     "@pragma/ui": "workspace:*"
