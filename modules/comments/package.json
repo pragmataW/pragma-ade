@@ -1,0 +1,45 @@
+{
+  "name": "@pragma/module-comments",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --root ../.. modules/comments/test",
+    "e2e": "playwright test --config ../../playwright.config.ts modules/comments/e2e"
+  },
+  "pragma": {
+    "id": "comments",
+    "kind": "feature",
+    "displayNameKey": "comments:module.name",
+    "dependsOn": [
+      "projects",
+      "terminal",
+      "agents"
+    ],
+    "optionalDependsOn": [],
+    "core": false
+  },
+  "exports": {
+    "./contract": "./src/contract/index.ts",
+    "./main": "./src/main/index.ts",
+    "./renderer": "./src/renderer/index.tsx"
+  },
+  "dependencies": {
+    "@pragma/module-agents": "workspace:*",
+    "@pragma/module-projects": "workspace:*",
+    "@pragma/module-terminal": "workspace:*",
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*",
+    "zustand": "5.0.16"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@pragma/test-support": "workspace:*",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}
