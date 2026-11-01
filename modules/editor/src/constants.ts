@@ -87,3 +87,21 @@ export const SERVER_EVENT = { ready: 'ready', restarting: 'restarting', failed: 
 export const URL_PARAMS = { folder: 'folder', token: 'tkn' } as const
 export const WIN_DRIVE_PATH_RE = /^[A-Za-z]:[\\/]/
 export const BACKSLASH_RE = /\\/g
+export const WEBVIEW_PRE_PATH = '/out/vs/workbench/contrib/webview/browser/pre/'
+export const WEBVIEW_CDN_HOST_SUFFIX = '.vscode-cdn.net'
+export const EDITOR_ALLOWED_PERMISSIONS = ['clipboard-read', 'clipboard-sanitized-write'] as const
+export const EXTERNAL_PROTOCOLS = ['http:', 'https:'] as const
+export const HTTPS_SCHEME = 'https'
+export const HTTPS_PROTOCOL = 'https:'
+export const PARENT_SEGMENT = '..'
+export const CONTENT_TYPE = 'content-type'
+export const MIME_BY_EXT: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+}
+export const MIME_DEFAULT = 'application/octet-stream'
+export const WC_EVENTS = { willNavigate: 'will-navigate' } as const
+export const WINDOW_OPEN = { openExternal: 'openExternal', deny: 'deny' } as const
