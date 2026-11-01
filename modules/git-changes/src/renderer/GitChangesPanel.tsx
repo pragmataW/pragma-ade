@@ -1,5 +1,5 @@
 import { useModuleSettings, useT } from '@pragma/sdk/renderer'
-import { type KeyboardEvent, useEffect, useMemo } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo } from 'react'
 import {
   CHANGE_LIST_STATE,
   CHANGE_MODE,
@@ -11,9 +11,11 @@ import {
 import { EmptyState } from './EmptyState'
 import { keyToAction, NEXT_FILE, PREV_FILE } from './keyboard'
 import { useActiveWorktree } from './lib/projects'
+import { SplitPane } from './SplitPane'
 import { useGitChangesStore, useWorktreeView } from './store'
 import { type ChangeLists, Toolbar } from './Toolbar'
 import { buildFlatList, buildTree, leafOrder, type TreeNode } from './tree/build-tree'
+import { ChangesTree } from './tree/ChangesTree'
 import { useChangeList } from './use-changes'
 
 const [TREE] = VIEW_MODES
@@ -78,11 +80,21 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
       <Body
         loading={current.data === undefined && current.error === undefined}
         failed={current.error !== undefined}
-        files={files}
-        nodes={nodes}
         noBase={current.data !== undefined && !okList}
+        empty={files.length === 0}
         t={t}
-      />
+      >
+        <SplitPane
+          left={
+            <ChangesTree
+              nodes={nodes}
+              selectedPath={view.selectedPath}
+              onSelect={(path) => store.select(worktreeId, path)}
+            />
+          }
+          right={null}
+        />
+      </Body>
     </div>
   )
 }
@@ -91,17 +103,16 @@ function Body(props: {
   loading: boolean
   failed: boolean
   noBase: boolean
-  files: ChangedFile[]
-  nodes: TreeNode[]
+  empty: boolean
   t: ReturnType<typeof useT>
+  children: ReactNode
 }) {
   const { t } = props
   if (props.failed) return <EmptyState kind={EMPTY_KINDS.failed} text={t('git-changes:errors.loadFailed')} />
   if (props.loading) return <EmptyState kind={EMPTY_KINDS.loading} text={t('git-changes:empty.loading')} />
   if (props.noBase) return null
-  if (props.files.length === 0)
-    return <EmptyState kind={EMPTY_KINDS.noChanges} text={t('git-changes:empty.noChanges')} />
-  return <div data-testid={T.tree} className="min-h-0 flex-1" />
+  if (props.empty) return <EmptyState kind={EMPTY_KINDS.noChanges} text={t('git-changes:empty.noChanges')} />
+  return props.children
 }
 
 /** The Git Changes right tab: toolbar, file tree, diff and review bar of the active worktree. */

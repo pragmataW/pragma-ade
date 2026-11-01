@@ -44,3 +44,7 @@ export const FAKE_EDITOR_ENV = 'PRAGMA_TEST_FAKE_EDITOR'
 /** Tree node ids: `d:<dir path>` / `f:<file path>`. */
 export const DIR_ID_PREFIX = 'd:'
 export const FILE_ID_PREFIX = 'f:'
+/** Tree height until the container is measured (jsdom, first paint). */
+export const TREE_FALLBACK_HEIGHT_PX = 600
+export const TREE_ICON_PX = 14
+export const TREE_RESIZE_STEP_PX = 16

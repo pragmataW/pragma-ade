@@ -1,14 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  GIT_CHANGES_CHANNELS as C,
-  type ChangedFile,
-  type ChangeList,
-  type ChangeMode,
-  GitChangesTestIds as T,
-} from '../src/contract'
+import { GIT_CHANGES_CHANNELS as C, type ChangeList, GitChangesTestIds as T } from '../src/contract'
 import { type Answers, mountPanel, type PanelHarness, WT_ID } from './helpers/host'
+import { changed, listsAnswer, okList } from './helpers/lists'
 
 let h: PanelHarness | undefined
 afterEach(async () => {
@@ -16,22 +11,9 @@ afterEach(async () => {
   h = undefined
 })
 
-const files = (...paths: string[]): ChangedFile[] =>
-  paths.map((path) => ({ path, status: 'M', additions: 1, deletions: 1, binary: false }))
-const okList = (mode: ChangeMode, f: ChangedFile[], baseBranch = 'main'): ChangeList => ({
-  state: 'ok',
-  worktreeId: WT_ID,
-  mode,
-  baseBranch,
-  mergeBase: mode === 'branch' ? '0123456789abcdef' : null,
-  headSha: 'feedface',
-  commitCount: mode === 'branch' ? 2 : null,
-  files: f,
-  totals: { files: f.length, additions: f.length, deletions: f.length },
-})
+const files = (...paths: string[]) => changed(paths)
 const lists = (branch: ChangeList): Answers => ({
-  [C.list]: (i: { mode: ChangeMode }) =>
-    i.mode === 'branch' ? branch : okList('uncommitted', files('a', 'b', 'c', 'd')),
+  [C.list]: listsAnswer({ uncommitted: files('a', 'b', 'c', 'd'), branch }),
   [C.listBranches]: () => ({
     branches: [
       { name: 'main', kind: 'local' },

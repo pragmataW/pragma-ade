@@ -1,0 +1,157 @@
+import { useT } from '@pragma/sdk/renderer'
+import { cn } from '@pragma/ui'
+import { ChevronDown, ChevronRight, File, Folder, FolderOpen, MessageSquare } from '@pragma/ui/icons'
+import { type CSSProperties, createContext, type RefObject, useContext, useLayoutEffect, useRef, useState } from 'react'
+import { type NodeRendererProps, Tree, type TreeApi } from 'react-arborist'
+import {
+  FILE_ID_PREFIX,
+  TREE_FALLBACK_HEIGHT_PX,
+  TREE_ICON_PX,
+  TREE_INDENT_PX,
+  TREE_ROW_HEIGHT_PX,
+} from '../../constants'
+import { FILE_STATUS, type FileStatus, GitChangesTestIds as T } from '../../contract'
+import type { TreeNode } from './build-tree'
+
+export interface ChangesTreeProps {
+  nodes: TreeNode[]
+  selectedPath: string | null
+  onSelect(path: string): void
+  /** Draft diff comments per file path (marker next to the name). */
+  commentCounts?: Record<string, number>
+  treeRef?: RefObject<TreeApi<TreeNode> | null>
+}
+
+const RENAME_ARROW = ' → '
+/** Deleted files are struck through (ui-notes); inline so it holds without the stylesheet. */
+const DELETED_NAME: CSSProperties = { textDecorationLine: 'line-through' }
+const NO_COUNTS: Record<string, number> = {}
+
+/** Height of the tree's container (react-window needs a number); a fixed fallback until it is measured. */
+function useContainerHeight(): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [height, setHeight] = useState(TREE_FALLBACK_HEIGHT_PX)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      const h = Math.floor(entry?.contentRect.height ?? 0)
+      if (h > 0) setHeight(h)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, height]
+}
+
+const titleOf = (n: TreeNode): string =>
+  n.file?.status === FILE_STATUS.R && n.file.oldPath ? `${n.file.oldPath}${RENAME_ARROW}${n.path}` : n.path
+
+function StatusLetter({ status }: { status: FileStatus }) {
+  const t = useT()
+  return (
+    <span
+      className={cn('ml-1 w-3 shrink-0 text-center font-mono font-semibold text-[11px]', `gc-status-${status}`)}
+      title={t(`git-changes:status.name.${status}`)}
+    >
+      {t(`git-changes:status.letter.${status}`)}
+    </span>
+  )
+}
+
+function DirLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
+  const Chevron = node.isOpen ? ChevronDown : ChevronRight
+  const FolderIcon = node.isOpen ? FolderOpen : Folder
+  return (
+    <>
+      <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
+      <FolderIcon size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1 truncate">{node.data.name}</span>
+      <span className="shrink-0 text-[11px] text-muted-foreground">{node.data.fileCount}</span>
+    </>
+  )
+}
+
+function FileLabel({ data, comments }: { data: TreeNode; comments: number }) {
+  const status = data.file?.status ?? FILE_STATUS.M
+  return (
+    <>
+      <File size={TREE_ICON_PX} className="ml-[14px] shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1 truncate" style={status === FILE_STATUS.D ? DELETED_NAME : undefined}>
+        {data.name}
+      </span>
+      {comments > 0 ? (
+        <span className="flex shrink-0 items-center gap-0.5 text-[11px] text-[var(--act)]">
+          <MessageSquare size={TREE_ICON_PX} aria-hidden />
+          {comments}
+        </span>
+      ) : null}
+      <StatusLetter status={status} />
+    </>
+  )
+}
+
+const CommentCounts = createContext<Record<string, number>>(NO_COUNTS)
+
+/** One react-arborist row (directory or file). */
+function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
+  const counts = useContext(CommentCounts)
+  const { data } = node
+  return (
+    <div
+      style={style}
+      data-testid={T.treeRow}
+      data-path={data.path}
+      data-kind={data.kind}
+      data-depth={node.level}
+      data-status={data.file?.status}
+      data-selected={node.isSelected || undefined}
+      title={titleOf(data)}
+      className={cn(
+        'flex h-full cursor-default select-none items-center gap-1 pr-2 text-[13px]',
+        node.isSelected ? 'bg-[var(--hv)] text-[var(--tx)]' : 'hover:bg-[var(--hv)]',
+      )}
+    >
+      {node.isInternal ? <DirLabel node={node} /> : <FileLabel data={data} comments={counts[data.path] ?? 0} />}
+    </div>
+  )
+}
+
+/** The compressed, indented changes tree (22px rows, 12px indent), single selection, keyboard via react-arborist. */
+export function ChangesTree({ nodes, selectedPath, onSelect, commentCounts = NO_COUNTS, treeRef }: ChangesTreeProps) {
+  const t = useT()
+  const [containerRef, height] = useContainerHeight()
+  return (
+    <CommentCounts.Provider value={commentCounts}>
+      <div ref={containerRef} data-testid={T.tree} className="h-full min-h-0 overflow-hidden">
+        <Tree<TreeNode>
+          ref={treeRef}
+          data={nodes}
+          idAccessor="id"
+          childrenAccessor={(n) => n.children ?? null}
+          openByDefault
+          width="100%"
+          height={height}
+          rowHeight={TREE_ROW_HEIGHT_PX}
+          indent={TREE_INDENT_PX}
+          disableDrag
+          disableDrop
+          disableEdit
+          disableMultiSelection
+          selectionFollowsFocus
+          selection={selectedPath ? FILE_ID_PREFIX + selectedPath : undefined}
+          aria-label={t('git-changes:tree.label')}
+          onSelect={(selected) => {
+            const n = selected[0]
+            if (n?.data.kind === 'file') onSelect(n.data.path)
+          }}
+          onActivate={(n) => {
+            if (n.isInternal) n.toggle()
+          }}
+        >
+          {ChangeRow}
+        </Tree>
+      </div>
+    </CommentCounts.Provider>
+  )
+}

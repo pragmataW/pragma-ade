@@ -17,6 +17,9 @@ import { fileContentsIpc, listBranchesIpc, listChangesIpc, setBaseBranchIpc } fr
 import renderer from '../../src/renderer/index'
 import { setRendererCtx } from '../../src/renderer/lib/sdk'
 import { useGitChangesStore } from '../../src/renderer/store'
+import { WT_ID } from './ids'
+
+export { WT_ID }
 
 const MODULE_DIR = join(import.meta.dirname, '..', '..')
 const OWN_CONTRACTS: IpcContract<unknown, unknown>[] = [
@@ -25,7 +28,6 @@ const OWN_CONTRACTS: IpcContract<unknown, unknown>[] = [
   listBranchesIpc,
   setBaseBranchIpc,
 ] as never
-export const WT_ID = 'w'
 
 /** Radix Select/Popover need these in jsdom. */
 function polyfillPointer(): void {
