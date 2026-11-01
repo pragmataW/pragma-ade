@@ -18,7 +18,7 @@ import {
 } from '@pragma/module-editor/contract'
 import type { z } from '@pragma/sdk'
 import WebSocket from 'ws'
-import { MESSAGES, RECONNECT } from './constants'
+import { CONNECTION, MESSAGES, RECONNECT } from './constants'
 import type { VscodeApi } from './vscodeApi'
 
 export type EditorEventHandlers = {
@@ -89,7 +89,7 @@ export class BridgeConnection {
     await client.ready()
     await this.#sayHello()
     this.#api.log(MESSAGES.connected)
-    return 'connected'
+    return CONNECTION.connected
   }
 
   async request<K extends RequestName>(
@@ -108,9 +108,9 @@ export class BridgeConnection {
     this.#client = undefined
   }
 
-  #disabled(msg: string): 'disabled' {
+  #disabled(msg: string): typeof CONNECTION.disabled {
     this.#api.log(msg)
-    return 'disabled'
+    return CONNECTION.disabled
   }
 
   #listen(client: BridgeClient, h: EditorEventHandlers): void {

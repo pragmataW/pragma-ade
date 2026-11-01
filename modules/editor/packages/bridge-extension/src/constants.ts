@@ -51,3 +51,26 @@ export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
   act: ['textLink.foreground'],
   acs: ['editor.selectionHighlightBackground'],
 }
+export const COMMANDS = {
+  sendToAgent: 'pragma.comment.sendToAgent',
+  addToReview: 'pragma.comment.addToReview',
+  cancel: 'pragma.comment.cancel',
+} as const
+export const CONTROLLER = {
+  id: 'pragma-review',
+  label: 'Pragma',
+  placeHolder: 'Comment for the agent',
+  prompt: 'Sends file, line range and code excerpt',
+} as const
+export const FILE_SCHEME = 'file'
+export const PLAINTEXT = 'plaintext'
+export const COMMENT_MESSAGES = {
+  empty: 'Comment is empty',
+  outside: 'Only files in this worktree can be commented',
+  drafted: 'Added to review',
+  sent: 'Sent to agent',
+  needsUserAction: 'Choose an agent in Pragma',
+  notSentLabel: 'Not sent',
+  author: 'You',
+} as const
+export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const

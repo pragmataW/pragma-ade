@@ -1,4 +1,4 @@
-import type { VscodeApi } from '../../src/vscodeApi'
+import type { CommentControllerSpec, ThreadLike, VscodeApi } from '../../src/vscodeApi'
 
 /** A recording fake of the `VscodeApi` port. */
 export interface FakeApi extends VscodeApi {
@@ -9,6 +9,24 @@ export interface FakeApi extends VscodeApi {
   config: Map<string, unknown>
   state: Map<string, unknown>
   configWrites: string[]
+  controllers: CommentControllerSpec[]
+  commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
+  documents: Map<string, { lines: string[]; languageId: string }>
+}
+
+/** A recording comment thread. */
+export function fakeThread(fsPath: string, startLine: number, endLine: number, scheme = 'file') {
+  const added: { body: string; label: string }[] = []
+  let disposed = false
+  const thread: ThreadLike = {
+    uri: { scheme, fsPath },
+    range: { startLine, endLine },
+    addComment: (body, label) => void added.push({ body, label }),
+    dispose: () => {
+      disposed = true
+    },
+  }
+  return { thread, added, isDisposed: () => disposed }
 }
 
 const cfgKey = (section: string, key: string): string => `${section}.${key}`
@@ -21,6 +39,10 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
   const config = new Map<string, unknown>()
   const state = new Map<string, unknown>()
   const configWrites: string[] = []
+  const controllers: CommentControllerSpec[] = []
+  const commands: FakeApi['commands'] = new Map()
+  const documents: FakeApi['documents'] = new Map()
+  const disposable = { dispose: () => undefined }
   return {
     env: o.env ?? {},
     workspaceFolderPath: () => o.folder,
@@ -37,6 +59,18 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
       get: <T>(k: string) => state.get(k) as T | undefined,
       update: async (k, v) => void state.set(k, v),
     },
+    createCommentController: (spec) => {
+      controllers.push(spec)
+      return disposable
+    },
+    registerReplyCommand: (id, handler) => {
+      commands.set(id, handler)
+      return disposable
+    },
+    readDocument: async (uri) => documents.get(uri.fsPath) ?? { lines: [], languageId: 'plaintext' },
+    controllers,
+    commands,
+    documents,
     logs,
     infos,
     warnings,
