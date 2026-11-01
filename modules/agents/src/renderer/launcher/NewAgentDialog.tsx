@@ -20,6 +20,7 @@ import {
 } from '../../contract'
 import { useActiveWorktreeId, useAgents } from '../active-worktree'
 import { ActionButton, QuietButton } from '../lib/buttons'
+import { ErrorLine } from '../lib/ErrorLine'
 import { useAgentsErrorText } from '../lib/useAgentsErrorText'
 import { getRuntime } from '../runtime'
 import { launchableProfiles, profileName } from '../view-model'
@@ -225,11 +226,7 @@ function LauncherForm({ worktreeId }: { worktreeId: string | null }) {
         />
       </label>
       <Slot<AgentLauncherOptionsProps> id={AGENT_SLOTS.launcherOptions} props={slotProps} />
-      {error ? (
-        <div data-testid={AGENTS_TESTIDS.launcherError} role="alert" className="text-[12px] text-err">
-          {error}
-        </div>
-      ) : null}
+      <ErrorLine text={error} testId={AGENTS_TESTIDS.launcherError} />
       <LauncherFooter canStart={canStart} start={() => void start()} />
     </div>
   )

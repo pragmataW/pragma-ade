@@ -31,6 +31,8 @@ export interface AgentsState {
   closeLauncher(): void
   applySessionChanged(p: SessionChangedPayload): void
   applyProfilesChanged(p: { profiles: AgentProfile[] }): void
+  /** Re-reads the profiles after a Settings change (main also publishes `profilesChanged`). */
+  reloadProfiles(): Promise<void>
   refreshCheck(profileId: string): Promise<ProfileCheck>
 }
 export type AgentsStore = StoreApi<AgentsState>
@@ -96,6 +98,10 @@ export function createAgentsStore(ipc: AgentsIpcClient, warn: (m: string, e: unk
       },
       applyProfilesChanged({ profiles }) {
         set({ profiles, checks: {} })
+      },
+      async reloadProfiles() {
+        const profiles = await ipc.invoke(agentsIpc.listProfiles, undefined)
+        get().applyProfilesChanged({ profiles })
       },
       async refreshCheck(profileId) {
         const check = await ipc.invoke(agentsIpc.checkProfile, { id: profileId })

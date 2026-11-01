@@ -1,8 +1,10 @@
 import { projectsCommands } from '@pragma/module-projects/contract'
+import { SETTINGS_PAGE_ORDER } from '@pragma/sdk'
 import { defineRendererModule, type RendererContext } from '@pragma/sdk/renderer'
 import {
   AGENT_SLOTS,
   AGENTS_COMMANDS,
+  AGENTS_MODULE_ID,
   AGENTS_VIEW_ID,
   type AgentSessionViewProps,
   type AgentsSettings,
@@ -15,6 +17,7 @@ import {
 import { AgentsCenterView } from './center/AgentsCenterView'
 import { TerminalSessionView } from './center/TerminalSessionView'
 import { setRuntime } from './runtime'
+import { AgentsSettingsPage } from './settings/AgentsSettingsPage'
 import { type AgentsStore, createAgentsStore } from './store'
 
 const APP_SCOPE = 'app'
@@ -77,6 +80,13 @@ export default defineRendererModule<AgentsSettings>({
       order: TERMINAL_VIEW_ORDER,
       match: (p) => p.session.mode === TERMINAL_MODE,
       component: TerminalSessionView,
+    })
+    ctx.settingsPages.register({
+      id: AGENTS_MODULE_ID,
+      titleKey: 'agents:settings.title',
+      order: SETTINGS_PAGE_ORDER.agents,
+      icon: VIEW_ICON,
+      component: AgentsSettingsPage,
     })
     registerCommands(ctx, store)
   },

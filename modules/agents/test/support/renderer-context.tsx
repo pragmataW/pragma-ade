@@ -1,7 +1,7 @@
 import { ProjectsRendererServiceToken } from '@pragma/module-projects/contract'
 import { type TerminalViewProps, TerminalViewServiceToken } from '@pragma/module-terminal/contract'
 import type { IpcContract, IpcEventContract } from '@pragma/sdk'
-import type { CenterView, RendererContext, SlotEntry } from '@pragma/sdk/renderer'
+import type { CenterView, RendererContext, SettingsPage, SlotEntry } from '@pragma/sdk/renderer'
 import { RendererHostProvider } from '@pragma/sdk/renderer'
 import { createCommandRegistry } from '@pragma/sdk/runtime/main'
 import { act, render } from '@testing-library/react'
@@ -13,6 +13,7 @@ import {
   type AgentSession,
   type AgentsSettings,
   agentsSettingsDefaults,
+  type ProviderInfo,
 } from '../../src/contract'
 import renderer from '../../src/renderer/index'
 import { getRuntime } from '../../src/renderer/runtime'
@@ -27,6 +28,7 @@ export const FakeTerminalView: ComponentType<TerminalViewProps> = ({ ptyId }) =>
 export interface FakeBackend {
   sessions: AgentSession[]
   profiles: AgentProfile[]
+  providers: ProviderInfo[]
   calls: [string, unknown][]
   /** Overrides per channel; default handlers serve `sessions`/`profiles`. */
   replies: Record<string, (input: unknown) => unknown>
@@ -35,7 +37,7 @@ export interface FakeBackend {
 function defaultReply(b: FakeBackend, channel: string, input: unknown): unknown {
   const i = input as { id?: string; worktreeId?: string }
   if (channel === AGENTS_IPC.listProfiles) return b.profiles
-  if (channel === AGENTS_IPC.listProviders) return []
+  if (channel === AGENTS_IPC.listProviders) return b.providers
   if (channel === AGENTS_IPC.listSessions) return b.sessions.filter((s) => s.worktreeId === i.worktreeId)
   if (channel === AGENTS_IPC.getSession) return b.sessions.find((s) => s.id === i.id) ?? null
   return undefined
@@ -46,6 +48,7 @@ export function activateWithFakeContext(
   opts: {
     sessions?: AgentSession[]
     profiles?: AgentProfile[]
+    providers?: ProviderInfo[]
     settings?: Partial<AgentsSettings>
     activeWorktree?: string | null
   } = {},
@@ -53,7 +56,16 @@ export function activateWithFakeContext(
   const slots = createStore<{ slots: Record<string, Entry[]> }>(() => ({ slots: {} }))
   let active: string | null = opts.activeWorktree === undefined ? 'w1' : opts.activeWorktree
   const listeners = new Set<() => void>()
-  const backend: FakeBackend = { sessions: opts.sessions ?? [], profiles: opts.profiles ?? [], calls: [], replies: {} }
+  const backend: FakeBackend = {
+    sessions: opts.sessions ?? [],
+    profiles: opts.profiles ?? [],
+    providers: opts.providers ?? [],
+    calls: [],
+    replies: {},
+  }
+  const settingsPages: SettingsPage[] = []
+  let settings: AgentsSettings = { ...agentsSettingsDefaults, ...opts.settings }
+  const settingsListeners = new Set<(s: AgentsSettings) => void>()
   const subscriptions = new Map<string, (p: unknown) => void>()
   const centerViews: CenterView[] = []
   const activatedViews: string[] = []
@@ -115,8 +127,24 @@ export function activateWithFakeContext(
       },
     },
     shortcuts: { register: () => ({ dispose: () => undefined }) },
-    settingsPages: { register: () => ({ dispose: () => undefined }) },
-    settings: { get: () => ({ ...agentsSettingsDefaults, ...opts.settings }), update: async () => undefined },
+    settingsPages: {
+      register: (page: SettingsPage) => {
+        settingsPages.push(page)
+        return { dispose: () => undefined }
+      },
+    },
+    settings: {
+      get: () => settings,
+      update: async (patch: Partial<AgentsSettings>) => {
+        settings = { ...settings, ...patch }
+        for (const l of settingsListeners) l(settings)
+        return settings
+      },
+      subscribe: (cb: (s: AgentsSettings) => void) => {
+        settingsListeners.add(cb)
+        return { dispose: () => settingsListeners.delete(cb) }
+      },
+    },
     providers: { icon: () => undefined },
   }
   renderer.activate(ctx as unknown as RendererContext<AgentsSettings>)
@@ -124,6 +152,7 @@ export function activateWithFakeContext(
     ctx,
     backend,
     centerViews,
+    settingsPages,
     activatedViews,
     executed,
     setActive: (id: string | null) => act(() => setActive(id)),
