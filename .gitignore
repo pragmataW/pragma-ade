@@ -1,0 +1,11 @@
+node_modules/
+out/
+out-*/
+dist/
+apps/desktop/src/generated/
+test-results/
+playwright-report/
+coverage/
+report/
+*.log
+.DS_Store

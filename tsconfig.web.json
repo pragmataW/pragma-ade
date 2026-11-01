@@ -1,0 +1,38 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"]
+  },
+  "include": [
+    "apps/desktop/src/renderer/**/*",
+    "apps/desktop/src/generated/modules.renderer.ts",
+    "apps/desktop/test/**/*.tsx",
+    "packages/sdk/src/common/**/*",
+    "packages/sdk/src/renderer/**/*",
+    "packages/sdk/src/runtime/renderer/**/*",
+    "packages/sdk/src/runtime/shared/**/*",
+    "packages/sdk/src/constants.ts",
+    "packages/sdk/test/**/*.tsx",
+    "packages/ui/src/**/*",
+    "packages/ui/test/**/*.tsx",
+    "packages/test-support/src/dom/**/*",
+    "modules/*/src/contract/**/*",
+    "modules/*/src/renderer/**/*",
+    "modules/*/src/lib/**/*",
+    "modules/*/src/constants.ts",
+    "modules/*/test/**/*.tsx",
+    "providers/*/src/renderer/**/*",
+    "providers/*/src/main/provider.ts",
+    "providers/*/src/constants.ts",
+    "providers/*/test/**/*.tsx",
+    "test/architecture/fixtures/extension-proof/modules/*/src/contract/**/*",
+    "test/architecture/fixtures/extension-proof/modules/*/src/renderer/**/*",
+    "test/architecture/fixtures/extension-proof/modules/*/src/lib/**/*",
+    "test/architecture/fixtures/extension-proof/modules/*/src/constants.ts",
+    "test/architecture/fixtures/extension-proof/providers/*/src/renderer/**/*",
+    "test/architecture/fixtures/extension-proof/providers/*/src/main/provider.ts",
+    "test/architecture/fixtures/extension-proof/providers/*/src/constants.ts"
+  ],
+  "exclude": ["test/architecture/fixtures/violations/**/*", "scripts/test/fixtures/**", "**/node_modules/**"]
+}

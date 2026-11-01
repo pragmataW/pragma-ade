@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+  - modules/*
+  - modules/*/packages/*
+  - providers/*
+  - providers/*/packages/*
+  - test/architecture/fixtures/extension-proof/*/*
+allowBuilds:
+  electron: true
+  esbuild: true
+  better-sqlite3: true
+  node-pty: true
+  "@parcel/watcher": true
+minimumReleaseAgeExclude:
+  - i18next@26.6.0

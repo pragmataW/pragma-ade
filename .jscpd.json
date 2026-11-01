@@ -1,0 +1,17 @@
+{
+  "minTokens": 50,
+  "threshold": 0,
+  "format": ["typescript", "tsx"],
+  "exitCode": 1,
+  "reporters": ["console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/out/**",
+    "**/out-*/**",
+    "apps/desktop/src/generated/**",
+    "**/*.d.ts",
+    "packages/ui/src/vendor/**",
+    "test/architecture/fixtures/violations/**",
+    "scripts/test/fixtures/**"
+  ]
+}

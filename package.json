@@ -1,0 +1,52 @@
+{
+  "name": "pragma-ade",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "lint:biome": "biome check .",
+    "lint:dup": "jscpd .",
+    "lint": "pnpm lint:biome && pnpm lint:dup",
+    "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json",
+    "pretypecheck": "pnpm gen -- --no-build",
+    "test": "vitest run",
+    "pretest": "pnpm gen",
+    "gen": "node -e \"\"",
+    "predev": "pnpm gen",
+    "prebuild": "pnpm gen",
+    "package:mac": "node scripts/package/index.ts mac",
+    "package:linux": "node scripts/package/index.ts linux",
+    "package:win": "node scripts/package/index.ts win",
+    "package:all": "node scripts/package/index.ts all"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@playwright/test": "1.64.1",
+    "@pragma/sdk": "workspace:*",
+    "@pragma/test-support": "workspace:*",
+    "@pragma/ui": "workspace:*",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "45.2.1",
+    "i18next": "26.6.0",
+    "jscpd": "5.4.2",
+    "jsdom": "30.1.3",
+    "oxc-parser": "0.156.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-i18next": "17.1.9",
+    "tinyglobby": "0.2.17",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5",
+    "zod": "4.6.7"
+  }
+}
