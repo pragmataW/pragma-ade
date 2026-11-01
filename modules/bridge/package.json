@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "scripts": {
     "test": "vitest run --root ../.. modules/bridge/test",
     "e2e": "playwright test --config ../../playwright.config.ts modules/bridge/e2e"

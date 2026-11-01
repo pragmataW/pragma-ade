@@ -1,0 +1,6 @@
+{
+  "module": {
+    "name": "Agent status",
+    "description": "Shows whether each agent is working, waiting for you, or idle."
+  }
+}
