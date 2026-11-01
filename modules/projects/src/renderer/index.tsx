@@ -4,6 +4,7 @@ import {
   BADGE_ORDER_CHANGED_FILES,
   BREADCRUMB_ORDER,
   FOCUS_EVENT,
+  ICONS,
   SETTINGS_PAGE_ID,
   SETTINGS_PAGE_ORDER,
   SIDEBAR_ORDER,
@@ -79,6 +80,7 @@ export default defineRendererModule<ProjectsSettings>({
       id: SETTINGS_PAGE_ID,
       titleKey: 'projects:settings.title',
       order: SETTINGS_PAGE_ORDER,
+      icon: ICONS.settings,
       component: withRuntime(runtime, ProjectsSettingsPage),
     })
     start().catch((error: unknown) => console.warn('projects: initial state failed', error))

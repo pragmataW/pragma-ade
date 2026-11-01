@@ -116,8 +116,13 @@ export function CreateWorktreeDialog() {
   const close = () => ui.setState({ createFor: null })
   return (
     <Dialog open={project !== null} onOpenChange={(open) => !open && close()}>
+      {/* The branch datalist opens a native popup; focus moving there must not dismiss the dialog. */}
       {project && (
-        <DialogContent data-testid={T.createDialog} className="sm:max-w-[540px]">
+        <DialogContent
+          data-testid={T.createDialog}
+          className="sm:max-w-[540px]"
+          onFocusOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{t('projects:createWorktree.title')}</DialogTitle>
           </DialogHeader>

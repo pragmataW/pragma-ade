@@ -156,7 +156,7 @@ export const ICONS = {
   menu: 'ellipsis',
   branch: 'git-branch',
   dismiss: 'x',
-  newWorktree: 'git-branch-plus',
+  settings: 'folder-git-2',
 } as const
 export const STATUS_PART_SEPARATOR = ' '
 export const GHOST_VARIANT = 'ghost'
