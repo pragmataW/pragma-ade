@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test, vi } from 'vitest'
 import { z } from 'zod'
@@ -38,7 +38,15 @@ test('corrupt file is backed up and store starts empty', () => {
   const s = withStore('{corrupt')
   expect(s.store.get('m')).toEqual(Section.defaults)
   expect(readdirSync(s.dir).some((f) => f.startsWith('settings.json.corrupt-'))).toBe(true)
-  expect(existsSync(s.file)).toBe(false)
+  expect(s.disk()).toEqual({ m: Section.defaults })
+})
+test('a section missing from the file is written with its defaults', () => {
+  const s = withStore({ other: { keep: true } })
+  expect(s.disk()).toEqual({ other: { keep: true }, m: Section.defaults })
+})
+test('a stored section is not rewritten on registration', () => {
+  const s = withStore({ m: { size: 5 } })
+  expect(s.disk()).toEqual({ m: { size: 5 } })
 })
 test('update rejects invalid patch without changing value', () => {
   const { store } = withStore()

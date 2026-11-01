@@ -55,11 +55,17 @@ export class SettingsStore {
     return {}
   }
 
+  /** Validates the stored section (falling back to defaults); a missing section is written with its defaults. */
   registerSection<T>(id: string, s: SettingsSection<T>): void {
     const section = s as SettingsSection<unknown>
     const parsed = section.schema.safeParse(mergeUnknown(section.defaults, this.#raw[id]))
     if (!parsed.success) this.#log.warn(`settings section "${id}" is invalid; using defaults`, parsed.error.message)
-    this.#sections.set(id, { section, value: parsed.success ? parsed.data : section.defaults })
+    const value = parsed.success ? parsed.data : section.defaults
+    this.#sections.set(id, { section, value })
+    // A section seen for the first time is written with its defaults, so settings.json documents every module.
+    if (this.#raw[id] !== undefined) return
+    this.#raw[id] = value
+    this.#write()
   }
 
   has(id: string): boolean {
