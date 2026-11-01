@@ -1,5 +1,5 @@
 import { useModuleSettings, useT } from '@pragma/sdk/renderer'
-import { type KeyboardEvent, type ReactNode, useEffect, useMemo } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef } from 'react'
 import {
   CHANGE_LIST_STATE,
   CHANGE_MODE,
@@ -8,8 +8,9 @@ import {
   GitChangesTestIds as T,
   VIEW_MODES,
 } from '../contract'
+import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { EmptyState } from './EmptyState'
-import { keyToAction, NEXT_FILE, PREV_FILE } from './keyboard'
+import { keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
 import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
 import { useGitChangesStore, useWorktreeView } from './store'
@@ -54,6 +55,8 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   const okList = current.data?.state === CHANGE_LIST_STATE.ok ? current.data : undefined
   const files = useMemo(() => okList?.files ?? [], [okList])
   const { nodes, ordered } = useDisplay(files, settings.viewMode)
+  const selected = files.find((f) => f.path === view.selectedPath) ?? null
+  const diffRef = useRef<DiffViewHandle>(null)
 
   useEffect(() => {
     if (okList) useGitChangesStore.getState().reconcile(worktreeId, ordered)
@@ -65,6 +68,8 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
     e.preventDefault()
     if (action === NEXT_FILE || action === PREV_FILE)
       store.select(worktreeId, neighbour(ordered, view.selectedPath, action === NEXT_FILE ? 1 : -1))
+    else if (action === NEXT_CHANGE) diffRef.current?.nextChange()
+    else diffRef.current?.prevChange()
   }
 
   return (
@@ -92,7 +97,11 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
               onSelect={(path) => store.select(worktreeId, path)}
             />
           }
-          right={null}
+          right={
+            selected ? (
+              <DiffView ref={diffRef} worktreeId={worktreeId} mode={view.mode} file={selected} settings={settings} />
+            ) : null
+          }
         />
       </Body>
     </div>

@@ -48,3 +48,4 @@ export const FILE_ID_PREFIX = 'f:'
 export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14
 export const TREE_RESIZE_STEP_PX = 16
+export const DIFF_ICON_PX = 14

@@ -12,3 +12,12 @@
 .gc-status-R {
   color: var(--info);
 }
+
+/* Diff text (ui-notes: JetBrains Mono 12px / 20px); custom properties inherit into the open shadow root. */
+.gc-diff {
+  --diffs-font-family: var(--font-code);
+  --diffs-font-size: 12px;
+  --diffs-line-height: 20px;
+  --diffs-addition-color-override: var(--add-tx);
+  --diffs-deletion-color-override: var(--del-tx);
+}
