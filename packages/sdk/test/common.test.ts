@@ -20,7 +20,7 @@ import {
   z,
 } from '../src/index'
 
-declare module '../src/common/providers' {
+declare module '../src/index' {
   interface CapabilityMap {
     commonTestCap: { hello(): string }
   }

@@ -12,7 +12,7 @@ import { CoreModuleError } from '../src/runtime/main/main-host'
 import { featureRecord, providerRecord, startHost, tempDir } from './lib/builders'
 import { createFakePlatform } from './lib/fake-platform'
 
-declare module '../src/common/providers' {
+declare module '../src/index' {
   interface CapabilityMap {
     hostProbe: { data(): string; settings(): unknown }
   }
