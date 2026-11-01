@@ -1,0 +1,23 @@
+/* git-changes: status letters (ui-notes: M warn, A/U ok, D err + strikethrough, R info). */
+.gc-status-M {
+  color: var(--warn);
+}
+.gc-status-A,
+.gc-status-U {
+  color: var(--ok);
+}
+.gc-status-D {
+  color: var(--err);
+}
+.gc-status-R {
+  color: var(--info);
+}
+
+/* Diff text (ui-notes: JetBrains Mono 12px / 20px); custom properties inherit into the open shadow root. */
+.gc-diff {
+  --diffs-font-family: var(--font-code);
+  --diffs-font-size: 12px;
+  --diffs-line-height: 20px;
+  --diffs-addition-color-override: var(--add-tx);
+  --diffs-deletion-color-override: var(--del-tx);
+}
