@@ -1,0 +1,45 @@
+{
+  "module": { "name": "General settings" },
+  "pages": {
+    "general": "General",
+    "appearance": "Appearance",
+    "shortcuts": "Keyboard shortcuts",
+    "modules": "Modules"
+  },
+  "general": {
+    "language": "Language",
+    "languageHint": "Language of the interface"
+  },
+  "appearance": {
+    "mode": "Mode",
+    "modes": { "dark": "Dark", "light": "Light", "system": "System" },
+    "palette": "Palette",
+    "palettes": { "vscode": "VS Code", "dark-brown": "Dark Brown", "amber": "Amber", "indigo": "Indigo" },
+    "selected": "Selected",
+    "density": "Density",
+    "densities": { "compact": "Compact", "comfortable": "Comfortable" }
+  },
+  "shortcuts": {
+    "empty": "No shortcuts registered",
+    "scope": { "app": "App", "global": "Global" }
+  },
+  "modules": {
+    "kind": { "feature": "Module", "provider": "Provider" },
+    "core": "Core",
+    "state": { "active": "Active", "disabled": "Disabled", "failed": "Failed" },
+    "reason": {
+      "user": "Disabled by you",
+      "missing-dependency": "Missing dependency",
+      "cycle": "Dependency cycle",
+      "dependency-disabled": "A dependency is disabled",
+      "activate-error": "Failed to start",
+      "migration-error": "Database migration failed"
+    },
+    "dependsOn": "Depends on {{list}}",
+    "toggle": "Enable {{name}}",
+    "restartRequired": "Restart required to apply module changes",
+    "affected": "Affected: {{list}}",
+    "restart": "Restart"
+  },
+  "quickTheme": { "toDark": "Switch to dark theme", "toLight": "Switch to light theme" }
+}

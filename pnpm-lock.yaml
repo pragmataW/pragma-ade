@@ -14,6 +14,9 @@ importers:
       '@playwright/test':
         specifier: 1.64.1
         version: 1.64.1
+      '@pragma/module-settings-general':
+        specifier: workspace:*
+        version: link:modules/settings-general
       '@pragma/sdk':
         specifier: workspace:*
         version: link:packages/sdk
@@ -132,6 +135,18 @@ importers:
       zustand:
         specifier: 5.0.16
         version: 5.0.16(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+
+  modules/settings-general:
+    dependencies:
+      '@pragma/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@pragma/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
 
   packages/sdk:
     dependencies:

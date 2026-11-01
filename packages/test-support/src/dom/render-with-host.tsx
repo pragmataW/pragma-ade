@@ -1,4 +1,4 @@
-import { RendererHostProvider } from '@pragma/sdk/renderer'
+import { RendererHostProvider, type RendererModule } from '@pragma/sdk/renderer'
 import type { ModuleRecord } from '@pragma/sdk/runtime/main'
 import { createRendererHost, type RendererHost, type RendererModuleRecord } from '@pragma/sdk/runtime/renderer'
 import { act, type RenderResult, render } from '@testing-library/react'
@@ -44,4 +44,9 @@ export async function renderWithRendererHost(
       await main.dispose()
     },
   }
+}
+
+/** The renderer-registry entry for a module loaded with `loadModuleRecord` plus its renderer default export. */
+export function rendererRecordOf(record: ModuleRecord, renderer?: RendererModule<never>): RendererModuleRecord {
+  return { id: record.manifest.id, manifest: record.manifest, renderer, locales: record.locales }
 }

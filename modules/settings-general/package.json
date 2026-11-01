@@ -1,0 +1,26 @@
+{
+  "name": "@pragma/module-settings-general",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "pragma": {
+    "id": "settings-general",
+    "kind": "feature",
+    "displayNameKey": "settings-general:module.name",
+    "dependsOn": [],
+    "optionalDependsOn": [],
+    "core": true
+  },
+  "exports": {
+    "./main": "./src/main/index.ts",
+    "./renderer": "./src/renderer/index.tsx",
+    "./contract": "./src/contract/index.ts"
+  },
+  "dependencies": {
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}

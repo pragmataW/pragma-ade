@@ -32,6 +32,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
     "@playwright/test": "1.64.1",
+    "@pragma/module-settings-general": "workspace:*",
     "@pragma/sdk": "workspace:*",
     "@pragma/test-support": "workspace:*",
     "@pragma/ui": "workspace:*",
