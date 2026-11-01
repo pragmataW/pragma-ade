@@ -70,7 +70,8 @@ function createSessionNotifier(ctx: Ctx, agents: AgentSessionsService, projects:
       const session = await agents.getSession(sessionId)
       const profile = session?.profileId ? await agents.getProfile(session.profileId) : null
       const worktree = session ? await projects.getWorktree(session.worktreeId) : null
-      const agentName = profile?.displayNameKey ? ctx.i18n.t(profile.displayNameKey) : (profile?.name ?? '')
+      const builtinName = profile?.displayNameKey ? ctx.i18n.t(profile.displayNameKey) : ''
+      const agentName = profile?.name ?? builtinName
       return { agentName, branch: worktree?.branch ?? '' }
     },
   })
