@@ -18,9 +18,21 @@ import { makeTranscript, TEST_SESSION_ID } from './support'
 
 const ROOT = join(import.meta.dirname, '..', '..', '..')
 const readJson = (path: string) => JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
-const providerLocales = (id: string) => {
+type Tree = Record<string, unknown>
+const isTree = (v: unknown): v is Tree => typeof v === 'object' && v !== null && !Array.isArray(v)
+const deepMerge = (a: Tree, b: Tree): Tree =>
+  Object.fromEntries(
+    [...new Set([...Object.keys(a), ...Object.keys(b)])].map((k) => {
+      const [x, y] = [a[k], b[k]]
+      return [k, isTree(x) && isTree(y) ? deepMerge(x, y) : (y ?? x)]
+    }),
+  )
+/** A provider's per-capability locale files, deep-merged like the generator does. */
+const providerLocales = (id: string): Tree => {
   const dir = join(ROOT, 'providers', id, 'locales', 'en')
-  return Object.assign({}, ...readdirSync(dir).map((f) => readJson(join(dir, f))))
+  return readdirSync(dir)
+    .map((f) => readJson(join(dir, f)))
+    .reduce(deepMerge, {})
 }
 
 /** English `chat` namespace plus the given providers' namespaces. */
@@ -144,4 +156,20 @@ export function stubSessionApi(
     ...over,
   }
   return { api, calls, callsOf: (method: string) => calls.filter((c) => c.method === method) }
+}
+
+/** jsdom has no layout: viewport-sized boxes (so the virtualized list renders a window) and a no-op ResizeObserver. */
+export function installJsdomLayout(box = { width: 740, height: 800 }): void {
+  const g = globalThis as unknown as { HTMLElement: { prototype: object }; ResizeObserver?: unknown }
+  for (const [prop, value] of [
+    ['offsetWidth', box.width],
+    ['offsetHeight', box.height],
+    ['clientHeight', box.height],
+  ] as const)
+    Object.defineProperty(g.HTMLElement.prototype, prop, { configurable: true, get: () => value })
+  g.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
 }
