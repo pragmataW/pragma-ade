@@ -1,35 +1,22 @@
 import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { type GitService, ProjectsError } from '../src/contract'
+import type { GitService } from '../src/contract'
 import { createGitService } from '../src/main/git/git-service'
 import { defaultExec, type ExecFn } from '../src/main/git/run'
+import { codeOf, createCleanups } from './support/cleanups'
 import { type FixtureRepo, gitTestEnv, makeClone, makePlainDir, makeRepo } from './support/git-fixture'
 
 let git: GitService
 let repo: FixtureRepo
-const cleanups: (() => void)[] = []
-const track = <T extends { cleanup(): void }>(x: T): T => {
-  cleanups.push(() => x.cleanup())
-  return x
-}
+const cleanups = createCleanups()
+const track = cleanups.track
 
 beforeEach(async () => {
   git = createGitService({ baseEnv: gitTestEnv() })
   repo = track(await makeRepo())
 })
-afterEach(() => {
-  for (const c of cleanups.splice(0)) c()
-})
-
-const codeOf = async (p: Promise<unknown>): Promise<string | undefined> => {
-  try {
-    await p
-    return undefined
-  } catch (e) {
-    return e instanceof ProjectsError ? e.code : `non-projects: ${String(e)}`
-  }
-}
+afterEach(() => cleanups.run())
 
 async function addLinked(branch: string): Promise<string> {
   const path = join(makePlainDirTracked(), 'wt')
