@@ -1,3 +1,3 @@
-import { defineMainModule } from '@pragma/sdk/main'
+import { createProjectsMain } from './wiring'
 
-export default defineMainModule({ activate() {} })
+export default createProjectsMain()

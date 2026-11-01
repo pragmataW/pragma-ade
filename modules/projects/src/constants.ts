@@ -128,3 +128,7 @@ export const WINDOWS_SEP_RE = /\\/g
 export const ROOT_HEAD_FILES = ['HEAD', 'index', 'ORIG_HEAD', 'MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD']
 export const GIT_DIR_PATHS = { worktrees: 'worktrees/', packedRefs: 'packed-refs' } as const
 export const PARENT_PREFIX = '..'
+
+/** Watcher keys (one subscription per worktree and per repository git dir). */
+export const WATCH_KEY_PREFIX = { worktree: 'wt:', repo: 'repo:' } as const
+export const PICKER_TITLE_KEY = 'projects:addProject.pickerTitle'
