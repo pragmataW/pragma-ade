@@ -10,6 +10,7 @@ export function ControlButton(p: {
   label: string
   testId?: string
   onClick(): void
+  disabled?: boolean
   className?: string
 }) {
   return (
@@ -18,6 +19,7 @@ export function ControlButton(p: {
       data-testid={p.testId}
       aria-label={p.label}
       title={p.label}
+      disabled={p.disabled}
       onClick={(e) => {
         e.stopPropagation()
         p.onClick()
@@ -25,6 +27,7 @@ export function ControlButton(p: {
       style={controlStyle}
       className={cn(
         'flex shrink-0 items-center justify-center rounded-[var(--radius-button)] text-mu hover:bg-hv hover:text-tx',
+        'disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-mu',
         p.className,
       )}
     >

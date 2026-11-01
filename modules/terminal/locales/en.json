@@ -34,7 +34,8 @@
   "actions": {
     "newTab": "New terminal",
     "splitVertical": "Split side by side",
-    "splitHorizontal": "Split stacked"
+    "splitHorizontal": "Split stacked",
+    "splitLimit": "A terminal tab holds at most {{max}} panes"
   },
   "pane": {
     "close": "Close pane"

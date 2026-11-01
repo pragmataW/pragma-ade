@@ -12,6 +12,7 @@ import type {
   TerminalPane,
   TerminalTab,
 } from '../../src/contract'
+import { paneLeaf } from '../../src/lib/layout-tree'
 
 const DEFAULT_SCROLLBACK = 1000
 
@@ -87,14 +88,17 @@ export function pane(overrides: Partial<TerminalPane> = {}): TerminalPane {
   return { id: uid('pane'), ptyId: uid('pty'), exit: null, error: null, ...overrides }
 }
 
-/** A single-pane tab. */
+/** A tab of the given panes (one by default) side by side. */
 export function tab(overrides: Partial<TerminalTab> = {}): TerminalTab {
   const panes = overrides.panes ?? [pane()]
   return {
     id: uid('tab'),
     ordinal: 1,
     customTitle: null,
-    split: 'none',
+    root:
+      panes.length > 1
+        ? { kind: 'split', direction: 'vertical', children: panes.map((p) => paneLeaf(p.id)) }
+        : paneLeaf(panes[0]?.id ?? ''),
     panes,
     activePaneId: panes[0]?.id ?? '',
     ...overrides,
