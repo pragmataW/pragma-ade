@@ -53,3 +53,7 @@ export const SIGKILL = 'SIGKILL'
 export const CHECK_TIMEOUT_MS = 5000
 export const EXEC_OUTPUT_CAP_BYTES = 65_536
 export const CHECK_CACHE_TTL_MS = 60_000
+/** PRAGMA_TEST hooks. */
+export const TEST_OUTPUT_CAP_BYTES = 262_144
+export const WAIT_STATUS_MS = 10_000
+export const WAIT_POLL_MS = 50
