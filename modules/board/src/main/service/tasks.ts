@@ -11,8 +11,8 @@ import {
   type UpdateTaskPatch,
   UpdateTaskPatchSchema,
 } from '../../contract'
+import { resolveRank } from '../../lib/rank'
 import { serializeLabelIds } from '../lib/mappers'
-import { resolveRank } from '../rank'
 import type { BoardRow } from '../schema'
 import type { BoardCore } from './core'
 import type { LabelOps } from './labels'

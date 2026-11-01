@@ -1,1 +1,113 @@
-{ "module": { "name": "Task Board" } }
+{
+  "module": { "name": "Task Board" },
+  "view": { "title": "Task Board" },
+  "sidebar": { "entry": "Task Board", "count": "{{count}} open tasks" },
+  "commands": { "open": "Open task board" },
+  "scope": { "all": "All projects", "label": "Board" },
+  "empty": { "noProjects": "Add a project to start a board.", "noTasks": "No tasks" },
+  "error": { "generic": "Something went wrong: {{message}}", "dismiss": "Dismiss" },
+  "newTask": "New task",
+  "column": {
+    "count": "{{count}} tasks",
+    "menu": "Column actions",
+    "rename": "Rename",
+    "delete": "Delete column",
+    "add": "Add column",
+    "addPlaceholder": "Column name",
+    "duplicate": "A column with this name already exists",
+    "lastColumn": "A board needs at least one column",
+    "drag": "Drag column {{name}}",
+    "deleteTitle": "Delete column {{name}}?",
+    "deleteEmpty": "The column is empty.",
+    "deleteMove": "Move its {{count}} tasks to",
+    "deleteConfirm": "Delete column",
+    "cancel": "Cancel"
+  },
+  "quickAdd": {
+    "placeholder": "Task title, Enter to add",
+    "button": "Add task",
+    "project": "Project"
+  },
+  "card": { "noWorktree": "No worktree", "untitled": "Untitled task", "open": "Open {{key}}" },
+  "priority": { "none": "None", "low": "Low", "medium": "Medium", "high": "High", "urgent": "Urgent" },
+  "drawer": {
+    "status": "Status",
+    "priority": "Priority",
+    "labels": "Labels",
+    "worktree": "Worktree",
+    "description": "Description",
+    "descriptionPlaceholder": "Markdown; - [ ] for an acceptance checklist",
+    "edit": "Edit",
+    "preview": "Preview",
+    "emptyPreview": "No description",
+    "created": "Created {{date}}",
+    "updated": "Updated {{date}}",
+    "delete": "Delete task",
+    "deleteConfirm": "Delete {{key}}? This cannot be undone.",
+    "deleteConfirmButton": "Delete",
+    "cancel": "Cancel",
+    "close": "Close",
+    "title": "Title"
+  },
+  "labels": { "create": "New label, Enter to add", "toggle": "Toggle label {{name}}" },
+  "search": { "placeholder": "Search tasks" },
+  "filter": {
+    "labels": "Label",
+    "priority": "Priority",
+    "agent": "Agent",
+    "noAgent": "No agent",
+    "worktree": "Worktree",
+    "clear": "Clear filters",
+    "worktreeAny": "Any",
+    "worktreeWith": "With worktree",
+    "worktreeWithout": "Without worktree",
+    "count": "{{label}} · {{count}}"
+  },
+  "mode": { "board": "Board", "list": "List", "label": "View mode" },
+  "list": {
+    "key": "Key",
+    "title": "Title",
+    "status": "Status",
+    "priority": "Priority",
+    "labels": "Labels",
+    "worktree": "Worktree",
+    "empty": "No tasks match"
+  },
+  "dnd": { "noSuchColumn": "{{project}} has no column {{column}}" },
+  "start": {
+    "title": "Start work",
+    "branch": "Branch",
+    "base": "Base",
+    "agent": "Agent",
+    "sendPrompt": "Send task as first prompt",
+    "submit": "Start in new worktree with agent",
+    "running": "Starting…",
+    "inWorktree": "Start agent in this worktree",
+    "branchInvalid": "Not a valid branch name",
+    "branchExists": "This branch already exists",
+    "noProfiles": "No enabled agent profile",
+    "error": {
+      "validate": "Cannot start: {{message}}",
+      "worktree": "Could not create the worktree: {{message}}",
+      "session": "The worktree was created but the agent did not start: {{message}}"
+    }
+  },
+  "worktree": {
+    "none": "None",
+    "goto": "Go to worktree",
+    "link": "Link to existing worktree",
+    "detached": "detached"
+  },
+  "sessions": {
+    "title": "Agent sessions",
+    "untitled": "Untitled session",
+    "goto": "Go to agent",
+    "unlink": "Unlink",
+    "empty": "No agent sessions yet"
+  },
+  "settings": {
+    "title": "Task Board",
+    "sendPromptByDefault": "Send task as first prompt by default",
+    "moveToInProgressOnStart": "Move card to In Progress when an agent starts"
+  }
+}

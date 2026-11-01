@@ -9,8 +9,8 @@ import {
 } from '../../contract'
 import { columnMergeKey } from '../../lib/merge-columns'
 import { compareSortKeys } from '../../lib/order'
+import { rankBetween, resolveRank } from '../../lib/rank'
 import { toColumnDto } from '../lib/mappers'
-import { rankBetween, resolveRank } from '../rank'
 import type { BoardRow, ColumnRow } from '../schema'
 import type { BoardCore } from './core'
 

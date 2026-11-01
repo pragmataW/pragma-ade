@@ -1,5 +1,5 @@
 import { generateKeyBetween, generateNKeysBetween } from 'fractional-indexing'
-import { compareSortKeys } from '../lib/order'
+import { compareSortKeys } from './order'
 
 /** A fractional key strictly between `lo` and `hi` (null = open end). */
 export const rankBetween = (lo: string | null, hi: string | null): string => generateKeyBetween(lo, hi)

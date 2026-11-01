@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { compareSortKeys } from '../src/lib/order'
-import { initialRanks, rankBetween, resolveRank } from '../src/main/rank'
+import { initialRanks, rankBetween, resolveRank } from '../src/lib/rank'
 
 const KEYS = ['a0', 'a1', 'a2']
 

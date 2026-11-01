@@ -13,8 +13,8 @@ import {
   type TaskRef,
 } from '../../contract'
 import { columnMergeKey } from '../../lib/merge-columns'
+import { initialRanks } from '../../lib/rank'
 import { toBoardDto, toColumnDto, toLabelDto, toTaskDto } from '../lib/mappers'
-import { initialRanks } from '../rank'
 import type { BoardRepo } from '../repo'
 import type { BoardRow, ColumnRow, TaskRow } from '../schema'
 import type { SessionInfo } from '../session-info'

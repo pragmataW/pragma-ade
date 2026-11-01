@@ -22,3 +22,18 @@ export const WORKTREE_FILTERS = ['any', 'with', 'without'] as const
 /** Agent filter value for "tasks without a linked session". */
 export const NO_AGENT_FILTER_VALUE = 'none'
 export const VIEW_MODES = ['board', 'list'] as const
+export const LAST_SCOPE_STORAGE_KEY = 'pragma.board.lastScope'
+export const SIDEBAR_ENTRY_ID = 'board.sidebar'
+export const SIDEBAR_ENTRY_ORDER = 100
+export const VIEW_ICON = 'kanban'
+export const SETTINGS_ICON = 'kanban'
+export const ICON_PX = { row: 14, small: 12 } as const
+export const VARIANT = {
+  ghost: 'ghost',
+  outline: 'outline',
+  destructive: 'destructive',
+  secondary: 'secondary',
+} as const
+export const SIZE = { sm: 'sm', xs: 'xs', iconSm: 'icon-sm', iconXs: 'icon-xs' } as const
+export const ALL_SCOPE_VALUE = 'all'
+export const PROJECT_SCOPE_PREFIX = 'project:'
