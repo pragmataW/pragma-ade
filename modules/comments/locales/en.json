@@ -23,6 +23,7 @@
     "noWorktree": "Select a worktree to see its comments.",
     "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
     "emptySent": "No comments sent yet.",
+    "selectAll": "Select all",
     "clearSelection": "Clear selection",
     "sendSelected_one": "Send {{count}} comment",
     "sendSelected_other": "Send {{count}} comments",

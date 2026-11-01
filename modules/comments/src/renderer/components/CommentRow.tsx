@@ -38,18 +38,28 @@ function SourceIcon({ source }: { source: CommentSource }) {
   )
 }
 
+const ACTION_CLASS = 'text-muted-foreground hover:text-foreground'
+
+/** Always-visible Edit / Delete icon buttons (tooltip = aria-label; Tab-reachable, Enter/Space activate). */
 function RowActions({ comment, onEdit }: { comment: Comment; onEdit(): void }) {
   const t = useT()
   const remove = () =>
     runtime()
       .ipc.invoke(commentsIpc.remove, { id: comment.id })
       .catch((e: unknown) => console.warn('comments: delete failed', e))
+  const [edit, del] = [t('comments:row.edit'), t('comments:row.delete')]
   return (
-    <div className="flex shrink-0 gap-0.5 opacity-70 group-hover:opacity-100">
-      <IconButton data-testid={T.rowEdit} aria-label={t('comments:row.edit')} onClick={onEdit}>
+    <div className="flex shrink-0 items-center gap-0.5">
+      <IconButton data-testid={T.rowEdit} aria-label={edit} title={edit} className={ACTION_CLASS} onClick={onEdit}>
         <Pencil size={ICON_PX} aria-hidden />
       </IconButton>
-      <IconButton data-testid={T.rowDelete} aria-label={t('comments:row.delete')} onClick={() => void remove()}>
+      <IconButton
+        data-testid={T.rowDelete}
+        aria-label={del}
+        title={del}
+        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => void remove()}
+      >
         <Trash2 size={ICON_PX} aria-hidden />
       </IconButton>
     </div>
@@ -86,7 +96,7 @@ export function CommentRow({
     <li
       data-testid={T.row}
       data-comment-id={comment.id}
-      className={cn('group flex items-start gap-2 border-b px-4 py-2.5', selected && 'bg-accent/40')}
+      className={cn('flex items-start gap-2 border-b px-4 py-2.5', selected && 'bg-accent/40')}
     >
       {selectable ? (
         <input
@@ -101,7 +111,9 @@ export function CommentRow({
       <SourceIcon source={comment.source} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-mono text-[12px]">{locationLabel(comment)}</div>
-        <p className="line-clamp-2 whitespace-pre-wrap text-[12.5px] text-muted-foreground">{comment.body}</p>
+        <p className="line-clamp-2 whitespace-pre-wrap break-words text-[12.5px] text-muted-foreground">
+          {comment.body}
+        </p>
         {footer ? <div className="mt-1 text-[11px] text-muted-foreground">{footer}</div> : null}
       </div>
       {selectable ? <RowActions comment={comment} onEdit={() => setEditing(true)} /> : null}
