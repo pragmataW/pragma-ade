@@ -1,0 +1,50 @@
+{
+  "module": {
+    "name": "Editor"
+  },
+  "tab": {
+    "files": "Files"
+  },
+  "status": {
+    "notInstalled": "The editor ({{size}}) is downloaded on first use.",
+    "download": "Download",
+    "downloading": "Downloading editor… {{received}} of {{total}}",
+    "cancel": "Cancel",
+    "verifying": "Verifying download…",
+    "extracting": "Installing editor…",
+    "starting": "Starting editor…",
+    "noWorktree": "Select a worktree to open its files.",
+    "retry": "Retry",
+    "redownload": "Re-download"
+  },
+  "errors": {
+    "checksumMismatch": "The download did not match the expected checksum and was not installed.",
+    "downloadFailed": "The editor could not be downloaded.",
+    "invalidArchive": "The downloaded editor archive is invalid.",
+    "unsupportedPlatform": "The editor is not available for this platform.",
+    "serverStartFailed": "The editor server did not start.",
+    "serverCrashed": "The editor server stopped repeatedly.",
+    "extensionInstallFailed": "The Pragma bridge extension could not be installed.",
+    "openFileFailed": "The file could not be opened in the editor.",
+    "worktreeNotFound": "That worktree does not exist."
+  },
+  "lsp": {
+    "ok": "{{language}} · ✓",
+    "problems_one": "{{language}} · {{errors}} errors, {{warnings}} warnings",
+    "problems_other": "{{language}} · {{errors}} errors, {{warnings}} warnings"
+  },
+  "settings": {
+    "title": "Editor",
+    "maxOpenViews": "Open editor views (worktrees kept loaded)",
+    "themeDark": "Workbench theme in dark mode",
+    "themeLight": "Workbench theme in light mode",
+    "syncPalette": "Use the app palette for workbench colours",
+    "serveWebviewsLocally": "Serve extension webviews from the local editor (works offline)",
+    "server": "Editor server",
+    "restart": "Restart server",
+    "reinstall": "Re-download editor",
+    "version": "Version",
+    "port": "Port",
+    "notRunning": "Not running"
+  }
+}
