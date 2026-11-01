@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run --root ../.. modules/editor/test",
-    "e2e": "playwright test --config ../../playwright.config.ts modules/editor/e2e"
+    "test": "vitest run --root ../.. modules/editor/test modules/editor/packages/bridge-extension/test",
+    "e2e": "playwright test --config ../../playwright.config.ts modules/editor/e2e",
+    "build:vsix": "pnpm --dir packages/bridge-extension run build:vsix"
   },
   "pragma": {
     "id": "editor",
@@ -17,7 +18,15 @@
       "comments"
     ],
     "optionalDependsOn": [],
-    "core": false
+    "core": false,
+    "package": {
+      "extraResources": [
+        {
+          "from": "packages/bridge-extension/dist",
+          "to": "packages/bridge-extension/dist"
+        }
+      ]
+    }
   },
   "exports": {
     "./contract": "./src/contract/index.ts",

@@ -1,0 +1,54 @@
+{
+  "name": "pragma-bridge",
+  "displayName": "Pragma Bridge",
+  "description": "Connects the Pragma ADE editor to the app: line comments to agents, open file at line, theme sync.",
+  "publisher": "pragma",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "repository": "local:pragma-ade/modules/editor/packages/bridge-extension",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {},
+  "scripts": {
+    "build:vsix": "node build.mjs",
+    "test": "vitest run --root ../../../.. modules/editor/packages/bridge-extension/test"
+  },
+  "pragma": {
+    "build": "build:vsix",
+    "buildInputs": [
+      "src/**",
+      "build.mjs",
+      "package.json",
+      "LICENSE",
+      "README.md",
+      "../../src/contract/**",
+      "../../../bridge/src/client/**",
+      "../../../bridge/src/contract/**"
+    ],
+    "buildOutputs": [
+      "dist/pragma-bridge.vsix",
+      "dist/manifest.json"
+    ]
+  },
+  "devDependencies": {
+    "@pragma/module-bridge": "workspace:*",
+    "@pragma/module-editor": "workspace:*",
+    "@pragma/sdk": "workspace:*",
+    "@types/vscode": "1.90.0",
+    "@types/ws": "8.18.2",
+    "@types/yazl": "3.3.1",
+    "esbuild": "0.28.2",
+    "vitest": "5.0.5",
+    "ws": "8.22.0",
+    "yazl": "3.3.1"
+  }
+}
