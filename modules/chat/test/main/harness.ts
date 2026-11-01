@@ -1,4 +1,5 @@
 import type { ModeStartRequest, Resume } from '@pragma/module-agents/contract'
+import type { IpcContract, IpcEventContract, z } from '@pragma/sdk'
 import { vi } from 'vitest'
 import { type ChatEventEnvelope, type ChatSettings, chatSettingsDefaults } from '../../src/contract'
 import { ChatSessionController } from '../../src/main/controller'
@@ -71,3 +72,26 @@ export function harness(
 }
 
 export const flush = () => new Promise((r) => setImmediate(r))
+
+type Handler = (input: unknown, meta: never) => unknown
+/** An in-memory `ctx.ipc`: `invoke` validates input and output like the SDK router. */
+export function fakeIpc() {
+  const handlers = new Map<string, { contract: IpcContract<unknown, unknown>; run: Handler }>()
+  const published: { channel: string; payload: unknown }[] = []
+  return {
+    published,
+    handle<I, O>(contract: IpcContract<I, O>, run: (input: I, meta: never) => O | Promise<O>) {
+      handlers.set(contract.channel, { contract: contract as IpcContract<unknown, unknown>, run: run as Handler })
+      return { dispose: () => handlers.delete(contract.channel) }
+    },
+    publish<P>(contract: IpcEventContract<P>, payload: P) {
+      published.push({ channel: contract.channel, payload: contract.payload.parse(payload) })
+    },
+    async invoke<I, O>(contract: IpcContract<I, O>, input: z.input<IpcContract<I, O>['input']>): Promise<O> {
+      const entry = handlers.get(contract.channel)
+      if (!entry) throw new Error(`no handler for ${contract.channel}`)
+      return contract.output.parse(await entry.run(contract.input.parse(input), undefined as never)) as O
+    },
+    has: (channel: string) => handlers.has(channel),
+  }
+}
