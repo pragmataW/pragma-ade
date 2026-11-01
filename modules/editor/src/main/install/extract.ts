@@ -1,17 +1,16 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { chmod, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, rename, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { z } from '@pragma/sdk'
+import { readJsonFile, writeFileAtomic } from '@pragma/sdk/main'
 import { x as untar } from 'tar'
-import { EXEC_MODE, HEX, INSTALL_MARKER, JSON_INDENT, RANDOM_SUFFIX_BYTES, TMP_DIR_INFIX, UTF8 } from '../../constants'
+import { EXEC_MODE, HEX, INSTALL_MARKER, JSON_INDENT, RANDOM_SUFFIX_BYTES, TMP_DIR_INFIX } from '../../constants'
 
 export { INSTALL_MARKER }
 
-export interface InstallMarker {
-  version: string
-  sha256: string
-  installedAt: string
-}
+const InstallMarkerSchema = z.object({ version: z.string(), sha256: z.string(), installedAt: z.string() })
+export type InstallMarker = z.infer<typeof InstallMarkerSchema>
 
 export type ExtractResult = { ok: true } | { ok: false; reason: 'invalidArchive'; detail: string }
 
@@ -37,21 +36,18 @@ export async function extractInstall(
     return { ok: false, reason: 'invalidArchive', detail: errorText(error) }
   }
   const marker: InstallMarker = { version: o.version, sha256: o.sha256, installedAt: new Date().toISOString() }
-  await writeFile(join(targetDir, INSTALL_MARKER), JSON.stringify(marker, null, JSON_INDENT))
+  writeFileAtomic(join(targetDir, INSTALL_MARKER), JSON.stringify(marker, null, JSON_INDENT))
   return { ok: true }
 }
 
-async function readMarker(dir: string): Promise<InstallMarker | null> {
-  try {
-    return JSON.parse(await readFile(join(dir, INSTALL_MARKER), UTF8)) as InstallMarker
-  } catch {
-    return null
-  }
+function readMarker(dir: string): InstallMarker | null {
+  const r = readJsonFile(join(dir, INSTALL_MARKER), InstallMarkerSchema)
+  return r.ok ? r.value : null
 }
 
 /** Marker present, same version, and the server binary exists. */
 export async function isInstalled(dir: string, version: string, binRelPath?: string): Promise<boolean> {
-  const marker = await readMarker(dir)
+  const marker = readMarker(dir)
   if (marker?.version !== version) return false
   if (!binRelPath) return true
   return stat(join(dir, binRelPath)).then(

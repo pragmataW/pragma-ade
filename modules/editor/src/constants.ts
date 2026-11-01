@@ -45,3 +45,23 @@ export const DOWNLOAD_FAILURE = {
   network: 'network',
 } as const
 export const UNSUPPORTED_PLATFORM = 'unsupportedPlatform'
+export const PORT_RETRIES = 5
+export const PORT_RETRY_DELAY_MS = 300
+export const TOKEN_BYTES = 32
+export const PRIVATE_FILE_MODE = 0o600
+export const SERVER_FLAGS = {
+  host: '--host',
+  port: '--port',
+  connectionTokenFile: '--connection-token-file',
+  acceptLicense: '--accept-server-license-terms',
+  telemetryLevel: '--telemetry-level',
+  disableWorkspaceTrust: '--disable-workspace-trust',
+  serverDataDir: '--server-data-dir',
+  userDataDir: '--user-data-dir',
+  extensionsDir: '--extensions-dir',
+  graceTime: '--reconnection-grace-time',
+  installExtension: '--install-extension',
+  force: '--force',
+} as const
+export const TELEMETRY_OFF = 'off'
+export const NODE_EVENT = { error: 'error', data: 'data', end: 'end', exit: 'exit', close: 'close' } as const

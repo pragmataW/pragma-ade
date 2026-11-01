@@ -8,6 +8,7 @@ import {
   DOWNLOAD_FAILURE as F,
   HASH_ALGORITHM,
   HEX,
+  NODE_EVENT,
   PART_SUFFIX,
   PROGRESS_INTERVAL_MS,
 } from '../../constants'
@@ -115,8 +116,8 @@ export function sha256File(path: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash(HASH_ALGORITHM)
     createReadStream(path)
-      .on('data', (chunk) => hash.update(chunk))
-      .on('error', reject)
-      .on('end', () => resolve(hash.digest(HEX)))
+      .on(NODE_EVENT.data, (chunk) => hash.update(chunk))
+      .on(NODE_EVENT.error, reject)
+      .on(NODE_EVENT.end, () => resolve(hash.digest(HEX)))
   })
 }
