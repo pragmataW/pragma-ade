@@ -2,29 +2,20 @@ import { spawn, spawnSync } from 'node:child_process'
 import { copyFileSync, mkdtempSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { AgentHookEventInput } from '@pragma/module-agent-status/contract'
-import { agentBridge } from '@pragma/module-agent-status/contract'
-import { startTestBridgeServer, type TestBridgeServer } from '@pragma/module-bridge/testing'
+import { type RecordingAgentBridge, startRecordingAgentBridge } from '@pragma/module-agent-status/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HOOK_BUNDLE_MAX_BYTES } from '../src/constants'
 
 const PKG = join(import.meta.dirname, '..')
 const BUNDLE = join(PKG, 'dist', 'pragma-hook.mjs')
-let server: TestBridgeServer
-const received: AgentHookEventInput[] = []
+let bridge: RecordingAgentBridge
 
 beforeAll(async () => {
   const build = spawnSync(process.execPath, ['build.mjs'], { cwd: PKG, encoding: 'utf8' })
   if (build.status !== 0) throw new Error(build.stderr)
-  server = await startTestBridgeServer()
-  server.registerHandler(agentBridge, {
-    hookEvent: (input) => {
-      received.push(input)
-      return { accepted: true }
-    },
-  })
+  bridge = await startRecordingAgentBridge()
 })
-afterAll(async () => server.close())
+afterAll(async () => bridge.server.close())
 
 interface HookRun {
   code: number | null
@@ -36,7 +27,7 @@ interface HookRun {
 /** Runs the bundle with `stdin` and argv; `env` defaults to the test bridge env, `null` means none. */
 function runHook(stdin: string, argv: string[], opts: { env?: Record<string, string> | null; script?: string } = {}) {
   const started = Date.now()
-  const bridgeEnv = { PRAGMA_BRIDGE_URL: server.url, PRAGMA_BRIDGE_TOKEN: server.token, PRAGMA_SESSION_ID: 'ps1' }
+  const bridgeEnv = bridge.env('ps1')
   const env = opts.env === undefined ? bridgeEnv : (opts.env ?? {})
   const child = spawn(process.execPath, [opts.script ?? BUNDLE, ...argv], {
     env: { PATH: process.env.PATH ?? '', ...env },
@@ -50,7 +41,7 @@ function runHook(stdin: string, argv: string[], opts: { env?: Record<string, str
     child.on('close', (code) => resolve({ code, stdout, stderr, ms: Date.now() - started })),
   )
 }
-const lastEvent = () => received.at(-1)?.event as Record<string, unknown>
+const lastEvent = () => bridge.received.at(-1)?.event as Record<string, unknown>
 
 describe('claude pragma-hook bundle', () => {
   it('posts only picked fields', async () => {
@@ -63,7 +54,7 @@ describe('claude pragma-hook bundle', () => {
       transcript_path: '/t',
     }
     await runHook(JSON.stringify(input), ['PreToolUse'])
-    expect(received.at(-1)).toMatchObject({ sessionId: 'ps1', providerId: 'claude' })
+    expect(bridge.received.at(-1)).toMatchObject({ sessionId: 'ps1', providerId: 'claude' })
     expect(lastEvent()).toEqual({ hook_event_name: 'PreToolUse', session_id: 'cs1', tool_name: 'Bash' })
   })
 
@@ -85,10 +76,10 @@ describe('claude pragma-hook bundle', () => {
   })
 
   it('exit 0 immediately without env', async () => {
-    const before = received.length
+    const before = bridge.received.length
     const r = await runHook('{}', ['Stop'], { env: null })
     expect(r.code).toBe(0)
-    expect(received.length).toBe(before)
+    expect(bridge.received.length).toBe(before)
   })
 
   it('invalid JSON stdin still posts the argv event name', async () => {

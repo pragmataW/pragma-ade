@@ -27,7 +27,8 @@
     "./client": "./src/client/index.ts",
     "./bundle-hook": "./scripts/bundle-hook.mjs",
     "./main": "./src/main/index.ts",
-    "./renderer": "./src/renderer/index.tsx"
+    "./renderer": "./src/renderer/index.tsx",
+    "./testing": "./testing/index.ts"
   },
   "dependencies": {
     "@pragma/module-agents": "workspace:*",

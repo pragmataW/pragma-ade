@@ -2,9 +2,9 @@ import { spawn, spawnSync } from 'node:child_process'
 import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { type AgentHookEventInput, agentBridge, type StatusLaunchContext } from '@pragma/module-agent-status/contract'
+import type { StatusLaunchContext } from '@pragma/module-agent-status/contract'
+import { startRecordingAgentBridge } from '@pragma/module-agent-status/testing'
 import { fakeCapabilityContext, makeLaunchContext } from '@pragma/module-agents/testing'
-import { startTestBridgeServer } from '@pragma/module-bridge/testing'
 import type { CapabilityRegistration } from '@pragma/sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CLAUDE_STATUS_HOOK_EVENTS } from '../src/main/status/constants'
@@ -171,29 +171,17 @@ describe.runIf(POSIX)('claude runner (posix)', () => {
   }
 
   it.each(['session', "a b'c"])('runner runs the built hook (tempDir %j)', async (dirName) => {
-    const server = await startTestBridgeServer()
-    const received: AgentHookEventInput[] = []
-    server.registerHandler(agentBridge, {
-      hookEvent: (input) => {
-        received.push(input)
-        return { accepted: true }
-      },
-    })
+    const bridge = await startRecordingAgentBridge()
     try {
       const ctx = await makeLaunchCtx({}, dirName)
       await capability(build()).decorateLaunch(spec(), ctx)
-      const env = {
-        PATH: process.env.PATH ?? '',
-        PRAGMA_BRIDGE_URL: server.url,
-        PRAGMA_BRIDGE_TOKEN: server.token,
-        PRAGMA_SESSION_ID: 's9',
-      }
+      const env = { PATH: process.env.PATH ?? '', ...bridge.env('s9') }
       const child = spawn(join(ctx.tempDir, 'pragma-hook.sh'), ['Stop'], { env })
       child.stdin.end('{}')
       expect(await new Promise((resolve) => child.on('close', resolve))).toBe(0)
-      expect(received).toEqual([{ sessionId: 's9', providerId: 'claude', event: { hook_event_name: 'Stop' } }])
+      expect(bridge.received).toEqual([{ sessionId: 's9', providerId: 'claude', event: { hook_event_name: 'Stop' } }])
     } finally {
-      await server.close()
+      await bridge.server.close()
     }
   })
 })

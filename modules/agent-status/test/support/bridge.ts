@@ -1,31 +1,18 @@
-import { startTestBridgeServer, type TestBridgeServer } from '@pragma/module-bridge/testing'
 import { afterEach } from 'vitest'
 import type { HookEnv } from '../../src/client'
-import { type AgentHookEventInput, agentBridge } from '../../src/contract'
+import { type RecordingAgentBridge, startRecordingAgentBridge } from '../../testing/bridge'
 
-/** A test bridge with a recording `agent` namespace; closed after each test. */
-export function setupAgentBridge(): (opts?: { delayFirstMs?: number }) => Promise<{
-  server: TestBridgeServer
-  received: AgentHookEventInput[]
-  hookEnv: HookEnv
-}> {
-  const servers: TestBridgeServer[] = []
+/** A recording agent bridge per call, closed after each test; `hookEnv` targets session `s1`. */
+export function setupAgentBridge(): (opts?: {
+  delayFirstMs?: number
+}) => Promise<RecordingAgentBridge & { hookEnv: HookEnv }> {
+  const open: RecordingAgentBridge[] = []
   afterEach(async () => {
-    for (const s of servers.splice(0)) await s.close()
+    for (const b of open.splice(0)) await b.server.close()
   })
-  return async (opts = {}) => {
-    const server = await startTestBridgeServer()
-    servers.push(server)
-    const received: AgentHookEventInput[] = []
-    let first = true
-    server.registerHandler(agentBridge, {
-      hookEvent: async (input) => {
-        if (first && opts.delayFirstMs) await new Promise((r) => setTimeout(r, opts.delayFirstMs))
-        first = false
-        received.push(input)
-        return { accepted: true }
-      },
-    })
-    return { server, received, hookEnv: { bridgeUrl: server.url, bridgeToken: server.token, sessionId: 's1' } }
+  return async (opts) => {
+    const b = await startRecordingAgentBridge(opts)
+    open.push(b)
+    return { ...b, hookEnv: { bridgeUrl: b.server.url, bridgeToken: b.server.token, sessionId: 's1' } }
   }
 }
