@@ -207,8 +207,8 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
     projects,
     provided,
     executed,
-    slots,
-    pages,
+    slotEntries: slots,
+    pagesRegistered: pages,
     updates,
   })
 }
