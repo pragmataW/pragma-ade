@@ -1,0 +1,42 @@
+{
+  "name": "@pragma/provider-claude-hooks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run --root ../../../.. providers/claude/packages/hooks/test"
+  },
+  "pragma": {
+    "build": "build",
+    "buildInputs": [
+      "src/**",
+      "build.mjs",
+      "package.json",
+      "../../../../modules/agent-status/src/client/**",
+      "../../../../modules/agent-status/src/contract/constants.ts",
+      "../../../../modules/agent-status/scripts/**",
+      "../../../../modules/bridge/src/client/**",
+      "../../../../modules/bridge/src/contract/constants.ts"
+    ],
+    "buildOutputs": [
+      "dist/pragma-hook.mjs"
+    ],
+    "package": {
+      "extraResources": [
+        {
+          "from": "dist",
+          "to": "hooks"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "@pragma/module-agent-status": "workspace:*"
+  },
+  "devDependencies": {
+    "@pragma/module-bridge": "workspace:*",
+    "esbuild": "0.28.2",
+    "vitest": "5.0.5"
+  }
+}
