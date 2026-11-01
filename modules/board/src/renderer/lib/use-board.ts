@@ -29,3 +29,11 @@ export function useGroupedTasks(columns: BoardColumnModel[]) {
 }
 
 export const useIsAllScope = (): boolean => useBoardStore((s) => s.snapshot?.scope.kind === SCOPE_KIND.all)
+
+/** The section (board, labels, columns) a task belongs to. */
+export function useSection(boardId: number | undefined) {
+  return useBoardStore((s) => s.snapshot?.sections.find((x) => x.board.id === boardId))
+}
+
+export const useSelectedTask = () =>
+  useBoardStore((s) => s.snapshot?.tasks.find((t) => t.id === s.selectedTaskId) ?? null)

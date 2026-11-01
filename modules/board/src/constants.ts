@@ -37,3 +37,13 @@ export const VARIANT = {
 export const SIZE = { sm: 'sm', xs: 'xs', iconSm: 'icon-sm', iconXs: 'icon-xs' } as const
 export const ALL_SCOPE_VALUE = 'all'
 export const PROJECT_SCOPE_PREFIX = 'project:'
+/** Filled bars of the 3-bar priority mark. */
+export const PRIORITY_BARS = { none: 0, low: 1, medium: 2, high: 3, urgent: 3 } as const
+/** Heights of the three bars, shortest first. */
+export const PRIORITY_BAR_CLASSES = ['h-1', 'h-[7px]', 'h-2.5'] as const
+export const DESCRIPTION_ROWS = 8
+export const MONOGRAM_LETTERS = 2
+export const MONOGRAM_PX = 16
+export const ESCAPE_KEY = 'Escape'
+export const ENTER_KEY = 'Enter'
+export const DATE_TIME_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
