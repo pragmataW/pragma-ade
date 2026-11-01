@@ -19,6 +19,7 @@ import {
 } from '../contract'
 import type { DeliveryRegistry } from './delivery-registry'
 import { formatComments } from './format'
+import { PendingDeliveries, type PendingOptions } from './pending'
 import type { CommentsRepository } from './repository'
 import { type CommentsUpstream, isRunning, type SessionRef, toTargetSession } from './upstream'
 
@@ -29,6 +30,7 @@ export interface ServiceDeps {
   events: Pick<MainContext['events'], 'emit'>
   settings: () => CommentsSettings
   now?: () => number
+  pendingOptions?: PendingOptions
 }
 
 type Batch = { comments: Comment[]; worktreeId: string; ids: string[] }
@@ -69,7 +71,12 @@ async function resolveFor(
   return { kind: TARGET_KIND.choose, sessions: running.map(toTargetSession), defaultSessionId: chosen.id }
 }
 
-export function createCommentsService(deps: ServiceDeps): CommentsService & { dispose(): void } {
+export type CommentsServiceImpl = CommentsService & {
+  setPendingOptions(opts: PendingOptions): void
+  dispose(): void
+}
+
+export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
   const { repo, upstream, registry, events } = deps
   const now = deps.now ?? Date.now
   const inFlight = new Set<string>()
@@ -126,7 +133,7 @@ export function createCommentsService(deps: ServiceDeps): CommentsService & { di
     return result
   }
 
-  return {
+  const service: CommentsServiceImpl = {
     async addDraft(input) {
       const parsed = CommentInputSchema.parse(input)
       const comment = repo.insert({ ...parsed, createdAt: now() })
@@ -160,12 +167,26 @@ export function createCommentsService(deps: ServiceDeps): CommentsService & { di
         for (const id of ids) inFlight.delete(id)
       }
     },
-    async sendOnNextSession() {
-      throw new Error('comments: sendOnNextSession is wired in Task 6')
-    },
-    cancelPending: () => undefined,
+    sendOnNextSession: async (worktreeId, commentIds) => ({ pendingId: pending.add(worktreeId, commentIds) }),
+    cancelPending: (worktreeId) => pending.cancel(worktreeId),
     format: (comments) => formatComments(comments),
     registerDeliveryTarget: (mode, deliver) => registry.register(mode, deliver),
-    dispose: () => undefined,
+    setPendingOptions: (opts) => pending.setOptions(opts),
+    dispose() {
+      offRemoved()
+      pending.dispose()
+    },
   }
+  const pending = new PendingDeliveries(
+    upstream,
+    service.send,
+    (worktreeId, result) => upstream.publish(commentsIpcEvents.pendingDelivered, { worktreeId, result }),
+    deps.pendingOptions,
+  )
+  const offRemoved = upstream.onWorktreeRemoved((worktreeId) => {
+    repo.removeByWorktree(worktreeId)
+    pending.cancel(worktreeId)
+    notifyChanged(worktreeId)
+  })
+  return service
 }
