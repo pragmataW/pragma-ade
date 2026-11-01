@@ -27,3 +27,8 @@ export const WIN32 = 'win32'
 
 export const PROGRESS_INTERVAL_MS = 100
 export const READY_TIMEOUT_MS = 30_000
+export const PART_SUFFIX = '.part'
+export const HASH_ALGORITHM = 'sha256'
+export const HEX = 'hex'
+export const CONTENT_LENGTH = 'content-length'
+export const ABORT_ERROR = 'AbortError'
