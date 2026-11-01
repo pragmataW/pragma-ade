@@ -24,7 +24,7 @@ function ProfileOption({ profile, checked, onSelect }: { profile: AgentProfile; 
       data-profile-id={profile.id}
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-md border px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
         checked ? 'border-ac bg-ac/10' : 'border-bd hover:bg-hv',
       )}
     >
@@ -71,7 +71,7 @@ export function ProfileOptions({
       role="radiogroup"
       aria-label={t('agents:launcher.agent')}
       tabIndex={-1}
-      className="flex max-h-[260px] flex-col gap-1.5 overflow-y-auto"
+      className="flex max-h-[260px] min-w-0 flex-col gap-1.5 overflow-y-auto"
       onKeyDown={onKeyDown}
     >
       {profiles.map((p) => (

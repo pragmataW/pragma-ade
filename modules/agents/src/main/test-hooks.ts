@@ -41,6 +41,10 @@ export function createAgentsTestHooks(
 ): AgentsTestHooks {
   const { service, profiles } = rt
   const output = new Map<string, string>()
+  const published = <T>(value: T): T => {
+    rt.publishProfiles()
+    return value
+  }
   events.on(agentSessionStarted, ({ sessionId, ptyId }) => {
     if (!ptyId) return
     rt.pty.onData(ptyId, (data) => {
@@ -49,8 +53,8 @@ export function createAgentsTestHooks(
     })
   })
   return {
-    createProfile: async (input) => profiles.create(input),
-    updateProfile: async (id, patch) => profiles.update(id, patch),
+    createProfile: async (input) => published(profiles.create(input)),
+    updateProfile: async (id, patch) => published(profiles.update(id, patch)),
     listProfiles: async () => profiles.list(),
     listSessions: (worktreeId) => service.listSessions(worktreeId),
     getSession: (id) => service.getSession(id),

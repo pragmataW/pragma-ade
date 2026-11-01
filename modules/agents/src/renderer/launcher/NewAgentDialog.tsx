@@ -202,8 +202,8 @@ function LauncherForm({ worktreeId }: { worktreeId: string | null }) {
   }
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: ⌘/Ctrl+Enter starts from anywhere in the dialog
-    <div className="flex flex-col gap-4" onKeyDown={onDialogKeyDown}>
-      <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-4" onKeyDown={onDialogKeyDown}>
+      <div className="flex min-w-0 flex-col gap-1.5">
         <span className={FIELD_LABEL}>{t('agents:launcher.agent')}</span>
         {profile ? (
           <ProfileOptions profiles={profiles} selected={profile} onSelect={setSelectedId} />

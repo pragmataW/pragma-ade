@@ -65,7 +65,8 @@ async function activate(ctx: MainContext<AgentsSettings>): Promise<void> {
       .then((open) => Promise.all(open.map((s) => service.closeSession(s.id))))
       .catch((error) => log.warn(`closing sessions of removed worktree ${worktreeId} failed`, error))
   })
-  setMainRuntime({ service, profiles, checker, pty })
+  const publishProfiles = () => ctx.ipc.publish(agentsIpcEvents.profilesChanged, { profiles: profiles.list() })
+  setMainRuntime({ service, profiles, checker, pty, publishProfiles })
 }
 
 export default defineMainModule<AgentsSettings>({

@@ -9,6 +9,8 @@ export interface AgentsMainRuntime {
   profiles: ProfilesStore
   checker: ProfileChecker
   pty: Pick<PtyService, 'onData'>
+  /** Publishes `agents.profilesChanged` (hooks change profiles without going through IPC). */
+  publishProfiles(): void
 }
 
 let current: AgentsMainRuntime | undefined
