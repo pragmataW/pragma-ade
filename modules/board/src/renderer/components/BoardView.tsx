@@ -1,9 +1,10 @@
 import { useT } from '@pragma/sdk/renderer'
 import { BOARD_TESTID_ATTRS as A, BOARD_TESTIDS as T } from '../../contract'
 import { scopeKey } from '../../lib/scope'
-import { useBoardStore } from '../store'
+import { useBoardStore, VIEW_MODE } from '../store'
 import { BoardColumns } from './BoardColumns'
 import { BoardHeader } from './BoardHeader'
+import { BoardList } from './BoardList'
 import { ErrorBanner } from './ErrorBanner'
 import { TaskDrawer } from './TaskDrawer'
 
@@ -21,7 +22,13 @@ export function BoardView() {
     >
       <BoardHeader />
       <ErrorBanner />
-      {projects.length === 0 ? <p className="p-6 text-[var(--mu)]">{t('board:empty.noProjects')}</p> : <BoardColumns />}
+      {projects.length === 0 ? (
+        <p className="p-6 text-[var(--mu)]">{t('board:empty.noProjects')}</p>
+      ) : mode === VIEW_MODE.list ? (
+        <BoardList />
+      ) : (
+        <BoardColumns />
+      )}
       <TaskDrawer />
     </div>
   )

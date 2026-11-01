@@ -8,7 +8,7 @@ import {
 } from '@pragma/ui/components/dropdown-menu'
 import { Icon } from '@pragma/ui/components/icon'
 import { useState } from 'react'
-import { ICON_PX, SIZE, VARIANT } from '../../constants'
+import { ICON_PX, MENU_ALIGN, SIZE, VARIANT } from '../../constants'
 import { type ColumnDto, BOARD_TESTIDS as T } from '../../contract'
 import { DeleteColumnDialog } from './DeleteColumnDialog'
 
@@ -31,7 +31,7 @@ export function ColumnMenu(props: { column: ColumnDto; columns: ColumnDto[]; tas
             <Icon name="ellipsis" size={ICON_PX.small} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align={MENU_ALIGN.end}>
           <DropdownMenuItem data-testid={T.columnRename} onSelect={props.onRename}>
             {t('board:column.rename')}
           </DropdownMenuItem>

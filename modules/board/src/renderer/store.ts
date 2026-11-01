@@ -38,6 +38,8 @@ export interface BoardState {
   selectedTaskId: TaskId | null
   error: string | null
   openCount: number
+  /** Bumped by Clear so inputs holding a draft reset. */
+  filterVersion: number
 }
 
 function readStoredScope(): BoardScope | null {
@@ -90,6 +92,7 @@ export const useBoardStore = create<BoardState>(() => ({
   selectedTaskId: null,
   error: null,
   openCount: 0,
+  filterVersion: 0,
 }))
 
 const set = useBoardStore.setState
@@ -128,7 +131,7 @@ export async function openBoard(projectId?: string): Promise<void> {
 }
 
 export const setFilter = (patch: Partial<UiFilter>): void => set((s) => ({ filter: { ...s.filter, ...patch } }))
-export const clearFilter = (): void => set({ filter: EMPTY_FILTER })
+export const clearFilter = (): void => set((s) => ({ filter: EMPTY_FILTER, filterVersion: s.filterVersion + 1 }))
 export const setMode = (mode: ViewMode): void => set({ mode })
 export const select = (selectedTaskId: TaskId | null): void => set({ selectedTaskId })
 export const setError = (error: string | null): void => set({ error })

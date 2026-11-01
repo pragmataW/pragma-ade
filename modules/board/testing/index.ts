@@ -82,6 +82,20 @@ export class BoardPage {
     await dragTo(this.page, this.card(title), target, { steps: DRAG_STEPS })
   }
 
+  /** Toggles one option of a filter chip (`chipTestId` from `BOARD_TESTIDS`). */
+  async filter(chipTestId: string, value: string): Promise<void> {
+    // The previous menu may still be closing (its exit animation would swallow the click).
+    await settleAnimations(this.page)
+    await this.page.getByTestId(chipTestId).click()
+    await settleAnimations(this.page)
+    await this.page.locator(`${byTestId(T.filterOption)}[${A.value}="${value}"]`).click()
+  }
+
+  /** Every visible card title, column by column. */
+  allCards(): Promise<string[]> {
+    return this.page.getByTestId(T.cardTitle).allTextContents()
+  }
+
   /** Waits until the drag hovers `column` (`data-drop-target`). */
   async expectDropTarget(column: string): Promise<void> {
     await expect(this.column(column)).toHaveAttribute(A.dropTarget, 'true', { timeout: WAIT_MS })

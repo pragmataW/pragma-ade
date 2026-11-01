@@ -52,3 +52,5 @@ export const DRAG_ACTIVATION_PX = 5
 export const DND_TASK_PREFIX = 'task:'
 export const DND_COLUMN_PREFIX = 'column:'
 export const DND_KIND = { task: 'task', column: 'column' } as const
+export const SEARCH_DEBOUNCE_MS = 150
+export const MENU_ALIGN = { start: 'start', end: 'end' } as const
