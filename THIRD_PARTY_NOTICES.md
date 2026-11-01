@@ -7,6 +7,8 @@ Code copied from third-party projects keeps its original license header and is l
 | [shadcn/ui](https://github.com/shadcn-ui/ui) | MIT | `packages/ui/src/vendor/*` (generated with the shadcn CLI 4.23.0) |
 | [stablyai/orca](https://github.com/stablyai/orca) | MIT | `modules/browser/src/main/navigation-policy.ts`, `modules/browser/src/main/picker/page/{selector,collect,overlay,react-probe}.ts`, `modules/browser/src/main/picker/capture.ts` (phase 08, adapted) |
 | [onurravli/voltran](https://github.com/onurravli/voltran) | Apache-2.0 | `providers/opencode/packages/hooks/src/{plugin,records}.ts` (subscribe loop, child-session filter and event mapping adapted from `packages/daemon/src/opencode-plugin/index.ts`) |
+| [simple-icons/simple-icons](https://github.com/simple-icons/simple-icons) — Claude mark | CC0-1.0 (collection); the mark is a trademark of Anthropic, PBC | `providers/claude/src/renderer/icon.tsx` (SVG path, brand colour `#D97757`) |
+| [anomalyco/opencode](https://github.com/anomalyco/opencode) — OpenCode mark | MIT; the OpenCode name and mark are trademarks of their owner | `providers/opencode/src/renderer/icon.tsx` (shapes and colours of `mark.svg` / `mark-light.svg`) |
 
 ## stablyai/orca — MIT License
 
@@ -41,3 +43,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Agent logos (Claude, OpenCode)
+
+The provider marks are the vendors' own logos, used unmodified (shapes and colours) only to identify the agent each profile launches. Pragma ADE is not affiliated with or endorsed by Anthropic or the OpenCode authors.
+
+- **Claude** — `providers/claude/src/renderer/icon.tsx` holds the path of [`icons/claude.svg`](https://github.com/simple-icons/simple-icons/blob/7a6199a2ac7d20b529f863b6aceb20d2c6529207/icons/claude.svg) from simple-icons (16.36.0; data entry `{"title":"Claude","hex":"D97757","source":"https://claude.ai"}`), drawn in the brand orange `#D97757`. simple-icons is released under CC0-1.0, but its [DISCLAIMER](https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md) notes that this does not cover the brands themselves: Claude and the Claude mark are trademarks of Anthropic, PBC, and their use follows Anthropic's brand guidelines (no alteration, no implied endorsement).
+- **OpenCode** — `providers/opencode/src/renderer/icon.tsx` redraws [`packages/identity/mark.svg`](https://github.com/anomalyco/opencode/blob/3f5bb21f163a95f5fe8f354875b1157d7f66137d/packages/identity/mark.svg) (dark: tile `#131010`, inner `#5A5858`, frame white) and [`mark-light.svg`](https://github.com/anomalyco/opencode/blob/3f5bb21f163a95f5fe8f354875b1157d7f66137d/packages/identity/mark-light.svg) (light: tile `#FDFCFC`, inner `#E6E5E6`, frame `#17181C`) from the official repository (formerly sst/opencode; brand assets also at https://opencode.ai). The repository is MIT-licensed (Copyright (c) 2025 opencode); the OpenCode name and mark remain trademarks of their owner.
