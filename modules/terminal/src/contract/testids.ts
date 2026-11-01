@@ -11,6 +11,8 @@ export const TerminalTestIds = {
   newTab: 'terminal-new-tab',
   splitVertical: 'terminal-split-vertical',
   splitHorizontal: 'terminal-split-horizontal',
+  /** One pane of a tab (`data-active` marks the focused one). */
+  pane: 'terminal-pane',
   paneClose: 'terminal-pane-close',
   searchBar: 'terminal-search-bar',
   searchInput: 'terminal-search-input',

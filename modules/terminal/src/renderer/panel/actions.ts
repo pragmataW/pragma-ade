@@ -36,7 +36,11 @@ export function splitTab(direction: SplitAction, tabId = active()?.tabId): void 
     getRuntime().ipc.invoke(terminalIpc.tabSplit, { worktreeId: a.worktreeId, tabId, direction }).catch(ignore)
 }
 
-export function closePane(tabId: string, paneId: string): void {
+type PaneContract = typeof terminalIpc.paneClose | typeof terminalIpc.paneFocus
+const paneAction = (contract: PaneContract) => (tabId: string, paneId: string) => {
   const a = active()
-  if (a) getRuntime().ipc.invoke(terminalIpc.paneClose, { worktreeId: a.worktreeId, tabId, paneId }).catch(ignore)
+  if (a) getRuntime().ipc.invoke(contract, { worktreeId: a.worktreeId, tabId, paneId }).catch(ignore)
 }
+
+export const closePane = paneAction(terminalIpc.paneClose)
+export const focusPane = paneAction(terminalIpc.paneFocus)

@@ -3,7 +3,13 @@ import { cn } from '@pragma/ui'
 import { Icon } from '@pragma/ui/components/icon'
 import { type KeyboardEvent, useState } from 'react'
 import { TAB_ICON_PX } from '../../constants'
-import { SPLIT, type TerminalTab, TerminalTestIds, type WorktreeTerminalLayout } from '../../contract'
+import {
+  MAX_PANES_PER_TAB,
+  SPLIT,
+  type TerminalTab,
+  TerminalTestIds,
+  type WorktreeTerminalLayout,
+} from '../../contract'
 import { activateTab, closeTab, newTab, renameTab, splitTab } from './actions'
 import { ControlButton } from './ControlButton'
 import { tabLabel, tabStatus } from './labels'
@@ -70,9 +76,35 @@ function TabButton({ tab, active }: { tab: TerminalTab; active: boolean }) {
   )
 }
 
+/** Split side by side / stacked; both are disabled once the active tab holds `MAX_PANES_PER_TAB` panes. */
+function SplitButtons({ paneCount }: { paneCount: number }) {
+  const t = useT()
+  const full = paneCount >= MAX_PANES_PER_TAB
+  const limit = t('terminal:actions.splitLimit', { max: MAX_PANES_PER_TAB })
+  const buttons = [
+    { direction: SPLIT.vertical, icon: 'columns-2', label: 'terminal:actions.splitVertical' },
+    { direction: SPLIT.horizontal, icon: 'rows-2', label: 'terminal:actions.splitHorizontal' },
+  ] as const
+  const testIds = {
+    [SPLIT.vertical]: TerminalTestIds.splitVertical,
+    [SPLIT.horizontal]: TerminalTestIds.splitHorizontal,
+  }
+  return buttons.map((b) => (
+    <ControlButton
+      key={b.direction}
+      icon={b.icon}
+      label={full ? limit : t(b.label)}
+      testId={testIds[b.direction]}
+      disabled={full}
+      onClick={() => splitTab(b.direction)}
+    />
+  ))
+}
+
 /** Tabs of the active worktree plus New / Split actions. */
 export function TabStrip({ layout }: { layout: WorktreeTerminalLayout }) {
   const t = useT()
+  const activeTab = layout.tabs.find((tab) => tab.id === layout.activeTabId)
   return (
     <div className="flex h-8 shrink-0 items-stretch border-b border-bd bg-pn">
       <div role="tablist" className="flex min-w-0 flex-1 items-stretch overflow-x-auto">
@@ -87,18 +119,7 @@ export function TabStrip({ layout }: { layout: WorktreeTerminalLayout }) {
           testId={TerminalTestIds.newTab}
           onClick={newTab}
         />
-        <ControlButton
-          icon="columns-2"
-          label={t('terminal:actions.splitVertical')}
-          testId={TerminalTestIds.splitVertical}
-          onClick={() => splitTab(SPLIT.vertical)}
-        />
-        <ControlButton
-          icon="rows-2"
-          label={t('terminal:actions.splitHorizontal')}
-          testId={TerminalTestIds.splitHorizontal}
-          onClick={() => splitTab(SPLIT.horizontal)}
-        />
+        <SplitButtons paneCount={activeTab?.panes.length ?? 0} />
       </div>
     </div>
   )

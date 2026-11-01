@@ -5,7 +5,6 @@ import {
   MAX_PANES_PER_TAB,
   type PtyExit,
   type PtyService,
-  SPLIT,
   type SplitAction,
   TERMINAL_OWNER_PANEL,
   TERMINAL_TAG_OWNER,
@@ -14,6 +13,7 @@ import {
   type TerminalTab,
   type WorktreeTerminalLayout,
 } from '../contract'
+import { neighbourPane, paneLeaf, removePane, splitPane } from '../lib/layout-tree'
 
 export interface LayoutStoreDeps {
   pty: PtyService
@@ -34,7 +34,10 @@ const panelTags = (worktreeId: string) => ({
 const neighbour = (tabs: readonly TerminalTab[], index: number): string | null =>
   (tabs[index + 1] ?? tabs[index - 1])?.id ?? null
 
-/** Per-worktree terminal tabs and binary splits, kept in main so they survive renderer reloads. */
+/**
+ * Per-worktree terminal tabs and their split trees (up to `MAX_PANES_PER_TAB` panes per tab), kept in main so they
+ * survive renderer reloads.
+ */
 export class TerminalLayoutStore {
   readonly #deps: LayoutStoreDeps
   readonly #idGen: () => string
@@ -57,7 +60,7 @@ export class TerminalLayoutStore {
       id: this.#idGen(),
       ordinal,
       customTitle: null,
-      split: SPLIT.none,
+      root: paneLeaf(pane.id),
       panes: [pane],
       activePaneId: pane.id,
     }
@@ -84,27 +87,43 @@ export class TerminalLayoutStore {
     return this.#commit({ ...current, activeTabId: tabId })
   }
 
-  /** Adds the second pane; a tab that is already split is left unchanged. */
+  /** Splits the tab's focused pane in `direction`; a tab that already holds `MAX_PANES_PER_TAB` panes is unchanged. */
   async split(worktreeId: string, tabId: string, direction: SplitAction): Promise<WorktreeTerminalLayout> {
     const tab = this.get(worktreeId).tabs.find((t) => t.id === tabId)
     if (!tab || tab.panes.length >= MAX_PANES_PER_TAB) return this.get(worktreeId)
     const pane = await this.#spawnPane(worktreeId)
-    return this.#updateTab(worktreeId, tabId, (t) =>
+    const next = this.#updateTab(worktreeId, tabId, (t) =>
       t.panes.length >= MAX_PANES_PER_TAB
         ? t
-        : { ...t, split: direction, panes: [...t.panes, pane], activePaneId: pane.id },
+        : {
+            ...t,
+            root: splitPane(t.root, t.activePaneId, pane.id, direction),
+            panes: [...t.panes, pane],
+            activePaneId: pane.id,
+          },
+    )
+    if (!next.tabs.some((t) => t.panes.includes(pane))) this.#kill(pane.ptyId) // the tab closed or filled meanwhile
+    return next
+  }
+
+  /** Marks the pane the next split acts on. */
+  focusPane(worktreeId: string, tabId: string, paneId: string): WorktreeTerminalLayout {
+    return this.#updateTab(worktreeId, tabId, (t) =>
+      t.activePaneId === paneId || !t.panes.some((p) => p.id === paneId) ? t : { ...t, activePaneId: paneId },
     )
   }
 
-  /** One pane left: the split collapses; none left: the tab is removed. */
+  /** The remaining panes reflow into the freed space; closing the last pane removes the tab. */
   closePane(worktreeId: string, tabId: string, paneId: string): WorktreeTerminalLayout {
     return this.#updateTab(worktreeId, tabId, (t) => {
       const closing = t.panes.find((p) => p.id === paneId)
       if (!closing) return t
       this.#kill(closing.ptyId)
-      const panes = t.panes.filter((p) => p.id !== paneId)
-      const first = panes[0]
-      return first ? { ...t, split: SPLIT.none, panes, activePaneId: first.id } : null
+      const root = removePane(t.root, paneId)
+      if (!root) return null
+      const activePaneId =
+        t.activePaneId === paneId ? (neighbourPane(t.root, paneId) ?? t.activePaneId) : t.activePaneId
+      return { ...t, root, panes: t.panes.filter((p) => p.id !== paneId), activePaneId }
     })
   }
 
