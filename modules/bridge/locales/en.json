@@ -1,0 +1,6 @@
+{
+  "module": {
+    "name": "Bridge server",
+    "description": "Local server that lets agent hooks, the editor extension and the pragma CLI talk to the app."
+  }
+}
