@@ -1,17 +1,29 @@
 {
-  "module": { "name": "Comments" },
-  "commands": { "openDrawer": "Open comments" },
-  "titlebar": { "open": "Comments", "badge_one": "{{count}} draft comment", "badge_other": "{{count}} draft comments" },
-  "toolbar": { "open": "Open comments" },
+  "module": {
+    "name": "Comments"
+  },
+  "commands": {
+    "openDrawer": "Open comments"
+  },
+  "titlebar": {
+    "open": "Comments",
+    "badge_one": "{{count}} draft comment",
+    "badge_other": "{{count}} draft comments"
+  },
+  "toolbar": {
+    "open": "Open comments"
+  },
   "drawer": {
     "title": "Comments",
     "description": "Review comments for the agents in this worktree.",
-    "tabs": { "drafts": "Drafts", "sent": "Sent" },
+    "tabs": {
+      "drafts": "Drafts",
+      "sent": "Sent"
+    },
     "noWorktree": "Select a worktree to see its comments.",
     "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
     "emptySent": "No comments sent yet.",
     "clearSelection": "Clear selection",
-    "close": "Close",
     "sendSelected_one": "Send {{count}} comment",
     "sendSelected_other": "Send {{count}} comments",
     "sendAll_one": "Send {{count}} comment",
@@ -23,7 +35,11 @@
     "edit": "Edit",
     "delete": "Delete",
     "select": "Select comment",
-    "source": { "editor": "Editor", "diff": "Diff", "browser": "Browser" }
+    "source": {
+      "editor": "Editor",
+      "diff": "Diff",
+      "browser": "Browser"
+    }
   },
   "composer": {
     "label": "Comment",
