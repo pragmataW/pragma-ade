@@ -48,3 +48,20 @@ export function splitBridgeType(type: string): { namespace: string; name: string
   if (at < 0) return { namespace: type, name: '' }
   return { namespace: type.slice(0, at), name: type.slice(at + 1) }
 }
+export const CLIENT_POST_TIMEOUT_MS = 3000
+export const CLIENT_REQUEST_TIMEOUT_MS = 10_000
+export const CLIENT_RECONNECT_MIN_MS = 250
+export const CLIENT_RECONNECT_MAX_MS = 5000
+export const BRIDGE_UNAVAILABLE_REASONS = ['no_config', 'unreachable', 'unauthorized'] as const
+export type BridgeUnavailableReason = (typeof BRIDGE_UNAVAILABLE_REASONS)[number]
+export const BRIDGE_UNAVAILABLE = Object.fromEntries(BRIDGE_UNAVAILABLE_REASONS.map((r) => [r, r])) as {
+  readonly [K in BridgeUnavailableReason]: K
+}
+export const BRIDGE_CLIENT_STATE = { connecting: 'connecting', open: 'open', closed: 'closed' } as const
+export const BRIDGE_CLIENT_STATES = [
+  BRIDGE_CLIENT_STATE.connecting,
+  BRIDGE_CLIENT_STATE.open,
+  BRIDGE_CLIENT_STATE.closed,
+] as const
+export type BridgeClientState = (typeof BRIDGE_CLIENT_STATES)[number]
+export const HTTP_UNAUTHORIZED = 401
