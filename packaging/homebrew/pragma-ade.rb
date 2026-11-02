@@ -4,9 +4,9 @@
 cask "pragma-ade" do
   arch arm: "arm64", intel: "x64"
 
-  version "0.9.0"
-  sha256 arm:   "REPLACE_WITH_SHA256_OF_pragma-ade-0.9.0-mac-arm64.zip",
-         intel: "REPLACE_WITH_SHA256_OF_pragma-ade-0.9.0-mac-x64.zip"
+  version "0.9.1"
+  sha256 arm:   "REPLACE_WITH_SHA256_OF_pragma-ade-0.9.1-mac-arm64.zip",
+         intel: "REPLACE_WITH_SHA256_OF_pragma-ade-0.9.1-mac-x64.zip"
 
   url "https://github.com/pragmataW/pragma-ade/releases/download/v#{version}/pragma-ade-#{version}-mac-#{arch}.zip"
   name "Pragma ADE"

@@ -3,6 +3,14 @@
 All notable changes to Pragma ADE are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] - 2026-11-02
+
+### Fixed
+
+- **Linux:** the editor stayed on "Starting editor…" and no terminal opened when the login shell's rc file starts
+  another interactive shell (for example a `.bashrc` that runs `zsh`). Reading the shell environment now gives the
+  shell an empty stdin and, on timeout, kills the whole process group and falls back to the app environment.
+
 ## [0.9.0] - 2026-11-02
 
 First public release. Unsigned builds for macOS (arm64, x64), Linux x64 and Windows x64.
@@ -40,4 +48,5 @@ First public release. Unsigned builds for macOS (arm64, x64), Linux x64 and Wind
   native modules; a Homebrew cask for macOS.
 - MIT license, app logo and icons.
 
+[0.9.1]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.1
 [0.9.0]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.0
