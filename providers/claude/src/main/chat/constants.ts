@@ -25,14 +25,6 @@ export const CLAUDE_CUSTOM_EVENTS = { compactBoundary: 'claude.compact-boundary'
 
 export const STDERR_TAIL_BYTES = 8192
 export const KILL_GRACE_MS = 3000
-/** Env stamps of a parent Claude Code session; a nested CLI must not inherit them. */
-export const STRIPPED_ENV = [
-  'CLAUDECODE',
-  'CLAUDE_CODE_ENTRYPOINT',
-  'CLAUDE_CODE_SESSION_ID',
-  'CLAUDE_CODE_CHILD_SESSION',
-  'CLAUDE_CODE_BRIDGE_SESSION_ID',
-] as const
 /** Profile args that already decide the permission mode. */
 export const PERMISSION_FLAGS = [
   '--dangerously-skip-permissions',

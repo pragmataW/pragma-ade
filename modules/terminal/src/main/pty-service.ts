@@ -33,6 +33,7 @@ import {
 } from '../contract'
 import { type DaemonHost, DaemonRequestError } from './daemon-host'
 import { defaultShell, type ShellCommand } from './default-shell'
+import { scrubInheritedEnv } from './inherited-env'
 
 export interface PtyServiceDeps {
   host: DaemonHost
@@ -41,6 +42,8 @@ export interface PtyServiceDeps {
   settings: () => TerminalSettings
   /** The resolved app theme (`ctx.theme`), read at spawn; running shells keep theirs. */
   themeMode: () => ThemeMode
+  /** Providers' inherited session markers (`terminalEnv`), removed from every spawn env. */
+  inheritedEnvKeys?: () => readonly string[]
   platform: NodeJS.Platform
   exists: (p: string) => boolean
   log: Logger
@@ -105,9 +108,10 @@ export class PtyServiceImpl implements PtyService {
       const shellEnv = await this.#deps.shellEnv()
       const { command, args } = await this.#command(opts, shellEnv)
       const env: Record<string, string> = {
-        ...shellEnv,
-        [COLORFGBG_ENV]: COLORFGBG_BY_MODE[this.#deps.themeMode()],
-        ...opts.env,
+        ...scrubInheritedEnv(
+          { ...shellEnv, [COLORFGBG_ENV]: COLORFGBG_BY_MODE[this.#deps.themeMode()], ...opts.env },
+          this.#deps.inheritedEnvKeys?.() ?? [],
+        ),
         TERM: TERM_NAME,
         COLORTERM: COLORTERM_VALUE,
         TERM_PROGRAM: TERM_PROGRAM_NAME,

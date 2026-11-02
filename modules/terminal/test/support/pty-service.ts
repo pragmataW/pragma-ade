@@ -7,6 +7,8 @@ import { PtyServiceImpl } from '../../src/main/pty-service'
 import { stopHosts, testHost } from './host'
 
 export const SHELL_ENV_MARK = 'from-shell-env'
+/** A foreign session marker the shell env inherited from whatever launched the app. */
+export const INHERITED_MARK = 'FOREIGN_CHILD_SESSION'
 const dirs: string[] = []
 
 /** A realpath'd temp dir removed by `stopPtyServices()`. */
@@ -16,13 +18,14 @@ export function tempDir(): string {
   return dir
 }
 
-/** A `PtyServiceImpl` on a real `DaemonHost`; the shell env carries `MARK=from-shell-env`. */
+/** A `PtyServiceImpl` on a real `DaemonHost`; the shell env carries `MARK=from-shell-env` and `INHERITED_MARK=1`. */
 export async function testPtyService(
   opts: {
     settings?: Partial<TerminalSettings>
     resolveCommand?: (cmd: string) => Promise<string | null>
     themeMode?: ThemeMode
     shellEnv?: Record<string, string>
+    inheritedEnvKeys?: readonly string[]
   } = {},
 ) {
   const { host, log } = await testHost({ restartDelaysMs: [20] })
@@ -30,10 +33,17 @@ export async function testPtyService(
   const settings = { ...TERMINAL_SETTINGS_DEFAULTS, shell: '/bin/sh', ...opts.settings }
   const pty = new PtyServiceImpl({
     host,
-    shellEnv: async () => ({ PATH: process.env.PATH ?? '', HOME: tmpdir(), MARK: SHELL_ENV_MARK, ...opts.shellEnv }),
+    shellEnv: async () => ({
+      PATH: process.env.PATH ?? '',
+      HOME: tmpdir(),
+      MARK: SHELL_ENV_MARK,
+      [INHERITED_MARK]: '1',
+      ...opts.shellEnv,
+    }),
     resolveCommand: opts.resolveCommand ?? (async (c) => (c.startsWith('/') && existsSync(c) ? c : null)),
     settings: () => settings,
     themeMode: () => opts.themeMode ?? 'dark',
+    inheritedEnvKeys: () => opts.inheritedEnvKeys ?? [],
     platform: process.platform,
     exists: existsSync,
     log,
