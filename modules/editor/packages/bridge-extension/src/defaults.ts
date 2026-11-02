@@ -1,12 +1,12 @@
 import { CONFIG as C, STATE_KEYS, DEFAULT_VALUES as V } from './constants'
 import type { VscodeApi } from './vscodeApi'
 
-export const DEFAULTS_VERSION = 1
+type Default = readonly [section: string, key: string, value: unknown]
 
-/** User defaults written once (then the user's): theme, no start page, telemetry/updates/experiments/tips off. */
-export async function applyFirstRunDefaults(api: VscodeApi, themeName: string): Promise<boolean> {
-  if ((api.globalState.get<number>(STATE_KEYS.defaultsVersion) ?? 0) >= DEFAULTS_VERSION) return false
-  const defaults: [string, string, unknown][] = [
+/** Defaults each version adds; index `n` is what an install at version `n` still needs (append a step to add more). */
+const STEPS: readonly ((themeName: string) => readonly Default[])[] = [
+  // v1: theme, no start page, telemetry/updates/experiments/tips off.
+  (themeName) => [
     [C.workbench, C.colorTheme, themeName],
     [C.workbench, C.startupEditor, V.none],
     [C.telemetry, C.telemetryLevel, V.off],
@@ -14,8 +14,25 @@ export async function applyFirstRunDefaults(api: VscodeApi, themeName: string): 
     [C.workbench, C.enableExperiments, false],
     [C.workbench, C.tipsEnabled, false],
     [C.extensions, C.autoUpdate, false],
-  ]
-  for (const [section, key, value] of defaults) await api.updateGlobalConfig(section, key, value)
+  ],
+  // v2: the app's code font in the editor and the terminal.
+  () => [
+    [C.editor, C.fontFamily, V.monoFont],
+    [C.editor, C.fontSize, V.editorFontSize],
+    [C.editor, C.lineHeight, V.editorLineHeight],
+    [C.terminal, C.terminalFontFamily, V.monoFont],
+  ],
+]
+
+export const DEFAULTS_VERSION = STEPS.length
+
+/** User defaults written once per version (then the user's): an upgrade writes only the steps it has not seen. */
+export async function applyFirstRunDefaults(api: VscodeApi, themeName: string): Promise<boolean> {
+  const seen = api.globalState.get<number>(STATE_KEYS.defaultsVersion) ?? 0
+  if (seen >= DEFAULTS_VERSION) return false
+  for (const step of STEPS.slice(seen)) {
+    for (const [section, key, value] of step(themeName)) await api.updateGlobalConfig(section, key, value)
+  }
   await api.globalState.update(STATE_KEYS.defaultsVersion, DEFAULTS_VERSION)
   return true
 }
