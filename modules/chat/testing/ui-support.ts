@@ -111,6 +111,7 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
     ProviderMark: NoMark,
     StatusIcon: null,
     openExternal: (url) => void calls.push({ method: 'openExternal', args: [url] }),
+    commands: { has: () => false, execute: record('executeCommand', undefined) },
     theme: { get: () => 'dark', subscribe: () => ({ dispose: () => undefined }) },
     settings: {
       get: () => host.currentSettings,

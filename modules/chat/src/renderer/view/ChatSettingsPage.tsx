@@ -1,13 +1,13 @@
 import { useT } from '@pragma/sdk/renderer'
 import { Input } from '@pragma/ui/components/input'
 import { useId, useState } from 'react'
+import { KEY_ENTER as ENTER } from '../../constants'
 import { CHAT_MODES, CHAT_TESTIDS, type ChatModeName, MIN_STARTUP_TIMEOUT_MS } from '../../contract'
 import { useChatHost } from '../host-adapter'
 import { Segmented } from '../lib/Segmented'
 import { useChatSettings } from '../lib/use-chat-settings'
 
 const FIELD = 'flex flex-col gap-1.5'
-const ENTER = 'Enter'
 const LABEL = 'text-[12.5px] text-tx'
 
 function StartupTimeoutField() {

@@ -100,5 +100,9 @@
     "commentsChip_one": "{{count}} review comment",
     "commentsChip_other": "{{count}} review comments",
     "removeChip": "Remove review comments"
+  },
+  "fileLink": {
+    "open": "Open {{path}} in editor",
+    "revealInGit": "Show in Git Changes"
   }
 }

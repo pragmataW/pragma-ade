@@ -16,7 +16,12 @@ export interface ChatIpcDeps {
 export function registerChatIpc(ipc: Pick<MainIpcApi, 'handle'>, d: ChatIpcDeps): Disposable[] {
   const controller = (id: string) => d.registry.open(id)
   return [
-    ipc.handle(chatIpc.open, ({ sessionId }) => d.registry.snapshot(sessionId)),
+    ipc.handle(chatIpc.open, async ({ sessionId }) => {
+      const snapshot = await d.registry.snapshot(sessionId)
+      const session = await d.agents.getSession(sessionId)
+      const path = session ? await d.agents.getWorktreePath(session.worktreeId) : null
+      return session && path ? { ...snapshot, worktree: { id: session.worktreeId, path } } : snapshot
+    }),
     ipc.handle(chatIpc.send, async ({ sessionId, ...input }) => (await controller(sessionId)).send(input)),
     ipc.handle(chatIpc.cancelQueued, async ({ sessionId, queuedId }) =>
       (await controller(sessionId)).cancelQueued(queuedId),

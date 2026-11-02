@@ -38,6 +38,7 @@ export function useChatSession(sessionId: string): ChatSessionApi | null {
       providerId: entry.providerId,
       transcript: entry.transcript,
       status: entry.status,
+      ...(entry.worktree ? { worktree: entry.worktree } : {}),
       send: (input) => host.send(sessionId, input),
       interrupt: () => host.interrupt(sessionId),
       cancelQueued: (id) => host.cancelQueued(sessionId, id),

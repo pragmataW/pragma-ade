@@ -19,6 +19,8 @@ export const CHAT_TESTIDS = {
   queueChip: 'chat-queue-chip',
   queueChipRemove: 'chat-queue-chip-remove',
   composerChip: 'chat-composer-chip',
+  fileLink: 'chat-file-link',
+  revealInGit: 'chat-reveal-in-git',
   composerChipRemove: 'chat-composer-chip-remove',
   optionPicker: (key: string) => `chat-option-${key}`,
   optionValue: (key: string, value: string) => `chat-option-${key}-${value}`,

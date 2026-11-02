@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NOTICE_MS } from '../../../constants'
+import { KEY_ENTER, NOTICE_MS } from '../../../constants'
 import {
   type ChatImage,
   type ChatSessionApi,
@@ -14,7 +14,7 @@ import { appendDraft, composeOutgoing } from '../../lib/compose-outgoing'
 import { useChatStore } from '../../session/store'
 import { findTrigger, type OpenMenu } from './triggers'
 
-const KEY = { enter: 'Enter', tab: 'Tab', escape: 'Escape', up: 'ArrowUp', down: 'ArrowDown' } as const
+const KEY = { enter: KEY_ENTER, tab: 'Tab', escape: 'Escape', up: 'ArrowUp', down: 'ArrowDown' } as const
 
 /** Composer state: text, images, the open trigger menu, sending, and appended texts (never auto-sent). */
 export function useComposer(session: ChatSessionApi, extensions: readonly ComposerExtension[]) {

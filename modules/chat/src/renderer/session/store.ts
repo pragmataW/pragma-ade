@@ -4,6 +4,7 @@ import {
   type ChatSessionStatus,
   type ChatSnapshotDto,
   type ChatTranscript,
+  type ChatWorktree,
   nextStatus,
   reduceTranscript,
 } from '../../contract'
@@ -12,6 +13,7 @@ export interface ChatSessionEntry {
   providerId: string
   transcript: ChatTranscript
   status: ChatSessionStatus
+  worktree?: ChatWorktree
 }
 
 export interface ChatStoreState {

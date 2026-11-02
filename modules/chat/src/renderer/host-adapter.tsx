@@ -34,6 +34,7 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
     ProviderMark,
     StatusIcon: opts.agentStatusActive ? StatusIcon : null,
     openExternal: (url) => void ctx.shell.openExternal(url),
+    commands: { has: (id) => ctx.commands.has(id), execute: (id, args) => ctx.commands.execute(id, args) },
     theme: {
       get: () => ctx.theme.get().resolved,
       subscribe: (cb) => ctx.theme.onChange(() => cb()),

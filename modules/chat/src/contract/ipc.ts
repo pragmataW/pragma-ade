@@ -12,10 +12,15 @@ const sessionRef = z.object(session)
 
 /** Built from schema-validated events by the reducer; passed through as is. */
 export const chatTranscriptSchema = z.custom<ChatTranscript>((v) => typeof v === 'object' && v !== null)
+/** 11c: the session's worktree (file links resolve against it). */
+export const chatWorktreeSchema = z.object({ id: z.string(), path: z.string() })
+export type ChatWorktree = z.infer<typeof chatWorktreeSchema>
+
 export const chatSnapshotSchema = z.object({
   providerId: z.string(),
   transcript: chatTranscriptSchema,
   status: z.enum(agentSessionStatuses),
+  worktree: chatWorktreeSchema.optional(),
 })
 export type ChatSnapshotDto = z.infer<typeof chatSnapshotSchema>
 
