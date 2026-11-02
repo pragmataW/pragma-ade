@@ -7,6 +7,45 @@ skills from Settings › Command line.
 Dependencies: `projects`, `agents`, `bridge` (required); `board`, `comments` (optional — without them the matching
 `pragma` commands fail with `module_unavailable`, everything else works).
 
+## What the module provides
+
+- **Bridge namespace `cli`** (`src/main/handlers`): `worktreeList`, `worktreeCreate`, `agentList`, `agentSpawn`,
+  `profileList`, `taskList`, `taskCreate`, `taskUpdate`, `taskMove`, `commentsList`, `handoff`, plus `ping`. Every
+  handler answers the envelope `{ ok: true, result } | { ok: false, error: { code, message, details? } }`
+  (`cliResponseSchema`); error codes are `CLI_ERROR_CODES`. Board/comments missing → `module_unavailable`.
+- **Launch decorator** `cli-integration.path` (order 500): prepends `<userData>/modules/cli-integration/bin` (the
+  generated shim) to every agent's `PATH` and sets `PRAGMA_CLI` (shim path) and `PRAGMA_BRIDGE_FILE`.
+- **Shim**: `bin/pragma` (POSIX, `ELECTRON_RUN_AS_NODE=1 exec <electron> <bundle>`) or `bin/pragma.cmd` (win32),
+  rewritten on every start. Needs the `runAsNode` fuse to stay on (§10.1.8).
+- **Renderer IPC** (`cliIntegrationIpc`): `getStatus`, `installCli({ dir? })`, `uninstallCli`,
+  `installSkills({ providerIds })`, event `statusChanged`. Every install runs `assertSafeHome` first (in test mode
+  the real home is refused).
+- **Settings › Command line** (`SETTINGS_PAGE_ORDER.cli` = 110): PATH link status/install/remove and the agent
+  skill targets with a consent dialog (`SkillInstallDialog`) listing every directory that will be written.
+- **Skills**: `skills/handoff` (installed as `pragma-handoff`) and `skills/pragma-cli`. Providers declare targets
+  through the `skills` capability (`providers/<id>/src/main/skills.capability.ts`). The install registry is
+  `<userData>/modules/cli-integration/installed-skills.json` (never inside skill dirs). States: `missing`,
+  `foreign`, `current`, `outdated`. On start, one notification per skills version when an installed target is
+  outdated (click opens this settings page).
+- **Env vars**: `PRAGMA_CLI`, `PRAGMA_CLI_BUNDLE` (bundle override), plus the bridge/agent names it reads
+  (`PRAGMA_BRIDGE_URL`, `PRAGMA_BRIDGE_TOKEN`, `PRAGMA_BRIDGE_FILE`, `PRAGMA_SESSION_ID`, `PRAGMA_WORKTREE_ID`).
+- **Test hooks** (`PRAGMA_TEST=1`): `globalThis.__pragmaCliIntegrationTest.{notifications, paths}`.
+- **Testing entry** (`/testing`): `runCli(args, env)` (runs the bundle with a clean env) and
+  `describeSkillsCapability` (provider conformance suite).
+
+## Packaging (phase 12)
+
+`pragma.package.extraResources` declares `packages/cli/dist/pragma.cjs` and `skills/`; both are resolved through
+`ctx.paths.resource('cli-integration', …)`, so the same relative path works in dev and packaged. The bundle is built
+by `pragma.build` (`packages/cli`, esbuild) in predev/prebuild/pretest/pree2e.
+
+## Tests
+
+- Unit: `test/` (main side, contract, skills, renderer page in jsdom: `test/renderer/CliSettingsPage.test.tsx`) and
+  `packages/cli/test`.
+- E2E: `e2e/*.e2e.ts` (acceptance criteria 1–5 and the optional-dependency case); `e2e/handoff.real.e2e.ts` is
+  `@real-agent` (real Claude Code on a temp HOME, login through the macOS keychain).
+
 ## Upstream API notes (Task 1 recon, verified against `main` on 2026-11-02)
 
 Where the plan's names differ from the merged code, the real names below win. Every later task maps upstream shapes
