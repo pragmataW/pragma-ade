@@ -1,0 +1,27 @@
+{
+  "name": "@pragma/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "pragma": "dist/pragma.cjs" },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run --root ../../../.. modules/cli-integration/packages/cli/test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "pragma": {
+    "build": "build",
+    "buildInputs": ["src/**", "build.mjs", "package.json", "../../src/contract/**"],
+    "buildOutputs": ["dist"]
+  },
+  "dependencies": {
+    "@pragma/module-bridge": "workspace:*",
+    "@pragma/module-cli-integration": "workspace:*",
+    "@pragma/sdk": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "vitest": "5.0.5"
+  }
+}
