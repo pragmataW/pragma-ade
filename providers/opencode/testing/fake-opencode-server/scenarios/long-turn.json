@@ -1,0 +1,123 @@
+{
+  "version": "2.2.5",
+  "models": [
+    {
+      "id": "fake-model",
+      "providerID": "fakeprov",
+      "name": "Fake Model",
+      "variants": [
+        {
+          "id": "high"
+        },
+        {
+          "id": "low"
+        }
+      ],
+      "limit": {
+        "context": 10000,
+        "output": 4000
+      },
+      "enabled": true
+    },
+    {
+      "id": "fake-small",
+      "providerID": "fakeprov",
+      "name": "Fake Small",
+      "variants": [],
+      "limit": {
+        "context": 4000,
+        "output": 1000
+      },
+      "enabled": true
+    }
+  ],
+  "defaultModel": "fake-model",
+  "agents": [
+    {
+      "id": "build",
+      "name": "Build",
+      "mode": "primary",
+      "hidden": false
+    },
+    {
+      "id": "plan",
+      "name": "Plan",
+      "mode": "primary",
+      "hidden": false
+    },
+    {
+      "id": "general",
+      "name": "General",
+      "mode": "subagent",
+      "hidden": false
+    },
+    {
+      "id": "title",
+      "name": "Title",
+      "mode": "primary",
+      "hidden": true
+    }
+  ],
+  "commands": [
+    {
+      "name": "init",
+      "description": "Create AGENTS.md"
+    },
+    {
+      "name": "review",
+      "description": "Review changes"
+    }
+  ],
+  "turns": [
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "model": {
+                "id": "fake-model",
+                "providerID": "fakeprov"
+              }
+            }
+          }
+        },
+        {
+          "sleepMs": 1500
+        },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "delta": "done"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.ended",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "text": "done"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.execution.succeeded",
+            "data": {
+              "sessionID": "$SID"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
