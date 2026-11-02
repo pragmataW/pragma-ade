@@ -161,3 +161,29 @@ export const PIPE_STDIO = ['pipe', 'pipe', 'pipe'] as const
 export const STREAM_EVENT = { data: 'data', error: 'error', close: 'close' } as const
 export const PROCESS_EXIT_EVENT = 'exit'
 export const POOL_DISPOSED = 'pool disposed'
+
+/** OpenCode tool name → chat tool kind (anything else is `other`). */
+export const TOOL_KINDS = {
+  shell: 'shell',
+  bash: 'shell',
+  read: 'read',
+  glob: 'search',
+  grep: 'search',
+  list: 'search',
+  edit: 'edit',
+  patch: 'edit',
+  apply_patch: 'edit',
+  write: 'write',
+  webfetch: 'web',
+  websearch: 'web',
+  subagent: 'task',
+  task: 'task',
+  todo: 'todo',
+  todowrite: 'todo',
+} as const
+/** Tool input fields that name the target, first present wins. */
+export const TITLE_KEYS = ['path', 'filePath', 'command', 'pattern', 'url', 'query', 'description', 'name'] as const
+export const SLASH_RE = /^\/(?<name>\S+)(?:\s+(?<rest>[\s\S]*))?$/
+export const MENTION_SIGIL = '@'
+export const DEFAULT_VARIANT_LABEL_KEY = 'opencode:chat.option.defaultVariant'
+export const INVALID_OPTION = 'invalid option'
