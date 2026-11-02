@@ -46,3 +46,35 @@ test('no reporter → no crash', () => {
     ),
   ).not.toThrow()
 })
+
+test('a closed Select hides nothing; it guards only while open (Radix keeps closed content mounted)', async () => {
+  const { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } = await import('../src/components/select')
+  // jsdom has no layout: Radix scrolls the selected item into view when the Select opens.
+  Element.prototype.scrollIntoView ??= () => undefined
+  const reporter = vi.fn()
+  setOverlayGuardReporter(reporter)
+  const ui = (open: boolean) => (
+    <Select open={open} value="a">
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="a">{'A'}</SelectItem>
+        <SelectItem value="b">{'B'}</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+  const { rerender, unmount } = render(ui(false))
+  expect(reporter).not.toHaveBeenCalled()
+  rerender(ui(true))
+  await waitFor(() => expect(reporter.mock.calls).toEqual([[1, 'hide']]))
+  rerender(ui(false))
+  await waitFor(() =>
+    expect(reporter.mock.calls).toEqual([
+      [1, 'hide'],
+      [-1, 'hide'],
+    ]),
+  )
+  unmount()
+  expect(reporter).toHaveBeenCalledTimes(2)
+})

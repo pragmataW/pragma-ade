@@ -18,12 +18,17 @@ const USER_DATA = 'userData'
 const ACTIVATE = 'activate'
 const BEFORE_QUIT = 'before-quit'
 const ALL_CLOSED = 'window-all-closed'
+const SECOND_INSTANCE = 'second-instance'
 
 const testMode = process.env[TEST_MODE_ENV] === TEST_MODE_ENABLED
 // E2E runs stay off-screen so the machine stays usable while suites run in parallel.
 const hiddenWindow = testMode && process.env[E2E_HEADED_ENV] !== E2E_HEADED_ENABLED
 app.setName(APP_NAME)
 app.setPath(USER_DATA, resolveUserDataDir(process.env, app.getPath(USER_DATA)))
+// One app per userData: a second instance would start its own editor server and pty daemon on the same state and
+// break both. It hands over to the running one (which comes to the front) and quits.
+const primary = app.requestSingleInstanceLock()
+if (!primary) app.quit()
 
 async function main(): Promise<void> {
   await app.whenReady()
@@ -64,6 +69,11 @@ async function main(): Promise<void> {
     return win
   }
   openWindow()
+  app.on(SECOND_INSTANCE, () => {
+    const win = current && !current.isDestroyed() ? current : openWindow()
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  })
   app.on(ACTIVATE, () => {
     if (app.isReady() && !hasWindows()) openWindow()
   })
@@ -93,4 +103,4 @@ function disposeWithin(work: Promise<void>, timeoutMs: number, onError: (error: 
 
 const hasWindows = (): boolean => BrowserWindow.getAllWindows().length > 0
 
-void main()
+if (primary) void main()

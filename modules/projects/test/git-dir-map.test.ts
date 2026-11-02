@@ -29,6 +29,8 @@ describe('mapGitDirPaths', () => {
     ['FETCH_HEAD', []],
     // Remotes and upstreams live in config (`git remote add`, `push -u`): every worktree's sync state may change.
     ['config', ['main', 'feat']],
+    // The stash is one list per repository (push, drop, `stash store` from Local History).
+    ['refs/stash', ['main', 'feat']],
   ])('%s → %j', (path, ids) => expect(mapGitDirPaths([path], refs)).toEqual(ids))
 
   it('returns unique ids for a batch', () => {

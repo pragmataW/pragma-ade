@@ -4,7 +4,8 @@
     "general": "General",
     "appearance": "Appearance",
     "shortcuts": "Keyboard shortcuts",
-    "modules": "Modules"
+    "modules": "Modules",
+    "beta": "Beta"
   },
   "general": {
     "language": "Language",
@@ -41,5 +42,16 @@
     "affected": "Affected: {{list}}",
     "restart": "Restart"
   },
-  "quickTheme": { "toDark": "Switch to dark theme", "toLight": "Switch to light theme" }
+  "quickTheme": { "toDark": "Switch to dark theme", "toLight": "Switch to light theme" },
+  "beta": {
+    "intro": "Features that are still being built. Switch one off and it is gone everywhere after a restart; switch it back on any time.",
+    "badge": "Beta",
+    "empty": "No beta features right now.",
+    "features": {
+      "chatMode": {
+        "title": "Agent chat mode",
+        "description": "Run agents in a chat view as well as the terminal, and move a session between the two. Turned off: the Chat option disappears from New agent, along with the chat view and its settings; agents run in the terminal."
+      }
+    }
+  }
 }

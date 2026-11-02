@@ -17,7 +17,7 @@ import { type DiffReview, useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { HunkBar } from './diff/HunkBar'
 import { EmptyState } from './EmptyState'
-import { FIND, keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
+import { type KeyAction, keyToAction } from './keyboard'
 import { type EditorOpener, editorOpener } from './lib/editor'
 import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
@@ -206,20 +206,29 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
     if (okList) useGitChangesStore.getState().reconcile(worktreeId, ordered)
   }, [okList, ordered, worktreeId])
 
+  const run: Record<KeyAction, () => void> = {
+    nextFile: () => store.select(worktreeId, neighbour(ordered, view.selectedPath, 1)),
+    prevFile: () => store.select(worktreeId, neighbour(ordered, view.selectedPath, -1)),
+    nextChange: () => diffRef.current?.nextChange(),
+    prevChange: () => diffRef.current?.prevChange(),
+    find: () => diffRef.current?.openFind(),
+  }
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const action = keyToAction({ ...e, targetIsEditable: isEditable(e.target) })
     if (action === null) return
     e.preventDefault()
-    if (action === NEXT_FILE || action === PREV_FILE)
-      store.select(worktreeId, neighbour(ordered, view.selectedPath, action === NEXT_FILE ? 1 : -1))
-    else if (action === NEXT_CHANGE) diffRef.current?.nextChange()
-    else if (action === FIND) diffRef.current?.openFind()
-    else diffRef.current?.prevChange()
+    run[action]()
   }
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: panel-wide j/k/n shortcuts while focus is inside the panel
-    <div data-testid={T.panel} className="flex h-full min-h-0 flex-col" onKeyDown={onKeyDown}>
+    // tabIndex: a click anywhere in the panel (diff text included) focuses it, so its shortcuts (Cmd/Ctrl+F) reach here.
+    // biome-ignore lint/a11y/noStaticElementInteractions: panel-wide j/k/n and Cmd/Ctrl+F while focus is inside
+    <div
+      data-testid={T.panel}
+      tabIndex={-1}
+      className="flex h-full min-h-0 flex-col outline-none"
+      onKeyDown={onKeyDown}
+    >
       <Toolbar
         worktreeId={worktreeId}
         mode={view.mode}

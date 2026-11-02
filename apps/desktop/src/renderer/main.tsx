@@ -32,6 +32,9 @@ function wireOverlayGuard(ipc: IpcClient): void {
     last = next
     void ipc.invoke(CoreIpc.nativeViewsOcclusion, next)
   })
+  // A reloaded renderer starts at zero overlays; main may still hold the old page's state, which would keep every
+  // native view hidden until some overlay opened and closed again.
+  void ipc.invoke(CoreIpc.nativeViewsOcclusion, last)
 }
 
 async function boot(): Promise<void> {
