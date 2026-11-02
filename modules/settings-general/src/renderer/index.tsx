@@ -3,6 +3,7 @@ import { defineRendererModule } from '@pragma/sdk/renderer'
 import { PAGE_ICONS, PAGE_IDS, QUICK_TOGGLE_ORDER, QUICK_TOGGLE_SLOT_ID } from '../constants'
 import type { GeneralSettings } from '../contract/schemas'
 import { AppearancePage } from './AppearancePage'
+import { BetaPage } from './BetaPage'
 import { GeneralPage } from './GeneralPage'
 import { ModulesPage } from './ModulesPage'
 import { QuickThemeToggle } from './QuickThemeToggle'
@@ -18,6 +19,7 @@ export default defineRendererModule<GeneralSettings>({
       { id: PAGE_IDS.appearance, titleKey: 'settings-general:pages.appearance', component: AppearancePage },
       { id: PAGE_IDS.modules, titleKey: 'settings-general:pages.modules', component: ModulesPage },
       { id: PAGE_IDS.shortcuts, titleKey: 'settings-general:pages.shortcuts', component: ShortcutsPage },
+      { id: PAGE_IDS.beta, titleKey: 'settings-general:pages.beta', component: BetaPage },
     ]
     for (const p of pages)
       ctx.settingsPages.register({ ...p, order: SETTINGS_PAGE_ORDER[p.id], icon: PAGE_ICONS[p.id] })

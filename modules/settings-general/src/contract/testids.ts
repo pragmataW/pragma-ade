@@ -9,5 +9,8 @@ export const TEST_IDS = {
   moduleToggle: (id: string) => `settings-general-module-toggle-${id}`,
   moduleState: (id: string) => `settings-general-module-state-${id}`,
   restart: 'settings-general-restart',
+  betaFeature: (id: string) => `settings-general-beta-${id}`,
+  betaToggle: (id: string) => `settings-general-beta-toggle-${id}`,
+  betaEmpty: 'settings-general-beta-empty',
   quickTheme: 'settings-general-quick-theme',
 } as const

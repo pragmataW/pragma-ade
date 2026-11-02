@@ -42,6 +42,8 @@ export const SETTINGS_PAGE_ORDER = {
   board: 100,
   cli: 110,
   chat: 120,
+  /** Last: features still in beta (switched off and on here). */
+  beta: 9000,
 } as const
 
 export const RectSchema = z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })
