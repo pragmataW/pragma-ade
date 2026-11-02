@@ -31,6 +31,7 @@ import {
 } from './constants'
 import { list, num, type Obj, obj, str } from './frame-fields'
 import { mcpStatusEvent, rateLimitEvent, SYSTEM_NOTICES } from './notices'
+import { PROMPT_TOOLS } from './prompts'
 import { createTaskMapper } from './tasks'
 import { fileEditFor, todoFor, toolKindFor, toolTitleFor } from './tool-kinds'
 
@@ -105,6 +106,9 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
   const tools = new Map<string, { name: string; input: unknown }>()
   const openTools = new Set<string>()
   const tasks = createTaskMapper()
+  /** Live: question / plan tool calls render as their cards only (history keeps the tool row, it has no card). */
+  const cardTools = new Set<string>()
+  const isCardTool = (name: string) => !history && PROMPT_TOOLS.has(name)
   /** Stream path: the open message id per parent (a subagent streams beside the main loop). */
   const streamMessageIds = new Map<string, string>()
   let streamMessageId = ''
@@ -139,12 +143,17 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
     if (type !== BLOCK.toolUse) return []
     const name = str(block.name) ?? ''
     const toolCallId = str(block.id) ?? id
+    if (isCardTool(name)) return []
     return [{ kind: K.toolCall, toolCallId, name, toolKind: toolKindFor(name), input: {}, status: TOOL_STATUS.pending }]
   }
 
   function toolUse(block: Obj): ChatEvent[] {
     const name = str(block.name) ?? ''
     const toolCallId = str(block.id) ?? ''
+    if (isCardTool(name)) {
+      cardTools.add(toolCallId)
+      return []
+    }
     tools.set(toolCallId, { name, input: block.input })
     openTools.add(toolCallId)
     const call: ChatEvent = {
@@ -219,7 +228,9 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
     const content = obj(frame.message).content
     const results = list(content).filter((b) => b.type === BLOCK.toolResult)
     if (results.length === 0) return userText(frame, content)
-    return results.flatMap((b) => toolResult(b, frame.tool_use_result))
+    return results
+      .filter((b) => !cardTools.has(str(b.tool_use_id) ?? ''))
+      .flatMap((b) => toolResult(b, frame.tool_use_result))
   }
 
   function turnEnd(frame: Obj): ChatEvent[] {

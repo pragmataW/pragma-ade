@@ -174,3 +174,14 @@ describe('notices', () => {
     ])
   })
 })
+
+describe('question / plan tool calls', () => {
+  const frames = [
+    F.assistant('m', F.toolUse('q1', 'AskUserQuestion', { questions: [] })),
+    F.toolResult('q1', 'answered'),
+  ]
+  it('live: no tool row (the card stands for it); history: the tool row stays', () => {
+    expect(F.mapAll(frames)).toEqual([])
+    expect(F.mapAll(frames, { origin: 'history' }).map((e) => e.kind)).toEqual(['tool-call', 'tool-result'])
+  })
+})
