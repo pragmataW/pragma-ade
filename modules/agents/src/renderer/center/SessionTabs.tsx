@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@pragma/ui/components/dropdown-menu'
 import { Icon } from '@pragma/ui/components/icon'
+import { copyText } from '@pragma/ui/lib/clipboard'
 import { LAYOUT } from '@pragma/ui/tokens'
 import { ICON_SM, ICONS, MARK_TAB } from '../../constants'
 import {
@@ -77,6 +78,8 @@ function SessionTab({ session, active }: { session: AgentSession; active: boolea
 function SessionMenu({ session }: { session: AgentSession }) {
   const t = useT()
   const running = isRunningStatus(session.status)
+  /** The provider's own id (what `pragma session locate` and `claude --resume` take). */
+  const providerSessionId = session.externalSessionId
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -93,6 +96,16 @@ function SessionMenu({ session }: { session: AgentSession }) {
         </DropdownMenuItem>
         <DropdownMenuItem data-testid={AGENTS_TESTIDS.sessionClose} onSelect={() => requestClose(session)}>
           {t('agents:session.menu.close')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          data-testid={AGENTS_TESTIDS.sessionCopyId}
+          disabled={!providerSessionId}
+          title={providerSessionId ?? undefined}
+          onSelect={() => {
+            if (providerSessionId) void copyText(providerSessionId)
+          }}
+        >
+          {t('agents:session.menu.copyId')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

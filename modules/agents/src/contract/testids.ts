@@ -9,6 +9,7 @@ export const AGENTS_TESTIDS = {
   sessionMenu: 'agents-session-menu',
   sessionRestart: 'agents-session-restart',
   sessionClose: 'agents-session-close',
+  sessionCopyId: 'agents-session-copy-id',
   closeConfirm: 'agents-close-confirm',
   empty: 'agents-empty',
   launcher: 'agents-launcher',
