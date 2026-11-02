@@ -8,6 +8,9 @@ export const RESUBSCRIBE_DELAY_MS = 1000
 export const OPENCODE_EVENT_TYPES = {
   sessionCreated: 'session.created',
   inboxEnqueued: 'session.inbox.enqueued',
+  inboxDelivered: 'session.inbox.delivered',
+  /** Forwarded only when it withdrew the last queued prompt of a session that runs nothing (see `records.ts`). */
+  inboxCancelled: 'session.inbox.cancelled',
   executionStarted: 'session.execution.started',
   executionSucceeded: 'session.execution.succeeded',
   executionFailed: 'session.execution.failed',

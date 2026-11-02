@@ -26,6 +26,19 @@ test('spawn without command runs the default shell in cwd', async () => {
   await waitFor(() => text().includes(cwd))
 })
 
+test('onInput reports write() data (not pastes) of that pty only, until unsubscribed', async () => {
+  const { pty } = await testPtyService()
+  const id = await pty.spawn({ cwd: tempDir(), command: '/bin/cat', ...SIZE })
+  const seen: string[] = []
+  const off = pty.onInput(id, (d) => seen.push(d))
+  pty.write(id, '\x1b')
+  pty.paste(id, 'pasted')
+  pty.write('other-pty', 'x')
+  off()
+  pty.write(id, '\x03')
+  expect(seen).toEqual(['\x1b'])
+})
+
 test('env merge: shellEnv < opts.env < TERM overrides', async () => {
   const { pty } = await testPtyService()
   const id = await pty.spawn({

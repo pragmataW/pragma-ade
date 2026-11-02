@@ -78,6 +78,7 @@ export class PtyServiceImpl implements PtyService {
   readonly #exits = new Map<string, PtyExit>()
   readonly #killing = new Set<string>()
   readonly #data = new ListenerMap<PtyDataPayload>()
+  readonly #input = new ListenerMap<string>()
   readonly #exitCbs = new ListenerMap<PtyExit>()
   /** Exits of ptys whose `spawn` reply is resolved but not yet registered (see `#register`). */
   readonly #earlyExits = new Map<string, ExitResult>()
@@ -156,7 +157,9 @@ export class PtyServiceImpl implements PtyService {
   }
 
   write(ptyId: string, data: string): void {
-    if (this.#live(ptyId, REQ.write)) this.#fire({ type: REQ.write, ptyId, data })
+    if (!this.#live(ptyId, REQ.write)) return
+    this.#fire({ type: REQ.write, ptyId, data })
+    this.#input.emit(ptyId, data)
   }
 
   paste(ptyId: string, text: string): void {
@@ -190,6 +193,10 @@ export class PtyServiceImpl implements PtyService {
 
   onData(ptyId: string, cb: (data: string) => void): () => void {
     return this.#data.add(ptyId, (e) => cb(e.data))
+  }
+
+  onInput(ptyId: string, cb: (data: string) => void): () => void {
+    return this.#input.add(ptyId, cb)
   }
 
   onExit(ptyId: string, cb: (exit: PtyExit) => void): () => void {
@@ -306,6 +313,7 @@ export class PtyServiceImpl implements PtyService {
     this.#exits.delete(ptyId)
     this.#killing.delete(ptyId)
     this.#data.clear(ptyId)
+    this.#input.clear(ptyId)
     this.#exitCbs.clear(ptyId)
   }
 }

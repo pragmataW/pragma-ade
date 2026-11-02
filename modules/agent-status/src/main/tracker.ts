@@ -1,5 +1,5 @@
 import { SESSION_STATUS } from '@pragma/module-agents/contract'
-import { type AgentStatusEvent, type SessionStatusInfo, STATUS_SOURCE } from '../contract'
+import { type AgentStatusEvent, type SessionStatusInfo, STATUS_SOURCE, type StatusSessionMonitor } from '../contract'
 import type { Clock } from './clock'
 import {
   ACTIVITY,
@@ -40,6 +40,7 @@ export class SessionTracker {
   readonly #opts: TrackerOptions
   #graceTimer: unknown
   #idleTimer: unknown
+  #monitor: StatusSessionMonitor | undefined
 
   constructor(opts: TrackerOptions) {
     this.#opts = opts
@@ -64,7 +65,24 @@ export class SessionTracker {
     this.#apply({ source: INPUT_SOURCE.hook, event })
   }
 
+  /** The provider's session monitor (see `StatusCapability.monitorSession`), if one was attached. */
+  get monitor(): StatusSessionMonitor | undefined {
+    return this.#monitor
+  }
+
+  /** Owns `monitor` from now on: it is disposed with the tracker or when the session exits. */
+  attachMonitor(monitor: StatusSessionMonitor): void {
+    this.#disposeMonitor()
+    if (this.#exited) monitor.dispose()
+    else this.#monitor = monitor
+  }
+
+  noteInterruptKey(): void {
+    this.#monitor?.onInterruptKey?.()
+  }
+
   noteOutput(): void {
+    this.#monitor?.onOutput?.()
     if (this.#source !== STATUS_SOURCE.activity || this.#exited) return
     this.#apply({ source: INPUT_SOURCE.activity, kind: ACTIVITY.output })
     this.#clearIdle()
@@ -81,6 +99,7 @@ export class SessionTracker {
 
   markExited(): void {
     this.#clearTimers()
+    this.#disposeMonitor()
     this.#apply({ source: INPUT_SOURCE.lifecycle, kind: LIFECYCLE.exited })
   }
 
@@ -95,6 +114,7 @@ export class SessionTracker {
 
   dispose(): void {
     this.#clearTimers()
+    this.#disposeMonitor()
   }
 
   get #exited(): boolean {
@@ -116,6 +136,12 @@ export class SessionTracker {
       this.#source = STATUS_SOURCE.activity
       this.#opts.onGraceExpired?.()
     }, this.#timings.hookGraceMs)
+  }
+
+  #disposeMonitor(): void {
+    const monitor = this.#monitor
+    this.#monitor = undefined
+    monitor?.dispose()
   }
 
   #clearIdle(): void {

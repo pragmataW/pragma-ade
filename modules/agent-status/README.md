@@ -12,9 +12,14 @@ markers and a desktop notification when an agent waits for you.
    `OPENCODE_CONFIG_CONTENT.plugins`). Nothing is written to `~/.claude` or `~/.config/opencode`.
 2. Hooks post `agent.hookEvent { sessionId, providerId, event }` to the bridge. The event is parsed by the capability of
    the **session's** provider into an `AgentStatusEvent` and fed to a pure state machine (`src/main/state-machine.ts`).
-3. Fallback: no capability, no bridge, or no hook event within `fallback.hookGraceMs` (30 s, one warning logged) →
+3. Turn ends no hook reports: a capability with `monitorSession` gets a per-session monitor (see API). Claude fires no
+   hook when the user interrupts a turn (Esc / Ctrl-C); its monitor watches the session transcript for Claude's
+   interrupt marker and handles the "prompt put back" case (see `providers/claude/src/main/status/interrupt-monitor.ts`).
+   OpenCode reports interrupts itself (`session.execution.interrupted`; a prompt taken back from the inbox is forwarded
+   as `session.inbox.cancelled`).
+4. Fallback: no capability, no bridge, or no hook event within `fallback.hookGraceMs` (30 s, one warning logged) →
    terminal activity: output → `working`, `fallback.activityIdleMs` (5 s) of silence → `idle`.
-4. Chat sessions (11a) report through `AgentStatusService.reportEvent`; they are tracked as `external` and this module
+5. Chat sessions (11a) report through `AgentStatusService.reportEvent`; they are tracked as `external` and this module
    never calls `updateSession` for them (11a is the sole writer).
 
 Every status change is written with `AgentSessionsService.updateSession({ status, externalSessionId })` (except exits,
@@ -31,7 +36,11 @@ which 03 writes, and `external` sessions), emitted as `agentSession.statusChange
 - Command `agent-status.openSession { worktreeId, sessionId }` (notification click: selects the worktree, then runs
   `agents.focusSession`).
 - Bridge namespace `agent` (`agentBridge`, request `hookEvent`).
-- Capability type `status` (`StatusCapability { decorateLaunch, parseEvent, dispose? }`).
+- Capability type `status` (`StatusCapability { decorateLaunch, parseEvent, monitorSession?, dispose? }`).
+  `monitorSession(ctx)` returns a `StatusSessionMonitor` for one terminal session (created on its first hook event,
+  disposed on exit/close): it sees every hook payload with its parsed event, terminal output (no content) and
+  interrupt keys (exact Esc / Ctrl-C writes, incl. kitty forms), and may `ctx.report(event)` turn ends the agent's
+  hooks miss (Claude: user interrupts). Reported events are validated like hook events.
 
 ## Renderer
 

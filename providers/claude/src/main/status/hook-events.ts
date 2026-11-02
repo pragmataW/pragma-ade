@@ -8,6 +8,8 @@ export interface ClaudeHookPayload {
   reason?: string
   /** `StopFailure`: the error kind that ended the turn. */
   error?: string
+  /** The session transcript (JSONL); the hook forwards only absolute `.jsonl` paths. Never leaves the monitor. */
+  transcript_path?: string
 }
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined)
@@ -24,5 +26,6 @@ export function readClaudeHookPayload(raw: unknown): ClaudeHookPayload | null {
     source: str(r.source),
     reason: str(r.reason),
     error: str(r.error),
+    transcript_path: str(r.transcript_path),
   }
 }

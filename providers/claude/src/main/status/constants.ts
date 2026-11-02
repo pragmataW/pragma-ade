@@ -29,3 +29,25 @@ export const RUNNER_MODE = 0o700
 export const RUNNER_FILE = { posix: 'pragma-hook.sh', win32: 'pragma-hook.cmd' } as const
 export const WIN32 = 'win32'
 export const RUN_AS_NODE_ENV = 'ELECTRON_RUN_AS_NODE'
+
+/**
+ * Interrupt detection (no Claude hook fires when the user interrupts a turn; see `interrupt-monitor.ts`). Claude
+ * writes a user entry whose text starts with `[Request interrupted by user` (`]` or ` for tool use]`) into the
+ * session transcript (JSONL); verified against Claude Code 2.1.316.
+ */
+export const CLAUDE_TRANSCRIPT = {
+  interruptPrefix: '[Request interrupted by user',
+  /** Cheap pre-filter: only lines containing this are parsed as possible assistant entries. */
+  assistantNeedle: '"assistant"',
+  extension: '.jsonl',
+  /** Transcript checks while a turn runs. */
+  pollMs: 1000,
+  /** After Esc/Ctrl-C: the terminal must have been quiet this long (Claude's spinner animates while it works). */
+  settleMs: 2000,
+  /** At most this many new bytes are read per check (the newest; markers are the last lines of a turn). */
+  maxScanBytes: 1_048_576,
+} as const
+export const TRANSCRIPT_ENTRY = { user: 'user', assistant: 'assistant' } as const
+export const CONTENT_BLOCK = { text: 'text', toolUse: 'tool_use' } as const
+export const NEWLINE_BYTE = 0x0a
+export const NEWLINE = '\n'
