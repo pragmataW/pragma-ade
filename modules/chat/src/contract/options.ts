@@ -1,5 +1,5 @@
 import { z } from '@pragma/sdk'
-import { OPTION_TYPE, OPTION_TYPES } from './constants'
+import { CHAT_TONES, OPTION_TYPE, OPTION_TYPES } from './constants'
 
 export const chatOptionValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
 export type ChatOptionValue = z.infer<typeof chatOptionValueSchema>
@@ -11,6 +11,17 @@ export const chatOptionChoiceSchema = z.object({
   labelKey: z.string().optional(),
   /** Rendered in the `warn` colour when current (e.g. skipping permissions). */
   warn: z.boolean().optional(),
+  /** One line under the label in menus (literal wins over the key). */
+  description: z.string().optional(),
+  descriptionKey: z.string().optional(),
+  /** Badge colour (`PermissionModePicker`); default `neutral`. */
+  tone: z.enum(CHAT_TONES).optional(),
+  /** Bypasses safety checks: shown with a warning glyph. */
+  dangerous: z.boolean().optional(),
+  /** The kit asks for confirmation (SDK dialog) before selecting it. */
+  requiresConfirm: z.boolean().optional(),
+  /** false = skipped by the composer's Shift+Tab mode cycle. */
+  cycle: z.boolean().optional(),
 })
 export type ChatOptionChoice = z.infer<typeof chatOptionChoiceSchema>
 
@@ -46,6 +57,17 @@ export function validateOptionValue(d: ChatOptionDescriptor, v: unknown): v is C
       return never
     }
   }
+}
+
+/**
+ * The choice after `current` in a mode cycle (Shift+Tab): choices with `cycle: false` are skipped, wrapping around;
+ * undefined when nothing else can be picked.
+ */
+export function nextCycleChoice(d: ChatOptionDescriptor): ChatOptionChoice | undefined {
+  const ring = (d.values ?? []).filter((c) => c.cycle !== false || c.value === d.current)
+  const at = ring.findIndex((c) => c.value === d.current)
+  const next = ring[(at + 1) % ring.length]
+  return next?.value === d.current ? undefined : next
 }
 
 /** The descriptor list with `current` of `key` replaced. */

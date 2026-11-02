@@ -28,6 +28,8 @@ export function nextStatus(
     case K.turnStart:
       return S.working
     case K.permissionRequest:
+    case K.question:
+    case K.planProposal:
       return S.waiting
     case K.permissionResolved:
     case K.responseResolved:
@@ -50,6 +52,10 @@ export function nextStatus(
     case K.todo:
     case K.usage:
     case K.queue:
+    case K.task:
+    case K.mcpStatus:
+    case K.rateLimit:
+    case K.retry:
       return prev
     default: {
       const never: never = e

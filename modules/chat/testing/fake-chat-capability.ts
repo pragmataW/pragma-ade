@@ -1,11 +1,15 @@
 /** A scriptable `ChatCapability` for core and UI tests (test code only). */
 import type { AgentProfile } from '@pragma/module-agents/contract'
 import {
+  ACTION_METHOD,
+  type ChatAttachmentKind,
   type ChatCapability,
   type ChatEvent,
+  type ChatMcpServer,
   type ChatOptionDescriptor,
   type ChatOptionValue,
   type ChatPermissionDecision,
+  type ChatSessionActionKind,
   type ChatSessionContext,
   type ChatSessionHandle,
   type ChatStartupError,
@@ -26,9 +30,16 @@ export class FakeChatSession implements ChatSessionHandle {
   closed = false
   killed = false
   respond?: (eventId: string, payload: unknown) => Promise<void>
+  /** Calls of the optional action methods (`[method, ...args]`). */
+  readonly actionCalls: unknown[][] = []
+  /** What `listMcp` returns. */
+  mcpServers: ChatMcpServer[] = []
   #options: ChatOptionDescriptor[]
 
-  constructor(ctx: ChatSessionContext, opts: { options: ChatOptionDescriptor[]; interactive: boolean; n: number }) {
+  constructor(
+    ctx: ChatSessionContext,
+    opts: { options: ChatOptionDescriptor[]; interactive: boolean; n: number; actions: ChatSessionActionKind[] },
+  ) {
     this.createdWith = ctx
     this.externalSessionId = ctx.resumeExternalSessionId ?? `fake-ext-${opts.n}`
     this.#options = opts.options
@@ -36,6 +47,14 @@ export class FakeChatSession implements ChatSessionHandle {
       this.respond = async (eventId, payload) => {
         this.responses.push({ eventId, payload })
       }
+    const self = this as unknown as Record<string, unknown>
+    for (const action of opts.actions) {
+      const method = ACTION_METHOD[action]
+      self[method] = async (...args: unknown[]) => {
+        this.actionCalls.push([method, ...args])
+        return method === ACTION_METHOD.refreshMcp ? this.mcpServers : undefined
+      }
+    }
   }
 
   emit(e: ChatEvent): void {
@@ -89,6 +108,9 @@ export interface FakeChatCapabilityOptions {
   options?: ChatOptionDescriptor[]
   /** `respond` is defined (interactive custom events). */
   interactive?: boolean
+  /** Optional action methods the sessions implement. */
+  actions?: ChatSessionActionKind[]
+  attachmentKinds?: ChatAttachmentKind[]
 }
 
 export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
@@ -96,6 +118,7 @@ export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
   const supportChecks: AgentProfile[] = []
   const historyRequests: string[] = []
   const capability: ChatCapability = {
+    ...(opts.attachmentKinds ? { attachmentKinds: opts.attachmentKinds } : {}),
     async checkSupport(profile) {
       supportChecks.push(profile)
       return opts.support ?? { ok: true }
@@ -107,6 +130,7 @@ export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
         options,
         interactive: opts.interactive ?? false,
         n: sessions.length + 1,
+        actions: opts.actions ?? [],
       })
       sessions.push(session)
       ctx.emit({ kind: 'session-info', externalSessionId: session.externalSessionId, commands: [] })

@@ -33,6 +33,7 @@ export function registerChatIpc(ipc: Pick<MainIpcApi, 'handle'>, d: ChatIpcDeps)
     ipc.handle(chatIpc.respond, async ({ sessionId, eventId, payload }) =>
       (await controller(sessionId)).respond(eventId, payload),
     ),
+    ipc.handle(chatIpc.action, async ({ sessionId, action }) => (await controller(sessionId)).action(action)),
     ipc.handle(chatIpc.setOption, async ({ sessionId, key, value }) =>
       (await controller(sessionId)).setOption(key, value),
     ),

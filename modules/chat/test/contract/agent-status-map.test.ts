@@ -30,6 +30,10 @@ const rows: [string, ChatEvent, AgentStatusEvent | null][] = [
   ['turn-end error', end('error'), { kind: 'turnFailed', message: 'boom' }],
   ['session-exit', E['session-exit'], { kind: 'sessionEnded' }],
   ['usage', E.usage, null],
+  ['question', E.question, { kind: 'waitingForUser', reason: 'question' }],
+  ['plan-proposal', E['plan-proposal'], { kind: 'waitingForUser', reason: 'question' }],
+  ['task', E.task, null],
+  ['retry', E.retry, null],
   ['text-delta', E['text-delta'], null],
 ]
 

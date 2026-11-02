@@ -41,4 +41,38 @@ export const EVENT_SAMPLES: Record<ChatEventKind, ChatEvent> = {
   queue: { kind: 'queue', queued: [{ id: 'q1', text: 'next' }] },
   custom: { kind: 'custom', type: 'fake.banner', data: { message: 'x' } },
   'response-resolved': { kind: 'response-resolved', eventId: 'e1', outcome: 'answered' },
+  task: {
+    kind: 'task',
+    taskId: 'task1',
+    toolCallId: 'tc1',
+    taskKind: 'subagent',
+    name: 'Explore',
+    description: 'Find the config',
+    status: 'running',
+    lastTool: 'Grep',
+    usage: { tokens: 1200, costUsd: 0.02 },
+    depth: 1,
+  },
+  question: {
+    kind: 'question',
+    eventId: 'q1',
+    questions: [
+      {
+        question: 'Which database?',
+        header: 'DB',
+        multiSelect: false,
+        options: [{ label: 'Postgres', description: 'Relational' }, { label: 'SQLite' }],
+      },
+    ],
+  },
+  'plan-proposal': { kind: 'plan-proposal', eventId: 'p1', plan: '# Plan\n\n1. Do it', modes: ['acceptEdits'] },
+  'mcp-status': {
+    kind: 'mcp-status',
+    servers: [
+      { name: 'github', status: 'connected', toolCount: 12 },
+      { name: 'db', status: 'failed', error: 'ECONNREFUSED' },
+    ],
+  },
+  'rate-limit': { kind: 'rate-limit', status: 'warning', resetsAt: 1_700_000_000_000, utilization: 0.9 },
+  retry: { kind: 'retry', attempt: 2, maxAttempts: 5, delayMs: 2000, reason: 'overloaded' },
 }

@@ -23,6 +23,9 @@ function baseEvent(e: ChatEvent, lastError: string | undefined): AgentStatusEven
       return { kind: S.waitingForUser, reason: WAIT_REASON.permission }
     case K.custom:
       return e.awaitsResponse ? { kind: S.waitingForUser, reason: WAIT_REASON.question } : null
+    case K.question:
+    case K.planProposal:
+      return { kind: S.waitingForUser, reason: WAIT_REASON.question }
     case K.permissionResolved:
     case K.responseResolved:
       return { kind: S.userResponded }
@@ -39,6 +42,10 @@ function baseEvent(e: ChatEvent, lastError: string | undefined): AgentStatusEven
     case K.usage:
     case K.error:
     case K.queue:
+    case K.task:
+    case K.mcpStatus:
+    case K.rateLimit:
+    case K.retry:
       return null
     default: {
       const never: never = e

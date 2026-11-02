@@ -20,6 +20,12 @@ const rows: [ChatSessionStatus, ChatEvent, number, ChatSessionStatus][] = [
   ['idle', E.custom, 0, 'idle'],
   ['working', { ...E.custom, eventId: 'e1', awaitsResponse: true } as ChatEvent, 1, 'waiting'],
   ['waiting', E['response-resolved'], 0, 'working'],
+  ['working', E.question, 1, 'waiting'],
+  ['working', E['plan-proposal'], 1, 'waiting'],
+  ['working', E.task, 0, 'working'],
+  ['working', E['mcp-status'], 0, 'working'],
+  ['idle', E['rate-limit'], 0, 'idle'],
+  ['working', E.retry, 0, 'working'],
   ...ANY.flatMap((s): [ChatSessionStatus, ChatEvent, number, ChatSessionStatus][] => [
     [s, exit('startup_failed'), 0, 'error'],
     [s, exit('crashed'), 0, 'exited'],

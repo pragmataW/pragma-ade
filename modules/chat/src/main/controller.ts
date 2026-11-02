@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import { type AgentProfile, type ModeStartRequest, SESSION_STATUS as S } from '@pragma/module-agents/contract'
 import type { Logger } from '@pragma/sdk'
 import {
-  ATTACHMENT_KINDS,
   CHAT_MODE,
   type ChatCapability,
   type ChatEvent,
@@ -10,6 +9,7 @@ import {
   type ChatOptionValue,
   type ChatPermissionDecision,
   type ChatResumeFallbackListener,
+  type ChatSessionAction,
   type ChatSessionHandle,
   type ChatSessionStatus,
   type ChatSettings,
@@ -28,6 +28,7 @@ import {
   reduceEvents,
   reduceTranscript,
   SESSION_EXIT_REASON,
+  supportedActions,
   TURN_END_REASON,
   UNSUPPORTED_PREFIX,
   UNSUPPORTED_REASON,
@@ -36,6 +37,7 @@ import {
   withCurrent,
 } from '../contract'
 import type { ChatAgentsApi } from './agents-adapter'
+import { acceptedInput, attachmentRefs, runSessionAction } from './session-actions'
 import type { StatusReporter } from './status-reporter'
 import type { SupportCache } from './support-cache'
 
@@ -85,6 +87,7 @@ export class ChatSessionController {
   #providerId = ''
   #profile: AgentProfile | null = null
   #handle: ChatSessionHandle | null = null
+  #capability: ChatCapability | null = null
   #req: ModeStartRequest | null = null
   #generation = 0
   #exitReported = true
@@ -179,6 +182,7 @@ export class ChatSessionController {
   async #startup(req: ModeStartRequest, generation: number): Promise<void> {
     await nextTurn()
     const capability = this.#d.resolveCapability(req.profile)
+    this.#capability = capability ?? null
     if (!capability) return this.#startupFailed(req.profile, UNSUPPORTED_REASON.noCapability)
     const refused = this.#guardRefusal(req)
     if (refused) return this.#fatalStartup(ERROR_CODE.unknown, refused)
@@ -241,6 +245,8 @@ export class ChatSessionController {
     this.#pendingOptions = {}
     this.#d.supportCache.clear(req.profile)
     if (this.#closeRequested) return handle.close()
+    const actions = supportedActions(handle)
+    if (actions.length > 0) this.#emit({ kind: K.sessionInfo, actions })
     this.#externalSessionId = handle.externalSessionId
     await this.#d.agents
       .updateSession(this.#d.sessionId, { externalSessionId: handle.externalSessionId })
@@ -304,18 +310,18 @@ export class ChatSessionController {
   async #dispatch(input: ChatUserInput): Promise<void> {
     const handle = this.#handle
     if (!handle) return
-    const attachments = input.images.map((i) => ({ kind: ATTACHMENT_KINDS[0], name: i.name, mediaType: i.mediaType }))
+    const accepted = acceptedInput(input, this.#capability?.attachmentKinds)
     this.#emit({
       kind: K.message,
       messageId: randomUUID(),
       role: USER_ROLE,
       text: input.text,
-      attachments,
+      attachments: attachmentRefs(accepted),
       origin: MESSAGE_ORIGIN.live,
     })
     this.#emit({ kind: K.turnStart, turnId: randomUUID() })
     try {
-      await handle.send(input)
+      await handle.send(accepted)
     } catch (e) {
       this.#emit({ kind: K.error, code: ERROR_CODE.unknown, message: String(e), fatal: false })
       this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
@@ -328,7 +334,10 @@ export class ChatSessionController {
     const [next, ...rest] = this.#queue
     this.#queue = rest
     this.#emitQueue()
-    if (next) void this.#dispatch({ text: next.text, images: next.images })
+    if (next) {
+      const { id: _id, ...input } = next
+      void this.#dispatch(input)
+    }
   }
 
   #emitQueue(): void {
@@ -355,6 +364,11 @@ export class ChatSessionController {
     const respond = this.#handle?.respond
     if (!respond) throw new RespondUnsupportedError(RESPOND_UNSUPPORTED_KEY)
     await respond.call(this.#handle, eventId, payload)
+  }
+
+  /** An optional session action; rejects with `ActionUnsupportedError` when the live handle lacks it. */
+  action(a: ChatSessionAction): Promise<void> {
+    return runSessionAction(this.#handle, a, (e) => this.#emit(e))
   }
 
   /** Live: the adapter applies it. Dormant: kept and passed as `initialOptions` on resume. */
