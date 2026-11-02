@@ -4,6 +4,7 @@ import { z } from '@pragma/sdk'
 const OK_KEY = 'ok'
 
 export const SWITCH_TARGETS = ['terminal', 'chat'] as const
+export const SWITCH_TARGET = { terminal: SWITCH_TARGETS[0], chat: SWITCH_TARGETS[1] } as const
 export const switchTargetSchema = z.enum(SWITCH_TARGETS)
 export type SwitchTarget = z.infer<typeof switchTargetSchema>
 
