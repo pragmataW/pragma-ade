@@ -28,7 +28,9 @@ import { createServerController } from './server/serverController'
 import { ThemeState } from './theme/themeState'
 import { createUpstream } from './upstream'
 import { configureEditorSession, hardenEditorWebContents } from './views/editorSession'
+import { WORKBENCH_FONT_FILES } from './views/fontAssets'
 import { ViewManager } from './views/viewManager'
+import { applyWorkbenchFonts } from './views/workbenchFonts'
 import { workbenchUrl } from './views/workbenchUrl'
 
 /** Test-only overrides (`TEST_ENV`), read only in test mode. */
@@ -105,8 +107,11 @@ function activateEditor(typed: MainContext<EditorSettings>): void {
       return c ? workbenchUrl({ port: c.port, token: c.token, folderPath }) : undefined
     },
     maxViews: () => settings().maxOpenViews,
-    onViewCreated: (_id, view) =>
-      hardenEditorWebContents((view as WebContentsView).webContents, { port, openExternal }),
+    onViewCreated: (_id, view) => {
+      const wc = (view as WebContentsView).webContents
+      hardenEditorWebContents(wc, { port, openExternal })
+      applyWorkbenchFonts(wc, WORKBENCH_FONT_FILES, (m, e) => ctx.log.warn(m, e))
+    },
     log: (m) => ctx.log.warn(m),
   })
   const theme = new ThemeState({
