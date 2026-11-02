@@ -30,3 +30,5 @@ export const POWERSHELL = {
   setUserPath: "[Environment]::SetEnvironmentVariable('Path', $env:PRAGMA_NEW_USER_PATH, 'User')",
   valueEnv: 'PRAGMA_NEW_USER_PATH',
 } as const
+/** lucide icon of Settings › Command line. */
+export const SETTINGS_PAGE_ICON = 'square-terminal'
