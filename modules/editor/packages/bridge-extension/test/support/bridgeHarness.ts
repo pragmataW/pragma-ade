@@ -28,6 +28,7 @@ export function recordingHandlers() {
   const events: { name: string; payload: unknown }[] = []
   const handlers: EditorEventHandlers = {
     openFile: async (m) => void events.push({ name: 'openFile', payload: m }),
+    openDiff: async (m) => void events.push({ name: 'openDiff', payload: m }),
     setTheme: async (m) => void events.push({ name: 'setTheme', payload: m }),
     testRequest: async (m) => void events.push({ name: 'testRequest', payload: m }),
   }

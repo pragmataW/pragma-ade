@@ -50,12 +50,15 @@ describe('BridgeConnection', () => {
     expect(c.conn.hello?.worktreeId).toBe('wt1')
   })
 
-  it('dispatches openFile sent to this client', async () => {
+  it.each([
+    ['openFile', { path: 'src/a.ts', line: 3 }],
+    ['openDiff', { path: 'src/a.ts', refs: { old: 'abc', new: 'HEAD' }, line: 3 }],
+  ])('dispatches %s sent to this client', async (name, payload) => {
     const c = await connected()
     const clientId = c.hellos[0]?.clientId as string
-    c.server.send(clientId, { type: 'editor.openFile', payload: { path: 'src/a.ts', line: 3 } })
-    await until(() => c.events.some((e) => e.name === 'openFile'))
-    expect(c.events.at(-1)).toEqual({ name: 'openFile', payload: { path: 'src/a.ts', line: 3 } })
+    c.server.send(clientId, { type: `editor.${name}`, payload })
+    await until(() => c.events.some((e) => e.name === name))
+    expect(c.events.at(-1)).toEqual({ name, payload })
   })
 
   it('setTheme broadcast reaches the client', async () => {

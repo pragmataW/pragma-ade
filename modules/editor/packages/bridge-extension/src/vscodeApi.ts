@@ -1,5 +1,8 @@
 import type * as vscode from 'vscode'
 import { COMMENT_MESSAGES, LOG_CHANNEL, SEVERITIES, type Severity, TAB_KINDS, type TabKind } from './constants'
+import { createGitPort, type GitPort } from './git'
+
+export type { RevisionSide } from './git'
 
 export interface GlobalStateLike {
   get<T>(k: string): T | undefined
@@ -46,10 +49,13 @@ export interface TabInfo {
   label: string
   kind: TabKind
   viewType?: string
+  /** Diff tabs: `Uri.toString()` of both sides. */
+  original?: string
+  modified?: string
 }
 
 /** The narrow port over `vscode` the handlers use (tests use a hand fake). */
-export interface VscodeApi {
+export interface VscodeApi extends GitPort {
   env: Record<string, string | undefined>
   workspaceFolderPath(): string | undefined
   log(msg: string): void
@@ -57,6 +63,8 @@ export interface VscodeApi {
   showWarning(msg: string): void
   /** Opens the file, puts the cursor at (line-1, column-1) and reveals it in the centre. */
   openAndReveal(absPath: string, line?: number, column?: number): Promise<void>
+  /** Cursor to (line-1, 0) of the active text editor (a diff's modified side), revealed in the centre. */
+  revealInActiveEditor(line: number): void
   getGlobalConfig<T>(section: string, key: string): T | undefined
   /** `ConfigurationTarget.Global`. */
   updateGlobalConfig(section: string, key: string, value: unknown): Promise<void>
@@ -89,12 +97,25 @@ const toThread = (vs: typeof vscode, t: vscode.CommentThread, author: string): T
 
 function tabInfo(vs: typeof vscode, tab: vscode.Tab): TabInfo {
   if (tab.input instanceof vs.TabInputText) return { label: tab.label, kind: TAB_KINDS.text }
+  if (tab.input instanceof vs.TabInputTextDiff)
+    return {
+      label: tab.label,
+      kind: TAB_KINDS.diff,
+      original: tab.input.original.toString(),
+      modified: tab.input.modified.toString(),
+    }
   if (tab.input instanceof vs.TabInputWebview)
     return { label: tab.label, kind: TAB_KINDS.webview, viewType: tab.input.viewType }
   return { label: tab.label, kind: TAB_KINDS.other }
 }
 
 const zeroBased = (n: number | undefined): number => Math.max(0, (n ?? 1) - 1)
+
+function reveal(vs: typeof vscode, editor: vscode.TextEditor, line?: number, column?: number): void {
+  const pos = new vs.Position(zeroBased(line), zeroBased(column))
+  editor.selection = new vs.Selection(pos, pos)
+  editor.revealRange(new vs.Range(pos, pos), vs.TextEditorRevealType.InCenter)
+}
 
 /** The only file (besides extension.ts) importing `vscode`. */
 export function createVscodeApi(vs: typeof vscode, ctx: vscode.ExtensionContext): VscodeApi {
@@ -108,11 +129,13 @@ export function createVscodeApi(vs: typeof vscode, ctx: vscode.ExtensionContext)
     showWarning: (msg) => void vs.window.showWarningMessage(msg),
     async openAndReveal(absPath, line, column) {
       const doc = await vs.workspace.openTextDocument(vs.Uri.file(absPath))
-      const pos = new vs.Position(zeroBased(line), zeroBased(column))
-      const editor = await vs.window.showTextDocument(doc, { preview: false })
-      editor.selection = new vs.Selection(pos, pos)
-      editor.revealRange(new vs.Range(pos, pos), vs.TextEditorRevealType.InCenter)
+      reveal(vs, await vs.window.showTextDocument(doc, { preview: false }), line, column)
     },
+    revealInActiveEditor(line) {
+      const editor = vs.window.activeTextEditor
+      if (editor) reveal(vs, editor, line)
+    },
+    ...createGitPort(vs),
     getGlobalConfig: (section, key) => vs.workspace.getConfiguration(section).inspect(key)?.globalValue as never,
     updateGlobalConfig: async (section, key, value) => {
       await vs.workspace.getConfiguration(section).update(key, value, vs.ConfigurationTarget.Global)

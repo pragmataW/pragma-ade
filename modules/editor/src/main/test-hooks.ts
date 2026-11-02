@@ -1,7 +1,14 @@
 import { defineTestHooks, type MainContext } from '@pragma/sdk/main'
 import type { WebContentsView } from 'electron'
 import { SHORTCUT_SCOPE_GLOBAL, TEST_GLOBAL_ACCELERATOR, TEST_HOOKS_GLOBAL, TEST_PROBE } from '../constants'
-import { type EditorStatus, normalizeFolderKey, type OpenFileArgs, type OpenFileResult, type TestOp } from '../contract'
+import {
+  type EditorStatus,
+  normalizeFolderKey,
+  type OpenDiffArgs,
+  type OpenFileArgs,
+  type OpenFileResult,
+  type TestOp,
+} from '../contract'
 import { getEditorRuntime } from './runtime'
 import type { ServerInfo } from './server/serverController'
 
@@ -17,6 +24,7 @@ export interface EditorTestHooks {
   serverInfo(): ServerInfo
   evalInWorkbench(worktreeId: string, js: string): Promise<unknown>
   openFile(args: OpenFileArgs): Promise<OpenFileResult>
+  openDiff(args: OpenDiffArgs): Promise<OpenFileResult>
   probeHits(): number
   /** A trusted key press inside the worktree's workbench (`webContents.sendInputEvent`). */
   sendKey(worktreeId: string, keyCode: string, modifiers: string[]): Promise<void>
@@ -60,6 +68,7 @@ export function createEditorTestHooks(ctx: MainContext): EditorTestHooks {
     serverInfo: () => getEditorRuntime().server.info(),
     evalInWorkbench: (worktreeId, js) => native(worktreeId).webContents.executeJavaScript(js, true),
     openFile: (args) => getEditorRuntime().service.openFile(args),
+    openDiff: (args) => getEditorRuntime().service.openDiff(args),
     probeHits: () => hits,
     async sendKey(worktreeId, keyCode, modifiers) {
       const wc = native(worktreeId).webContents

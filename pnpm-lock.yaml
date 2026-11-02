@@ -382,6 +382,9 @@ importers:
       '@pragma/module-agents':
         specifier: workspace:*
         version: link:../agents
+      '@pragma/module-git-changes':
+        specifier: workspace:*
+        version: link:../git-changes
       '@pragma/test-support':
         specifier: workspace:*
         version: link:../../packages/test-support

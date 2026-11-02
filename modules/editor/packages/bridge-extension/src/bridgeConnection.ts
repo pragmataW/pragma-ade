@@ -10,6 +10,7 @@ import {
   EDITOR_CLIENT_KIND,
   EDITOR_CLIENT_NAME,
   type EditorHelloReply,
+  type EditorOpenDiffMsg,
   type EditorOpenFileMsg,
   type EditorSetThemeMsg,
   type EditorTestRequest,
@@ -23,6 +24,7 @@ import type { VscodeApi } from './vscodeApi'
 
 export type EditorEventHandlers = {
   openFile(m: EditorOpenFileMsg): Promise<void>
+  openDiff(m: EditorOpenDiffMsg): Promise<void>
   setTheme(m: EditorSetThemeMsg): Promise<void>
   testRequest?(m: EditorTestRequest): Promise<void>
 }
@@ -117,6 +119,7 @@ export class BridgeConnection {
     const run = (p: Promise<void>): void => void p.catch((e: unknown) => this.#api.log(errorText(e)))
     this.#disposers.push(
       client.on(editorBridge, 'openFile', (m) => run(h.openFile(m))),
+      client.on(editorBridge, 'openDiff', (m) => run(h.openDiff(m))),
       client.on(editorBridge, 'setTheme', (m) => run(h.setTheme(m))),
       client.on(editorBridge, 'testRequest', (m) => {
         if (h.testRequest) run(h.testRequest(m))

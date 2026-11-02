@@ -13,6 +13,7 @@ import { useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { EmptyState } from './EmptyState'
 import { keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
+import { editorOpener } from './lib/editor'
 import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
 import { useGitChangesStore, useWorktreeView } from './store'
@@ -60,6 +61,13 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   const selected = files.find((f) => f.path === view.selectedPath) ?? null
   const diffRef = useRef<DiffViewHandle>(null)
   const review = useDiffReview(worktreeId, selected, view.composer)
+  const openInEditor = editorOpener({ worktreeId, mode: view.mode, mergeBase: okList?.mergeBase ?? null })
+  const openPathInEditor = openInEditor
+    ? (path: string) => {
+        const file = files.find((f) => f.path === path)
+        if (file) openInEditor(file)
+      }
+    : undefined
 
   useEffect(() => {
     if (okList) useGitChangesStore.getState().reconcile(worktreeId, ordered)
@@ -99,6 +107,7 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
               selectedPath={view.selectedPath}
               onSelect={(path) => store.select(worktreeId, path)}
               commentCounts={review.counts}
+              onOpenInEditor={openPathInEditor}
             />
           }
           right={
@@ -114,6 +123,7 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
                 annotations={review.annotations}
                 renderAnnotation={review.renderAnnotation}
                 onRange={review.onRange}
+                onOpenInEditor={openInEditor}
               />
             ) : null
           }

@@ -3,6 +3,7 @@ import { BridgeConnection, type EditorEventHandlers } from './bridgeConnection'
 import { ReviewController } from './comments/controller'
 import { CONNECTION, TEST_MODE } from './constants'
 import { applyFirstRunDefaults } from './defaults'
+import { handleOpenDiff } from './handlers/openDiff'
 import { handleOpenFile } from './handlers/openFile'
 import { applyTheme } from './handlers/theme'
 import { startLanguageStatusReporter } from './languageStatus'
@@ -16,6 +17,7 @@ function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewControll
   const ops = createTestOps(api, { folderPath, handleComment: (r, a) => review.handle(r, a) })
   return {
     openFile: (m) => handleOpenFile(api, folderPath(), m),
+    openDiff: (m) => handleOpenDiff(api, folderPath(), m),
     setTheme: async (m) => {
       await applyFirstRunDefaults(api, m.themeName)
       await applyTheme(api, m)

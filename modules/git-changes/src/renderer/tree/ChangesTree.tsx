@@ -1,7 +1,16 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { ChevronDown, ChevronRight, File, Folder, FolderOpen, MessageSquare } from '@pragma/ui/icons'
-import { type CSSProperties, createContext, type RefObject, useContext, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  createContext,
+  type MouseEvent,
+  type RefObject,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { type NodeRendererProps, Tree, type TreeApi } from 'react-arborist'
 import {
   FILE_ID_PREFIX,
@@ -11,7 +20,8 @@ import {
   TREE_ROW_HEIGHT_PX,
 } from '../../constants'
 import { FILE_STATUS, type FileStatus, GitChangesTestIds as T } from '../../contract'
-import type { TreeNode } from './build-tree'
+import { TREE_NODE_KINDS, type TreeNode } from './build-tree'
+import { RowMenu, type RowMenuAt } from './RowMenu'
 
 export interface ChangesTreeProps {
   nodes: TreeNode[]
@@ -20,9 +30,12 @@ export interface ChangesTreeProps {
   /** Draft diff comments per file path (marker next to the name). */
   commentCounts?: Record<string, number>
   treeRef?: RefObject<TreeApi<TreeNode> | null>
+  /** File rows get a right-click menu with "Open diff in editor" (absent without the editor module). */
+  onOpenInEditor?(path: string): void
 }
 
 const RENAME_ARROW = ' → '
+const [, FILE_KIND] = TREE_NODE_KINDS
 /** Deleted files are struck through (ui-notes); inline so it holds without the stylesheet. */
 const DELETED_NAME: CSSProperties = { textDecorationLine: 'line-through' }
 const NO_COUNTS: Record<string, number> = {}
@@ -92,14 +105,19 @@ function FileLabel({ data, comments }: { data: TreeNode; comments: number }) {
 }
 
 const CommentCounts = createContext<Record<string, number>>(NO_COUNTS)
+type OpenRowMenu = (e: MouseEvent<HTMLDivElement>, path: string) => void
+const RowMenuOpener = createContext<OpenRowMenu | null>(null)
 
 /** One react-arborist row (directory or file). */
 function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
   const counts = useContext(CommentCounts)
+  const openMenu = useContext(RowMenuOpener)
   const { data } = node
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: the right-click menu repeats the diff header's button
     <div
       style={style}
+      onContextMenu={openMenu && data.kind === FILE_KIND ? (e) => openMenu(e, data.path) : undefined}
       data-testid={T.treeRow}
       data-path={data.path}
       data-kind={data.kind}
@@ -118,40 +136,52 @@ function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
 }
 
 /** The compressed, indented changes tree (22px rows, 12px indent), single selection, keyboard via react-arborist. */
-export function ChangesTree({ nodes, selectedPath, onSelect, commentCounts = NO_COUNTS, treeRef }: ChangesTreeProps) {
+export function ChangesTree(props: ChangesTreeProps) {
+  const { nodes, selectedPath, onSelect, commentCounts = NO_COUNTS, treeRef, onOpenInEditor } = props
   const t = useT()
   const [containerRef, height] = useContainerHeight()
+  const [menuAt, setMenuAt] = useState<RowMenuAt | null>(null)
+  const openMenu: OpenRowMenu = (e, path) => {
+    e.preventDefault()
+    const box = containerRef.current?.getBoundingClientRect()
+    setMenuAt({ path, x: e.clientX - (box?.left ?? 0), y: e.clientY - (box?.top ?? 0) })
+  }
   return (
     <CommentCounts.Provider value={commentCounts}>
-      <div ref={containerRef} data-testid={T.tree} className="h-full min-h-0 overflow-hidden">
-        <Tree<TreeNode>
-          ref={treeRef}
-          data={nodes}
-          idAccessor="id"
-          childrenAccessor={(n) => n.children ?? null}
-          openByDefault
-          width="100%"
-          height={height}
-          rowHeight={TREE_ROW_HEIGHT_PX}
-          indent={TREE_INDENT_PX}
-          disableDrag
-          disableDrop
-          disableEdit
-          disableMultiSelection
-          selectionFollowsFocus
-          selection={selectedPath ? FILE_ID_PREFIX + selectedPath : undefined}
-          aria-label={t('git-changes:tree.label')}
-          onSelect={(selected) => {
-            const n = selected[0]
-            if (n?.data.kind === 'file') onSelect(n.data.path)
-          }}
-          onActivate={(n) => {
-            if (n.isInternal) n.toggle()
-          }}
-        >
-          {ChangeRow}
-        </Tree>
-      </div>
+      <RowMenuOpener.Provider value={onOpenInEditor ? openMenu : null}>
+        <div ref={containerRef} data-testid={T.tree} className="relative h-full min-h-0 overflow-hidden">
+          <Tree<TreeNode>
+            ref={treeRef}
+            data={nodes}
+            idAccessor="id"
+            childrenAccessor={(n) => n.children ?? null}
+            openByDefault
+            width="100%"
+            height={height}
+            rowHeight={TREE_ROW_HEIGHT_PX}
+            indent={TREE_INDENT_PX}
+            disableDrag
+            disableDrop
+            disableEdit
+            disableMultiSelection
+            selectionFollowsFocus
+            selection={selectedPath ? FILE_ID_PREFIX + selectedPath : undefined}
+            aria-label={t('git-changes:tree.label')}
+            onSelect={(selected) => {
+              const n = selected[0]
+              if (n?.data.kind === FILE_KIND) onSelect(n.data.path)
+            }}
+            onActivate={(n) => {
+              if (n.isInternal) n.toggle()
+            }}
+          >
+            {ChangeRow}
+          </Tree>
+          {onOpenInEditor ? (
+            <RowMenu at={menuAt} onClose={() => setMenuAt(null)} onOpenInEditor={onOpenInEditor} />
+          ) : null}
+        </div>
+      </RowMenuOpener.Provider>
     </CommentCounts.Provider>
   )
 }

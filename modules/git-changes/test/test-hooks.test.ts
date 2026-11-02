@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { EDITOR_OPEN_FILE_COMMAND, FAKE_EDITOR_ENV } from '../src/constants'
+import { EDITOR_OPEN_DIFF_COMMAND, FAKE_EDITOR_ENV } from '../src/constants'
 import testHooks, { editorCallsIpc } from '../src/main/test-hooks'
 import { fakeMainCtx } from '../testing'
 
@@ -8,11 +8,11 @@ afterEach(() => {
 })
 
 describe('git-changes test hooks', () => {
-  it('records editor.openFile calls when the fake editor is enabled', async () => {
+  it('records editor.openDiff calls when the fake editor is enabled', async () => {
     process.env[FAKE_EDITOR_ENV] = '1'
     const t = fakeMainCtx()
     await testHooks(t.ctx)
-    await t.ctx.commands.execute(EDITOR_OPEN_FILE_COMMAND, { worktreeId: 'w', path: 'a.ts', line: 3 })
+    await t.ctx.commands.execute(EDITOR_OPEN_DIFF_COMMAND, { worktreeId: 'w', path: 'a.ts', line: 3 })
     expect(await t.invoke(editorCallsIpc, {})).toEqual([{ worktreeId: 'w', path: 'a.ts', line: 3 }])
   })
 
@@ -22,7 +22,7 @@ describe('git-changes test hooks', () => {
   ])('registers nothing when %s', async (_name, env, editorPresent) => {
     if (env) process.env[FAKE_EDITOR_ENV] = '1'
     const t = fakeMainCtx()
-    if (editorPresent) t.ctx.commands.register(EDITOR_OPEN_FILE_COMMAND, () => undefined)
+    if (editorPresent) t.ctx.commands.register(EDITOR_OPEN_DIFF_COMMAND, () => undefined)
     await testHooks(t.ctx)
     await expect(t.invoke(editorCallsIpc, {})).rejects.toThrow('no handler')
   })
