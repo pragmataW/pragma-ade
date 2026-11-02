@@ -41,3 +41,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Phase 06 — editor (no code copied)
+
+- VSCodium `reh-web` 1.143.17232 (MIT) — downloaded at first use into `<userData>/editor/<version>`, not bundled — https://github.com/VSCodium/vscodium
+- node-tar 7.5.22 (BlueOak-1.0.0) — npm dependency of `modules/editor` (archive extraction)
+- yazl 3.3.1 (MIT) — dev dependency of `modules/editor/packages/bridge-extension` (packs `pragma-bridge.vsix`)
+- `modules/editor/e2e/support/bracketed-paste.plugin.mjs` is a copy of phase 08's own test plugin (same repository, no external license)
