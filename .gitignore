@@ -10,3 +10,18 @@ report/
 *.log
 .DS_Store
 build-output/
+
+# Agent/session logs, tool caches and editor/OS files that do not belong in the repo
+/*.jsonl
+apps/*.jsonl
+agent-*.jsonl
+.graphmaster/
+.claude/settings.local.json
+.vscode/
+.idea/
+*.swp
+*~
+Thumbs.db
+.env
+.env.*
+*.tgz
