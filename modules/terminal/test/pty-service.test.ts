@@ -12,7 +12,7 @@ import { type PtyExit, PtySpawnError, TERMINAL_SETTINGS_DEFAULTS } from '../src/
 import type { DaemonHost } from '../src/main/daemon-host'
 import { PtyServiceImpl } from '../src/main/pty-service'
 import { waitFor } from './support/process'
-import { output, SHELL_ENV_MARK, stopPtyServices, tempDir, testPtyService } from './support/pty-service'
+import { INHERITED_MARK, output, SHELL_ENV_MARK, stopPtyServices, tempDir, testPtyService } from './support/pty-service'
 
 afterEach(() => stopPtyServices())
 const SIZE = { cols: 80, rows: 24 }
@@ -39,21 +39,34 @@ test('onInput reports write() data (not pastes) of that pty only, until unsubscr
   expect(seen).toEqual(['\x1b'])
 })
 
-test('env merge: shellEnv < opts.env < TERM overrides', async () => {
-  const { pty } = await testPtyService()
-  const id = await pty.spawn({
-    cwd: tempDir(),
-    command: '/usr/bin/env',
-    env: { X: '1', MARK: SHELL_ENV_MARK, TERM: 'dumb', ELECTRON_RUN_AS_NODE: '1' },
-    ...SIZE,
-  })
+/** The `/usr/bin/env` output of a pty spawned with `env`. */
+async function spawnedEnv(env: Record<string, string>, inheritedEnvKeys?: readonly string[]): Promise<string> {
+  const { pty } = await testPtyService({ inheritedEnvKeys })
+  const id = await pty.spawn({ cwd: tempDir(), command: '/usr/bin/env', env, ...SIZE })
   const text = output(pty, id)
   await new Promise<PtyExit>((resolve) => pty.onExit(id, resolve))
-  expect(text()).toContain(`MARK=${SHELL_ENV_MARK}`)
-  expect(text()).toContain('X=1')
-  expect(text()).toContain('TERM=xterm-256color')
-  expect(text()).toContain('TERM_PROGRAM=PragmaADE')
-  expect(text()).not.toContain('ELECTRON_RUN_AS_NODE')
+  return text()
+}
+
+test('env merge: shellEnv < opts.env < TERM overrides', async () => {
+  const text = await spawnedEnv({ X: '1', MARK: SHELL_ENV_MARK, TERM: 'dumb', ELECTRON_RUN_AS_NODE: '1' })
+  expect(text).toContain(`MARK=${SHELL_ENV_MARK}`)
+  expect(text).toContain('X=1')
+  expect(text).toContain('TERM=xterm-256color')
+  expect(text).toContain('TERM_PROGRAM=PragmaADE')
+  expect(text).not.toContain('ELECTRON_RUN_AS_NODE')
+})
+
+test('inherited env keys are scrubbed from the shell env and opts.env; PRAGMA_ vars stay', async () => {
+  const text = await spawnedEnv({ OPTS_MARKER: '1', PRAGMA_SESSION_ID: 's1' }, [INHERITED_MARK, 'OPTS_MARKER'])
+  expect(text).toContain(`MARK=${SHELL_ENV_MARK}`)
+  expect(text).toContain('PRAGMA_SESSION_ID=s1')
+  expect(text).not.toContain(INHERITED_MARK)
+  expect(text).not.toContain('OPTS_MARKER')
+})
+
+test('without providers the inherited shell env passes through unchanged', async () => {
+  expect(await spawnedEnv({})).toContain(`${INHERITED_MARK}=1`)
 })
 
 test('command goes through the injected resolveCommand (ctx.env.resolveCommand)', async () => {

@@ -21,6 +21,7 @@
     "@pragma/module-chat": "workspace:*",
     "@pragma/module-chat-switch": "workspace:*",
     "@pragma/module-cli-integration": "workspace:*",
+    "@pragma/module-terminal": "workspace:*",
     "@pragma/provider-claude-hooks": "workspace:*",
     "@pragma/sdk": "workspace:*",
     "@pragma/ui": "workspace:*"

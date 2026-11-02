@@ -5,6 +5,7 @@ import { defineMainModule, type MainContext } from '@pragma/sdk/main'
 import { PtyServiceToken, type TerminalSettings, terminalIpcEvents } from '../contract'
 import { resolveDaemonEntry } from './daemon-entry'
 import { DaemonHost } from './daemon-host'
+import { inheritedEnvKeys } from './inherited-env'
 import { registerIpcHandlers } from './ipc-handlers'
 import { TerminalLayoutStore } from './layout-store'
 import { PtyServiceImpl } from './pty-service'
@@ -26,6 +27,7 @@ function activate(ctx: MainContext<TerminalSettings>): void {
     shellEnv: () => ctx.env.getShellEnv(),
     resolveCommand: (cmd) => ctx.env.resolveCommand(cmd),
     settings: () => ctx.settings.get(),
+    inheritedEnvKeys: () => inheritedEnvKeys(ctx.providers),
     platform: process.platform,
     exists: existsSync,
     log,

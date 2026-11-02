@@ -1014,6 +1014,9 @@ importers:
       '@pragma/module-cli-integration':
         specifier: workspace:*
         version: link:../../modules/cli-integration
+      '@pragma/module-terminal':
+        specifier: workspace:*
+        version: link:../../modules/terminal
       '@pragma/provider-claude-hooks':
         specifier: workspace:*
         version: link:packages/hooks

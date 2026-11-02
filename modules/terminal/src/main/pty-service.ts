@@ -26,12 +26,15 @@ import {
 } from '../contract'
 import { type DaemonHost, DaemonRequestError } from './daemon-host'
 import { defaultShell, type ShellCommand } from './default-shell'
+import { scrubInheritedEnv } from './inherited-env'
 
 export interface PtyServiceDeps {
   host: DaemonHost
   shellEnv: () => Promise<Record<string, string>>
   resolveCommand: (cmd: string) => Promise<string | null>
   settings: () => TerminalSettings
+  /** Providers' inherited session markers (`terminalEnv`), removed from every spawn env. */
+  inheritedEnvKeys?: () => readonly string[]
   platform: NodeJS.Platform
   exists: (p: string) => boolean
   log: Logger
@@ -96,8 +99,7 @@ export class PtyServiceImpl implements PtyService {
       const shellEnv = await this.#deps.shellEnv()
       const { command, args } = await this.#command(opts, shellEnv)
       const env: Record<string, string> = {
-        ...shellEnv,
-        ...opts.env,
+        ...scrubInheritedEnv({ ...shellEnv, ...opts.env }, this.#deps.inheritedEnvKeys?.() ?? []),
         TERM: TERM_NAME,
         COLORTERM: COLORTERM_VALUE,
         TERM_PROGRAM: TERM_PROGRAM_NAME,
