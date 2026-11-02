@@ -20,6 +20,10 @@ export const MAX_BRANCH_SUFFIX = 50
 export const REMOTE_HEAD_RE = /\/HEAD$/
 /** Coalesces bursts of `board.changed` into one renderer push. */
 export const CHANGE_PUSH_DEBOUNCE_MS = 50
+/** `agentSession.updated` fields that change a linked session's DTO beyond start/exit (`closedAt` → ended). */
+export const SESSION_REFRESH_FIELDS: ReadonlySet<string> = new Set(['closedAt', 'title'])
+/** Whether the drawer can go to a linked session: open, ended (03's record), or its worktree is gone (01). */
+export const SESSION_AVAILABILITIES = ['open', 'ended', 'worktreeRemoved'] as const
 export const WORKTREE_FILTERS = ['any', 'with', 'without'] as const
 /** Agent filter value for "tasks without a linked session". */
 export const NO_AGENT_FILTER_VALUE = 'none'

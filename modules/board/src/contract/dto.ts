@@ -94,6 +94,8 @@ export const LinkedSessionDtoSchema = z.object({
   providerId: z.string().nullable(),
   /** The agent session's start (epoch ms), for the drawer's activity list. */
   startedAt: z.number().int(),
+  /** 03's record: the process exited (or never launched) or its tab was closed; nothing to go to. */
+  ended: z.boolean(),
 })
 export type LinkedSessionDto = z.infer<typeof LinkedSessionDtoSchema>
 

@@ -43,6 +43,17 @@ describe('createSessionInfo', () => {
     expect((await info.describe(['s3']))[0]?.status).toBe('error')
   })
 
+  it.each([
+    ['a running session is open', {}, false],
+    ['an exited session has ended', { status: 'exited' as const }, true],
+    ['a session that never launched has ended', { status: 'error' as const }, true],
+    ['a closed tab has ended', { status: 'idle' as const, closedAt: 9 }, true],
+  ])('%s', async (_name, over, ended) => {
+    const own = fakeAgentSessions()
+    own.add(aSession('s4', 4, over))
+    expect((await createSessionInfo({ sessions: own.service }).describe(['s4']))[0]?.ended).toBe(ended)
+  })
+
   it('fills profile name, provider, title and start time', async () => {
     const [s] = await createSessionInfo({ sessions: sessions.service }).describe(['s1'])
     expect(s).toMatchObject({

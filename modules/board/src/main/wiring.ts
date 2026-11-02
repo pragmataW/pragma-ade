@@ -1,15 +1,16 @@
 import { type AgentStatusService, agentSessionStatusChanged } from '@pragma/module-agent-status/contract'
-import { agentSessionExited, agentSessionStarted } from '@pragma/module-agents/contract'
+import { agentSessionExited, agentSessionStarted, agentSessionUpdated } from '@pragma/module-agents/contract'
 import { projectRemoved, worktreeRemoved } from '@pragma/module-projects/contract'
 import { debounce } from '@pragma/sdk'
 import type { MainContext } from '@pragma/sdk/main'
-import { CHANGE_PUSH_DEBOUNCE_MS } from '../constants'
+import { CHANGE_PUSH_DEBOUNCE_MS, SESSION_REFRESH_FIELDS } from '../constants'
 import { boardChanged, boardIpcEvents } from '../contract'
 import type { BoardRepo } from './repo'
 
 /**
  * Main bus → renderer: every `board.changed` (from any caller, e.g. phase 10's CLI) and every removed project is
- * pushed as one debounced `board.changedEvent`; status changes of linked sessions are pushed as they come.
+ * pushed as one debounced `board.changedEvent`, as is a linked session that started, exited or was closed; status
+ * changes of linked sessions are pushed as they come.
  */
 export function wireBoardEvents(
   ctx: Pick<MainContext, 'events' | 'ipc'>,
@@ -44,6 +45,10 @@ export function wireBoardEvents(
   }
   ctx.events.on(agentSessionStarted, refreshSession)
   ctx.events.on(agentSessionExited, refreshSession)
+  // Its tab was closed (an exited session stays "exited"): the drawer's Go to agent turns off.
+  ctx.events.on(agentSessionUpdated, ({ session, changed }) => {
+    if (changed.some((field) => SESSION_REFRESH_FIELDS.has(field))) refreshSession({ sessionId: session.id })
+  })
   // Never fires when agent-status is disabled.
   ctx.events.on(agentSessionStatusChanged, ({ sessionId, status }) => {
     if (deps.repo.listTaskIdsForSession(sessionId).length === 0) return

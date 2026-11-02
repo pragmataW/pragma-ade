@@ -13,7 +13,7 @@ export function ErrorBanner() {
       role={ROLE_ALERT}
       className="flex items-center gap-2 border-b border-[var(--bd)] bg-[var(--pn)] px-3 py-1 text-[12px] text-[var(--err)]"
     >
-      <span className="flex-1">{t('board:error.generic', { message: error })}</span>
+      <span className="flex-1">{t(error.messageKey, error.values)}</span>
       <Button variant={VARIANT.ghost} size={SIZE.xs} onClick={() => setError(null)}>
         {t('board:error.dismiss')}
       </Button>

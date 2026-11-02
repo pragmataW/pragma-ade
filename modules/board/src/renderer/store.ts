@@ -11,7 +11,6 @@ import {
   type ColumnPosition,
   type ColumnRef,
   type CreateTaskInput,
-  errorMessage,
   type ProjectOption,
   SCOPE_KIND,
   type SessionStatusChangedEvent,
@@ -23,6 +22,7 @@ import {
   type UpdateTaskPatch,
 } from '../contract'
 import { resolveRank } from '../lib/rank'
+import { type BoardNotice, errorNotice } from './lib/errors'
 import { call } from './lib/ipc'
 import { EMPTY_FILTER, type UiFilter } from './model'
 
@@ -36,7 +36,8 @@ export interface BoardState {
   filter: UiFilter
   mode: ViewMode
   selectedTaskId: TaskId | null
-  error: string | null
+  /** The banner's message (translated by the banner). */
+  error: BoardNotice | null
   openCount: number
   /** Bumped by Clear so inputs holding a draft reset. */
   filterVersion: number
@@ -108,7 +109,7 @@ export async function refresh(): Promise<void> {
     const snapshot = await call(boardIpc.getSnapshot, { scope })
     if (seq === refreshSeq) set({ projects, scope, snapshot })
   } catch (e) {
-    if (seq === refreshSeq) set({ projects, error: errorMessage(e) })
+    if (seq === refreshSeq) set({ projects, error: errorNotice(e) })
   }
 }
 
@@ -134,7 +135,7 @@ export const setFilter = (patch: Partial<UiFilter>): void => set((s) => ({ filte
 export const clearFilter = (): void => set((s) => ({ filter: EMPTY_FILTER, filterVersion: s.filterVersion + 1 }))
 export const setMode = (mode: ViewMode): void => set({ mode })
 export const select = (selectedTaskId: TaskId | null): void => set({ selectedTaskId })
-export const setError = (error: string | null): void => set({ error })
+export const setError = (error: BoardNotice | null): void => set({ error })
 
 export function patchSessionStatus(e: SessionStatusChangedEvent): void {
   const snapshot = get().snapshot

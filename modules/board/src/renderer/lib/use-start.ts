@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { BRANCH_CHECK_DEBOUNCE_MS } from '../../constants'
 import { BOARD_ERROR, errorMessage, START_STAGE, type StartTaskResult, type TaskDto } from '../../contract'
 import { boardActions, select } from '../store'
-import { runAction } from './actions'
-import { goToSession } from './navigation'
+import { runNavigation } from './actions'
+import { GONE_NOTICE, goToSession } from './navigation'
 import { useDebouncedValue } from './use-debounced-value'
 
 /** `prepareStart` for the task, refetched when its title (branch suggestion), worktree or sessions change. */
@@ -45,7 +45,7 @@ export function useStartRunner() {
     if (!result.ok) return setFailure(result)
     // The session runs: the drawer closes, so a failed jump to it goes to the board's banner, not the drawer.
     select(null)
-    runAction(goToSession(result.worktreeId, result.sessionId))
+    runNavigation(goToSession(result.worktreeId, result.sessionId), GONE_NOTICE.sessionKey)
   }
   return { running, failure, run }
 }

@@ -4,7 +4,8 @@ import { Icon } from '@pragma/ui/components/icon'
 import { Input } from '@pragma/ui/components/input'
 import { type ReactNode, useState } from 'react'
 import { ENTER_KEY, ESCAPE_KEY, ICON_PX } from '../../constants'
-import { BOARD_ERROR, type ColumnDto, errorMessage, BOARD_TESTIDS as T } from '../../contract'
+import { BOARD_ERROR, type ColumnDto, BOARD_TESTIDS as T } from '../../contract'
+import { errorNotice } from '../lib/errors'
 import { boardActions, isBoardError, setError } from '../store'
 import { ColumnMenu } from './ColumnMenu'
 import { PlainButton } from './PlainButton'
@@ -20,7 +21,7 @@ function RenameInput({ column, onDone }: { column: ColumnDto; onDone(): void }) 
       onDone()
     } catch (e) {
       if (isBoardError(e, BOARD_ERROR.duplicate_column_name)) setDuplicate(true)
-      else setError(errorMessage(e))
+      else setError(errorNotice(e))
     }
   }
   return (
