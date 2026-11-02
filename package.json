@@ -1,5 +1,7 @@
 {
   "name": "pragma-ade",
+  "version": "0.9.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.9.0",
@@ -20,6 +22,7 @@
     "pree2e": "node scripts/build-e2e.ts",
     "e2e:real": "node scripts/build-e2e.ts && playwright test --grep @real-agent",
     "gen": "node scripts/gen-modules.ts",
+    "icons": "sh scripts/make-icons.sh",
     "dev": "pnpm --filter @pragma/desktop dev",
     "predev": "pnpm gen",
     "build": "pnpm --filter @pragma/desktop build",
