@@ -102,7 +102,7 @@ export function entryOf(pkg: PackageJson): string {
 const readPkg = (dir: string): PackageJson => readJson(join(dir, PACKAGE_JSON), PackageJsonSchema)
 
 /** Nearest ancestor dir of `path` whose package.json has a name (nested `{ "type": … }` files are skipped). */
-function packageRootOf(path: string): string | null {
+export function packageRootOf(path: string): string | null {
   let dir = dirname(path)
   while (dir !== dirname(dir)) {
     const file = join(dir, PACKAGE_JSON)
@@ -171,17 +171,13 @@ class ExternalCollector {
 
 const isJs = (file: string): boolean => (JS_EXTENSIONS as readonly string[]).includes(extname(file))
 
-/**
- * Externals of a built bundle: bare imports resolved from `searchDirs`, relative imports into node_modules rewritten.
- * `skipDirs` names folders that never run in Node (the renderer bundle).
- */
-export function analyzeBundle(
+/** Externals of the given JS files of a bundle rooted at `bundleRoot` (relative targets outside it are external). */
+export function analyzeFiles(
   bundleRoot: string,
+  files: readonly string[],
   searchDirs: readonly string[],
-  opts: { skipDirs?: readonly string[] } = {},
 ): ExternalScan {
   const root = resolve(bundleRoot)
-  const files = walkFiles(root, { skipDirs: [NODE_MODULES, ...(opts.skipDirs ?? [])] }).filter(isJs)
   const c = new ExternalCollector()
   for (const hit of scanSpecifiers(files)) {
     if (!isRelative(hit.specifier)) c.bare(hit, searchDirs)
@@ -191,6 +187,19 @@ export function analyzeBundle(
     }
   }
   return { externals: [...c.byName.values()], rewrites: c.rewrites, unresolved: [...c.unresolved].sort() }
+}
+
+/**
+ * Externals of a built bundle: bare imports resolved from `searchDirs`, relative imports into node_modules rewritten.
+ * `skipDirs` names folders that never run in Node (the renderer bundle).
+ */
+export function analyzeBundle(
+  bundleRoot: string,
+  searchDirs: readonly string[],
+  opts: { skipDirs?: readonly string[] } = {},
+): ExternalScan {
+  const files = walkFiles(bundleRoot, { skipDirs: [NODE_MODULES, ...(opts.skipDirs ?? [])] }).filter(isJs)
+  return analyzeFiles(bundleRoot, files, searchDirs)
 }
 
 /** Workspace packages must be bundled, never loaded at runtime. */

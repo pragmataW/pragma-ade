@@ -1,9 +1,19 @@
 import { createHash } from 'node:crypto'
-import { cpSync, createReadStream, lstatSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs'
+import { cpSync, createReadStream, existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, posix } from 'node:path'
 import type { z } from 'zod'
-import { CACHE_DIR_NAME, CACHE_ENV, STREAM_EVENT, TEMP_LABEL_SEPARATOR, UTF8 } from '../constants.ts'
+import {
+  CACHE_DIR_NAME,
+  CACHE_ENV,
+  GLOB_STAR,
+  HIDDEN_DIR_PREFIX,
+  NODE_MODULES,
+  POSIX_SEP,
+  STREAM_EVENT,
+  TEMP_LABEL_SEPARATOR,
+  UTF8,
+} from '../constants.ts'
 
 const SHA256 = 'sha256'
 const HEX = 'hex'
@@ -53,4 +63,22 @@ export const isDir = (path: string): boolean => {
   } catch {
     return false
   }
+}
+
+const childNames = (dir: string): string[] =>
+  existsSync(dir)
+    ? readdirSync(dir, { withFileTypes: true })
+        .filter((e) => !e.name.startsWith(HIDDEN_DIR_PREFIX) && e.name !== NODE_MODULES)
+        .map((e) => e.name)
+    : []
+
+/** Existing paths (relative, `/`-separated) matching a pattern of literal and `*` segments. */
+export function expandStars(root: string, pattern: string): string[] {
+  let paths = ['']
+  for (const segment of pattern.split(POSIX_SEP).filter(Boolean)) {
+    paths = paths.flatMap((d) =>
+      segment === GLOB_STAR ? childNames(join(root, d)).map((n) => posix.join(d, n)) : [posix.join(d, segment)],
+    )
+  }
+  return paths.filter((p) => p !== '' && existsSync(join(root, p)))
 }

@@ -67,3 +67,7 @@ The plan's examples (`to: 'pty-daemon'`, `to: 'pragma-bridge.vsix'`) differ from
 | jscpd | no (`.ts/.tsx` only; `dist` has none) |
 | check-literals | no (uses `.gitignore`, `dist/` is ignored) |
 | root `tsc -p tsconfig.node.json` | includes `scripts/**/*` and `test/**/*.ts` → the tool's TS files are type-checked by the root too. Tool-only packages (`electron-builder`, `@electron/asar`, `yaml`) are loaded through `lib/deps.ts` with non-literal specifiers so the root typecheck passes without `scripts/package/node_modules`. |
+
+## npm cross-platform install (Task 5)
+
+`npm install --os=win32 --cpu=x64 --prefer-offline` installed `@parcel/watcher` **without** `@parcel/watcher-win32-x64` (cached packuments); the same command without `--prefer-offline` installs it. The tool therefore does not pass `--prefer-offline`.

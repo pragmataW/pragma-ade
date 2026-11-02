@@ -1,11 +1,10 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { isAbsolute, join, posix, relative, resolve, sep } from 'node:path'
 import {
   APP_ROOT,
   EXCLUDED_DIR_PREFIX,
   GLOB_GLOBSTAR,
   GLOB_NEGATION,
-  GLOB_STAR,
   HIDDEN_DIR_PREFIX,
   NODE_MODULES,
   OWNER_ROOTS,
@@ -19,7 +18,7 @@ import {
   WIN_SEP,
 } from '../constants.ts'
 import { loadYaml } from './deps.ts'
-import { readJson } from './fsx.ts'
+import { expandStars, readJson } from './fsx.ts'
 import { type ExtraResource, type PackageJson, PackageJsonSchema, WorkspaceYamlSchema } from './schema.ts'
 
 export const ROLE = { app: 'app', owner: 'owner', subPackage: 'sub-package', other: 'other' } as const
@@ -54,23 +53,8 @@ export interface PackagingPlan {
 
 export class ManifestError extends Error {}
 
-const visibleDirs = (dir: string): string[] =>
-  existsSync(dir)
-    ? readdirSync(dir, { withFileTypes: true })
-        .filter((e) => e.isDirectory() && !e.name.startsWith(HIDDEN_DIR_PREFIX) && e.name !== NODE_MODULES)
-        .map((e) => e.name)
-    : []
-
-/** Expands a `pnpm-workspace.yaml` pattern made of literal and `*` segments. */
-function expandPattern(repoRoot: string, pattern: string): string[] {
-  let dirs = ['']
-  for (const segment of pattern.split(POSIX_SEP).filter(Boolean)) {
-    dirs = dirs.flatMap((d) =>
-      segment === GLOB_STAR ? visibleDirs(join(repoRoot, d)).map((n) => posix.join(d, n)) : [posix.join(d, segment)],
-    )
-  }
-  return dirs.filter((d) => existsSync(join(repoRoot, d, PACKAGE_JSON)))
-}
+const expandPattern = (repoRoot: string, pattern: string): string[] =>
+  expandStars(repoRoot, pattern).filter((d) => existsSync(join(repoRoot, d, PACKAGE_JSON)))
 
 function roleOf(rel: string): { role: PackageRole; ownerDir: string | null } {
   const parts = rel.split(POSIX_SEP)

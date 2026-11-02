@@ -15,6 +15,9 @@ export const DoctorReportSchema = z.object({
 })
 export type DoctorReport = z.infer<typeof DoctorReportSchema>
 
+export const MODULE_TYPES = ['module', 'commonjs'] as const
+export const ModuleTypeSchema = z.enum(MODULE_TYPES)
+
 export const ExtraResourceSchema = z.object({ from: z.string().min(1), to: z.string().min(1) })
 export type ExtraResource = z.infer<typeof ExtraResourceSchema>
 export const PragmaPackageSchema = z.object({ extraResources: z.array(ExtraResourceSchema).default([]) })
@@ -23,7 +26,7 @@ export const PackageJsonSchema = z
   .object({
     name: z.string(),
     version: z.string().optional(),
-    type: z.enum(['module', 'commonjs']).optional(),
+    type: ModuleTypeSchema.optional(),
     main: z.string().optional(),
     exports: z.unknown().optional(),
     dependencies: DepsSchema.optional(),

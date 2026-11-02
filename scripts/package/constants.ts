@@ -1,4 +1,5 @@
 /** Every shared literal and number of the packaging tool (§9.2). */
+import type { Target } from './lib/targets.ts'
 
 // --- host and doctor ---
 export const MIN_FREE_DISK_GB = 15
@@ -120,3 +121,31 @@ export const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i
 export const WORKSPACE_SCOPE = '@pragma/'
 export const DEFAULT_ENTRY = 'index.js'
 export const EXPORT_CONDITIONS = ['import', 'require', 'default'] as const
+
+// --- staging ---
+export const STAGE_APP_DIR = 'app'
+export const STAGE_RESOURCES_DIR = 'resources'
+export const BUNDLE_OUT_DIR = 'out'
+export const RENDERER_DIR = 'renderer'
+export const STAGED_APP_NAME = 'pragma-ade'
+export const RESOURCE_PACKAGE_SUFFIX = '-resource'
+export const RESOURCE_PACKAGE_VERSION = '0.0.0'
+export const PREBUILDS_DIR = 'prebuilds'
+export const NATIVE_EXT = '.node'
+export const SPAWN_HELPER = 'spawn-helper'
+export const EXEC_MODE = 0o755
+export const EXEC_BITS = 0o111
+export const ARCH_JOINER = '+'
+export const PLATFORM_ARCH_SEP = '-'
+/** No `--prefer-offline`: with cached packuments npm 11 skipped the `--os/--cpu` optional packages (RECON.md). */
+export const NPM_INSTALL_ARGS = ['install', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'] as const
+export const NPM_LOCK_ONLY_ARGS = ['install', '--package-lock-only', '--no-audit', '--no-fund'] as const
+export const NPM_INSTALL_TIMEOUT_MS = 600_000
+/** Package files that never run on the target (other platforms' payloads); paths are relative to the package dir. */
+export const PRUNE_RULES: readonly { package: string; remove: (t: Target) => readonly string[] }[] = [
+  {
+    package: 'node-pty',
+    remove: (t) =>
+      t.platform === WIN32 ? [`third_party/conpty/*/win10-${t.arch === 'x64' ? 'arm64' : 'x64'}`] : ['third_party'],
+  },
+]
