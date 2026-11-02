@@ -32,6 +32,9 @@ export const COLORTERM_VALUE = 'truecolor'
 export const TERM_PROGRAM_NAME = 'PragmaADE'
 export const PATH_SEPARATOR_RE = /[\\/]/
 
+/** Shift+Enter sends ESC CR (meta+Enter), which Claude Code, opencode and readline treat as a newline, not submit. */
+export const SHIFT_ENTER_SEQUENCE = '\x1b\r'
+
 /** Size of a pty before its view measured itself. */
 export const DEFAULT_COLS = 80
 export const DEFAULT_ROWS = 24

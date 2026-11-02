@@ -1,8 +1,9 @@
-export const TERMINAL_KEY_ACTION = { copy: 'copy', paste: 'paste', search: 'search' } as const
+export const TERMINAL_KEY_ACTION = { copy: 'copy', paste: 'paste', search: 'search', newline: 'newline' } as const
 export const TERMINAL_KEY_ACTIONS = [
   TERMINAL_KEY_ACTION.copy,
   TERMINAL_KEY_ACTION.paste,
   TERMINAL_KEY_ACTION.search,
+  TERMINAL_KEY_ACTION.newline,
 ] as const
 export type TerminalKeyAction = (typeof TERMINAL_KEY_ACTIONS)[number]
 export const KEY_PLATFORM = { mac: 'mac', other: 'other' } as const
@@ -13,10 +14,13 @@ export interface KeyLike {
   metaKey?: boolean
   ctrlKey?: boolean
   shiftKey?: boolean
+  altKey?: boolean
+  isComposing?: boolean
   type?: string
 }
 
 const KEYDOWN = 'keydown'
+const ENTER = 'Enter'
 const LETTER = { c: 'c', v: 'v', f: 'f' } as const
 
 function macAction(key: string, e: KeyLike, hasSelection: boolean): TerminalKeyAction | null {
@@ -35,9 +39,17 @@ function otherAction(key: string, e: KeyLike, hasSelection: boolean): TerminalKe
   return null
 }
 
+/**
+ * Shift+Enter (no other modifier, not mid-IME-composition), on any of its keydown/keypress/keyup events.
+ * xterm would send a bare CR for it, which TUIs read as submit.
+ */
+export const isNewlineKey = (e: KeyLike): boolean =>
+  e.key === ENTER && e.shiftKey === true && !e.ctrlKey && !e.altKey && !e.metaKey && !e.isComposing
+
 /** The terminal's own shortcut for a key event, or null to let xterm (and the program) have the key. */
 export function classifyKey(e: KeyLike, platform: KeyPlatform, hasSelection: boolean): TerminalKeyAction | null {
   if (e.type !== undefined && e.type !== KEYDOWN) return null
+  if (isNewlineKey(e)) return TERMINAL_KEY_ACTION.newline
   const key = e.key.toLowerCase()
   return platform === KEY_PLATFORM.mac ? macAction(key, e, hasSelection) : otherAction(key, e, hasSelection)
 }

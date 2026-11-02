@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { classifyKey, type KeyLike, type KeyPlatform, keyPlatform } from '../../src/renderer/view/keymap'
+import { classifyKey, isNewlineKey, type KeyLike, type KeyPlatform, keyPlatform } from '../../src/renderer/view/keymap'
 
 test.each<[KeyPlatform, KeyLike, boolean, string | null]>([
   ['mac', { key: 'c', metaKey: true }, true, 'copy'],
@@ -13,7 +13,27 @@ test.each<[KeyPlatform, KeyLike, boolean, string | null]>([
   ['other', { key: 'V', ctrlKey: true, shiftKey: true }, false, 'paste'],
   ['other', { key: 'f', ctrlKey: true }, false, 'search'],
   ['other', { key: 'v', ctrlKey: true }, false, null],
+  ['mac', { key: 'Enter', shiftKey: true }, false, 'newline'],
+  ['other', { key: 'Enter', shiftKey: true, type: 'keydown' }, true, 'newline'],
+  ['mac', { key: 'Enter' }, false, null],
+  ['other', { key: 'Enter' }, false, null],
+  ['mac', { key: 'Enter', shiftKey: true, metaKey: true }, false, null],
+  ['other', { key: 'Enter', shiftKey: true, ctrlKey: true }, false, null],
+  ['mac', { key: 'Enter', shiftKey: true, altKey: true }, false, null],
+  ['mac', { key: 'Enter', shiftKey: true, isComposing: true }, false, null],
+  ['other', { key: 'Enter', shiftKey: true, type: 'keypress' }, false, null],
+  ['other', { key: 'Enter', shiftKey: true, type: 'keyup' }, false, null],
 ])('%s %o sel=%s → %s', (platform, e, sel, action) => expect(classifyKey(e, platform, sel)).toBe(action))
+
+test.each<[KeyLike, boolean]>([
+  [{ key: 'Enter', shiftKey: true, type: 'keydown' }, true],
+  [{ key: 'Enter', shiftKey: true, type: 'keypress' }, true],
+  [{ key: 'Enter', shiftKey: true, type: 'keyup' }, true],
+  [{ key: 'Enter', type: 'keypress' }, false],
+  [{ key: 'Enter', shiftKey: true, ctrlKey: true }, false],
+  [{ key: 'Enter', shiftKey: true, isComposing: true }, false],
+  [{ key: 'a', shiftKey: true }, false],
+])('isNewlineKey(%o) → %s', (e, expected) => expect(isNewlineKey(e)).toBe(expected))
 
 test.each([
   ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 'mac'],
