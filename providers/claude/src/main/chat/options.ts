@@ -15,6 +15,7 @@ import {
   FLAG_VALUE_SEPARATOR,
   PERMISSION_FLAGS,
   PERMISSION_MODES,
+  PLAN_APPROVE_MODES,
   SYSTEM_PRESET,
 } from './constants'
 import { buildClaudeChildEnv } from './env'
@@ -94,6 +95,14 @@ function effortDescriptor(models: ModelInfo[], state: ClaudeOptionState): ChatOp
 }
 
 const permissionLabelKey = (mode: string) => `claude:chat.permissionMode.${mode}`
+
+/** The modes a plan approval offers: `PLAN_APPROVE_MODES` the session currently describes. */
+export function planModes(options: ChatOptionDescriptor[]): string[] {
+  const offered = new Set(
+    (options.find((o) => o.key === CHAT_OPTION_KEYS.permissionMode)?.values ?? []).map((v) => v.value),
+  )
+  return PLAN_APPROVE_MODES.filter((m) => offered.has(m))
+}
 
 /** `model` (init models), `effort` (when the model supports it), `permissionMode` (unless the args set it). */
 export function describeClaudeOptions(

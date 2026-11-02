@@ -22,6 +22,7 @@ import {
   EVENT_KIND as K,
   PERMISSION_OPTION,
   PERMISSION_OUTCOME,
+  RESPONSE_OUTCOME,
   RESUME_REASON,
   SESSION_EXIT_REASON,
   type SESSION_EXIT_REASONS,
@@ -33,6 +34,7 @@ import type { Logger } from '@pragma/sdk'
 import {
   ABORT_EVENT,
   BEHAVIOR,
+  CLAUDE_TOOLS,
   DENY_MESSAGE,
   ENOENT,
   NO_CONVERSATION_RE,
@@ -40,7 +42,14 @@ import {
   SDK_SETTING_EFFORT,
 } from './constants'
 import { createSdkMessageMapper, type SdkMessageMapper } from './mapper'
-import { buildQueryOptions, type ClaudeOptionState, describeClaudeOptions, initialOptionState } from './options'
+import {
+  buildQueryOptions,
+  type ClaudeOptionState,
+  describeClaudeOptions,
+  initialOptionState,
+  planModes,
+} from './options'
+import { answerPlan, answerQuestion, PROMPT_TOOLS, type PromptOutcome, promptEvent } from './prompts'
 import { type ClaudeProcessSpawn, createClaudeProcessSpawn, type SpawnDeps } from './spawn'
 import { toolKindFor, toolTitleFor } from './tool-kinds'
 import { createUserInputQueue, toSdkUserMessage, type UserInputQueue } from './user-input'
@@ -58,6 +67,14 @@ interface PendingPermission {
   input: Record<string, unknown>
   suggestions?: PermissionUpdate[]
 }
+
+/** An `AskUserQuestion` / `ExitPlanMode` call waiting for its card's `respond`. */
+interface PendingPrompt {
+  resolve(result: PermissionResult): void
+  answer(payload: unknown): PromptOutcome
+}
+
+export class UnknownPromptError extends Error {}
 
 type ExitReason = (typeof SESSION_EXIT_REASONS)[number]
 const TIMEOUT = Symbol('timeout')
@@ -100,6 +117,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
   readonly #abort = new AbortController()
   readonly #mapper: SdkMessageMapper = createSdkMessageMapper()
   readonly #pending = new Map<string, PendingPermission>()
+  readonly #prompts = new Map<string, PendingPrompt>()
   readonly #q: Query
   #state: ClaudeOptionState
   #init: Pick<SDKControlInitializeResponse, 'models' | 'commands'> = { models: [], commands: [] }
@@ -225,6 +243,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
   readonly #canUseTool: CanUseTool = (toolName, input, o) =>
     new Promise((resolve) => {
       const requestId = o.requestId ?? o.toolUseID
+      if (PROMPT_TOOLS.has(toolName)) return this.#prompt(toolName, requestId, input, o.signal, resolve)
       this.#pending.set(requestId, { resolve, input, suggestions: o.suggestions })
       o.signal.addEventListener(ABORT_EVENT, () => this.#resolvePending(requestId, PERMISSION_OUTCOME.cancelled), {
         once: true,
@@ -256,6 +275,47 @@ export class ClaudeChatSession implements ChatSessionHandle {
 
   #cancelPending(): void {
     for (const id of [...this.#pending.keys()]) this.#resolvePending(id, PERMISSION_OUTCOME.cancelled)
+    for (const id of [...this.#prompts.keys()]) this.#cancelPrompt(id)
+  }
+
+  /** A question or plan card; its `respond` resolves the tool call (cancelled on abort, interrupt and close). */
+  #prompt(
+    toolName: string,
+    eventId: string,
+    input: Record<string, unknown>,
+    signal: AbortSignal,
+    resolve: (r: PermissionResult) => void,
+  ): void {
+    const answer = toolName === CLAUDE_TOOLS.askUserQuestion ? answerQuestion : answerPlan
+    this.#prompts.set(eventId, { resolve, answer: (payload) => answer(input, payload) })
+    signal.addEventListener(ABORT_EVENT, () => this.#cancelPrompt(eventId), { once: true })
+    this.#ctx.emit(promptEvent(toolName, eventId, input, planModes(this.describeOptions())))
+  }
+
+  #cancelPrompt(eventId: string): void {
+    const p = this.#prompts.get(eventId)
+    if (!p) return
+    this.#prompts.delete(eventId)
+    p.resolve({ behavior: BEHAVIOR.deny, message: PERMISSION_CANCELLED_MESSAGE })
+    this.#ctx.emit({ kind: K.responseResolved, eventId, outcome: RESPONSE_OUTCOME.cancelled })
+  }
+
+  /** Answers a question / plan card; rejects on an unknown id or an invalid payload (the card stays open). */
+  async respond(eventId: string, payload: unknown): Promise<void> {
+    const p = this.#prompts.get(eventId)
+    if (!p) throw new UnknownPromptError(`no pending prompt ${eventId}`)
+    const outcome = p.answer(payload)
+    this.#prompts.delete(eventId)
+    p.resolve(outcome.result)
+    const summary = outcome.summary ? { summary: outcome.summary } : {}
+    this.#ctx.emit({ kind: K.responseResolved, eventId, outcome: RESPONSE_OUTCOME.answered, ...summary })
+    if (outcome.mode) await this.#applyPermissionMode(outcome.mode)
+  }
+
+  async #applyPermissionMode(mode: string): Promise<void> {
+    await this.#q.setPermissionMode(mode as Parameters<Query['setPermissionMode']>[0])
+    this.#state = { ...this.#state, permissionMode: mode }
+    this.#emitOptions()
   }
 
   describeOptions(): ChatOptionDescriptor[] {

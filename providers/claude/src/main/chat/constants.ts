@@ -56,6 +56,12 @@ export const BEHAVIOR = { allow: 'allow', deny: 'deny' } as const
 export const ABORT_EVENT = 'abort'
 export const DENY_MESSAGE = 'User denied this action'
 export const PERMISSION_CANCELLED_MESSAGE = 'Cancelled by the user'
+export const PLAN_REJECTED_MESSAGE = 'The user did not approve the plan. Keep planning and propose a revised plan.'
+export const PLAN_REJECTED_WITH_FEEDBACK = 'The user did not approve the plan. Revise it with this feedback:\n\n'
+/** Multi-select labels in one `AskUserQuestion` answer. */
+export const ANSWER_SEPARATOR = ', '
+/** Answers in the one-line summary of a resolved card. */
+export const SUMMARY_SEPARATOR = ' · '
 export const DEFAULT_PERMISSION_MODE = 'default'
 /** The init model entry that stands for the CLI's default model. */
 export const DEFAULT_MODEL_VALUE = 'default'
