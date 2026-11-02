@@ -1,10 +1,13 @@
 import { cleanup, render } from '@testing-library/react'
-import type { ReactElement, ReactNode } from 'react'
+import type { ComponentType, ReactElement, ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach } from 'vitest'
+import type { ChatEvent, ChatItem, ChatPartProps } from '../../src/contract'
 import { ChatHostProvider } from '../../src/renderer/host-adapter'
+import { defaultChatUi } from '../../src/renderer/kit/default-ui'
+import { ChatPartsProvider } from '../../src/renderer/kit/parts/ChatRows'
 import { useChatStore } from '../../src/renderer/session/store'
-import { chatTestI18n, installJsdomLayout, type StubChatHost, stubChatHost } from '../../testing'
+import { chatTestI18n, installJsdomLayout, type StubChatHost, stubChatHost, stubSessionApi } from '../../testing'
 
 afterEach(cleanup)
 
@@ -25,3 +28,24 @@ export function renderChat(ui: ReactElement, host: StubChatHost = stubChatHost()
 }
 
 export { i18n as testI18n }
+
+/**
+ * Renders one item of the transcript built from `events` with `Part` (the first item, or the first of `kind`),
+ * inside the default kit parts (nested transcripts render).
+ */
+export function renderPart(
+  Part: ComponentType<ChatPartProps<never>>,
+  events: ChatEvent[],
+  opts: { host?: StubChatHost; kind?: ChatItem['kind'] } = {},
+) {
+  const s = stubSessionApi(events)
+  const P = Part as ComponentType<ChatPartProps<ChatItem>>
+  const items = s.api.transcript.items
+  const item = (opts.kind ? items.find((i) => i.kind === opts.kind) : items[0]) as ChatItem
+  const ui = (
+    <ChatPartsProvider value={{ parts: defaultChatUi.parts, groupToolCalls: true }}>
+      <P item={item} session={s.api} />
+    </ChatPartsProvider>
+  )
+  return { ...renderChat(ui, opts.host), ...s }
+}

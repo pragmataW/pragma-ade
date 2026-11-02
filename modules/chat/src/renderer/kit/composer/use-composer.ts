@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KEY_ENTER, NOTICE_MS } from '../../../constants'
 import {
+  type ChatFile,
   type ChatImage,
   type ChatSessionApi,
   COMPOSER_ENTRY_KIND,
@@ -12,6 +13,7 @@ import {
 import { useChatHost } from '../../host-adapter'
 import { appendDraft, composeOutgoing } from '../../lib/compose-outgoing'
 import { useChatStore } from '../../session/store'
+import { usePermissionModeCycle } from '../controls/use-permission-mode'
 import { findTrigger, type OpenMenu } from './triggers'
 
 const KEY = { enter: KEY_ENTER, tab: 'Tab', escape: 'Escape', up: 'ArrowUp', down: 'ArrowDown' } as const
@@ -21,6 +23,8 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
   const ref = useRef<HTMLTextAreaElement>(null)
   const [text, setTextState] = useState('')
   const [images, setImages] = useState<ChatImage[]>([])
+  const [files, setFiles] = useState<ChatFile[]>([])
+  const cycleMode = usePermissionModeCycle(session)
   const [menu, setMenu] = useState<OpenMenu | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [count, setCount] = useState(0)
@@ -60,18 +64,22 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
       images,
       addImages: (more) => setImages((i) => [...i, ...more]),
       removeImage: (index) => setImages((i) => i.filter((_, k) => k !== index)),
+      files,
+      addFiles: (more) => setFiles((f) => [...f, ...more]),
+      removeFile: (index) => setFiles((f) => f.filter((_, k) => k !== index)),
       notify: setNotice,
       session,
     }),
-    [text, images, session, sync],
+    [text, images, files, session, sync],
   )
 
   const send = async () => {
     const outgoing = composeOutgoing(chips.list, text)
-    if (!outgoing.trim() && images.length === 0) return
-    const input = { text: outgoing, images }
+    if (!outgoing.trim() && images.length === 0 && files.length === 0) return
+    const input = { text: outgoing, images, ...(files.length > 0 ? { files } : {}) }
     setTextState('')
     setImages([])
+    setFiles([])
     chips.clear()
     setMenu(null)
     await session.send(input)
@@ -104,6 +112,11 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (menu && onMenuKey(e)) return
+    if (e.key === KEY.tab && e.shiftKey && cycleMode.available) {
+      e.preventDefault()
+      void cycleMode.next()
+      return
+    }
     if (e.key !== KEY.enter || e.shiftKey || e.nativeEvent.isComposing) return
     e.preventDefault()
     void send()

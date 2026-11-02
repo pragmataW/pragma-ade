@@ -181,7 +181,8 @@ function find<I extends ChatItem>(t: ChatTranscript, kind: I['kind'], id: string
   return pos === undefined ? undefined : (t.items[pos] as I)
 }
 
-const parentOf = (item: ChatItem): string | undefined => ('parentId' in item ? item.parentId : undefined)
+/** The `parentId` of an item that has one (subagent output). */
+export const parentOf = (item: ChatItem): string | undefined => ('parentId' in item ? item.parentId : undefined)
 
 function withChild(children: ChatTranscript['children'], parentId: string | undefined, key: string) {
   if (!parentId) return children

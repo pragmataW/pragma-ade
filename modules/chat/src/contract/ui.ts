@@ -1,7 +1,8 @@
 /** The chat UI kit contract (§5.4): type-only React imports, so providers compose their own chat UI. */
-import type { ThemeMode } from '@pragma/sdk'
+import type { ConfirmInput, ThemeMode } from '@pragma/sdk'
 import type { ClipboardEvent, ComponentType, DragEvent } from 'react'
-import type { ChatImage, ChatPermissionDecision, ChatSupport, ChatUserInput } from './capability'
+import type { ChatSessionAction } from './actions'
+import type { ChatFile, ChatImage, ChatPermissionDecision, ChatSupport, ChatUserInput } from './capability'
 import type { ChatEventEnvelope, ChatEventKind } from './events'
 import type { ChatWorktree, ComposerEntry, ComposerInboxChanged } from './ipc'
 import type { ChatOptionValue } from './options'
@@ -22,6 +23,8 @@ export interface ChatSessionApi {
   /** For interactive custom parts (e.g. 11b's FormCard). */
   respond(eventId: string, payload: unknown): Promise<void>
   setOption(key: string, value: ChatOptionValue): Promise<void>
+  /** An optional action listed in `transcript.info.actions` (rejects otherwise). */
+  action(a: ChatSessionAction): Promise<void>
   searchFiles(query: string): Promise<string[]>
   /** 11c: the session's worktree, when known (file links). */
   worktree?: ChatWorktree
@@ -51,6 +54,10 @@ export interface ComposerApi {
   images: ChatImage[]
   addImages(i: ChatImage[]): void
   removeImage(index: number): void
+  /** PDF / text documents (`documentAttachmentsExtension`). */
+  files: ChatFile[]
+  addFiles(f: ChatFile[]): void
+  removeFile(index: number): void
   /** Shows a translated, transient composer notice (e.g. an image that is too large). */
   notify(messageKey: string): void
   session: ChatSessionApi
@@ -89,6 +96,8 @@ export interface ChatUiDefinition {
   composerToolbar?: ChatSlotComponent[]
   composerExtensions?: ComposerExtension[]
   sidePanels?: ChatSlotComponent[]
+  /** Full-width notices above the composer (e.g. `RateLimitBanner`, `RetryBanner`). */
+  banners?: ChatSlotComponent[]
   /** Default true: consecutive tool-call items render inside one `ToolCallGroup`. */
   groupToolCalls?: boolean
   /** Default `AssistantTurnHeader` (provider mark + name + time); null hides it. */
@@ -126,7 +135,10 @@ export interface ChatHost {
   cancelQueued(sessionId: string, queuedId: string): Promise<void>
   respondPermission(sessionId: string, requestId: string, decision: ChatPermissionDecision): Promise<void>
   respond(sessionId: string, eventId: string, payload: unknown): Promise<void>
+  action(sessionId: string, a: ChatSessionAction): Promise<void>
   setOption(sessionId: string, key: string, value: ChatOptionValue): Promise<void>
+  /** The SDK confirm dialog (`ctx.dialogs.confirm`; e.g. a dangerous permission mode). */
+  confirm(o: ConfirmInput): Promise<boolean>
   searchFiles(sessionId: string, query: string): Promise<string[]>
   checkSupport(profileId: string): Promise<ChatSupport>
   chatUi(providerId: string): ChatUiDefinition | undefined

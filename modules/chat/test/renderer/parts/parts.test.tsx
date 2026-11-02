@@ -1,8 +1,8 @@
 import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ComponentType } from 'react'
+
 import { describe, expect, it, vi } from 'vitest'
-import { CHAT_TESTIDS, type ChatEvent, type ChatItem, type ChatPartProps, MAX_DIFF_CHARS } from '../../../src/contract'
+import { CHAT_TESTIDS, MAX_DIFF_CHARS } from '../../../src/contract'
 import { ErrorRow } from '../../../src/renderer/kit/parts/ErrorRow'
 import { FileEditDiff } from '../../../src/renderer/kit/parts/FileEditDiff'
 import { CHAT_FALLBACK_ICON_TESTID } from '../../../src/renderer/kit/parts/lib/StatusGlyph'
@@ -12,18 +12,10 @@ import { TodoList } from '../../../src/renderer/kit/parts/TodoList'
 import { ToolCallCard } from '../../../src/renderer/kit/parts/ToolCallCard'
 import { WorkingLine } from '../../../src/renderer/kit/parts/WorkingLine'
 import { stubChatHost, stubSessionApi } from '../../../testing'
-import { renderChat } from '../support'
+import { renderChat, renderPart } from '../support'
 import { edit, permission, result, tool } from './samples'
 
 const StatusIcon = ({ status }: { status: string }) => <i data-testid="status-icon" data-status={status} />
-
-/** Renders the single item built from `events` with `Part`. */
-function renderPart(Part: ComponentType<ChatPartProps<never>>, events: ChatEvent[], host = stubChatHost()) {
-  const s = stubSessionApi(events)
-  const P = Part as ComponentType<ChatPartProps<ChatItem>>
-  const item = s.api.transcript.items[0] as ChatItem
-  return { ...renderChat(<P item={item} session={s.api} />, host), ...s }
-}
 
 describe('kit parts', () => {
   it('thinking collapsed by default', async () => {
@@ -125,7 +117,7 @@ describe('kit parts', () => {
   })
 
   it("tool rows and WorkingLine render 04's StatusIcon; fallback icon when agent-status is absent", () => {
-    const { unmount } = renderPart(ToolCallCard, [tool('1')], stubChatHost({ StatusIcon }))
+    const { unmount } = renderPart(ToolCallCard, [tool('1')], { host: stubChatHost({ StatusIcon }) })
     expect(screen.getByTestId('status-icon')).toHaveAttribute('data-status', 'working')
     unmount()
     renderPart(ToolCallCard, [tool('1'), result('1', 'x')])

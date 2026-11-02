@@ -45,6 +45,7 @@ export function useChatSession(sessionId: string): ChatSessionApi | null {
       respondPermission: (requestId, d) => host.respondPermission(sessionId, requestId, d),
       respond: (eventId, payload) => host.respond(sessionId, eventId, payload),
       setOption: (key, value) => host.setOption(sessionId, key, value),
+      action: (a) => host.action(sessionId, a),
       searchFiles: (query) => host.searchFiles(sessionId, query),
     }
   }, [entry, host, sessionId])

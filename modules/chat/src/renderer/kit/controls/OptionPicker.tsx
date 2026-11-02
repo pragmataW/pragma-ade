@@ -11,29 +11,23 @@ import {
 import { Switch } from '@pragma/ui/components/switch'
 import { ChevronDown, Minus, Plus } from '@pragma/ui/icons'
 import type { ComponentType } from 'react'
-import { ICON_PX, ICON_STROKE, SIZE_ICON_XS, SIZE_SM, VARIANT_GHOST } from '../../../constants'
+import { ALIGN_START, ICON_PX, ICON_STROKE, SIZE_ICON_XS, SIZE_SM, VARIANT_GHOST } from '../../../constants'
 import {
   CHAT_TESTIDS,
-  type ChatOptionChoice,
   type ChatOptionDescriptor,
   type ChatSessionApi,
   type ChatSlotComponent,
   type ChatSlotProps,
   OPTION_TYPE,
 } from '../../../contract'
+import { useChoiceLabel } from './use-choice-label'
 
 export const PICKER_VARIANTS = ['select', 'icon'] as const
 export type PickerVariant = (typeof PICKER_VARIANTS)[number]
 const [SELECT] = PICKER_VARIANTS
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
 
-/** A choice's text: its literal label, else its label key, else the raw value. */
-function useChoiceLabel() {
-  const t = useT()
-  return (c: ChatOptionChoice | undefined): string => c?.label ?? (c?.labelKey ? t(c.labelKey) : String(c?.value ?? ''))
-}
-
-const valueKey = (v: unknown): string => JSON.stringify(v)
+export const valueKey = (v: unknown): string => JSON.stringify(v)
 
 function EnumPicker({ d, session, icon: IconC, variant }: PickerProps) {
   const t = useT()
@@ -56,7 +50,7 @@ function EnumPicker({ d, session, icon: IconC, variant }: PickerProps) {
           <ChevronDown size={ICON_PX} strokeWidth={ICON_STROKE} className="opacity-60" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-44">
+      <DropdownMenuContent align={ALIGN_START} className="min-w-44">
         <DropdownMenuRadioGroup
           value={valueKey(d.current)}
           onValueChange={(v) => {

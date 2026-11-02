@@ -23,7 +23,9 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
     respondPermission: (sessionId, requestId, decision) =>
       ipc.invoke(chatIpc.respondPermission, { sessionId, requestId, decision }),
     respond: (sessionId, eventId, payload) => ipc.invoke(chatIpc.respond, { sessionId, eventId, payload }),
+    action: (sessionId, action) => ipc.invoke(chatIpc.action, { sessionId, action }),
     setOption: (sessionId, key, value) => ipc.invoke(chatIpc.setOption, { sessionId, key, value }),
+    confirm: (o) => ctx.dialogs.confirm(o),
     searchFiles: (sessionId, query) => ipc.invoke(chatIpc.searchFiles, { sessionId, query, limit: FILE_SEARCH_LIMIT }),
     checkSupport: (profileId) => ipc.invoke(chatIpc.checkSupport, { profileId }),
     chatUi: (providerId) => ctx.providers.rendererCapability(providerId, 'chatUi'),

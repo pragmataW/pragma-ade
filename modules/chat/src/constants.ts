@@ -28,6 +28,25 @@ export const ROW_ESTIMATE_PX = 64
 /** Until the scroller is measured (first paint, tests). */
 export const INITIAL_RECT = { width: 740, height: 800 } as const
 export const ICON_PX = 14
+export const SMALL_ICON_PX = 12
+/** Tool-call input fields the kit renders (task prompt, todo list). */
+export const TASK_PROMPT_FIELD = 'prompt'
+export const TODO_INPUT_FIELD = 'todos'
+/** Todo wording of tool inputs (`TodoWrite`-like) → kit todo status. */
+export const TODO_STATUS_ALIASES: Record<string, 'pending' | 'active' | 'done'> = {
+  pending: 'pending',
+  in_progress: 'active',
+  active: 'active',
+  completed: 'done',
+  done: 'done',
+}
+export const TODO_TEXT_FIELDS = ['content', 'text', 'title'] as const
+/** Primitive input values longer than this are cut in the key/value body. */
+export const KV_VALUE_CHARS = 160
+export const ELLIPSIS = '…'
+export const PLAN_MAX_H_PX = 420
+/** Indent per nesting level in the task tree. */
+export const TASK_INDENT_PX = 12
 export const MARK_PX = 14
 export const ELAPSED_TICK_MS = 1000
 export const MS_PER_SECOND = 1000
@@ -52,6 +71,7 @@ export const NEWLINE = '\n'
 export const I18N_KEY_RE = /^[a-z][a-z0-9-]*:[A-Za-z0-9_.]+$/
 export const ALIGN_END = 'end'
 export const ALIGN_CENTER = 'center'
+export const ALIGN_START = 'start'
 export const SIZE_SM = 'sm'
 export const VARIANT_OUTLINE = 'outline'
 export const SECONDS_PAD = 2

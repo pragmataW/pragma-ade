@@ -23,11 +23,27 @@ function Mark({ status }: { status: TodoItem['status'] }) {
 /** Plan card: done = ok check + strikethrough, active = info ring, pending = empty box. */
 export function TodoList({ item }: ChatPartProps<TodoListItem>) {
   return (
-    <ul
-      data-testid={CHAT_TESTIDS.part(EVENT_KIND.todo)}
-      className="flex flex-col gap-1 rounded-lg border border-bd bg-el px-3 py-2"
-    >
-      {item.items.map((todo) => (
+    <TodoChecklist
+      items={item.items}
+      testId={CHAT_TESTIDS.part(EVENT_KIND.todo)}
+      className="rounded-lg border border-bd bg-el px-3 py-2"
+    />
+  )
+}
+
+/** The checklist rows of a todo list (also the body of a `todo` tool call). */
+export function TodoChecklist({
+  items,
+  testId,
+  className,
+}: {
+  items: readonly TodoItem[]
+  testId?: string
+  className?: string
+}) {
+  return (
+    <ul data-testid={testId} className={cn('flex flex-col gap-1', className)}>
+      {items.map((todo) => (
         <li
           key={todo.id}
           {...{ [CHAT_DATA_ATTRS.status]: todo.status }}
