@@ -20,3 +20,9 @@ export const FORM_I18N = {
   outcome: { answered: 'opencode:chatUi.form.answered', cancelled: 'opencode:chatUi.form.cancelled' },
 } as const
 export const RETRY_TITLE_KEY = 'opencode:chatUi.retry.title'
+/** Errors whose message is an `opencode:` i18n key (startup reasons, server exit) are translated with `{detail}`. */
+export const OPENCODE_KEY_PREFIX = 'opencode:'
+export const ICON_PX = 14
+export const ICON_STROKE = 1.5
+export const SIZE_SM = 'sm'
+export const AGENT_OPTION = 'agent'
