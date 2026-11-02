@@ -1,0 +1,14 @@
+{
+  "chat": {
+    "option": {
+      "defaultModel": "Default"
+    },
+    "permissionMode": {
+      "default": "Ask",
+      "acceptEdits": "Accept edits",
+      "plan": "Plan",
+      "auto": "Auto",
+      "bypassPermissions": "Skip permissions"
+    }
+  }
+}

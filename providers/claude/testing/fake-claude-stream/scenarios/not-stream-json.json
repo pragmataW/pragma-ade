@@ -1,0 +1,9 @@
+{
+  "protocol": false,
+  "preamble": [
+    {
+      "stdoutRaw": "This wrapper does not speak stream-json.\n"
+    }
+  ],
+  "turns": []
+}

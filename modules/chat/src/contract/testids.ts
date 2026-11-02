@@ -1,0 +1,38 @@
+/** `data-testid` values shared with 11b/11c and provider E2E tests (§10.1.6). */
+export const CHAT_TESTIDS = {
+  view: 'chat-view',
+  part: (kind: string) => `chat-part-${kind}`,
+  tool: (toolKind: string) => `chat-tool-${toolKind}`,
+  toolGroup: 'chat-tool-group',
+  toolGroupToggle: 'chat-tool-group-toggle',
+  toolRow: 'chat-tool-row',
+  permission: (option: string) => `chat-permission-${option}`,
+  permissionOutcome: 'chat-permission-outcome',
+  composer: 'chat-composer',
+  composerInput: 'chat-composer-input',
+  composerMenu: 'chat-composer-menu',
+  composerMenuItem: 'chat-composer-menu-item',
+  attachImage: 'chat-attach-image',
+  attachment: 'chat-attachment',
+  send: 'chat-send',
+  stop: 'chat-stop',
+  queueChip: 'chat-queue-chip',
+  queueChipRemove: 'chat-queue-chip-remove',
+  optionPicker: (key: string) => `chat-option-${key}`,
+  optionValue: (key: string, value: string) => `chat-option-${key}-${value}`,
+  usage: 'chat-usage',
+  context: 'chat-context',
+  launcherMode: (mode: string) => `chat-launcher-mode-${mode}`,
+  launcherUnsupported: 'chat-launcher-unsupported',
+  errorRow: 'chat-error-row',
+  workingLine: 'chat-working-line',
+  jumpToLatest: 'chat-jump-to-latest',
+  statusbarContext: 'chat-statusbar-context',
+  turnHeader: 'chat-turn-header',
+  messageList: 'chat-message-list',
+  settingsDefaultMode: 'chat-settings-default-mode',
+  settingsStartupTimeout: 'chat-settings-startup-timeout',
+} as const
+
+/** Data attributes on chat parts (E2E). */
+export const CHAT_DATA_ATTRS = { status: 'data-status', streaming: 'data-streaming', itemId: 'data-item-id' } as const

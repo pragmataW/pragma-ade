@@ -1,0 +1,67 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"]
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitText": {
+          "messageId": "msg_int_1",
+          "text": "Thinking about it for a while",
+          "chunks": 4
+        }
+      },
+      {
+        "awaitInterrupt": true
+      },
+      {
+        "result": {
+          "subtype": "error_during_execution"
+        }
+      }
+    ],
+    [
+      {
+        "emitText": {
+          "messageId": "msg_int_2",
+          "text": "Thinking about it for a while",
+          "chunks": 4
+        }
+      },
+      {
+        "awaitInterrupt": true
+      },
+      {
+        "result": {
+          "subtype": "error_during_execution"
+        }
+      }
+    ]
+  ]
+}

@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+// Fake Claude Code speaking the Agent SDK stream-json protocol from a scripted scenario (see README.md).
+import './impl.mjs'

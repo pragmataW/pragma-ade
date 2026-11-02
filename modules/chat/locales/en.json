@@ -1,0 +1,101 @@
+{
+  "module": {
+    "name": "Chat",
+    "description": "Runs agent sessions in a rich chat view."
+  },
+  "launcher": {
+    "mode": "Mode",
+    "chat": "Chat",
+    "terminal": "Terminal",
+    "unsupported": "Chat mode not supported: {{reason}}"
+  },
+  "unsupported": {
+    "noProtocol": "the CLI did not start the stream-json protocol in time",
+    "exitedEarly": "the CLI exited before the session started",
+    "commandNotFound": "command not found",
+    "noCapability": "this agent has no chat support",
+    "profileDisabled": "the profile is disabled"
+  },
+  "option": {
+    "model": "Model",
+    "effort": "Effort",
+    "permissionMode": "Permissions",
+    "increase": "Increase",
+    "decrease": "Decrease"
+  },
+  "errors": {
+    "unsupported": "Chat mode not supported: {{reason}}",
+    "respondUnsupported": "This agent cannot answer this kind of request"
+  },
+  "settings": {
+    "title": "Chat",
+    "defaultMode": "Default mode for new agents",
+    "startupTimeout": "Chat startup timeout (ms)"
+  },
+  "usage": {
+    "context": "Context {{percent}}%",
+    "tokens": "{{input}} in · {{output}} out"
+  },
+  "list": {
+    "jumpToLatest": "Jump to latest"
+  },
+  "tool": {
+    "group": "{{count}} tool calls",
+    "status": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Done",
+      "error": "Failed"
+    },
+    "truncated": "Output truncated",
+    "results": "{{count}} results"
+  },
+  "copy": {
+    "label": "Copy",
+    "copied": "Copied"
+  },
+  "thinking": {
+    "label": "Thinking"
+  },
+  "diff": {
+    "tooLarge": "Diff too large to display",
+    "change": {
+      "edit": "Edited",
+      "create": "Created",
+      "overwrite": "Rewritten",
+      "delete": "Deleted"
+    }
+  },
+  "permission": {
+    "allow": "Allow",
+    "alwaysAllow": "Always allow",
+    "deny": "Deny",
+    "outcome": {
+      "allowed": "Allowed",
+      "allowed_always": "Always allowed",
+      "denied": "Denied",
+      "cancelled": "Cancelled"
+    }
+  },
+  "notice": {
+    "interrupted": "Interrupted",
+    "error": "Turn failed",
+    "limit": "Turn limit reached",
+    "exited": "Session ended",
+    "crashed": "The agent process exited unexpectedly"
+  },
+  "working": {
+    "thinking": "Thinking…",
+    "meta": "{{elapsed}} · esc to interrupt"
+  },
+  "composer": {
+    "placeholder": "Message the agent — / for commands, @ for files",
+    "send": "Send",
+    "stop": "Stop",
+    "queued": "Queued",
+    "removeQueued": "Remove from queue",
+    "attachImage": "Attach image",
+    "removeImage": "Remove image",
+    "imageTooLarge": "Image is larger than 5 MB"
+  }
+}

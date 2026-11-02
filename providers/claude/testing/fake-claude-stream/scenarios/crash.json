@@ -1,0 +1,51 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"]
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitText": {
+          "messageId": "msg_crash_1",
+          "text": "Starting the work",
+          "chunks": 1
+        }
+      },
+      {
+        "delayMs": 100
+      },
+      {
+        "stderr": "fatal: simulated crash in fake-claude\n"
+      },
+      {
+        "exit": 2
+      }
+    ]
+  ]
+}

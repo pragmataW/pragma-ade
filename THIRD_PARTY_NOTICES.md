@@ -57,3 +57,21 @@ The provider marks are the vendors' own logos, used unmodified (shapes and colou
 - node-tar 7.5.22 (BlueOak-1.0.0) — npm dependency of `modules/editor` (archive extraction)
 - yazl 3.3.1 (MIT) — dev dependency of `modules/editor/packages/bridge-extension` (packs `pragma-bridge.vsix`)
 - `modules/editor/e2e/support/bracketed-paste.plugin.mjs` is a copy of phase 08's own test plugin (same repository, no external license)
+
+## stablyai/orca — MIT License (phase 11a, chat)
+
+Same license text and copyright (Lovecast Inc.) as above. Derived files (each keeps a header naming its source and
+"Modified for Pragma ADE"):
+
+- `providers/claude/src/main/chat/spawn.ts` ← `src/main/claude/claude-agent-sdk-process-spawn.ts`
+- `providers/claude/src/main/chat/user-input.ts` ← `src/main/claude/claude-agent-sdk-user-message-queue.ts`
+- `providers/claude/src/main/chat/env.ts` ← `src/main/claude/claude-child-process-environment.ts` (stripped env list)
+- `providers/claude/testing/fake-claude-stream/impl.mjs` ← `src/main/claude/__fixtures__/claude-agent-sdk-scripted-cli.mjs`
+
+## Runtime dependencies added in phase 11a
+
+| Package | License | Used by |
+|---|---|---|
+| `@anthropic-ai/claude-agent-sdk` 0.3.316 | Anthropic Commercial Terms (see its README) | `providers/claude` (chat capability) |
+| `@pierre/diffs` 1.6.2 | Apache-2.0 | `modules/chat` (inline diffs; already used by 07) |
+| `@tanstack/react-virtual` 3.14.24 | MIT | `modules/chat` (message list) |
