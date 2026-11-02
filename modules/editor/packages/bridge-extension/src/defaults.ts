@@ -22,6 +22,8 @@ const STEPS: readonly ((themeName: string) => readonly Default[])[] = [
     [C.editor, C.lineHeight, V.editorLineHeight],
     [C.terminal, C.terminalFontFamily, V.monoFont],
   ],
+  // v3: Material file icons in the explorer, matching the app's trees.
+  () => [[C.workbench, C.iconTheme, V.iconTheme]],
 ]
 
 export const DEFAULTS_VERSION = STEPS.length

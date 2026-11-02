@@ -27,6 +27,7 @@ export const CONFIG = {
   lineHeight: 'lineHeight',
   terminal: 'terminal',
   terminalFontFamily: 'integrated.fontFamily',
+  iconTheme: 'iconTheme',
 } as const
 export const STATE_KEYS = {
   /** Top-level colour ids written by versions before theme-scoped blocks (removed on the next apply). */
@@ -45,6 +46,8 @@ export const DEFAULT_VALUES = {
   monoFont: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
   editorFontSize: 12.5,
   editorLineHeight: 20,
+  /** `contributes.iconThemes[0].id` in package.json: Material icons, the same set the app's trees draw. */
+  iconTheme: 'pragma-material-icons',
 } as const
 /** The built-in git extension and the commands "Open in editor" (Git Changes) uses. */
 export const GIT = {

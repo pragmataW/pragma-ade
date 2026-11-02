@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { STATE_KEYS } from '../src/constants'
 import { applyFirstRunDefaults, DEFAULTS_VERSION } from '../src/defaults'
 import { fakeApi } from './fakes/vscode'
 
 const MONO = "'JetBrains Mono Variable', 'JetBrains Mono', monospace"
+const ICON_THEME_ID = 'pragma-material-icons'
+const PKG = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'))
 
 describe('applyFirstRunDefaults', () => {
   it('first-run defaults applied once; second run does not overwrite user change', async () => {
@@ -41,5 +45,18 @@ describe('applyFirstRunDefaults', () => {
     expect(api.config.get('editor.fontFamily')).toBe(MONO)
     expect(api.config.get('terminal.integrated.fontFamily')).toBe(MONO)
     expect(api.state.get(STATE_KEYS.defaultsVersion)).toBe(DEFAULTS_VERSION)
+  })
+
+  it('v2 → v3 turns on the bundled Material icon theme and nothing else', async () => {
+    const api = fakeApi()
+    api.state.set(STATE_KEYS.defaultsVersion, 2)
+    expect(await applyFirstRunDefaults(api, 'Dark Modern')).toBe(true)
+    expect(api.config.get('workbench.iconTheme')).toBe(ICON_THEME_ID)
+    expect(api.config.has('editor.fontFamily')).toBe(false)
+    expect(api.config.has('workbench.colorTheme')).toBe(false)
+  })
+
+  it('the icon theme id is the one the extension contributes', () => {
+    expect(PKG.contributes.iconThemes.map((t: { id: string }) => t.id)).toEqual([ICON_THEME_ID])
   })
 })
