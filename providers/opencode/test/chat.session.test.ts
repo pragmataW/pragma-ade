@@ -73,6 +73,20 @@ describe('opencode chat session', () => {
     expect(requestsOf(s.h.log, /\/session\/[^/]+\/(model|agent)$/)).toEqual([])
   })
 
+  it('a send during a running turn goes to OpenCode’s inbox with steer delivery (no turn-end of its own)', async () => {
+    const s = chatSetup({ scenario: 'long-turn' })
+    const h = await s.start()
+    await h.send({ text: 'first', images: [] })
+    await until(() => requestsOf(s.h.log, /\/prompt$/).length === 1)
+    await h.send({ text: 'second', images: [] })
+    const bodies = requestsOf(s.h.log, /\/prompt$/).map((r) => r.body as { text: string; delivery?: string })
+    expect(bodies.map((b) => [b.text, b.delivery])).toEqual([
+      ['first', undefined],
+      ['second', 'steer'],
+    ])
+    await h.interrupt()
+  })
+
   it('profile command/args/env reach serve; PRAGMA_SESSION_ID stripped; password set', async () => {
     const env = { FOO: 'bar', PRAGMA_SESSION_ID: 'leak', PRAGMA_WORKTREE_ID: 'w1' }
     const s = chatSetup({ prefixArgs: ['--print-logs'], env, logEnv: [...Object.keys(env), 'OPENCODE_PASSWORD'] })

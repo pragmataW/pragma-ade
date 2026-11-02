@@ -25,6 +25,8 @@ import type { Logger } from '@pragma/sdk'
 import { CUSTOM, type FormField, formPayloadSchema, NOTICE } from '../../renderer/chat/payloads'
 import {
   AGENT_OPTION_KEY,
+  type BUSY_DELIVERIES,
+  BUSY_DELIVERY,
   EV,
   FORM_CANCEL_MESSAGE,
   IDLE_OUTCOMES,
@@ -73,6 +75,7 @@ import type { HubEvent } from './wire/event-hub'
 
 type Log = Pick<Logger, 'info' | 'warn'>
 const [SUCCEEDED, FAILED] = IDLE_OUTCOMES
+export type BusyDelivery = (typeof BUSY_DELIVERIES)[number]
 /** Options that change the session's model (`switchModel`). */
 const MODEL_OPTION_KEYS = new Set<string>([CHAT_OPTION_KEYS.model, CHAT_OPTION_KEYS.effort])
 
@@ -140,6 +143,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
   #options: ChatOptionDescriptor[]
   #turnActive = false
   #closed = false
+  readonly #busyDelivery: BusyDelivery
   #sessionId: string
   #unsubscribeRoot: () => void = () => undefined
   /** Transcript message id → OpenCode user message id (rewind and fork targets). */
@@ -159,8 +163,10 @@ export class OpencodeChatSession implements ChatSessionHandle {
     commands: OpencodeCommand[]
     info: SessionInfo
     sel: Selection
+    busyDelivery?: BusyDelivery
   }) {
     this.#ctx = o.ctx
+    this.#busyDelivery = o.busyDelivery ?? BUSY_DELIVERY
     this.#lease = o.lease
     this.#conn = o.lease.resource
     this.#log = o.log
@@ -182,7 +188,12 @@ export class OpencodeChatSession implements ChatSessionHandle {
   }
 
   /** acquire → catalog → get (resume) or create → subscribe → `session-info` + `options`. */
-  static async start(ctx: ChatSessionContext, pool: ConnectionPool, log: Log): Promise<OpencodeChatSession> {
+  static async start(
+    ctx: ChatSessionContext,
+    pool: ConnectionPool,
+    log: Log,
+    opts: { busyDelivery?: BusyDelivery } = {},
+  ): Promise<OpencodeChatSession> {
     const lease = await pool.acquire(ctx)
     try {
       const conn = lease.resource
@@ -192,7 +203,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
       const opened = ctx.resumeExternalSessionId
         ? await OpencodeChatSession.#resume(conn, ctx, catalog)
         : await OpencodeChatSession.#create(conn, ctx, catalog)
-      const session = new OpencodeChatSession({ ctx, lease, log, catalog, commands, ...opened })
+      const session = new OpencodeChatSession({ ctx, lease, log, catalog, commands, ...opened, ...opts })
       session.#attach()
       return session
     } catch (e) {
@@ -408,6 +419,9 @@ export class OpencodeChatSession implements ChatSessionHandle {
     const sessionID = this.externalSessionId
     const prompt = toPrompt(input, this.#ctx.worktreePath, existsSync)
     const slash = parseSlash(input.text, this.#commands)
+    // A send during a running turn goes to OpenCode's own inbox: delivered at the next step boundary of the same
+    // execution (one `execution.succeeded` ends both).
+    const busy = this.#turnActive || this.#mapper.turnActive
     this.#turnActive = true
     try {
       if (slash)
@@ -416,14 +430,19 @@ export class OpencodeChatSession implements ChatSessionHandle {
           ...slash,
           ...(prompt.files ? { files: prompt.files } : {}),
         })
-      else {
-        const user = idSchema.safeParse(await this.#conn.client.session.prompt({ sessionID, ...prompt }))
-        if (meta && user.success) this.#messageIds.set(meta.messageId, user.data.id)
-      }
+      else await this.#prompt(prompt, busy, meta)
     } catch (e) {
       this.#emit({ kind: K.error, code: ERROR_CODE.turn_failed, message: String(e), fatal: false })
-      this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
+      if (!busy) this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
     }
+  }
+
+  /** `session.prompt`; the user message id it answers is kept for `rewind` / `fork`. */
+  async #prompt(prompt: ReturnType<typeof toPrompt>, busy: boolean, meta?: ChatSendMeta): Promise<void> {
+    const delivery = busy ? { delivery: this.#busyDelivery } : {}
+    const sessionID = this.externalSessionId
+    const user = idSchema.safeParse(await this.#conn.client.session.prompt({ sessionID, ...prompt, ...delivery }))
+    if (meta && user.success) this.#messageIds.set(meta.messageId, user.data.id)
   }
 
   /** Mark the turn interrupted, reject pending permissions and cancel pending forms, then interrupt the turn. */

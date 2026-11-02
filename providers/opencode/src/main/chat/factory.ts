@@ -12,7 +12,7 @@ import { createConnections } from './connections'
 import { SETTINGS_COMMAND_ENV } from './constants'
 import { loadOpencodeHistory } from './history-loader'
 import { createConnectionPool } from './server/connection'
-import { OpencodeChatSession } from './session'
+import { type BusyDelivery, OpencodeChatSession } from './session'
 import { checkOpencodeSupport } from './support'
 
 const ATTACHMENTS = [ATTACHMENT_KIND.image, ATTACHMENT_KIND.pdf, ATTACHMENT_KIND.text] as const
@@ -25,7 +25,12 @@ const hosts = (q: RetainServerQuery) => (s: OpencodeChatSession, ctx: ChatSessio
 /** `chat` capability (factory form, §10.2): one connection pool; `dispose` closes live sessions and stops every server. */
 export function createOpencodeChat(
   capCtx: Pick<CapabilityContext, 'log' | 'getShellEnv' | 'resolveCommand' | 'paths'>,
-  o: { idleGraceMs?: number; settingsCommand?: { command: string; args: string[] } } = {},
+  o: {
+    idleGraceMs?: number
+    settingsCommand?: { command: string; args: string[] }
+    /** How a send during a running turn is delivered (`ChatSessionHandle.send` while busy). */
+    busyDelivery?: BusyDelivery
+  } = {},
 ): OpencodeChatCapability {
   const statusPluginDir = capCtx.paths.resource(OPENCODE_PLUGIN_RESOURCE)
   const pool = createConnectionPool({ log: capCtx.log, idleGraceMs: o.idleGraceMs, statusPluginDir })
@@ -49,7 +54,7 @@ export function createOpencodeChat(
         ctx.emit(e)
       }
       capCtx.log.info(`opencode chat ${ctx.sessionId}: starting in ${ctx.worktreePath}`)
-      session = await OpencodeChatSession.start({ ...ctx, emit }, pool, capCtx.log)
+      session = await OpencodeChatSession.start({ ...ctx, emit }, pool, capCtx.log, { busyDelivery: o.busyDelivery })
       live.set(session, ctx)
       return session
     },

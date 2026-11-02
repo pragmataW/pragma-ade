@@ -202,6 +202,13 @@ export const MENTION_SIGIL = '@'
 export const DEFAULT_VARIANT_LABEL_KEY = 'opencode:chat.option.defaultVariant'
 export const INVALID_OPTION = 'invalid option'
 
+/**
+ * How a prompt sent during a running turn reaches OpenCode's inbox: `steer` (default) at the next step boundary of the
+ * running execution, `queue` after it. Both are accepted by 2.x and answered in the same execution (verified 2.2.5).
+ */
+export const BUSY_DELIVERIES = ['steer', 'queue'] as const
+export const BUSY_DELIVERY = 'steer'
+
 /** Tools that run a subagent in a child session (OpenCode 2.x `subagent`; older builds `task`). */
 export const SUBAGENT_TOOLS = ['subagent', 'task'] as const
 /** `<subagent sessionID=… state=…>answer</subagent>` (the subagent tool's result). */
