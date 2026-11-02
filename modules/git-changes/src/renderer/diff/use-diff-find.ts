@@ -53,6 +53,7 @@ export function useDiffFind(scroller: RefObject<HTMLElement | null>, contentKey:
   const [matches, setMatches] = useState<Range[]>([])
   const [index, setIndex] = useState(0)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: contentKey: another file or its contents arriving re-finds
   useEffect(() => {
     const host = scroller.current?.querySelector(DIFFS_CONTAINER)
     const root = host?.shadowRoot
@@ -76,6 +77,7 @@ export function useDiffFind(scroller: RefObject<HTMLElement | null>, contentKey:
     }
   }, [scroller, open, query, contentKey])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new query or file starts again at the first match
   useEffect(() => setIndex(0), [query, contentKey])
 
   const current = matches[Math.min(index, matches.length - 1)]

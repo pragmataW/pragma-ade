@@ -42,7 +42,7 @@ export function FindBar(props: {
   const find = useDiffFind(props.scroller, props.contentKey)
   useImperativeHandle(props.ref, () => ({ show: find.show }), [find.show])
   const input = useRef<HTMLInputElement>(null)
-  // Cmd/Ctrl+F again while open selects the query for a new search.
+  // Opening focuses the query, selected so typing starts a new search.
   useEffect(() => {
     if (find.open) input.current?.select()
   }, [find.open])
@@ -66,7 +66,6 @@ export function FindBar(props: {
     >
       <input
         ref={input}
-        autoFocus
         data-testid={T.findInput}
         value={find.query}
         onChange={(e) => find.setQuery(e.target.value)}
