@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   type CanUseTool,
+  type PermissionMode,
   type PermissionResult,
   type PermissionUpdate,
   type Query,
@@ -37,9 +38,11 @@ import {
   CLAUDE_TOOLS,
   DENY_MESSAGE,
   ENOENT,
+  FAST_MODE_OPTION,
   NO_CONVERSATION_RE,
   PERMISSION_CANCELLED_MESSAGE,
   SDK_SETTING_EFFORT,
+  SDK_SETTING_FAST_MODE,
 } from './constants'
 import { createSdkMessageMapper, type SdkMessageMapper } from './mapper'
 import {
@@ -81,6 +84,7 @@ const TIMEOUT = Symbol('timeout')
 /** After a rejected handshake, how long to wait for the exit status before classifying the failure. */
 const EXIT_SETTLE_MS = 500
 
+const asText = (v: ChatOptionValue): string | null => (typeof v === 'string' ? v : null)
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms).unref())
 const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
@@ -193,6 +197,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
     }))
     this.#ctx.emit({ kind: K.sessionInfo, externalSessionId: this.externalSessionId, commands })
     this.#emitOptions()
+    if (this.#state.fastMode) void this.#flags({ [SDK_SETTING_FAST_MODE]: true }).catch(() => undefined)
     void this.#pump()
   }
 
@@ -312,8 +317,8 @@ export class ClaudeChatSession implements ChatSessionHandle {
     if (outcome.mode) await this.#applyPermissionMode(outcome.mode)
   }
 
-  async #applyPermissionMode(mode: string): Promise<void> {
-    await this.#q.setPermissionMode(mode as Parameters<Query['setPermissionMode']>[0])
+  async #applyPermissionMode(mode: PermissionMode): Promise<void> {
+    await this.#q.setPermissionMode(mode)
     this.#state = { ...this.#state, permissionMode: mode }
     this.#emitOptions()
   }
@@ -325,14 +330,21 @@ export class ClaudeChatSession implements ChatSessionHandle {
   async setOption(key: string, value: ChatOptionValue): Promise<void> {
     const d = this.describeOptions().find((o) => o.key === key)
     if (!d || !validateOptionValue(d, value)) throw new InvalidOptionError(`invalid option ${key}=${String(value)}`)
-    const v = typeof value === 'string' ? value : null
-    if (key === CHAT_OPTION_KEYS.model) await this.#q.setModel(v ?? undefined)
-    else if (key === CHAT_OPTION_KEYS.effort)
-      await this.#q.applyFlagSettings({ [SDK_SETTING_EFFORT]: v } as Parameters<Query['applyFlagSettings']>[0])
-    else if (key === CHAT_OPTION_KEYS.permissionMode)
-      await this.#q.setPermissionMode(v as Parameters<Query['setPermissionMode']>[0])
-    this.#state = { ...this.#state, [key]: v }
+    await this.#appliers[key]?.(value)
+    this.#state = { ...this.#state, [key]: key === FAST_MODE_OPTION ? value === true : asText(value) }
     this.#emitOptions()
+  }
+
+  /** How each option reaches the CLI. */
+  readonly #appliers: Record<string, (value: ChatOptionValue) => Promise<void>> = {
+    [CHAT_OPTION_KEYS.model]: (v) => this.#q.setModel(asText(v) ?? undefined),
+    [CHAT_OPTION_KEYS.effort]: (v) => this.#flags({ [SDK_SETTING_EFFORT]: asText(v) }),
+    [CHAT_OPTION_KEYS.permissionMode]: (v) => this.#q.setPermissionMode(asText(v) as PermissionMode),
+    [FAST_MODE_OPTION]: (v) => this.#flags({ [SDK_SETTING_FAST_MODE]: v === true }),
+  }
+
+  #flags(settings: Record<string, unknown>): Promise<void> {
+    return this.#q.applyFlagSettings(settings as Parameters<Query['applyFlagSettings']>[0])
   }
 
   async send(input: ChatUserInput): Promise<void> {

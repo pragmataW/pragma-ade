@@ -79,6 +79,15 @@ export const PERMISSION_MODE = {
   bypassPermissions: 'bypassPermissions',
 } as const satisfies Record<ClaudePermissionMode, ClaudePermissionMode>
 export const BYPASS_PERMISSIONS = PERMISSION_MODE.bypassPermissions
+/** Badge tone and safety flags per mode (`chat` contract choice fields); bypass and dontAsk stay out of the cycle. */
+export const PERMISSION_MODE_STYLE = {
+  default: { tone: 'neutral' },
+  acceptEdits: { tone: 'info' },
+  plan: { tone: 'ok' },
+  auto: { tone: 'accent' },
+  dontAsk: { tone: 'warn', cycle: false },
+  bypassPermissions: { tone: 'err', warn: true, dangerous: true, requiresConfirm: true, cycle: false },
+} as const satisfies Record<ClaudePermissionMode, Record<string, string | boolean>>
 /** Modes a plan approval can continue in (the kit lists them in this order). */
 export const PLAN_APPROVE_MODES = [PERMISSION_MODE.acceptEdits, PERMISSION_MODE.auto, PERMISSION_MODE.default] as const
 export const SDK_SETTING_EFFORT = 'effortLevel'

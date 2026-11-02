@@ -43,10 +43,9 @@ describe('ClaudeChatSession', () => {
       commands: [{ name: 'review' }, { name: 'compact', argumentHint: '[instructions]' }],
     })
     const model = s.session.describeOptions().find((o) => o.key === 'model')
-    expect(model?.values?.map((v) => v.label ?? v.labelKey)).toEqual([
-      'claude:chat.option.defaultModel',
-      ...(FAKE_INIT?.models.map((m) => m.displayName) ?? []),
-    ])
+    expect(model?.values?.map((v) => [v.value, v.label])).toEqual(
+      FAKE_INIT?.models.map((m) => [m.value === 'default' ? null : m.value, m.displayName]),
+    )
     expect(s.events[1]).toMatchObject({ kind: 'options' })
   })
 
@@ -74,7 +73,7 @@ describe('ClaudeChatSession', () => {
     const plain = await startSession('basic')
     expect(plain.session.describeOptions().find((o) => o.key === 'permissionMode')).toMatchObject({
       current: 'default',
-      values: expect.arrayContaining([{ value: 'bypassPermissions', labelKey: expect.any(String), warn: true }]),
+      values: expect.arrayContaining([expect.objectContaining({ value: 'bypassPermissions', dangerous: true })]),
     })
     const skip = await startSession('basic', { args: ['--dangerously-skip-permissions'] })
     expect(skip.session.describeOptions().map((o) => o.key)).not.toContain('permissionMode')
