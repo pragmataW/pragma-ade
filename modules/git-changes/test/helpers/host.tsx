@@ -29,12 +29,38 @@ const OWN_CONTRACTS: IpcContract<unknown, unknown>[] = [
   setBaseBranchIpc,
 ] as never
 
-/** Radix Select/Popover need these in jsdom. */
-function polyfillPointer(): void {
+/** An observer that never reports (jsdom has no layout); react-resizable-panels constructs one per group. */
+class SilentResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+const SEPARATOR_ATTR = 'data-separator'
+const OFFSCREEN = -10_000
+let separatorsMoved = false
+
+/**
+ * jsdom lays nothing out, so every element sits at 0,0 and react-resizable-panels' capture-phase pointer handler
+ * takes every click for a separator drag; its separators are reported far off screen instead.
+ */
+function moveSeparatorsOffscreen(): void {
+  if (separatorsMoved) return
+  separatorsMoved = true
+  const rectOf = Element.prototype.getBoundingClientRect
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    return this.hasAttribute(SEPARATOR_ATTR) ? new DOMRect(OFFSCREEN, OFFSCREEN, 1, 1) : rectOf.call(this)
+  }
+}
+
+/** Radix Select/Popover and react-resizable-panels need these in jsdom. */
+function polyfillDom(): void {
+  moveSeparatorsOffscreen()
   const proto = Element.prototype as unknown as Record<string, unknown>
   proto.hasPointerCapture ??= () => false
   proto.releasePointerCapture ??= () => undefined
   proto.scrollIntoView ??= () => undefined
+  globalThis.ResizeObserver ??= SilentResizeObserver as unknown as typeof ResizeObserver
 }
 
 type Answer = (input: never) => unknown
@@ -126,8 +152,8 @@ export async function mountPanel(
     commands?: Record<string, (args: unknown) => unknown>
   } = {},
 ): Promise<PanelHarness> {
-  polyfillPointer()
-  useGitChangesStore.setState({ views: {} })
+  polyfillDom()
+  useGitChangesStore.setState({ views: {}, treeCollapsed: null })
   const calls: [string, unknown][] = []
   const answers = opts.answers ?? {}
   const own = await loadModuleRecord(MODULE_DIR)

@@ -64,6 +64,9 @@ export const changesChangedEvent = defineIpcEvent({
   payload: z.object(worktreeRef),
 })
 
+/** `gitChanges.toggleFileList` (renderer): collapses / expands the changed-files list. */
+export const TOGGLE_FILE_LIST_COMMAND_ID = 'gitChanges.toggleFileList'
+
 /** `gitChanges.reveal {worktreeId, path}` (renderer): shows the file in the Git Changes tab. */
 export const REVEAL_COMMAND_ID = 'gitChanges.reveal'
 export const RevealArgsSchema = z.object({ worktreeId: z.string().min(1), path: RepoPathSchema })

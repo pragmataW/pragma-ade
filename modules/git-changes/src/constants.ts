@@ -14,6 +14,12 @@ export const TREE_INDENT_PX = 12
 export const TREE_WIDTH_PX = 232
 export const TREE_MIN_WIDTH_PX = 140
 export const TREE_MAX_WIDTH_PX = 480
+/** The file list collapses fully (toolbar toggle, command, separator double-click). */
+export const TREE_COLLAPSED_PX = 0
+export const DIFF_MIN_WIDTH_PX = 240
+/** `host.layout` keys: the split's sizes (`useDefaultLayout`) and whether the file list is collapsed. */
+export const SPLIT_LAYOUT_ID = 'git-changes.split'
+export const TREE_COLLAPSED_LAYOUT_KEY = 'git-changes.treeCollapsed'
 
 /** Diff rendering. */
 export const DIFF_CONTEXT_LINES = 3
@@ -65,7 +71,6 @@ export const STAGED_KEY_PREFIX = '/staged/'
 /** Tree height until the container is measured (jsdom, first paint). */
 export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14
-export const TREE_RESIZE_STEP_PX = 16
 export const DIFF_ICON_PX = 14
 /** Repeated UI attribute values. */
 export const ROLE_ALERT = 'alert'

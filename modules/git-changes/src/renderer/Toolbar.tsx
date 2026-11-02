@@ -10,7 +10,16 @@ import {
   SelectTrigger,
 } from '@pragma/ui/components/select'
 import { ToggleGroup, ToggleGroupItem } from '@pragma/ui/components/toggle-group'
-import { MERGE_BASE_SHORT_LEN, ROLE_ALERT, SIZE_SM, VARIANT_GHOST, VARIANT_OUTLINE } from '../constants'
+import { PanelLeftClose, PanelLeftOpen } from '@pragma/ui/icons'
+import {
+  DIFF_ICON_PX,
+  MERGE_BASE_SHORT_LEN,
+  ROLE_ALERT,
+  SIZE_ICON_SM,
+  SIZE_SM,
+  VARIANT_GHOST,
+  VARIANT_OUTLINE,
+} from '../constants'
 import {
   type BaseBranchOption,
   CHANGE_LIST_STATE,
@@ -27,6 +36,7 @@ import {
 } from '../contract'
 import { useChangedCount } from './lib/projects'
 import { getRendererCtx } from './lib/sdk'
+import { useGitChangesStore } from './store'
 import { useKeyedLatest } from './use-changes'
 
 export type ChangeLists = Record<ChangeMode, ChangeList | undefined>
@@ -209,12 +219,34 @@ function ViewToggles({ settings }: { settings: GitChangesSettings }) {
   )
 }
 
-/** Mode toggle with counts, base picker (branch mode), totals and the view preferences. */
+/** Collapses / expands the changed-files list (same as `gitChanges.toggleFileList`). */
+function TreeToggle() {
+  const t = useT()
+  const collapsed = useGitChangesStore((s) => s.treeCollapsed) === true
+  const Icon = collapsed ? PanelLeftOpen : PanelLeftClose
+  const label = t(collapsed ? 'git-changes:toolbar.showFileList' : 'git-changes:toolbar.hideFileList')
+  return (
+    <Button
+      size={SIZE_ICON_SM}
+      variant={VARIANT_GHOST}
+      data-testid={T.toggleTree}
+      aria-pressed={!collapsed}
+      aria-label={label}
+      title={label}
+      onClick={() => useGitChangesStore.getState().toggleTree()}
+    >
+      <Icon size={DIFF_ICON_PX} aria-hidden />
+    </Button>
+  )
+}
+
+/** File-list toggle, mode toggle with counts, base picker (branch mode), totals and the view preferences. */
 export function Toolbar(props: ToolbarProps) {
   const t = useT()
   const list = props.lists[props.mode]
   return (
     <div className="flex flex-wrap items-center gap-2 border-[var(--bd)] border-b bg-[var(--pn)] px-2 py-1.5">
+      <TreeToggle />
       <ModeToggle {...props} />
       {props.mode === CHANGE_MODE.branch && list ? <BasePicker worktreeId={props.worktreeId} list={list} /> : null}
       {list?.state === CHANGE_LIST_STATE.ok ? (

@@ -11,6 +11,10 @@ export const GitChangesTestIds = {
   toggleStyle: 'gc-toggle-style',
   toggleFull: 'gc-toggle-full',
   tree: 'gc-tree',
+  /** The resizable file-list pane, its separator and the toolbar button that collapses / expands it. */
+  treePane: 'gc-tree-pane',
+  treeSeparator: 'gc-tree-separator',
+  toggleTree: 'gc-toggle-tree',
   treeRow: 'gc-tree-row',
   /** Right-click menu of a file row. */
   rowMenu: 'gc-row-menu',

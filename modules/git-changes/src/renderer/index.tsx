@@ -8,6 +8,7 @@ import {
   listChangesIpc,
   REVEAL_COMMAND_ID,
   RevealArgsSchema,
+  TOGGLE_FILE_LIST_COMMAND_ID,
 } from '../contract'
 import { GitChangesPanel } from './GitChangesPanel'
 import { type GitChangesRendererContext, setRendererCtx } from './lib/sdk'
@@ -54,5 +55,8 @@ export default defineRendererModule<GitChangesSettings>({
     })
     startBadge(ctx)
     ctx.commands.register(REVEAL_COMMAND_ID, (raw) => reveal(ctx, raw), { titleKey: 'git-changes:commands.reveal' })
+    ctx.commands.register(TOGGLE_FILE_LIST_COMMAND_ID, () => useGitChangesStore.getState().toggleTree(), {
+      titleKey: 'git-changes:commands.toggleFileList',
+    })
   },
 })

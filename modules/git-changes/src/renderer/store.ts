@@ -35,6 +35,10 @@ export function revealMode(key: string, uncommittedKeys: readonly string[] | nul
 
 export interface GitChangesState {
   views: Record<string, WorktreeView>
+  /** The changed-files list is collapsed (all worktrees); null until read from the saved layout. */
+  treeCollapsed: boolean | null
+  setTreeCollapsed(collapsed: boolean): void
+  toggleTree(): void
   setMode(worktreeId: string, mode: ChangeMode): void
   select(worktreeId: string, path: string | null): void
   /** `files` in display order. */
@@ -56,6 +60,9 @@ export const useGitChangesStore = create<GitChangesState>()((set) => {
     })
   return {
     views: {},
+    treeCollapsed: null,
+    setTreeCollapsed: (collapsed) => set((s) => (s.treeCollapsed === collapsed ? {} : { treeCollapsed: collapsed })),
+    toggleTree: () => set((s) => ({ treeCollapsed: !s.treeCollapsed })),
     setMode: (id, mode) => patch(id, (v) => (v.mode === mode ? {} : { mode, order: [], composer: null })),
     select: (id, path) => patch(id, (v) => (v.selectedPath === path ? {} : { selectedPath: path, composer: null })),
     reconcile: (id, files) =>

@@ -6,7 +6,8 @@
     "title": "Git Changes"
   },
   "commands": {
-    "reveal": "Git Changes: Reveal file"
+    "reveal": "Git Changes: Reveal file",
+    "toggleFileList": "Git Changes: Toggle file list"
   },
   "mode": {
     "label": "Changes to show",
@@ -29,7 +30,9 @@
     "style": "Diff style",
     "unified": "Unified",
     "split": "Split",
-    "fullFile": "Full file"
+    "fullFile": "Full file",
+    "hideFileList": "Hide file list",
+    "showFileList": "Show file list"
   },
   "errors": {
     "baseNotFound": "Base branch {{base}} was not found",
