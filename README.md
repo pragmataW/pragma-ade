@@ -73,6 +73,8 @@ notarized**, so each OS asks you to confirm the first launch.
 With [Homebrew](https://brew.sh):
 
 ```sh
+brew tap pragmataW/tap
+brew trust pragmataW/tap   # Homebrew 7+ asks you to trust a third-party tap once
 brew install --cask pragmataW/tap/pragma-ade
 ```
 
