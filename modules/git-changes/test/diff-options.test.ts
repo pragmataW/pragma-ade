@@ -4,6 +4,7 @@ import {
   buildDiffOptions,
   changeRunStarts,
   firstChangedLine,
+  headerName,
   nextChangeTop,
   placeholderFor,
   toFileContents,
@@ -112,5 +113,14 @@ describe('helpers', () => {
     [[10, 50, 90], 5, 'prev', null],
   ] as const)('nextChangeTop(%o, %i, %s) = %s', (tops, scrollTop, direction, expected) => {
     expect(nextChangeTop(tops, scrollTop, direction)).toBe(expected)
+  })
+
+  it.each([
+    ['docs/added.md', undefined, { head: 'docs/', base: 'added.md' }],
+    ['long.ts', undefined, { head: '', base: 'long.ts' }],
+    ['new-name.txt', 'old-name.txt', { head: 'old-name.txt → ', base: 'new-name.txt' }],
+    ['src/b/new.ts', 'src/a/old.ts', { head: 'src/a/old.ts → src/b/', base: 'new.ts' }],
+  ])('headerName(%s, %s) keeps the file name apart from what may be cut', (path, oldPath, expected) => {
+    expect(headerName(path, oldPath)).toEqual(expected)
   })
 })

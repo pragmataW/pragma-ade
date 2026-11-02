@@ -34,8 +34,9 @@ function addSorted<T extends Ordered>(list: readonly T[], item: T, what: string)
   return [...list, item].sort(byOrder)
 }
 
-const defaultView = (views: readonly CenterView[]): string | null =>
-  (views.find((v) => v.default) ?? views[0])?.id ?? null
+/** The `default: true` entry, else the first by order (right tabs and center views). */
+const initialOf = (list: readonly { id: string; default?: boolean }[]): string | null =>
+  (list.find((x) => x.default) ?? list[0])?.id ?? null
 const keepOr = (id: string | null, ids: readonly { id: string }[], fallback: string | null) =>
   id !== null && ids.some((x) => x.id === id) ? id : fallback
 
@@ -53,20 +54,20 @@ export function createRegistries(): Registries {
   const set = store.setState
   /** Until the user picks a view, the `default: true` view wins whenever it registers. */
   let viewChosen = false
-  /** Likewise the first tab by order is active until one is activated explicitly. */
+  /** Likewise the `default: true` tab (else the first by order) is active until one is activated explicitly. */
   let tabChosen = false
   return {
     store,
     registerRightTab(t) {
       set((s) => {
         const tabs = addSorted(s.tabs, t, 'right tab')
-        return { tabs, activeTab: tabChosen && s.activeTab ? s.activeTab : (tabs[0]?.id ?? null) }
+        return { tabs, activeTab: tabChosen && s.activeTab ? s.activeTab : initialOf(tabs) }
       })
       return toDisposable(() =>
         set((s) => {
           const tabs = s.tabs.filter((x) => x.id !== t.id)
           const { [t.id]: _removed, ...badges } = s.badges
-          return { tabs, badges, activeTab: keepOr(s.activeTab, tabs, tabs[0]?.id ?? null) }
+          return { tabs, badges, activeTab: keepOr(s.activeTab, tabs, initialOf(tabs)) }
         }),
       )
     },
@@ -82,12 +83,12 @@ export function createRegistries(): Registries {
     registerCenterView(v) {
       set((s) => {
         const views = addSorted(s.views, v, 'center view')
-        return { views, activeView: viewChosen ? s.activeView : defaultView(views) }
+        return { views, activeView: viewChosen ? s.activeView : initialOf(views) }
       })
       return toDisposable(() =>
         set((s) => {
           const views = s.views.filter((x) => x.id !== v.id)
-          return { views, activeView: keepOr(s.activeView, views, defaultView(views)) }
+          return { views, activeView: keepOr(s.activeView, views, initialOf(views)) }
         }),
       )
     },

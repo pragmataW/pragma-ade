@@ -6,6 +6,7 @@ import { net, session, WebContentsView } from 'electron'
 import { EDITOR_PARTITION, SERVER_EVENT as EV, EXIT_EVENT, SERVER_STOP_ON_QUIT_MS, TEST_ENV } from '../constants'
 import {
   EDITOR_MODULE_ID,
+  EDITOR_OPEN_DIFF,
   EDITOR_OPEN_FILE,
   EDITOR_STATE,
   EditorIpcEvents,
@@ -13,6 +14,7 @@ import {
   type EditorSettings,
   EditorSettingsSchema,
   editorSettingsDefaults,
+  OpenDiffArgsSchema,
   OpenFileArgsSchema,
 } from '../contract'
 import { EditorBridge } from './bridge/editorBridge'
@@ -181,6 +183,7 @@ function activateEditor(typed: MainContext<EditorSettings>): void {
   disposers.push(() => process.off(EXIT_EVENT, onExit))
   registerEditorIpc(ctx, rt)
   ctx.commands.register(EDITOR_OPEN_FILE, (args) => service.openFile(OpenFileArgsSchema.parse(args)))
+  ctx.commands.register(EDITOR_OPEN_DIFF, (args) => service.openDiff(OpenDiffArgsSchema.parse(args)))
   ctx.services.provide(EditorServiceToken, service)
   stopHooks = async () => {
     for (const d of disposers.splice(0)) d()

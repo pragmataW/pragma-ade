@@ -17,7 +17,11 @@ const count = () => z.number().int().min(0)
 export const EditorThemeSchema = z.object({
   themeName: z.string(),
   mode: z.enum(THEME_MODES),
-  colors: z.record(z.string(), z.string()).optional(),
+  /**
+   * Colour theme name → palette tokens. Written as `[<theme>]` blocks of `workbench.colorCustomizations`, so the
+   * palette always matches the active colour theme and a mode switch is one `workbench.colorTheme` write.
+   */
+  colorsByTheme: z.record(z.string(), z.record(z.string(), z.string())).optional(),
 })
 export const EditorHelloSchema = z.object({
   folderKey: z.string(),
@@ -51,6 +55,15 @@ export const EditorOpenFileMsgSchema = z.object({
   line: line().optional(),
   column: line().optional(),
 })
+/** Two git revisions to compare (`git:` URIs); absent = the working-tree change git lists for the file. */
+export const DiffRefsSchema = z.object({ old: z.string().min(1), new: z.string().min(1) })
+export const EditorOpenDiffMsgSchema = z.object({
+  path: z.string(),
+  /** The old side's path of a rename (refs diffs only; the SCM change knows its own). */
+  oldPath: z.string().optional(),
+  refs: DiffRefsSchema.optional(),
+  line: line().optional(),
+})
 export const EditorSetThemeMsgSchema = EditorThemeSchema
 export const EditorLanguageStatusSchema = z.object({
   languageId: z.string().nullable(),
@@ -71,6 +84,8 @@ export type EditorHelloReply = z.infer<typeof EditorHelloReplySchema>
 export type EditorComment = z.infer<typeof EditorCommentSchema>
 export type EditorCommentReply = z.infer<typeof EditorCommentReplySchema>
 export type EditorOpenFileMsg = z.infer<typeof EditorOpenFileMsgSchema>
+export type DiffRefs = z.infer<typeof DiffRefsSchema>
+export type EditorOpenDiffMsg = z.infer<typeof EditorOpenDiffMsgSchema>
 export type EditorSetThemeMsg = z.infer<typeof EditorSetThemeMsgSchema>
 export type EditorLanguageStatus = z.infer<typeof EditorLanguageStatusSchema>
 export type EditorTestRequest = z.infer<typeof EditorTestRequestSchema>
@@ -88,6 +103,8 @@ export const editorBridge = defineBridgeNamespace({
   events: {
     /** Sent to one client (`BridgeServer.send(clientId)`). */
     openFile: EditorOpenFileMsgSchema,
+    /** Sent to one client: the file's git diff in the workbench. */
+    openDiff: EditorOpenDiffMsgSchema,
     /** Broadcast to every `editor` subscriber. */
     setTheme: EditorSetThemeMsgSchema,
     /** Sent to one client, test mode only. */

@@ -58,6 +58,18 @@ describe('claude pragma-hook bundle', () => {
     expect(lastEvent()).toEqual({ hook_event_name: 'PreToolUse', session_id: 'cs1', tool_name: 'Bash' })
   })
 
+  it('forwards the StopFailure error kind, never its details or the last message', async () => {
+    const input = {
+      hook_event_name: 'StopFailure',
+      session_id: 'cs1',
+      error: 'rate_limit',
+      error_details: 'secret details',
+      last_assistant_message: 'secret',
+    }
+    await runHook(JSON.stringify(input), ['StopFailure'])
+    expect(lastEvent()).toEqual({ hook_event_name: 'StopFailure', session_id: 'cs1', error: 'rate_limit' })
+  })
+
   it('argv event name when stdin lacks it', async () => {
     await runHook('{"session_id":"x"}', ['Stop'])
     expect(lastEvent()).toEqual({ hook_event_name: 'Stop', session_id: 'x' })

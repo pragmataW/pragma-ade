@@ -1,4 +1,4 @@
-import type { AgentSessionsService } from '@pragma/module-agents/contract'
+import { type AgentSession, type AgentSessionsService, SESSION_STATUS } from '@pragma/module-agents/contract'
 import type { GitService } from '@pragma/module-projects/contract'
 import { FIRST_DUPLICATE_SUFFIX, MAX_BRANCH_SUFFIX, REMOTE_HEAD_RE, SLUG_SEPARATOR } from '../constants'
 import {
@@ -72,17 +72,27 @@ export function createTaskLauncher(deps: TaskLauncherDeps) {
     const settings = deps.getSettings()
     const sendPrompt = o.sendPrompt ?? settings.sendPromptByDefault
     const initialPrompt = o.promptOverride ?? (sendPrompt ? buildTaskPrompt(task) : undefined)
-    let sessionId: string
+    let session: AgentSession
     try {
-      sessionId = (await sessions.startSession({ worktreeId, profileId: o.profileId, initialPrompt })).id
+      session = await sessions.startSession({ worktreeId, profileId: o.profileId, initialPrompt })
     } catch (e) {
-      const message = errorMessage(e)
-      return { ok: false, stage: START_STAGE.session, code: BOARD_ERROR.session_failed, message, worktreeId }
+      return sessionFailed(worktreeId, errorMessage(e))
     }
-    await service.linkSession(task.id, sessionId)
+    await service.linkSession(task.id, session.id)
+    // 03 answers a launch failure (command not found, spawn error, …) with an `error` session instead of throwing:
+    // linked (Go to agent → Restart), but the card stays and the drawer reports it.
+    if (session.status === SESSION_STATUS.error) return sessionFailed(worktreeId, session.error?.message ?? '')
     const movedToColumnId = settings.moveToInProgressOnStart ? await moveToInProgress(task.id) : null
-    return { ok: true, worktreeId, sessionId, movedToColumnId }
+    return { ok: true, worktreeId, sessionId: session.id, movedToColumnId }
   }
+
+  const sessionFailed = (worktreeId: string, message: string): StartTaskResult => ({
+    ok: false,
+    stage: START_STAGE.session,
+    code: BOARD_ERROR.session_failed,
+    message,
+    worktreeId,
+  })
 
   async function moveToInProgress(taskId: TaskId): Promise<number | null> {
     try {

@@ -85,6 +85,10 @@ describe('parseClaudeHookEvent', () => {
       { kind: 'turnCompleted', externalSessionId: 'c1' },
     ],
     [{ hook_event_name: 'StopFailure', ...s }, { kind: 'turnFailed' }],
+    [
+      { hook_event_name: 'StopFailure', error: 'authentication_failed', ...s },
+      { kind: 'turnFailed', message: 'authentication_failed' },
+    ],
     [{ hook_event_name: 'SessionEnd', ...s }, { kind: 'sessionEnded' }],
     [{ hook_event_name: 'Other', ...s }, null],
     ['Stop', null],

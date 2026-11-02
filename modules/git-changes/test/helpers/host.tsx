@@ -122,6 +122,8 @@ export async function mountPanel(
     commentLocales?: Record<string, unknown>
     /** Rendered instead of the Git Changes tab. */
     render?: ReactElement
+    /** Renderer commands other modules would register (e.g. 06's `editor.openDiff`). */
+    commands?: Record<string, (args: unknown) => unknown>
   } = {},
 ): Promise<PanelHarness> {
   polyfillPointer()
@@ -137,7 +139,10 @@ export async function mountPanel(
   })
   const projectsService = fakeProjects(opts.active === undefined ? aWorktree() : opts.active, opts.changedFiles ?? {})
   const projectsRenderer: RendererModule<never> = {
-    activate: (ctx) => void ctx.services.provide(ProjectsRendererServiceToken, projectsService),
+    activate: (ctx) => {
+      ctx.services.provide(ProjectsRendererServiceToken, projectsService)
+      for (const [id, run] of Object.entries(opts.commands ?? {})) ctx.commands.register(id, run)
+    },
   }
   const ui: CommentsUiService = {
     CommentComposer: NoComposer,

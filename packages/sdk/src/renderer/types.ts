@@ -10,13 +10,17 @@ import type { CommandRegistry } from '../runtime/shared/command-registry'
 import type { RendererProvidersApi } from '../runtime/shared/provider-registry'
 import type { ModuleServices } from '../runtime/shared/service-registry'
 
-/** Right dock tab (§4.5); `icon` is a kebab-case lucide name drawn with `<Icon name>` (§10.4). */
+/**
+ * Right dock tab (§4.5); `icon` is a kebab-case lucide name drawn with `<Icon name>` (§10.4).
+ * `default: true` makes it the initially active tab (else the first by `order`) until the user picks one.
+ */
 export interface RightTab {
   id: string
   titleKey: string
   icon: string
   order: number
   component: ComponentType<{ tabId: string }>
+  default?: boolean
 }
 
 /** Center area view (§4.5); `agents` (03) is the default, `board` (09) hides the right panel. */

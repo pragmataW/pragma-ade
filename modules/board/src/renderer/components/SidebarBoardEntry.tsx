@@ -3,6 +3,7 @@ import { Icon } from '@pragma/ui/components/icon'
 import { ICON_PX, VIEW_ICON } from '../../constants'
 import { BOARD_OPEN_COMMAND_ID, BOARD_TESTIDS as T } from '../../contract'
 import { boardCtx } from '../lib/runtime'
+import { useTrackViews } from '../lib/use-leave-board'
 import { useBoardStore } from '../store'
 import { PlainButton } from './PlainButton'
 
@@ -10,6 +11,8 @@ import { PlainButton } from './PlainButton'
 export function SidebarBoardEntry() {
   const t = useT()
   const count = useBoardStore((s) => s.openCount)
+  // Mounted from startup, so the view the board is first opened from is known.
+  useTrackViews()
   return (
     <PlainButton
       data-testid={T.sidebarEntry}

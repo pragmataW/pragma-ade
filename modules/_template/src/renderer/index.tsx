@@ -1,5 +1,13 @@
 import { defineRendererModule } from '@pragma/sdk/renderer'
-import { COMMANDS, EXAMPLE_SETTINGS_ORDER, SETTINGS_PAGE_ID, TAB_ICON, TAB_ID, TAB_ORDER } from '../constants'
+import {
+  COMMANDS,
+  EXAMPLE_SETTINGS_ORDER,
+  SETTINGS_PAGE_ICON,
+  SETTINGS_PAGE_ID,
+  TAB_ICON,
+  TAB_ID,
+  TAB_ORDER,
+} from '../constants'
 import { ExampleIpc, type ExampleSettings } from '../contract'
 import { formatGreeting } from '../lib/greeting'
 import { ExampleSettingsPage } from './ExampleSettingsPage'
@@ -19,6 +27,7 @@ export default defineRendererModule<ExampleSettings>({
       id: SETTINGS_PAGE_ID,
       titleKey: 'example:settings.title',
       order: EXAMPLE_SETTINGS_ORDER,
+      icon: SETTINGS_PAGE_ICON,
       component: ExampleSettingsPage,
     })
     ctx.commands.register(

@@ -1,5 +1,5 @@
 import type { AgentStatusService } from '@pragma/module-agent-status/contract'
-import type { AgentSessionsService } from '@pragma/module-agents/contract'
+import { type AgentSession, type AgentSessionsService, isRunningStatus } from '@pragma/module-agents/contract'
 import type { AgentSessionId, LinkedSessionDto } from '../contract'
 
 /** Enriches linked session ids for task DTOs; the status comes from agent-status when it is enabled. */
@@ -14,6 +14,12 @@ export function createSessionInfo(deps: {
   status?: Pick<AgentStatusService, 'getStatus'>
 }): SessionInfo {
   const { sessions, status } = deps
+  /** 03's record wins once the session ended (exited, or `error`: it never launched); agent-status before that. */
+  const statusOf = (session: AgentSession) => {
+    if (!status) return null
+    if (!isRunningStatus(session.status)) return session.status
+    return status.getStatus(session.id)?.status ?? null
+  }
   async function one(id: AgentSessionId): Promise<LinkedSessionDto | null> {
     const session = await sessions.getSession(id)
     if (!session) return null
@@ -23,7 +29,7 @@ export function createSessionInfo(deps: {
       sessionId: id,
       worktreeId: session.worktreeId,
       title: session.title || null,
-      status: info?.status ?? null,
+      status: statusOf(session),
       turnCompleted: info?.turnCompleted ?? false,
       profileId: session.profileId,
       profileName: profile?.name ?? null,

@@ -1,12 +1,18 @@
 /** Constants shared by main, renderer, the bridge extension and other modules' E2E (§9.2). */
 export const EDITOR_MODULE_ID = 'editor'
 export const EDITOR_OPEN_FILE = 'editor.openFile'
+/** Opens a changed file's git diff (VS Code's own SCM diff); added for Git Changes › Open in editor (2026-11-02). */
+export const EDITOR_OPEN_DIFF = 'editor.openDiff'
+/** The `refs.new` value naming the checked-out commit. */
+export const GIT_HEAD_REF = 'HEAD'
 export const FILES_TAB_ID = 'files'
-export const FILES_TAB_ORDER = 30
+/** First right-dock tab (before Terminal 10; user decision 2026-11-02, ui-notes). */
+export const FILES_TAB_ORDER = 5
 export const FILES_TAB_ICON = 'file-code'
 export const EDITOR_CLIENT_KIND = 'vscode-extension'
 export const EDITOR_CLIENT_NAME = 'pragma-bridge'
 export const EDITOR_SETTINGS_ORDER = 80
+export const EDITOR_SETTINGS_ICON = 'square-code'
 export const EDITOR_STATUSBAR_ORDER = 30
 export const EDITOR_STATUSBAR_ENTRY_ID = 'editor.languageStatus'
 export const TEST_OPS = [

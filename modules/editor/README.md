@@ -25,7 +25,9 @@ agent, open a file at a line, follow the app theme, report language status.
 ## Settings (`settings.json` → `editor`)
 
 `maxOpenViews` (1–16, default 4, LRU), `themeMap` (`{ dark: 'Dark Modern', light: 'Light Modern' }`), `syncPalette`
-(push the app palette into `workbench.colorCustomizations`, only Pragma-managed keys), `serveWebviewsLocally`
+(push the app palette of both modes into `workbench.colorCustomizations`, one `[<theme>]` block per `themeMap` theme
+so the active theme always gets its own palette; only Pragma-managed keys; applies are serialized, newest wins, and
+read back until they hold), `serveWebviewsLocally`
 (serve `*.vscode-cdn.net/…/webview/browser/pre/*` from the local server), `reconnectionGraceSeconds` (300).
 
 ## Server

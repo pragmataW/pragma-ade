@@ -1,3 +1,4 @@
+import { agentsErrorKey } from '@pragma/module-agents/contract'
 import { useModuleSettings, useT } from '@pragma/sdk/renderer'
 import { Button } from '@pragma/ui/components/button'
 import { Input } from '@pragma/ui/components/input'
@@ -47,12 +48,15 @@ function BranchError({ reason }: { reason: string | null }) {
   )
 }
 
+/** The failure under the Start work box; an agents error (`agents:errors.<code>|{params}`) is shown translated. */
 export function StartFailureText({ failure }: { failure: StartFailure | null }) {
   const t = useT()
   if (!failure) return null
+  const agentsError = agentsErrorKey(failure.message)
+  const message = agentsError ? t(agentsError.key, agentsError.params) : failure.message
   return (
     <p data-testid={T.startError} role={ROLE_ALERT} className="text-[12px] text-[var(--err)]">
-      {t(`board:start.error.${failure.stage}`, { message: failure.message })}
+      {t(`board:start.error.${failure.stage}`, { message })}
     </p>
   )
 }

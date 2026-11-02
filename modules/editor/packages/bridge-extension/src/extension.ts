@@ -1,11 +1,14 @@
+import type { EditorSetThemeMsg } from '@pragma/module-editor/contract'
 import * as vscode from 'vscode'
 import { BridgeConnection, type EditorEventHandlers } from './bridgeConnection'
 import { ReviewController } from './comments/controller'
 import { CONNECTION, TEST_MODE } from './constants'
 import { applyFirstRunDefaults } from './defaults'
+import { handleOpenDiff } from './handlers/openDiff'
 import { handleOpenFile } from './handlers/openFile'
 import { applyTheme } from './handlers/theme'
 import { startLanguageStatusReporter } from './languageStatus'
+import { LatestQueue } from './latestQueue'
 import { answerTestRequest, createTestOps } from './testOps'
 import { createVscodeApi, type VscodeApi } from './vscodeApi'
 
@@ -14,12 +17,18 @@ let connection: BridgeConnection | undefined
 function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewController): EditorEventHandlers {
   const folderPath = (): string => conn.folderPath ?? ''
   const ops = createTestOps(api, { folderPath, handleComment: (r, a) => review.handle(r, a) })
-  return {
-    openFile: (m) => handleOpenFile(api, folderPath(), m),
-    setTheme: async (m) => {
+  // One apply at a time, only the newest waiting theme (hello reply and broadcasts share the queue).
+  const themes = new LatestQueue<EditorSetThemeMsg>(
+    async (m) => {
       await applyFirstRunDefaults(api, m.themeName)
       await applyTheme(api, m)
     },
+    (e) => api.log(String(e)),
+  )
+  return {
+    openFile: (m) => handleOpenFile(api, folderPath(), m),
+    openDiff: (m) => handleOpenDiff(api, folderPath(), m),
+    setTheme: (m) => themes.push(m),
     ...(api.env[TEST_MODE.env] === TEST_MODE.enabled ? { testRequest: (m) => answerTestRequest(ops, conn, m) } : {}),
   }
 }

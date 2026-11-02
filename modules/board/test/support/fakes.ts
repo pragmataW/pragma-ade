@@ -104,7 +104,7 @@ export function fakeGit(): Pick<GitService, 'isValidBranchName' | 'defaultBaseBr
 
 export type FakeSessions = ReturnType<typeof fakeAgentSessions>
 
-/** In-memory agent sessions: `startSession` records its input (or throws `failStart`). */
+/** In-memory agent sessions: `startSession` records its input (or throws `failStart`, or answers `startAs` fields). */
 export function fakeAgentSessions(
   profiles: AgentProfile[] = [
     aProfile({ id: 'fake', name: 'Fake', providerId: 'custom', isDefault: true }),
@@ -117,6 +117,8 @@ export function fakeAgentSessions(
     sessions: new Map<string, AgentSession>(),
     started: [] as StartSessionInput[],
     failStart: null as Error | null,
+    /** Fields of the answered session, e.g. 03's `error` session for a launch failure. */
+    startAs: {} as Partial<AgentSession>,
   }
   const service: Pick<AgentSessionsService, 'listProfiles' | 'getProfile' | 'getSession' | 'startSession'> = {
     listProfiles: async () => state.profiles,
@@ -131,6 +133,7 @@ export function fakeAgentSessions(
         worktreeId: input.worktreeId,
         profileId: profile?.id ?? null,
         providerId: profile?.providerId ?? 'custom',
+        ...state.startAs,
       })
       state.sessions.set(id, session)
       return session

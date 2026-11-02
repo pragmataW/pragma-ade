@@ -19,6 +19,8 @@ export default defineRendererModule<TerminalSettings>({
       icon: RIGHT_TAB_ICON,
       order: RIGHT_TAB_ORDER,
       component: TerminalPanel,
+      // The Files tab is first in the strip (ui-notes); the terminal stays the tab shown at launch.
+      default: true,
     })
   },
 })

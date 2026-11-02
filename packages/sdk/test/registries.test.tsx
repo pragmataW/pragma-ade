@@ -3,9 +3,12 @@ import { createRegistries, DuplicateRegistrationError, type Registries } from '.
 
 const Nothing = () => null
 type Kind = 'tabs' | 'views' | 'settingsPages'
-const adders: Record<Kind, (r: Registries, id: string, order: number) => { dispose(): void }> = {
-  tabs: (r, id, order) => r.registerRightTab({ id, titleKey: 'x:y', icon: 'x', order, component: Nothing }),
-  views: (r, id, order) => r.registerCenterView({ id, titleKey: 'x:y', icon: 'x', order, component: Nothing }),
+type Extra = { default?: boolean }
+const adders: Record<Kind, (r: Registries, id: string, order: number, extra?: Extra) => { dispose(): void }> = {
+  tabs: (r, id, order, extra) =>
+    r.registerRightTab({ id, titleKey: 'x:y', icon: 'x', order, component: Nothing, ...extra }),
+  views: (r, id, order, extra) =>
+    r.registerCenterView({ id, titleKey: 'x:y', icon: 'x', order, component: Nothing, ...extra }),
   settingsPages: (r, id, order) => r.registerSettingsPage({ id, titleKey: 'x:y', order, component: Nothing }),
 }
 
@@ -42,11 +45,28 @@ it.each([
   activate(r)
   expect(r.store.getState()[key]).toBe('b')
 })
-test('default view wins as the initial active view', () => {
-  const r = createRegistries()
-  r.registerCenterView({ id: 'board', titleKey: 'x:y', icon: 'x', order: 1, component: Nothing })
-  r.registerCenterView({ id: 'agents', titleKey: 'x:y', icon: 'x', order: 2, component: Nothing, default: true })
-  expect(r.store.getState().activeView).toBe('agents')
+describe.each([
+  ['tabs', 'activeTab', (r: Registries, id: string) => r.activateRightTab(id)],
+  ['views', 'activeView', (r: Registries, id: string) => r.activateView(id)],
+] as const)('%s default', (kind, key, activate) => {
+  const add = adders[kind]
+  const active = (r: Registries) => r.store.getState()[key]
+  test('the default entry is initially active, even registered after a lower order', () => {
+    const r = createRegistries()
+    add(r, 'first', 1)
+    const preferred = add(r, 'preferred', 2, { default: true })
+    add(r, 'other', 0)
+    expect(active(r)).toBe('preferred')
+    preferred.dispose()
+    expect(active(r)).toBe('other')
+  })
+  test('an explicit activation wins over the default', () => {
+    const r = createRegistries()
+    add(r, 'first', 1)
+    activate(r, 'first')
+    add(r, 'preferred', 2, { default: true })
+    expect(active(r)).toBe('first')
+  })
 })
 test('setBadge sets and clears a count', () => {
   const r = createRegistries()

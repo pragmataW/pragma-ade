@@ -23,22 +23,81 @@ export const CONFIG = {
   autoUpdate: 'autoUpdate',
 } as const
 export const STATE_KEYS = {
+  /** Top-level colour ids written by versions before theme-scoped blocks (removed on the next apply). */
   managedColorKeys: 'pragma.managedColorKeys',
+  /** `colorCustomizations` scope (`''` top level, `[<theme>]` a theme block) → colour ids Pragma wrote there. */
+  managedColors: 'pragma.managedColors',
   defaultsVersion: 'pragma.defaultsVersion',
 } as const
+/** A theme apply re-reads what it wrote; another workbench writing the same user settings can undo or reject it. */
+export const THEME_APPLY = { attempts: 5, retryDelayMs: 200 } as const
+export const THEME_SCOPE = { top: '', open: '[', close: ']' } as const
 export const DEFAULT_VALUES = { none: 'none', off: 'off' } as const
+/** The built-in git extension and the commands "Open in editor" (Git Changes) uses. */
+export const GIT = {
+  extensionId: 'vscode.git',
+  apiVersion: 1,
+  initialized: 'initialized',
+  openChange: 'git.openChange',
+  vscodeDiff: 'vscode.diff',
+  /** How long to wait for the git extension to finish its first repository scan. */
+  readyTimeoutMs: 10_000,
+} as const
+export const SCM_CHANGE = { opened: 'opened', notChanged: 'notChanged', noRepository: 'noRepository' } as const
+export type ScmChangeResult = (typeof SCM_CHANGE)[keyof typeof SCM_CHANGE]
+/** Diff tab titles: `name (old ↔ new)`; full shas are shortened. */
+export const DIFF_TITLE = {
+  separator: ' ↔ ',
+  open: ' (',
+  close: ')',
+  workingTree: 'Working Tree',
+  shaLength: 7,
+} as const
 export const OUTSIDE_FOLDER_WARNING = 'Pragma: the file is outside this worktree and was not opened: '
 /** ui-notes palette token → workbench color ids (`workbench.colorCustomizations`). */
 export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
-  bg: ['editor.background', 'tab.activeBackground', 'editorGutter.background'],
-  sb: ['sideBar.background', 'activityBar.background', 'titleBar.activeBackground', 'statusBar.background'],
+  bg: ['editor.background', 'tab.activeBackground', 'editorGutter.background', 'breadcrumb.background'],
+  // Inactive variants too: the workbench is unfocused whenever the app's own UI has focus.
+  sb: [
+    'sideBar.background',
+    'sideBarSectionHeader.background',
+    'activityBar.background',
+    'titleBar.activeBackground',
+    'titleBar.inactiveBackground',
+    'statusBar.background',
+    'statusBar.noFolderBackground',
+  ],
   pn: ['panel.background', 'editorGroupHeader.tabsBackground', 'tab.inactiveBackground'],
-  el: ['input.background', 'dropdown.background', 'editorWidget.background'],
-  hv: ['list.hoverBackground', 'list.activeSelectionBackground'],
-  bd: ['panel.border', 'sideBar.border', 'editorGroup.border', 'tab.border'],
+  el: ['input.background', 'dropdown.background', 'editorWidget.background', 'commandCenter.background'],
+  hv: ['list.hoverBackground', 'list.activeSelectionBackground', 'list.inactiveSelectionBackground'],
+  bd: [
+    'panel.border',
+    'sideBar.border',
+    'editorGroup.border',
+    'tab.border',
+    'titleBar.border',
+    'activityBar.border',
+    'statusBar.border',
+    'commandCenter.border',
+  ],
   bd2: ['input.border'],
-  tx: ['foreground', 'editor.foreground'],
-  mu: ['descriptionForeground'],
+  tx: [
+    'foreground',
+    'editor.foreground',
+    'titleBar.activeForeground',
+    'commandCenter.foreground',
+    'activityBar.foreground',
+    'sideBar.foreground',
+    'statusBar.foreground',
+    'list.activeSelectionForeground',
+    'list.inactiveSelectionForeground',
+  ],
+  mu: [
+    'descriptionForeground',
+    'titleBar.inactiveForeground',
+    'commandCenter.inactiveForeground',
+    'activityBar.inactiveForeground',
+  ],
   ac: [
     'focusBorder',
     'button.background',
@@ -46,8 +105,11 @@ export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
     'activityBarBadge.background',
     'tab.activeBorderTop',
     'progressBar.background',
+    'activityBar.activeBorder',
+    'panelTitle.activeBorder',
+    'statusBarItem.remoteBackground',
   ],
-  acfg: ['button.foreground', 'badge.foreground', 'activityBarBadge.foreground'],
+  acfg: ['button.foreground', 'badge.foreground', 'activityBarBadge.foreground', 'statusBarItem.remoteForeground'],
   act: ['textLink.foreground'],
   acs: ['editor.selectionHighlightBackground'],
 }
@@ -78,7 +140,7 @@ export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as co
 export const SEVERITIES = ['error', 'warning', 'info', 'hint'] as const
 export type Severity = (typeof SEVERITIES)[number]
 export const SEVERITY = { error: 'error', warning: 'warning' } as const satisfies Record<string, Severity>
-export const TAB_KINDS = { text: 'text', webview: 'webview', other: 'other' } as const
+export const TAB_KINDS = { text: 'text', diff: 'diff', webview: 'webview', other: 'other' } as const
 export type TabKind = (typeof TAB_KINDS)[keyof typeof TAB_KINDS]
 export const LANGUAGE_STATUS_DEBOUNCE_MS = 300
 export const TEST_MODE = { env: 'PRAGMA_TEST', enabled: '1' } as const

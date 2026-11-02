@@ -106,3 +106,16 @@ export function nextChangeTop(tops: readonly number[], scrollTop: number, direct
   if (direction === CHANGE_DIRECTIONS[0]) return sorted.find((t) => t > scrollTop + CHANGE_SCROLL_OFFSET_PX) ?? null
   return sorted.findLast((t) => t < scrollTop - CHANGE_SCROLL_OFFSET_PX) ?? null
 }
+
+const PATH_SEPARATOR = '/'
+const RENAME_ARROW = ' → '
+
+/**
+ * The diff header's name in two parts: `head` (directories, and `old → ` for a rename) may be cut with an ellipsis in a
+ * narrow pane; `base`, the file name, stays visible.
+ */
+export function headerName(path: string, oldPath?: string): { head: string; base: string } {
+  const cut = path.lastIndexOf(PATH_SEPARATOR) + 1
+  const rename = oldPath ? `${oldPath}${RENAME_ARROW}` : ''
+  return { head: `${rename}${path.slice(0, cut)}`, base: path.slice(cut) }
+}

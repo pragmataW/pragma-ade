@@ -5,15 +5,7 @@ import { useT } from '@pragma/sdk/renderer'
 import { Button } from '@pragma/ui/components/button'
 import { ChevronDown, ChevronUp, SquareArrowOutUpRight } from '@pragma/ui/icons'
 import { type ReactNode, type Ref, useImperativeHandle, useMemo, useRef } from 'react'
-import {
-  CHANGE_SCROLL_OFFSET_PX,
-  DIFF_ICON_PX,
-  EDITOR_OPEN_FILE_COMMAND,
-  FILES_TAB_ID,
-  SIZE_ICON_SM,
-  SIZE_SM,
-  VARIANT_GHOST,
-} from '../../constants'
+import { CHANGE_SCROLL_OFFSET_PX, DIFF_ICON_PX, SIZE_ICON_SM, VARIANT_GHOST } from '../../constants'
 import {
   type ChangedFile,
   type ChangeMode,
@@ -23,7 +15,8 @@ import {
   type GitChangesSettings,
   GitChangesTestIds as T,
 } from '../../contract'
-import { getRendererCtx, useThemeMode } from '../lib/sdk'
+import type { EditorOpener } from '../lib/editor'
+import { useThemeMode } from '../lib/sdk'
 import { useFileContents } from '../use-changes'
 import {
   buildDiffOptions,
@@ -32,6 +25,7 @@ import {
   changeRunStarts,
   type DiffAnnotationMeta,
   firstChangedLine,
+  headerName,
   nextChangeTop,
   placeholderFor,
   toFileContents,
@@ -55,12 +49,13 @@ export interface DiffViewProps {
   annotations?: DiffLineAnnotation<DiffAnnotationMeta>[]
   renderAnnotation?(annotation: DiffLineAnnotation<DiffAnnotationMeta>): ReactNode
   onRange?(range: SelectedLineRange, contents: FileDiffContents): void
+  /** "Open in editor" (the file's git diff in the Files tab); absent without the editor module. */
+  onOpenInEditor?: EditorOpener | null
 }
 
 const DIFFS_CONTAINER = 'diffs-container'
 const LINE_TYPE_SELECTOR = '[data-line-type]'
 const LINE_TYPE_ATTR = 'data-line-type'
-const RENAME_ARROW = ' → '
 const [NEXT, PREV] = CHANGE_DIRECTIONS
 const NO_ANNOTATIONS: DiffLineAnnotation<DiffAnnotationMeta>[] = []
 
@@ -102,29 +97,19 @@ function editorLine(c: FileDiffContents | undefined, composer: CommentContext | 
   return firstChangedLine(c.old.kind === FILE_VERSION_KIND.text ? c.old.contents : null, c.new.contents)
 }
 
-function OpenInEditor(props: { worktreeId: string; file: ChangedFile; line: () => number }) {
+function OpenInEditor(props: { open(): void }) {
   const t = useT()
-  const ctx = getRendererCtx()
-  if (!ctx.commands.has(EDITOR_OPEN_FILE_COMMAND)) return null
-  const open = async () => {
-    await ctx.commands.execute(EDITOR_OPEN_FILE_COMMAND, {
-      worktreeId: props.worktreeId,
-      path: props.file.path,
-      line: props.line(),
-    })
-    ctx.panels.activateRightTab(FILES_TAB_ID)
-  }
+  const label = t('git-changes:diff.openInEditor')
   return (
     <Button
-      size={SIZE_SM}
+      size={SIZE_ICON_SM}
       variant={VARIANT_GHOST}
       data-testid={T.openInEditor}
-      disabled={props.file.status === FILE_STATUS.D}
-      onClick={() => void open().catch((e: unknown) => console.warn('git-changes: open in editor failed', e))}
-      className="h-7 gap-1 px-2 text-xs"
+      aria-label={label}
+      title={label}
+      onClick={props.open}
     >
       <SquareArrowOutUpRight size={DIFF_ICON_PX} aria-hidden />
-      {t('git-changes:diff.openInEditor')}
     </Button>
   )
 }
@@ -132,14 +117,20 @@ function OpenInEditor(props: { worktreeId: string; file: ChangedFile; line: () =
 function DiffHeader(props: { file: ChangedFile; onJump(d: ChangeDirection): void; children: ReactNode }) {
   const t = useT()
   const { file } = props
-  const name = file.status === FILE_STATUS.R && file.oldPath ? `${file.oldPath}${RENAME_ARROW}${file.path}` : file.path
+  const { head, base } = headerName(file.path, file.status === FILE_STATUS.R ? file.oldPath : undefined)
   return (
     <div
       data-testid={T.diffHeader}
       className="flex h-9 shrink-0 items-center gap-2 border-[var(--bd)] border-b bg-[var(--pn)] px-2"
     >
-      <span className="min-w-0 flex-1 truncate font-mono text-xs" title={name}>
-        {name}
+      <span className="flex min-w-0 flex-1 overflow-hidden font-mono text-xs" title={`${head}${base}`}>
+        {/* The directories are cut from the start (rtl box, ltr text: "…cs/"); the file name stays whole. */}
+        {head ? (
+          <span dir="rtl" className="min-w-[1ch] truncate">
+            <bdi>{head}</bdi>
+          </span>
+        ) : null}
+        <span className="max-w-full shrink-0 truncate">{base}</span>
       </span>
       <span className="shrink-0 font-mono text-xs">
         <span className="text-[var(--add-tx)]">{`+${file.additions}`}</span>{' '}
@@ -226,7 +217,7 @@ function DiffBody(props: DiffViewProps & { contents: FileDiffContents }) {
 /** Header (path, +/−, change navigation, Open in editor) and the full-file diff or a placeholder. */
 export function DiffView(props: DiffViewProps) {
   const t = useT()
-  const { worktreeId, mode, file, ref } = props
+  const { worktreeId, mode, file, ref, onOpenInEditor } = props
   const loaded = useFileContents(worktreeId, mode, file)
   const scroller = useRef<HTMLDivElement>(null)
   useImperativeHandle(ref, () => ({
@@ -241,7 +232,9 @@ export function DiffView(props: DiffViewProps) {
   return (
     <div data-testid={T.diff} data-path={file.path} className="flex min-h-0 flex-1 flex-col">
       <DiffHeader file={file} onJump={(d) => jump(scroller.current, d)}>
-        <OpenInEditor worktreeId={worktreeId} file={file} line={() => editorLine(loaded.data, props.composer)} />
+        {onOpenInEditor ? (
+          <OpenInEditor open={() => onOpenInEditor(file, editorLine(loaded.data, props.composer))} />
+        ) : null}
       </DiffHeader>
       <div ref={scroller} className="flex min-h-0 flex-1 flex-col overflow-auto">
         {body}

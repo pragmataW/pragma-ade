@@ -1,8 +1,14 @@
+import { type PaletteId, palettes, sharedTokens } from '@pragma/ui/tokens'
 import { describe, expect, it } from 'vitest'
 import { type EditorSettings, editorSettingsDefaults } from '../src/contract'
 import { ThemeState } from '../src/main/theme/themeState'
 
-type T = { mode: 'system' | 'light' | 'dark'; resolved: 'light' | 'dark'; tokens: Record<string, string> }
+type T = {
+  mode: 'system' | 'light' | 'dark'
+  resolved: 'light' | 'dark'
+  palette?: PaletteId
+  tokens: Record<string, string>
+}
 
 function setup(initial: T, settings: Partial<EditorSettings> = {}) {
   let theme = { palette: 'vscode', density: 'compact', ...initial }
@@ -39,7 +45,35 @@ function setup(initial: T, settings: Partial<EditorSettings> = {}) {
 describe('ThemeState', () => {
   it("message uses resolved (mode 'system', resolved 'dark' → themeMap.dark) and includes tokens when syncPalette", () => {
     const { state } = setup({ mode: 'system', resolved: 'dark', tokens: { bg: '#1e1e1e' } })
-    expect(state.message()).toEqual({ themeName: 'Dark Modern', mode: 'dark', colors: { bg: '#1e1e1e' } })
+    const m = state.message()
+    expect(m).toMatchObject({ themeName: 'Dark Modern', mode: 'dark' })
+    expect(m.colorsByTheme?.['Dark Modern']).toEqual({ bg: '#1e1e1e' })
+  })
+
+  it('carries the palette of both modes, each keyed by its colour theme', () => {
+    const { state } = setup({ mode: 'dark', resolved: 'dark', palette: 'dark-brown', tokens: { bg: '#1c1714' } })
+    const m = state.message()
+    expect(m.colorsByTheme?.['Dark Modern']).toEqual({ bg: '#1c1714' })
+    expect(m.colorsByTheme?.['Light Modern']).toMatchObject({
+      ...palettes['dark-brown'].light,
+      ...sharedTokens.light,
+    })
+  })
+
+  it('one colour theme for both modes gets the resolved palette', () => {
+    const { state } = setup(
+      { mode: 'light', resolved: 'light', tokens: { bg: '#ffffff' } },
+      { themeMap: { dark: 'Same', light: 'Same' } },
+    )
+    expect(state.message().colorsByTheme).toEqual({ Same: { bg: '#ffffff' } })
+  })
+
+  it('onChange fires on a palette change', () => {
+    const t = setup({ mode: 'dark', resolved: 'dark', tokens: {} })
+    let fired = 0
+    t.state.onChange(() => fired++)
+    t.setTheme({ palette: 'amber' })
+    expect(fired).toBe(1)
   })
 
   it('syncPalette false → no colors', () => {

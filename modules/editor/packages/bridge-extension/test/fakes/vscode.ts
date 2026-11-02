@@ -1,4 +1,12 @@
-import type { CommentControllerSpec, DiagnosticInfo, TabInfo, ThreadLike, VscodeApi } from '../../src/vscodeApi'
+import { SCM_CHANGE, type ScmChangeResult } from '../../src/constants'
+import type {
+  CommentControllerSpec,
+  DiagnosticInfo,
+  RevisionSide,
+  TabInfo,
+  ThreadLike,
+  VscodeApi,
+} from '../../src/vscodeApi'
 
 /** A recording fake of the `VscodeApi` port. */
 export interface FakeApi extends VscodeApi {
@@ -16,6 +24,11 @@ export interface FakeApi extends VscodeApi {
   tabList: TabInfo[]
   executed: { id: string; args: unknown[] }[]
   current: { doc?: { languageId: string; path: string }; editor: { path: string; line: number; column: number } | null }
+  /** What `openScmChange` answers; `hasRepo` false makes `openRevisionDiff` answer false. */
+  git: { scm: ScmChangeResult; hasRepo: boolean }
+  scmOpened: string[]
+  revisionDiffs: { left: RevisionSide; right: RevisionSide; title: string }[]
+  revealed: number[]
   /** Fires the active-editor and diagnostics listeners. */
   fireChange(): void
 }
@@ -53,6 +66,10 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
   const tabList: TabInfo[] = []
   const executed: FakeApi['executed'] = []
   const current: FakeApi['current'] = { editor: null }
+  const git: FakeApi['git'] = { scm: SCM_CHANGE.opened, hasRepo: true }
+  const scmOpened: string[] = []
+  const revisionDiffs: FakeApi['revisionDiffs'] = []
+  const revealed: number[] = []
   const listeners = new Set<() => void>()
   const listen = (cb: () => void) => {
     listeners.add(cb)
@@ -65,6 +82,15 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     showInfo: (m) => infos.push(m),
     showWarning: (m) => warnings.push(m),
     openAndReveal: async (path, line, column) => void opened.push({ path, line, column }),
+    revealInActiveEditor: (line) => void revealed.push(line),
+    openScmChange: async (path) => {
+      if (git.scm === SCM_CHANGE.opened) scmOpened.push(path)
+      return git.scm
+    },
+    openRevisionDiff: async (left, right, title) => {
+      if (git.hasRepo) revisionDiffs.push({ left, right, title })
+      return git.hasRepo
+    },
     getGlobalConfig: <T>(section: string, key: string) => config.get(cfgKey(section, key)) as T | undefined,
     updateGlobalConfig: async (section, key, value) => {
       configWrites.push(cfgKey(section, key))
@@ -94,6 +120,10 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     fireChange: () => {
       for (const cb of listeners) cb()
     },
+    git,
+    scmOpened,
+    revisionDiffs,
+    revealed,
     diags,
     tabList,
     executed,

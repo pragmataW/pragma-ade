@@ -13,9 +13,11 @@
   },
   "exports": {},
   "dependencies": {
+    "@opencode/client": "2.2.5",
     "@pragma/module-agent-status": "workspace:*",
     "@pragma/module-agents": "workspace:*",
     "@pragma/module-bridge": "workspace:*",
+    "@pragma/module-chat": "workspace:*",
     "@pragma/module-cli-integration": "workspace:*",
     "@pragma/provider-opencode-hooks": "workspace:*",
     "@pragma/sdk": "workspace:*",

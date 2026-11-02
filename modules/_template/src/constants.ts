@@ -16,6 +16,8 @@ export const TAB_ORDER = 1000
 /** Out-of-tree settings pages use orders above 1000 (§10.4). */
 export const EXAMPLE_SETTINGS_ORDER = 1001
 export const SETTINGS_PAGE_ID = 'example'
+/** Every settings page has a lucide icon in the settings nav. */
+export const SETTINGS_PAGE_ICON = 'sliders-horizontal'
 export const MAX_NAME_LENGTH = 64
 export const DEFAULT_NAME = 'World'
 export const EXAMPLE_TABLE = 'example_items'
