@@ -7,7 +7,10 @@ import { useElementBounds } from '../lib/use-element-bounds'
 import { EmptyState } from './EmptyState'
 import { RightTabStrip } from './RightTabStrip'
 
-/** One tab body; reports its rect for native views only while it is the visible tab (§10.2). */
+/**
+ * One tab body: always mounted (state survives hiding); `visible` goes to the component so it can defer costly
+ * work to its first showing. Reports its rect for native views only while it is the visible tab (§10.2).
+ */
 function TabContent({ tab, visible }: { tab: RightTab; visible: boolean }) {
   const host = useRendererHost()
   const ref = useRef<HTMLDivElement>(null)
@@ -19,7 +22,7 @@ function TabContent({ tab, visible }: { tab: RightTab; visible: boolean }) {
   return (
     <div ref={ref} data-testid={T.rightTabContent(tab.id)} hidden={!visible} className="h-full min-h-0">
       <ErrorBoundary name={`tab ${tab.id}`}>
-        <tab.component tabId={tab.id} />
+        <tab.component tabId={tab.id} visible={visible} />
       </ErrorBoundary>
     </div>
   )

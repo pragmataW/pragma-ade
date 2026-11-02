@@ -24,4 +24,13 @@ describe('LanguageStatusItem', () => {
     if (expected) expect(screen.getByTestId(T.lspStatus).textContent).toBe(expected)
     else expect(screen.queryByTestId(T.lspStatus)).toBeNull()
   })
+
+  it('only reads status: it never starts the editor', async () => {
+    const r = await renderEditor(<LanguageStatusItem />, {
+      replies: { [EditorIpc.getStatus.channel]: { state: 'not-installed', version: 'v', sizeBytes: 1 } },
+    })
+    expect(new Set(r.calls.map((c) => c.channel))).toEqual(
+      new Set([EditorIpc.getStatus.channel, EditorIpc.getLanguageStatus.channel]),
+    )
+  })
 })

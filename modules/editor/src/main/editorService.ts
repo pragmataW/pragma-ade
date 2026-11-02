@@ -49,7 +49,7 @@ export class EditorServiceImpl implements EditorService {
     return this.#d.server.status()
   }
 
-  /** Starts the server if needed, selects the worktree, shows its view, reveals the Files tab, opens the file. */
+  /** Selects the worktree, reveals the Files tab, starts the server if needed, shows its view, opens the file. */
   openFile(args: OpenFileArgs): Promise<OpenFileResult> {
     return this.#reveal(args.worktreeId, `editor.openFile ${args.path}`, (folderKey) =>
       this.#d.bridge.openFile(folderKey, {
@@ -77,12 +77,13 @@ export class EditorServiceImpl implements EditorService {
     const wt = await d.up.getWorktree(worktreeId)
     if (!wt) return { ok: false, errorKey: NOT_FOUND }
     try {
-      const status = await d.server.ensureRunning()
-      if (status.state !== EDITOR_STATE.ready) throw new NotReadyError(status.state)
       d.markActivated()
       if (d.up.getActiveWorktreeId() !== wt.id) await d.up.selectWorktree(wt.id)
-      d.views.show(wt)
+      // Reveal first: the Files tab shows download/start progress (its first showing also asks for the start).
       d.publishReveal(wt.id)
+      const status = await d.server.ensureRunning()
+      if (status.state !== EDITOR_STATE.ready) throw new NotReadyError(status.state)
+      d.views.show(wt)
       await send(normalizeFolderKey(wt.path))
       return { ok: true }
     } catch (error) {
