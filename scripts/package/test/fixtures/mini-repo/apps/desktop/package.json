@@ -1,0 +1,13 @@
+{
+  "name": "@mini/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "dependencies": {
+    "better-sqlite3": "13.0.3"
+  },
+  "devDependencies": {
+    "electron": "45.2.1"
+  }
+}

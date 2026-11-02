@@ -1,0 +1,21 @@
+{
+  "name": "@mini/terminal-pty-daemon",
+  "private": true,
+  "scripts": {
+    "build": "node build.cjs"
+  },
+  "dependencies": {
+    "node-pty": "1.1.0"
+  },
+  "pragma": {
+    "build": "build",
+    "package": {
+      "extraResources": [
+        {
+          "from": "dist",
+          "to": "pty-daemon"
+        }
+      ]
+    }
+  }
+}
