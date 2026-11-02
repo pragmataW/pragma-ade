@@ -86,11 +86,11 @@ describe('EventMapper', () => {
       toolCallId: 'call_edit',
       toolName: 'edit',
       toolKind: 'edit',
-      title: 'edit',
-      detail: 'src/a.ts',
+      title: 'src/a.ts',
       input: { path: 'src/a.ts', oldString: 'a', newString: 'b' },
       options: ['allow_once', 'allow_always', 'deny'],
     })
+    expect(ofKind(out, 'permission-request')[0]).not.toHaveProperty('detail')
     expect(ofKind(out, 'permission-resolved')[0]).toEqual({
       kind: 'permission-resolved',
       requestId: 'per_1',

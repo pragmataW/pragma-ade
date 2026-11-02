@@ -268,6 +268,9 @@ export class EventMapper {
     const toolCallId = d.source?.id
     const tool = toolCallId ? this.#tools.get(toolCallId) : undefined
     const toolName = tool?.name || d.action
+    const input = tool?.input ?? { resources: d.resources }
+    const title = toolTitleOf(toolName, input) ?? d.resources[0] ?? d.action
+    const resources = d.resources.join(NEWLINE)
     this.#permissions.add(d.id)
     return {
       kind: K.permissionRequest,
@@ -275,9 +278,9 @@ export class EventMapper {
       ...(toolCallId ? { toolCallId } : {}),
       toolName,
       toolKind: toolKindOf(toolName),
-      title: d.action,
-      detail: d.message ?? d.resources.join(NEWLINE),
-      input: tool?.input ?? { resources: d.resources },
+      title,
+      ...(d.message || resources !== title ? { detail: d.message ?? resources } : {}),
+      input,
       options: permissionOptions(d.save),
     }
   }
