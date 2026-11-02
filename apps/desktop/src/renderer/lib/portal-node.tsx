@@ -15,12 +15,13 @@ export function usePortalNode(): HTMLDivElement {
   return node
 }
 
-export function Mount({ node }: { node: HTMLElement }) {
+/** `name`: the pane's `view-transition-name`, so layout changes animate it (see `animateLayout`). */
+export function Mount({ node, name }: { node: HTMLElement; name?: string }) {
   const attach = useCallback(
     (el: HTMLDivElement | null) => {
       if (el && node.parentElement !== el) el.appendChild(node)
     },
     [node],
   )
-  return <div ref={attach} className={FILL} />
+  return <div ref={attach} className={FILL} style={name ? { viewTransitionName: name } : undefined} />
 }

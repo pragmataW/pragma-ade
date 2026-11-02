@@ -2,7 +2,7 @@ import { DndContext, type DragEndEvent, PointerSensor, pointerWithin, useSensor,
 import { ShellTestIds as T } from '@pragma/sdk'
 import { useRendererHost } from '@pragma/sdk/renderer'
 import { LAYOUT } from '@pragma/ui/tokens'
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Group,
@@ -34,6 +34,8 @@ const WORK_ID = 'shell.work'
 const PANE = { sidebar: 'sidebar', work: 'work', center: 'center', right: 'right' } as const
 const ORIENTATION = { horizontal: 'horizontal', vertical: 'vertical' } as const
 const RESIZE = 'resize'
+/** `view-transition-name`s: each pane glides to its new place when the layout changes. */
+const TRANSITION = { sidebar: 'pane-sidebar', center: 'pane-center', dock: 'pane-dock' } as const
 /** More than a click: the dock grip still opens nothing on a plain press. */
 const DRAG_ACTIVATION_PX = 5
 const px = (n: number): string => `${n}px`
@@ -42,7 +44,7 @@ const COLLAPSED = px(0)
 /** Syncs a panel's collapsed state with the shell store (the panel library is the external system). */
 function useCollapsed(ref: React.RefObject<PanelImperativeHandle | null>, collapsed: boolean, arrangement: string) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new arrangement mounts new panels that need the state
-  useEffect(() => {
+  useLayoutEffect(() => {
     const panel = ref.current
     if (!panel || panel.isCollapsed() === collapsed) return
     if (collapsed) panel.collapse()
@@ -123,7 +125,7 @@ export function Shell() {
       collapsible
       collapsedSize={COLLAPSED}
     >
-      <Mount node={nodes.sidebar} />
+      <Mount node={nodes.sidebar} name={TRANSITION.sidebar} />
     </Panel>
   )
   const sidebarSeparator = (
@@ -139,7 +141,7 @@ export function Shell() {
       collapsible
       collapsedSize={COLLAPSED}
     >
-      <Mount node={nodes.center} />
+      <Mount node={nodes.center} name={TRANSITION.center} />
     </Panel>
   )
   const dock = (
@@ -154,7 +156,7 @@ export function Shell() {
       collapsible
       collapsedSize={COLLAPSED}
     >
-      <Mount node={nodes.dock} />
+      <Mount node={nodes.dock} name={TRANSITION.dock} />
     </Panel>
   )
   const dockSeparator = (

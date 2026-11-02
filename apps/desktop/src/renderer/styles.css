@@ -18,3 +18,15 @@ body,
   margin: 0;
   overflow: hidden;
 }
+
+/* Shell layout changes (animateLayout): panes glide and resize instead of jumping. */
+::view-transition-group(*) {
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 160ms;
+  height: 100%;
+  object-fit: fill;
+}
