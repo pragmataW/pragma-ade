@@ -7,6 +7,7 @@ import {
   type CommentsSettings,
   commentCreated,
   commentSent,
+  commentsChanged,
   commentsIpcEvents,
   SEND_ERROR,
   SEND_STATUS,
@@ -77,7 +78,10 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
   const { repo, upstream, registry, events } = deps
   const now = deps.now ?? Date.now
   const inFlight = new Set<string>()
-  const notifyChanged = (worktreeId: string) => upstream.publish(commentsIpcEvents.changed, { worktreeId })
+  const notifyChanged = (worktreeId: string) => {
+    events.emit(commentsChanged, { worktreeId })
+    upstream.publish(commentsIpcEvents.changed, { worktreeId })
+  }
 
   const getOrThrow = (id: string): Comment => {
     const c = repo.get(id)

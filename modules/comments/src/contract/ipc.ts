@@ -20,7 +20,7 @@ export const COMMENTS_IPC_EVENTS = {
   pendingDelivered: 'comments.pendingDelivered',
 } as const
 /** Main event bus names (§4.4). */
-export const COMMENTS_EVENTS = { created: 'comment.created', sent: 'comment.sent' } as const
+export const COMMENTS_EVENTS = { created: 'comment.created', sent: 'comment.sent', changed: 'comment.changed' } as const
 export const COMMENTS_COMMANDS = { openDrawer: 'comments.openDrawer' } as const
 
 const id = z.string().min(1)
@@ -77,8 +77,13 @@ export const CommentSentPayloadSchema = z.object({
 })
 export type CommentSentPayload = z.infer<typeof CommentSentPayloadSchema>
 
+export const CommentsChangedPayloadSchema = worktreeRef
+export type CommentsChangedPayload = z.infer<typeof CommentsChangedPayloadSchema>
+
 export const commentCreated = defineEvent<CommentCreatedPayload>(COMMENTS_EVENTS.created)
 export const commentSent = defineEvent<CommentSentPayload>(COMMENTS_EVENTS.sent)
+/** Main-side twin of `comments.changed`: the worktree's drafts were added, edited, deleted or delivered. */
+export const commentsChanged = defineEvent<CommentsChangedPayload>(COMMENTS_EVENTS.changed)
 
 export const OpenDrawerArgsSchema = z.object({
   worktreeId: z.string().optional(),

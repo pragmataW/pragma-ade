@@ -56,9 +56,26 @@ describe('drafts', () => {
   test('addDraft stores a draft, emits comment.created, publishes comments.changed', async () => {
     const { service, emitted, upstream } = setup()
     const c = await service.addDraft(makeInput())
-    expect(emitted).toEqual([[COMMENTS_EVENTS.created, { comment: c }]])
+    expect(emitted).toEqual([
+      [COMMENTS_EVENTS.created, { comment: c }],
+      [COMMENTS_EVENTS.changed, { worktreeId: WT }],
+    ])
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toEqual([{ worktreeId: WT }])
     expect(await service.listDrafts(WT)).toEqual([c])
+  })
+
+  test('update, remove, send and worktree removal emit comment.changed on the main bus', async () => {
+    const { service, drafts, ids, emitted, upstream } = setup()
+    const [a, b, c] = await drafts(3)
+    const changed = () => emitted.filter(([name]) => name === COMMENTS_EVENTS.changed)
+    expect(changed()).toHaveLength(3)
+    await service.update(a?.id as string, { body: 'edited' })
+    await service.remove(b?.id as string)
+    await service.send(ids([c as { id: string }]))
+    expect(changed()).toHaveLength(6)
+    upstream.emitWorktreeRemoved(WT)
+    expect(changed().at(-1)).toEqual([COMMENTS_EVENTS.changed, { worktreeId: WT }])
+    expect(changed()).toHaveLength(7)
   })
 
   test('addDraft rejects invalid input and stores nothing', async () => {
@@ -119,7 +136,7 @@ describe('send', () => {
     expect(delivered[0]).toMatchObject({ sessionId: 's1', worktreeId: WT, mode: 'terminal', ptyId: 'pty-s1' })
     expect(await service.listDrafts(WT)).toEqual([])
     const sentAt = r.status === 'sent' ? r.sentAt : -1
-    expect(emitted.at(-1)).toEqual([
+    expect(emitted.filter(([name]) => name === COMMENTS_EVENTS.sent).at(-1)).toEqual([
       COMMENTS_EVENTS.sent,
       { commentIds: ids(cs).reverse(), sessionId: 's1', worktreeId: WT, sentAt },
     ])
