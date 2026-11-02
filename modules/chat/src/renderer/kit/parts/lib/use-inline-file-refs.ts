@@ -30,6 +30,7 @@ function decorate(el: Element, title: string | null): void {
  */
 export function useInlineFileRefs(root: RefObject<HTMLElement | null>, text: string, links: FileLinks) {
   const t = useT()
+  // after EVERY render: `<Markdown>` builds new renderer components per render, so React remounts its `<code>` nodes
   useEffect(() => {
     void text
     for (const el of root.current?.querySelectorAll(INLINE_CODE) ?? []) {
@@ -37,7 +38,7 @@ export function useInlineFileRefs(root: RefObject<HTMLElement | null>, text: str
       const ref = links.refOf(el.textContent ?? '')
       decorate(el, ref ? t('chat:fileLink.open', { path: ref.path }) : null)
     }
-  }, [root, text, links, t])
+  })
   const activate = (e: MouseEvent | KeyboardEvent) => {
     const el = (e.target as Element).closest(`[${FILE_REF_ATTR}]`)
     const ref = el ? links.refOf(el.textContent ?? '') : null

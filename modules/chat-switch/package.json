@@ -15,7 +15,8 @@
     "dependsOn": [
       "agents",
       "chat",
-      "comments"
+      "comments",
+      "projects"
     ],
     "optionalDependsOn": [
       "agent-status"

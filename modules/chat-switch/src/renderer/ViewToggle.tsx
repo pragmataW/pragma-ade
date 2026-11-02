@@ -7,6 +7,9 @@ import { SWITCH_PHASE, SWITCH_TARGET, SWITCH_TARGETS, type SwitchTarget, CHAT_SW
 import { useSwitchClient } from './switch-client'
 import { useSwitchState } from './use-switch-state'
 
+/** ui-notes: Chat | Terminal (left to right). */
+const TOGGLE_ORDER: readonly SwitchTarget[] = [SWITCH_TARGET.chat, SWITCH_TARGET.terminal]
+
 const TESTID: Record<SwitchTarget, string> = { chat: T.toChat, terminal: T.toTerminal }
 const CONFIRM: Record<SwitchTarget, { titleKey: string; messageKey: string; confirmKey: string }> = {
   chat: {
@@ -59,7 +62,7 @@ export function ViewToggle({ session }: AgentSessionToolbarProps) {
         data-phase={state.phase}
         onValueChange={(v: string) => void onChange(v)}
       >
-        {SWITCH_TARGETS.map((target) => {
+        {TOGGLE_ORDER.map((target) => {
           const verdict = state.eligibility?.[target]
           const current = target === session.mode
           const blocked = !current && (switching || !verdict?.ok)

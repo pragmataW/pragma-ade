@@ -17,7 +17,7 @@ export interface SwitchState {
   switchTo(target: SwitchTarget): Promise<SwitchResult>
 }
 
-/** Eligibility (fetched on mount and on every `chat-switch.changed` for the session), phase and the inline alert. */
+/** Eligibility (fetched on mount and on every `chat-switch.changed`), the session's phase and the inline alert. */
 export function useSwitchState(sessionId: string, refreshKey: unknown): SwitchState {
   const client = useSwitchClient()
   const [eligibility, setEligibility] = useState<SwitchEligibility>()
@@ -26,9 +26,9 @@ export function useSwitchState(sessionId: string, refreshKey: unknown): SwitchSt
   const [version, setVersion] = useState(0)
 
   useEffect(() => {
+    // any session's change can free (or take) this session's external id: refetch on every event
     const changed = client.onChanged((e) => {
-      if (e.sessionId !== sessionId) return
-      setPhase(e.phase)
+      if (e.sessionId === sessionId) setPhase(e.phase)
       setVersion((v) => v + 1)
     })
     const conflict = client.onConflict((e) => {

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import { EDITOR_OPEN_FILE_COMMAND, GIT_CHANGES_REVEAL_COMMAND } from '../../../../constants'
 import type { ChatSessionApi } from '../../../../contract'
 import { useChatHost } from '../../../host-adapter'
@@ -15,6 +15,13 @@ export interface FileLinks {
 /** File references of a chat session: links only when the editor (06) / Git Changes (07) commands are registered. */
 export function useFileLinks(session: Pick<ChatSessionApi, 'worktree'>): FileLinks {
   const host = useChatHost()
+  // commands of other modules arrive asynchronously: re-check `has` whenever they change
+  const [commandsVersion, commandsChanged] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => {
+    const sub = host.commands.onChange(commandsChanged)
+    return () => sub.dispose()
+  }, [host])
+  void commandsVersion
   const worktree = session.worktree
   const canOpen = worktree !== undefined && host.commands.has(EDITOR_OPEN_FILE_COMMAND)
   const canReveal = worktree !== undefined && host.commands.has(GIT_CHANGES_REVEAL_COMMAND)

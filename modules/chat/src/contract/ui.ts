@@ -136,7 +136,12 @@ export interface ChatHost {
   StatusIcon: ComponentType<{ status: ChatSessionStatus; turnCompleted: boolean; size?: 'sm' | 'md' }> | null
   openExternal(url: string): void
   /** 11c: shell commands (file links run `editor.openFile` / `gitChanges.reveal` only when registered). */
-  commands: { has(id: string): boolean; execute(id: string, args: unknown): Promise<unknown> }
+  commands: {
+    has(id: string): boolean
+    execute(id: string, args: unknown): Promise<unknown>
+    /** The registered commands changed (another module activated or announced its commands). */
+    onChange(cb: () => void): ChatSubscription
+  }
   /** The resolved light/dark mode (diff themes). */
   theme: { get(): ThemeMode; subscribe(cb: () => void): ChatSubscription }
   settings: {

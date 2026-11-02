@@ -18,6 +18,12 @@ describe('evaluateSwitch', () => {
     ['current mode', base(), 'terminal', reason('currentMode')],
     ['switching', base({ switching: true }), 'chat', reason('switching')],
     ['starting', base({}, { status: 'starting' }), 'chat', reason('starting')],
+    [
+      'starting without an id → idUnknown',
+      base({}, { status: 'starting', externalSessionId: null }),
+      'chat',
+      reason('idUnknown'),
+    ],
     ['no resume', base({ hasResume: false }), 'chat', reason('noResume')],
     ['id unknown', base({}, { externalSessionId: null }), 'chat', reason('idUnknown')],
     ['busy', base({ busyOwnerSessionId: OTHER_SESSION_ID }), 'chat', reason('busy')],

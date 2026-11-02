@@ -29,9 +29,10 @@ function commonRule(input: EligibilityInput, target: SwitchTarget): Eligibility 
   const { session } = input
   if (target === session.mode) return no(SWITCH_REASON.currentMode)
   if (input.switching) return no(SWITCH_REASON.switching)
-  if (session.status === SESSION_STATUS_STARTING) return no(SWITCH_REASON.starting)
   if (!input.hasResume) return no(SWITCH_REASON.noResume)
+  // without agent-status a terminal row stays `starting`; the missing id is the real reason then
   if (!session.externalSessionId) return no(SWITCH_REASON.idUnknown)
+  if (session.status === SESSION_STATUS_STARTING) return no(SWITCH_REASON.starting)
   if (input.busyOwnerSessionId !== undefined && input.busyOwnerSessionId !== session.id) return no(SWITCH_REASON.busy)
   return null
 }

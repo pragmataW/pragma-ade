@@ -114,9 +114,10 @@ describe('Chat | Terminal toggle', () => {
     expect(screen.getByTestId(T.spinner)).toBeInTheDocument()
     expect(item(T.toTerminal)).toBeDisabled()
     expect(item(T.toChat)).toBeDisabled()
-    c.emitChanged({ sessionId: 'other', phase: 'idle' })
+    c.emitChanged({ sessionId: 'other', phase: 'switching' })
+    expect(screen.getByTestId(T.spinner)).toBeInTheDocument()
     c.emitChanged({ sessionId: 's1', phase: 'idle' })
-    await waitFor(() => expect(c.eligibility).toHaveBeenCalledTimes(3))
+    await waitFor(() => expect(c.eligibility).toHaveBeenCalledTimes(4))
     expect(screen.queryByTestId(T.spinner)).toBeNull()
   })
 
