@@ -160,6 +160,7 @@ export function fakePtyService(): FakePtyService {
     resize: () => undefined,
     isBracketedPasteEnabled: () => false,
     onData: () => () => undefined,
+    onInput: () => () => undefined,
     onExit: () => () => undefined,
     getShellEnv: async () => ({}),
     snapshot: async () => ({ data: '', seq: 0, cols: 80, rows: 24 }),

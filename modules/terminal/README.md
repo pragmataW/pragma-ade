@@ -15,6 +15,7 @@ Terminal sessions hosted by a separate **pty-daemon** process, so they survive r
 | `isBracketedPasteEnabled(ptyId)` | Synchronous, from the daemon's DECSET/DECRST 2004 tracking. |
 | `kill(ptyId, signal?)` | `SIGTERM` (default), `SIGKILL`, `SIGINT`, `SIGHUP`; escalates to SIGKILL after 3 s; resolves after the **confirmed** exit, then forgets the pty. win32: the process is terminated. |
 | `onData(ptyId, cb)`, `onExit(ptyId, cb)` | `onExit` fires once (`{ exitCode, signal, reason: 'exited' \| 'killed' \| 'daemon-restarted' }`), immediately (async) if the pty already exited. |
+| `onInput(ptyId, cb)` | Data sent with `write` (keyboard input of views and services; not `paste`), after it was sent. Used by 04 to see Esc / Ctrl-C in agent sessions. |
 | `get`, `list({ tags })`, `snapshot`, `getShellEnv` | `getShellEnv` delegates to `ctx.env.getShellEnv()`. |
 
 **Renderer service** — `TerminalViewServiceToken` (`terminal.view`, §10.1.1):

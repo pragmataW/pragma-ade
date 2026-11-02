@@ -80,6 +80,8 @@ export interface PtyService {
   /** Default SIGTERM (win32: the process is terminated). Resolves after the confirmed exit, then forgets the pty. */
   kill(ptyId: string, signal?: KillSignal): Promise<void>
   onData(ptyId: string, cb: (data: string) => void): () => void
+  /** Data sent with `write` (keyboard input of views and services; not pastes), after it was sent to the pty. */
+  onInput(ptyId: string, cb: (data: string) => void): () => void
   /** Fires once; asynchronously at once when the pty already exited. */
   onExit(ptyId: string, cb: (exit: PtyExit) => void): () => void
   /** Thin delegate to the SDK's `ctx.env.getShellEnv()`. */
