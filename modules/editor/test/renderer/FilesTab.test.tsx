@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { EditorIpc, EditorIpcEvents, type EditorStatus, EDITOR_TEST_IDS as T } from '../../src/contract'
+import { EditorIpc, EditorIpcEvents, type EditorStatus, FILES_TAB_ORDER, EDITOR_TEST_IDS as T } from '../../src/contract'
 import { FilesTab } from '../../src/renderer/FilesTab'
 import editorRenderer from '../../src/renderer/index'
 import { renderEditor, text } from '../support/renderer'
@@ -69,6 +69,6 @@ describe('FilesTab', () => {
     editorRenderer.activate(ctx as never)
     listeners.get(EditorIpcEvents.revealRequested.channel)?.()
     expect(ctx.panels.activateRightTab).toHaveBeenCalledWith('files')
-    expect(ctx.panels.registerRightTab).toHaveBeenCalledWith(expect.objectContaining({ id: 'files', order: 30 }))
+    expect(ctx.panels.registerRightTab).toHaveBeenCalledWith(expect.objectContaining({ id: 'files', order: FILES_TAB_ORDER }))
   })
 })
