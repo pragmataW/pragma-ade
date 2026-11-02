@@ -30,8 +30,16 @@ export const MERGE_BASE_SHORT_LEN = 7
  * Injected into the diff's shadow root (`unsafe` layer): annotation rows (comment cards, the composer) keep their own
  * background inside a selected range instead of the line-selection tint.
  */
+/** Find in diff (Cmd/Ctrl+F): CSS Custom Highlight names, styled inside the diff's shadow root below. */
+export const FIND_HIGHLIGHT = { all: 'gc-find', current: 'gc-find-current' } as const
+/** Context kept above a match scrolled into view. */
+export const FIND_SCROLL_MARGIN_PX = 48
+/** Rows still changing (a re-render in progress) wait this long before matches are found again. */
+export const FIND_REFIND_DELAY_MS = 30
 export const DIFF_UNSAFE_CSS =
-  '[data-line-annotation][data-selected-line],[data-gutter-buffer=annotation][data-selected-line]{--diffs-line-bg:var(--diffs-annotation-bg)}'
+  '[data-line-annotation][data-selected-line],[data-gutter-buffer=annotation][data-selected-line]{--diffs-line-bg:var(--diffs-annotation-bg)}' +
+  '::highlight(gc-find){background-color:color-mix(in srgb,var(--warn) 35%,transparent)}' +
+  '::highlight(gc-find-current){background-color:color-mix(in srgb,var(--warn) 80%,transparent);color:var(--bg)}'
 
 /** Right tab. */
 export const TAB_ID = 'git-changes'

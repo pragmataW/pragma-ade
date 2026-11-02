@@ -17,7 +17,7 @@ import { type DiffReview, useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { HunkBar } from './diff/HunkBar'
 import { EmptyState } from './EmptyState'
-import { keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
+import { FIND, keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
 import { type EditorOpener, editorOpener } from './lib/editor'
 import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
@@ -213,6 +213,7 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
     if (action === NEXT_FILE || action === PREV_FILE)
       store.select(worktreeId, neighbour(ordered, view.selectedPath, action === NEXT_FILE ? 1 : -1))
     else if (action === NEXT_CHANGE) diffRef.current?.nextChange()
+    else if (action === FIND) diffRef.current?.openFind()
     else diffRef.current?.prevChange()
   }
 

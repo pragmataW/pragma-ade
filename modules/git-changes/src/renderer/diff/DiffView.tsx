@@ -30,11 +30,14 @@ import {
   placeholderFor,
   toFileContents,
 } from './diff-options'
+import { FindBar, type FindBarHandle } from './FindBar'
 import { Placeholder } from './Placeholder'
 
 export interface DiffViewHandle {
   nextChange(): void
   prevChange(): void
+  /** Cmd/Ctrl+F: open (or refocus) the find bar of this diff. */
+  openFind(): void
 }
 
 export interface DiffViewProps {
@@ -224,9 +227,11 @@ export function DiffView(props: DiffViewProps) {
   const { worktreeId, mode, file, ref, onOpenInEditor, stash } = props
   const loaded = useFileContents(worktreeId, mode, file, stash)
   const scroller = useRef<HTMLDivElement>(null)
+  const findBar = useRef<FindBarHandle>(null)
   useImperativeHandle(ref, () => ({
     nextChange: () => jump(scroller.current, NEXT),
     prevChange: () => jump(scroller.current, PREV),
+    openFind: () => findBar.current?.show(),
   }))
   const body = (() => {
     if (loaded.data) return <DiffBody {...props} contents={loaded.data} />
@@ -246,6 +251,11 @@ export function DiffView(props: DiffViewProps) {
           <OpenInEditor open={() => onOpenInEditor(file, editorLine(loaded.data, props.composer))} />
         ) : null}
       </DiffHeader>
+      <FindBar
+        ref={findBar}
+        scroller={scroller}
+        contentKey={`${file.path}:${stash ?? ''}:${loaded.data ? 'loaded' : ''}`}
+      />
       {props.hunkBar}
       <div ref={scroller} className="flex min-h-0 flex-1 flex-col overflow-auto">
         {body}
