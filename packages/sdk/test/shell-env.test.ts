@@ -1,7 +1,7 @@
-import { expect, test, vi } from 'vitest'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { expect, test, vi } from 'vitest'
 import { resolveShellEnv } from '../src/runtime/main/shell-env'
 
 const NUL = '\0'
@@ -36,7 +36,11 @@ test.skipIf(process.platform === 'win32')('shell env gets EOF on stdin so rc-fil
   const env = await resolveShellEnv({ shell: fakeShell("cat >/dev/null\nprintf 'FAKE=1\\0'"), platform: 'linux' })
   expect(env.FAKE).toBe('1')
 })
-test.skipIf(process.platform === 'win32')('shell env times out a shell that ignores SIGTERM', async () => {
-  const env = await resolveShellEnv({ shell: fakeShell("trap '' TERM\nsleep 30"), platform: 'linux', timeoutMs: 200 })
-  expect(env.PATH).toBe(process.env.PATH)
-}, 3000)
+test.skipIf(process.platform === 'win32')(
+  'shell env times out a shell that ignores SIGTERM',
+  async () => {
+    const env = await resolveShellEnv({ shell: fakeShell("trap '' TERM\nsleep 30"), platform: 'linux', timeoutMs: 200 })
+    expect(env.PATH).toBe(process.env.PATH)
+  },
+  3000,
+)
