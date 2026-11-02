@@ -18,6 +18,8 @@ export const CHAT_TESTIDS = {
   stop: 'chat-stop',
   queueChip: 'chat-queue-chip',
   queueChipRemove: 'chat-queue-chip-remove',
+  composerChip: 'chat-composer-chip',
+  composerChipRemove: 'chat-composer-chip-remove',
   optionPicker: (key: string) => `chat-option-${key}`,
   optionValue: (key: string, value: string) => `chat-option-${key}-${value}`,
   usage: 'chat-usage',

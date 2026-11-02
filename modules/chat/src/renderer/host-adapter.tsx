@@ -15,7 +15,8 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
   return {
     open: (sessionId) => ipc.invoke(chatIpc.open, { sessionId }),
     onEvent: (cb) => ipc.subscribe(chatIpcEvents.event, cb),
-    onComposerAppend: (cb) => ipc.subscribe(chatIpcEvents.composerAppend, cb),
+    onComposerInboxChanged: (cb) => ipc.subscribe(chatIpcEvents.composerInboxChanged, cb),
+    takeComposerInbox: async (sessionId) => (await ipc.invoke(chatIpc.takeComposerInbox, { sessionId })).entries,
     send: (sessionId, input) => ipc.invoke(chatIpc.send, { sessionId, ...input }),
     interrupt: (sessionId) => ipc.invoke(chatIpc.interrupt, { sessionId }),
     cancelQueued: (sessionId, queuedId) => ipc.invoke(chatIpc.cancelQueued, { sessionId, queuedId }),

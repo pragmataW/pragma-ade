@@ -1,14 +1,18 @@
 import { useT } from '@pragma/sdk/renderer'
 import { TriangleAlert } from '@pragma/ui/icons'
-import { ICON_PX, ICON_STROKE } from '../../../constants'
+import { I18N_KEY_RE, ICON_PX, ICON_STROKE } from '../../../constants'
 import { CHAT_TESTIDS, type ChatPartProps, type ErrorItem, UNSUPPORTED_PREFIX } from '../../../contract'
 import { CollapsibleCard } from './lib/CollapsibleCard'
 import { MonoPre } from './lib/MonoPre'
 
-/** `chat:unsupported.*` reasons become "Chat mode not supported: <reason>"; other messages are shown as is. */
+/**
+ * `chat:unsupported.*` reasons become "Chat mode not supported: <reason>"; a message that is an i18n key (11c start
+ * guard) is translated; other messages are shown as is.
+ */
 export function useErrorText(message: string): string {
   const t = useT()
-  return message.startsWith(UNSUPPORTED_PREFIX) ? t('chat:errors.unsupported', { reason: t(message) }) : message
+  if (message.startsWith(UNSUPPORTED_PREFIX)) return t('chat:errors.unsupported', { reason: t(message) })
+  return I18N_KEY_RE.test(message) ? t(message) : message
 }
 
 /** An error (err icon); the detail (e.g. the CLI's stderr tail) is collapsible. */

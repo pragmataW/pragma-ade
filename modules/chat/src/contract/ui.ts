@@ -3,7 +3,7 @@ import type { ThemeMode } from '@pragma/sdk'
 import type { ClipboardEvent, ComponentType, DragEvent } from 'react'
 import type { ChatImage, ChatPermissionDecision, ChatSupport, ChatUserInput } from './capability'
 import type { ChatEventEnvelope, ChatEventKind } from './events'
-import type { ComposerAppend } from './ipc'
+import type { ComposerEntry, ComposerInboxChanged } from './ipc'
 import type { ChatOptionValue } from './options'
 import type { ChatSettings } from './settings'
 import type { ChatSessionStatus } from './status'
@@ -111,7 +111,9 @@ export interface ChatSubscription {
 export interface ChatHost {
   open(sessionId: string): Promise<{ providerId: string; transcript: ChatTranscript; status: ChatSessionStatus }>
   onEvent(cb: (env: ChatEventEnvelope) => void): ChatSubscription
-  onComposerAppend(cb: (p: ComposerAppend) => void): ChatSubscription
+  onComposerInboxChanged(cb: (p: ComposerInboxChanged) => void): ChatSubscription
+  /** Returns and clears the session's pending composer entries (11c). */
+  takeComposerInbox(sessionId: string): Promise<ComposerEntry[]>
   send(sessionId: string, input: ChatUserInput): Promise<{ queued: boolean }>
   interrupt(sessionId: string): Promise<void>
   cancelQueued(sessionId: string, queuedId: string): Promise<void>

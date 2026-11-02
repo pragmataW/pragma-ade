@@ -96,6 +96,9 @@
     "removeQueued": "Remove from queue",
     "attachImage": "Attach image",
     "removeImage": "Remove image",
-    "imageTooLarge": "Image is larger than 5 MB"
+    "imageTooLarge": "Image is larger than 5 MB",
+    "commentsChip_one": "{{count}} review comment",
+    "commentsChip_other": "{{count}} review comments",
+    "removeChip": "Remove review comments"
   }
 }

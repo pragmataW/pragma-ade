@@ -47,6 +47,9 @@ export const PIERRE_THEMES = { dark: 'pierre-dark', light: 'pierre-light' } as c
 export const DIFF_UNIFIED = 'unified'
 export const ICON_STROKE = 1.5
 export const BUTTON_TYPE = 'button'
+export const NEWLINE = '\n'
+/** A whole message that is an i18n key (`<namespace>:<path>`), e.g. 11c's start-guard reasons. */
+export const I18N_KEY_RE = /^[a-z][a-z0-9-]*:[A-Za-z0-9_.]+$/
 export const ALIGN_END = 'end'
 export const SIZE_SM = 'sm'
 export const VARIANT_OUTLINE = 'outline'

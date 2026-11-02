@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import {
@@ -12,7 +12,6 @@ import { Composer } from '../../../src/renderer/kit/composer/Composer'
 import { defaultComposerExtensions } from '../../../src/renderer/kit/composer/extensions'
 import { MenuList } from '../../../src/renderer/kit/composer/MenuList'
 import { readImageFiles } from '../../../src/renderer/kit/composer/read-images'
-import { useChatStore } from '../../../src/renderer/session/store'
 import { stubSessionApi } from '../../../testing'
 import { renderChat } from '../support'
 
@@ -99,16 +98,6 @@ describe('Composer', () => {
     expect(callsOf('send')).toHaveLength(1)
     await userEvent.click(screen.getByTestId(CHAT_TESTIDS.queueChipRemove))
     expect(callsOf('cancelQueued')[0]?.args).toEqual(['q1'])
-  })
-
-  it('composerAppend text appended, not sent', async () => {
-    const { input, callsOf } = renderComposer()
-    await userEvent.type(input, 'mine')
-    act(() => {
-      useChatStore.getState().pushComposerAppend('s1', 'File.ts:3 fix')
-    })
-    await waitFor(() => expect(input.value).toBe('mine\nFile.ts:3 fix'))
-    expect(callsOf('send')).toHaveLength(0)
   })
 
   it('readImageFiles rejects >5MB and non-images', async () => {

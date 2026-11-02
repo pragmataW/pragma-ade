@@ -73,12 +73,10 @@ describe('chat main module', () => {
     await expect(s.ipc.invoke(chatIpc.setOption, { sessionId: 's1', key: 'fakeMode', value: 'x' })).rejects.toThrow()
   })
 
-  it('appendToComposer publishes chat.composerAppend', () => {
+  it('appendToComposer publishes chat.composerInboxChanged', () => {
     const s = setup()
     s.services[0]?.appendToComposer('s1', 'File.ts:3 fix this')
-    expect(s.ipc.published).toEqual([
-      { channel: 'chat.composerAppend', payload: { sessionId: 's1', text: 'File.ts:3 fix this' } },
-    ])
+    expect(s.ipc.published).toEqual([{ channel: 'chat.composerInboxChanged', payload: { sessionId: 's1' } }])
   })
 
   it('getHistory returns dormant transcript', async () => {

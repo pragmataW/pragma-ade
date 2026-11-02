@@ -25,11 +25,9 @@ describe('useChatStore', () => {
     expect(useChatStore.getState().sessions.other).toBeUndefined()
   })
 
-  it('composer appends are consumed once', () => {
-    const s = useChatStore.getState()
-    s.pushComposerAppend('s1', 'one')
-    s.pushComposerAppend('s1', 'two')
-    expect(s.consumeComposerAppend('s1')).toEqual(['one', 'two'])
-    expect(useChatStore.getState().consumeComposerAppend('s1')).toEqual([])
+  it('inbox changes bump the session version', () => {
+    useChatStore.getState().bumpInbox('s1')
+    useChatStore.getState().bumpInbox('s1')
+    expect(useChatStore.getState().inboxVersions).toEqual({ s1: 2 })
   })
 })

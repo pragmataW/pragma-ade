@@ -12,6 +12,7 @@ import {
   type ChatSessionHandle,
   type ChatSessionStatus,
   type ChatSettings,
+  type ChatStartGuard,
   type ChatTranscript,
   type ChatUserInput,
   ERROR_CODE,
@@ -42,6 +43,8 @@ export interface ControllerDeps {
   publish(env: ChatEventEnvelope): void
   supportCache: SupportCache
   statusReporter: StatusReporter
+  /** 11c: refuses a resume of an external session another app session owns. */
+  startGuard?: ChatStartGuard
   log: Pick<Logger, 'info' | 'warn'>
   now?: () => number
 }
@@ -171,6 +174,8 @@ export class ChatSessionController {
     await nextTurn()
     const capability = this.#d.resolveCapability(req.profile)
     if (!capability) return this.#startupFailed(req.profile, UNSUPPORTED_REASON.noCapability)
+    const refused = this.#guardRefusal(req)
+    if (refused) return this.#fatalStartup(ERROR_CODE.unknown, refused)
     try {
       const env = await this.#d.agents.buildLaunchEnv({ sessionId: this.#d.sessionId, resume: req.resume })
       const handle = await capability.createSession({
@@ -189,8 +194,7 @@ export class ChatSessionController {
     } catch (e) {
       if (isChatStartupError(e)) return this.#startupFailed(req.profile, e.reasonKey, e.detail)
       this.#d.log.warn(`chat ${this.#d.sessionId}: startup failed`, e)
-      this.#emit({ kind: K.error, code: ERROR_CODE.unknown, message: String(e), fatal: true })
-      this.#emit({ kind: K.sessionExit, exitCode: null, reason: SESSION_EXIT_REASON.startup_failed })
+      this.#fatalStartup(ERROR_CODE.unknown, String(e))
     }
   }
 
@@ -210,15 +214,25 @@ export class ChatSessionController {
     else this.#dispatchNext()
   }
 
+  /** The reason key when a registered start guard refuses this resume, else null. */
+  #guardRefusal(req: ModeStartRequest): string | null {
+    const externalSessionId = req.resume?.externalSessionId
+    if (!externalSessionId || !this.#d.startGuard) return null
+    const r = this.#d.startGuard({
+      sessionId: this.#d.sessionId,
+      providerId: req.profile.providerId,
+      externalSessionId,
+    })
+    return r.ok ? null : r.reasonKey
+  }
+
   #startupFailed(profile: AgentProfile, reasonKey: string, detail?: string): void {
     this.#d.supportCache.fail(profile, reasonKey, detail)
-    this.#emit({
-      kind: K.error,
-      code: ERROR_CODE.startup_unsupported,
-      message: reasonKey,
-      ...(detail ? { detail } : {}),
-      fatal: true,
-    })
+    this.#fatalStartup(ERROR_CODE.startup_unsupported, reasonKey, detail)
+  }
+
+  #fatalStartup(code: (typeof ERROR_CODE)[keyof typeof ERROR_CODE], message: string, detail?: string): void {
+    this.#emit({ kind: K.error, code, message, ...(detail ? { detail } : {}), fatal: true })
     this.#emit({ kind: K.sessionExit, exitCode: null, reason: SESSION_EXIT_REASON.startup_failed })
   }
 
