@@ -47,8 +47,16 @@ function log(record) {
   if (file) appendFileSync(file, `${JSON.stringify(record)}\n`)
 }
 
+/** A scenario file; `extends: "<name>"` inherits every top-level field it does not set. */
+function readScenarioFile(file) {
+  const scenario = JSON.parse(readFileSync(file, 'utf8'))
+  if (!scenario.extends) return scenario
+  const { extends: base, ...own } = scenario
+  return { ...readScenarioFile(join(import.meta.dirname, 'scenarios', `${base}.json`)), ...own }
+}
+
 function loadScenario() {
-  return JSON.parse(readFileSync(process.env[ENV.scenario] || DEFAULT_SCENARIO, 'utf8'))
+  return readScenarioFile(process.env[ENV.scenario] || DEFAULT_SCENARIO)
 }
 
 function versionOf(scenario) {
@@ -356,7 +364,8 @@ async function runTurn(ctx, session, turn, run) {
   const assistant = { id: amid, type: 'assistant', content: [], time: { created: Date.now() } }
   const fill = (v) => JSON.parse(JSON.stringify(v).replaceAll('$SID', sid).replaceAll('$AMID', amid))
   const emit = (type, data) => {
-    record(assistant, type, data)
+    if (type === 'session.created') registerChild(ctx, data)
+    else if (data.sessionID === sid) record(assistant, type, data)
     ctx.broadcast(type, data)
   }
   emit('session.execution.started', { sessionID: sid })
@@ -375,6 +384,13 @@ async function runTurn(ctx, session, turn, run) {
     emit('session.execution.interrupted', { sessionID: sid, reason: 'user' })
   }
   finishTurn(ctx, session, assistant, outcome)
+}
+
+/** A scripted subagent's child session (so its routes, e.g. interrupt, answer). */
+function registerChild(ctx, data) {
+  const info = { id: data.sessionID, parentID: data.parentID, agent: data.agent, title: data.title ?? '', cost: 0 }
+  ctx.store.data.sessions[info.id] ??= { info, messages: [], turns: 0 }
+  ctx.store.save()
 }
 
 function finishTurn(ctx, session, assistant, outcome) {

@@ -1,0 +1,216 @@
+{
+  "extends": "basic",
+  "turns": [
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "model": { "id": "fake-model", "providerID": "fakeprov" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.input.started",
+            "data": { "sessionID": "$SID", "assistantMessageID": "$AMID", "id": "call_sub", "name": "subagent" }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.called",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_sub",
+              "input": { "agent": "explore", "description": "Find config files", "prompt": "List the config files." }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.created",
+            "data": { "sessionID": "ses_child1", "parentID": "$SID", "agent": "explore", "title": "Find config files" }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.progress",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_sub",
+              "metadata": { "sessionID": "ses_child1", "status": "running" }
+            }
+          }
+        },
+        { "emit": { "type": "session.execution.started", "data": { "sessionID": "ses_child1" } } },
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "model": { "id": "fake-model", "providerID": "fakeprov" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.input.started",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "id": "call_child_grep",
+              "name": "grep"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.called",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "id": "call_child_grep",
+              "input": { "pattern": "config" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.success",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "id": "call_child_grep",
+              "content": [{ "type": "text", "text": "a.json" }]
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "ordinal": 0,
+              "delta": "Found a.json"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.ended",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "ordinal": 0,
+              "text": "Found a.json"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.step.ended",
+            "data": {
+              "sessionID": "ses_child1",
+              "assistantMessageID": "msg_child_a",
+              "tokens": { "input": 900, "output": 100, "reasoning": 0, "cache": { "read": 0, "write": 0 } },
+              "cost": 0.002
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.usage.updated",
+            "data": {
+              "sessionID": "ses_child1",
+              "tokens": { "input": 900, "output": 100, "reasoning": 0, "cache": { "read": 0, "write": 0 } },
+              "cost": 0.002
+            }
+          }
+        },
+        { "emit": { "type": "session.execution.succeeded", "data": { "sessionID": "ses_child1" } } },
+        {
+          "emit": {
+            "type": "session.tool.success",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_sub",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<subagent sessionID=\"ses_child1\" state=\"completed\">\nFound a.json\n</subagent>"
+                }
+              ],
+              "metadata": { "sessionID": "ses_child1", "status": "completed" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": { "sessionID": "$SID", "assistantMessageID": "$AMID", "ordinal": 1, "delta": "Done." }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.ended",
+            "data": { "sessionID": "$SID", "assistantMessageID": "$AMID", "ordinal": 1, "text": "Done." }
+          }
+        },
+        { "emit": { "type": "session.execution.succeeded", "data": { "sessionID": "$SID" } } }
+      ]
+    },
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.tool.input.started",
+            "data": { "sessionID": "$SID", "assistantMessageID": "$AMID", "id": "call_sub2", "name": "subagent" }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.called",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_sub2",
+              "input": { "agent": "general", "description": "Long research", "prompt": "Research." }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.created",
+            "data": { "sessionID": "ses_child2", "parentID": "$SID", "agent": "general", "title": "Long research" }
+          }
+        },
+        { "emit": { "type": "session.execution.started", "data": { "sessionID": "ses_child2" } } },
+        { "sleepMs": 400 },
+        {
+          "emit": { "type": "session.execution.interrupted", "data": { "sessionID": "ses_child2", "reason": "user" } }
+        },
+        {
+          "emit": {
+            "type": "session.tool.failed",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_sub2",
+              "error": { "type": "Aborted", "message": "The subagent was stopped" },
+              "metadata": { "sessionID": "ses_child2", "status": "interrupted" }
+            }
+          }
+        },
+        { "emit": { "type": "session.execution.succeeded", "data": { "sessionID": "$SID" } } }
+      ]
+    }
+  ]
+}

@@ -70,6 +70,8 @@ export type OpencodeTodo = z.infer<typeof todoSchema>
 export const toolMetadataSchema = z.looseObject({
   files: lenientArray(fileDiffSchema).optional(),
   todos: lenientArray(todoSchema).optional(),
+  /** The child session a `subagent` tool runs (progress + result). */
+  sessionID: z.string().optional(),
 })
 export type ToolMetadata = z.infer<typeof toolMetadataSchema>
 
@@ -131,6 +133,18 @@ const EVENT_DATA = {
   [EV.formCreated]: z.looseObject({ form: formSchema }),
   [EV.formReplied]: z.looseObject({ ...sid, id: z.string(), answer: z.unknown() }),
   [EV.formCancelled]: z.looseObject({ ...sid, id: z.string() }),
+  [EV.sessionCreated]: z.looseObject({
+    ...sid,
+    parentID: z.string().optional(),
+    agent: z.string().optional(),
+    title: z.string().optional(),
+  }),
+  [EV.toolProgress]: z.looseObject({ ...sid, id: z.string(), metadata: toolMetadataSchema }),
+  [EV.mcpStatusChanged]: z.looseObject({ server: z.string() }),
+  [EV.modelUpdated]: z.looseObject({}),
+  [EV.providerUpdated]: z.looseObject({}),
+  [EV.integrationUpdated]: z.looseObject({}),
+  [EV.credentialUpdated]: z.looseObject({}),
 } as const satisfies Record<(typeof EV)[keyof typeof EV], z.ZodType>
 
 type EventDataMap = typeof EVENT_DATA

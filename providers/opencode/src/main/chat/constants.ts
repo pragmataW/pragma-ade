@@ -79,6 +79,13 @@ export const EV = {
   formCreated: 'form.created',
   formReplied: 'form.replied',
   formCancelled: 'form.cancelled',
+  sessionCreated: 'session.created',
+  toolProgress: 'session.tool.progress',
+  mcpStatusChanged: 'mcp.status.changed',
+  modelUpdated: 'model.updated',
+  providerUpdated: 'provider.updated',
+  integrationUpdated: 'integration.updated',
+  credentialUpdated: 'credential.updated',
 } as const
 /** The SSE `types` filter (`server.connected` always comes). */
 export const CONSUMED_EVENT_TYPES = [
@@ -105,6 +112,13 @@ export const CONSUMED_EVENT_TYPES = [
   EV.formCreated,
   EV.formReplied,
   EV.formCancelled,
+  EV.sessionCreated,
+  EV.toolProgress,
+  EV.mcpStatusChanged,
+  EV.modelUpdated,
+  EV.providerUpdated,
+  EV.integrationUpdated,
+  EV.credentialUpdated,
 ] as const
 export const OTHER_EVENT = 'other'
 
@@ -187,3 +201,10 @@ export const SLASH_RE = /^\/(?<name>\S+)(?:\s+(?<rest>[\s\S]*))?$/
 export const MENTION_SIGIL = '@'
 export const DEFAULT_VARIANT_LABEL_KEY = 'opencode:chat.option.defaultVariant'
 export const INVALID_OPTION = 'invalid option'
+
+/** Tools that run a subagent in a child session (OpenCode 2.x `subagent`; older builds `task`). */
+export const SUBAGENT_TOOLS = ['subagent', 'task'] as const
+/** `<subagent sessionID=… state=…>answer</subagent>` (the subagent tool's result). */
+export const SUBAGENT_RESULT_RE = /<subagent\b[^>]*>(?<body>[\s\S]*?)<\/subagent>/
+/** Task name when OpenCode names no agent. */
+export const TASK_FALLBACK_NAME = 'subagent'

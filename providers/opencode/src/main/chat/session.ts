@@ -50,6 +50,7 @@ import {
   commandSchema,
   defaultModelSchema,
   listOf,
+  type ModelRef,
   messagePageSchema,
   type OpencodeCommand,
   parseV2Event,
@@ -58,6 +59,7 @@ import {
 } from './schemas'
 import type { ConnectionPool, OpencodeConnection } from './server/connection'
 import type { Lease } from './server/pool'
+import { SubagentTracker } from './subagents'
 import type { HubEvent } from './wire/event-hub'
 
 type Log = Pick<Logger, 'info' | 'warn'>
@@ -108,6 +110,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
   readonly #conn: OpencodeConnection
   readonly #log: Log
   readonly #mapper: EventMapper
+  readonly #subagents: SubagentTracker
   readonly #catalog: Catalog
   readonly #commands: string[]
   readonly #forms = new Map<string, FormField[]>()
@@ -136,7 +139,15 @@ export class OpencodeChatSession implements ChatSessionHandle {
     this.#sel = o.sel
     this.#options = buildOptionDescriptors(o.catalog, o.sel)
     this.externalSessionId = o.info.id
-    this.#mapper = new EventMapper({ contextWindow: (ref) => contextWindowOf(o.catalog.models, ref) })
+    const contextWindow = (ref: ModelRef) => contextWindowOf(o.catalog.models, ref)
+    this.#mapper = new EventMapper({ contextWindow })
+    this.#subagents = new SubagentTracker({
+      rootSessionId: o.info.id,
+      subscribe: (id, cb) => this.#conn.hub.subscribe(id, (e) => !this.#closed && cb(e)),
+      emit: (e) => this.#emit(e),
+      contextWindow,
+      now: Date.now,
+    })
   }
 
   /** acquire → catalog → get (resume) or create → subscribe → `session-info` + `options`. */
@@ -213,7 +224,21 @@ export class OpencodeChatSession implements ChatSessionHandle {
 
   #onEvent(e: HubEvent): void {
     if (this.#closed) return
-    for (const out of this.#mapper.map(e)) this.#emit(out)
+    this.#subagents.observe(this.externalSessionId, e)
+    for (const out of this.#mapper.map(e)) {
+      if (out.kind === K.turnEnd) this.#subagents.endAll(out.reason)
+      this.#emit(out)
+    }
+  }
+
+  /** The root mapper and every subagent's, with the session each one translates. */
+  #mappers(): { sessionId: string; mapper: EventMapper }[] {
+    return [{ sessionId: this.externalSessionId, mapper: this.#mapper }, ...this.#subagents.mappers]
+  }
+
+  /** The session (root or subagent) a pending permission or form belongs to. */
+  #ownerOf(id: string, pending: (m: EventMapper) => string[]): string | undefined {
+    return this.#mappers().find((x) => pending(x.mapper).includes(id))?.sessionId
   }
 
   /** v2 streams are volatile: after a reconnect, a turn that ended meanwhile is closed from its `idle` message. */
@@ -266,6 +291,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
 
   #detach(): void {
     for (const u of this.#unsubscribe.splice(0)) u()
+    this.#subagents.dispose()
     this.#lease.release()
   }
 
@@ -320,39 +346,43 @@ export class OpencodeChatSession implements ChatSessionHandle {
   }
 
   async #cancelPending(message: string): Promise<void> {
-    const sessionID = this.externalSessionId
     const { client } = this.#conn
-    for (const requestID of this.#mapper.pendingPermissions) {
-      this.#mapper.forget(requestID)
-      this.#emit({ kind: K.permissionResolved, requestId: requestID, outcome: PERMISSION_OUTCOME.cancelled })
-      await client.permission
-        .reply({ sessionID, requestID, decision: toDecision(PERMISSION_OPTION.deny) })
-        .catch(this.#warn)
-    }
-    for (const formID of this.#mapper.pendingForms) {
-      this.#mapper.forget(formID)
-      this.#emit({ kind: K.responseResolved, eventId: formID, outcome: RESPONSE_OUTCOME.cancelled })
-      await client.session.form.cancel({ sessionID, formID, message }).catch(this.#warn)
+    for (const { sessionId: sessionID, mapper } of this.#mappers()) {
+      for (const requestID of mapper.pendingPermissions) {
+        mapper.forget(requestID)
+        this.#emit({ kind: K.permissionResolved, requestId: requestID, outcome: PERMISSION_OUTCOME.cancelled })
+        await client.permission
+          .reply({ sessionID, requestID, decision: toDecision(PERMISSION_OPTION.deny) })
+          .catch(this.#warn)
+      }
+      for (const formID of mapper.pendingForms) {
+        mapper.forget(formID)
+        this.#emit({ kind: K.responseResolved, eventId: formID, outcome: RESPONSE_OUTCOME.cancelled })
+        await client.session.form.cancel({ sessionID, formID, message }).catch(this.#warn)
+      }
     }
   }
 
   readonly #warn = (e: unknown) => this.#log.warn(`opencode chat ${this.#ctx.sessionId}: request failed`, e)
 
   async respondPermission(requestId: string, decision: ChatPermissionDecision): Promise<void> {
-    if (!this.#mapper.pendingPermissions.includes(requestId)) return
-    await this.#conn.client.permission.reply({
-      sessionID: this.externalSessionId,
-      requestID: requestId,
-      decision: toDecision(decision),
-    })
+    const sessionID = this.#ownerOf(requestId, (m) => m.pendingPermissions)
+    if (!sessionID) return
+    await this.#conn.client.permission.reply({ sessionID, requestID: requestId, decision: toDecision(decision) })
+  }
+
+  /** Interrupts a running subagent's child session. */
+  async stopTask(taskId: string): Promise<void> {
+    if (!this.#subagents.has(taskId)) return
+    await this.#conn.client.session.interrupt({ sessionID: taskId })
   }
 
   /** §10.3: answer (or skip with `{cancel:true}`) a pending OpenCode form. */
   async respond(eventId: string, payload: unknown): Promise<void> {
     const fields = this.#forms.get(eventId)
-    const response = fields && this.#mapper.pendingForms.includes(eventId) ? parseFormResponse(fields, payload) : null
-    if (!response) throw new Error(INVALID_FORM_ANSWER)
-    const sessionID = this.externalSessionId
+    const sessionID = this.#ownerOf(eventId, (m) => m.pendingForms)
+    const response = fields && sessionID ? parseFormResponse(fields, payload) : null
+    if (!response || !sessionID) throw new Error(INVALID_FORM_ANSWER)
     if ('cancel' in response) await this.#conn.client.session.form.cancel({ sessionID, formID: eventId })
     else await this.#conn.client.session.form.reply({ sessionID, formID: eventId, answer: response.answer })
   }

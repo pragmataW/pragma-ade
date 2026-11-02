@@ -37,8 +37,12 @@ interface Scenario {
   turns: { steps: ScenarioStep[] }[]
 }
 
-export const readScenario = (name: ScenarioName): Scenario =>
-  JSON.parse(readFileSync(scenarioPath(name), 'utf8')) as Scenario
+/** A scenario with its `extends` base merged in (like the fake does). */
+export function readScenario(name: ScenarioName): Scenario {
+  const raw = JSON.parse(readFileSync(scenarioPath(name), 'utf8')) as Scenario & { extends?: ScenarioName }
+  const { extends: base, ...own } = raw
+  return base ? { ...readScenario(base), ...own } : own
+}
 
 const fill = (v: unknown): unknown =>
   JSON.parse(JSON.stringify(v).replaceAll('$SID', FAKE_SID).replaceAll('$AMID', FAKE_AMID))

@@ -112,6 +112,20 @@ export function usageEvent(
   }
 }
 
+/** Event kinds that carry `parentId` (a subagent's output nests under its spawning tool call). */
+const NESTABLE = new Set<ChatEvent['kind']>([
+  K.textDelta,
+  K.thinking,
+  K.toolCall,
+  K.fileEdit,
+  K.todo,
+  K.permissionRequest,
+  K.error,
+  K.task,
+])
+export const nestUnder = (e: ChatEvent, parentId: string | undefined): ChatEvent =>
+  parentId && NESTABLE.has(e.kind) ? ({ ...e, parentId } as ChatEvent) : e
+
 type TextEvent = V2EventOf<
   typeof EV.textDelta | typeof EV.textEnded | typeof EV.reasoningDelta | typeof EV.reasoningEnded
 >
@@ -119,6 +133,7 @@ type TextEvent = V2EventOf<
 /** Live translation of one session's v2 events into chat events (stateful: tools, last step, pending interactions). */
 export class EventMapper {
   readonly #contextWindow: (ref: ModelRef) => number | undefined
+  readonly #parentId: string | undefined
   readonly #tools = new Map<string, { name: string; input: Record<string, unknown> }>()
   readonly #permissions = new Set<string>()
   readonly #forms = new Set<string>()
@@ -128,8 +143,15 @@ export class EventMapper {
   #stepFailed = false
   #interrupted = false
 
-  constructor(o: { contextWindow: (ref: ModelRef) => number | undefined }) {
+  /** `parentId`: this mapper translates a subagent's session; its output nests under that tool call. */
+  constructor(o: { contextWindow: (ref: ModelRef) => number | undefined; parentId?: string }) {
     this.#contextWindow = o.contextWindow
+    this.#parentId = o.parentId
+  }
+
+  /** The model of the last step (provider auth errors name it). */
+  get model(): ModelRef | undefined {
+    return this.#model
   }
 
   get turnActive(): boolean {
@@ -154,9 +176,20 @@ export class EventMapper {
   }
 
   map(e: HubEvent): ChatEvent[] {
+    return this.#map(e).map((x) => nestUnder(x, this.#parentId))
+  }
+
+  #map(e: HubEvent): ChatEvent[] {
     switch (e.type) {
       case EV.connected:
       case EV.inboxEnqueued:
+      case EV.sessionCreated:
+      case EV.toolProgress:
+      case EV.mcpStatusChanged:
+      case EV.modelUpdated:
+      case EV.providerUpdated:
+      case EV.integrationUpdated:
+      case EV.credentialUpdated:
         return []
       case EV.executionStarted:
         this.#turnActive = true
