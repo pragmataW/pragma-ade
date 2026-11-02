@@ -398,3 +398,8 @@ export const fakeUrl = (log: string): string | undefined =>
 export async function dropSse(log: string, holdMs = 0): Promise<void> {
   await fetch(`${fakeUrl(log)}/__test/drop-sse?holdMs=${holdMs}`, { method: 'POST' })
 }
+
+/** Makes the fake broadcast one SSE event (needs `testRoutes: true`). */
+export async function broadcast(log: string, type: string, data: Record<string, unknown> = {}): Promise<void> {
+  await fetch(`${fakeUrl(log)}/__test/broadcast`, { method: 'POST', body: JSON.stringify({ type, data }) })
+}

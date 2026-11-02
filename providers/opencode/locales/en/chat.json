@@ -9,6 +9,10 @@
       "agent": "Agent",
       "defaultVariant": "Default"
     },
+    "model": {
+      "reauth": "Sign-in expired: reconnect this provider in Settings › OpenCode",
+      "local": "Local model: a small context window may not fit OpenCode's prompt"
+    },
     "permission": {
       "ask": "Ask",
       "askHint": "OpenCode's permission rules decide; risky actions ask you first",

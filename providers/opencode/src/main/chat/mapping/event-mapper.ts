@@ -11,6 +11,7 @@ import {
 } from '@pragma/module-chat/contract'
 import { CUSTOM } from '../../../renderer/chat/payloads'
 import {
+  AUTH_ERROR_RE,
   CONTENT_TYPES,
   ERROR_TYPE_HINTS,
   EV,
@@ -80,10 +81,10 @@ export function settleTool(t: SettledTool): ChatEvent[] {
   return [result, ...edits, ...todo]
 }
 
-/** `auth` for 401/403 or an Auth* type, `rate_limit` for 429 or a RateLimit* type, else `turn_failed`. */
+/** `auth` for 401/403 or an auth-like type (`provider.auth`, `api_key_expired`), `rate_limit` for 429 or a RateLimit* type, else `turn_failed`. */
 export function errorCodeOf(e: StructuredError): ChatErrorCode {
   if (e.status === HTTP_STATUS.unauthorized || e.status === HTTP_STATUS.forbidden) return ERROR_CODE.auth
-  if (e.type.includes(ERROR_TYPE_HINTS.auth)) return ERROR_CODE.auth
+  if (AUTH_ERROR_RE.test(e.type)) return ERROR_CODE.auth
   if (e.status === HTTP_STATUS.rateLimited || e.type.includes(ERROR_TYPE_HINTS.rateLimit)) return ERROR_CODE.rate_limit
   return ERROR_CODE.turn_failed
 }

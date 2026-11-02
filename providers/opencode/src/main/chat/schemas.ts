@@ -240,6 +240,36 @@ export const agentInfoSchema = z.looseObject({
 })
 export type AgentInfo = z.infer<typeof agentInfoSchema>
 
+export const providerInfoSchema = z.looseObject({
+  id: z.string(),
+  name: z.string(),
+  integrationID: z.string().optional(),
+  activation: z.string().optional(),
+  settings: z.looseObject({ apiKey: z.string().optional(), baseURL: z.string().optional() }).optional(),
+})
+export type ProviderInfo = z.infer<typeof providerInfoSchema>
+
+const integrationMethodSchema = z.looseObject({
+  type: z.string(),
+  id: z.string().optional(),
+  label: z.string().optional(),
+  names: z.array(z.string()).optional(),
+})
+export const connectionInfoSchema = z.looseObject({
+  type: z.string(),
+  id: z.string().optional(),
+  label: z.string().optional(),
+  method: z.string().optional(),
+  name: z.string().optional(),
+})
+export const integrationInfoSchema = z.looseObject({
+  id: z.string(),
+  name: z.string(),
+  methods: lenientArray(integrationMethodSchema).default([]),
+  connections: lenientArray(connectionInfoSchema).default([]),
+})
+export type IntegrationInfo = z.infer<typeof integrationInfoSchema>
+
 export const commandSchema = z.looseObject({ name: z.string(), description: z.string().optional() })
 export type OpencodeCommand = z.infer<typeof commandSchema>
 

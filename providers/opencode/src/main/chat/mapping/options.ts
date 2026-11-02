@@ -13,12 +13,14 @@ import {
   DEFAULT_AGENT,
   DEFAULT_VARIANT_LABEL_KEY,
   INVALID_OPTION,
+  MODEL_HINT_KEYS,
   MODEL_REF_SEPARATOR,
   PERMISSION_MODE,
   PERMISSION_MODE_KEYS,
   type PERMISSION_MODES,
 } from '../constants'
 import type { AgentInfo, ModelInfo, ModelRef } from '../schemas'
+import type { ProviderAccess } from './model-access'
 
 const MODEL_LABEL_KEY = 'chat:option.model'
 const EFFORT_LABEL_KEY = 'chat:option.effort'
@@ -41,6 +43,8 @@ export interface Catalog {
   models: ModelInfo[]
   defaultModel: ModelInfo | null
   agents: AgentInfo[]
+  /** Usable providers (undefined/null: no filtering). */
+  access?: ProviderAccess
 }
 
 export const modelValue = (m: Pick<ModelRef, 'id' | 'providerID'>): string =>
@@ -59,14 +63,34 @@ export function modelInputOf(sel: Selection): ModelRef | undefined {
   return sel.effort ? { ...ref, variant: sel.effort } : ref
 }
 
-const byLabel = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label)
+type ModelChoice = { value: string; label: string; description?: string; descriptionKey?: string; warn?: boolean }
 
+/** By provider (its name is the group), then by model name. */
+const byGroup = (a: ModelChoice, b: ModelChoice) =>
+  (a.description ?? '').localeCompare(b.description ?? '') || a.label.localeCompare(b.label)
+
+function modelChoice(m: ModelInfo, access: ProviderAccess): ModelChoice {
+  const state = access?.get(m.providerID)
+  const hint = state?.reauth ? MODEL_HINT_KEYS.reauth : state?.local ? MODEL_HINT_KEYS.local : undefined
+  return {
+    value: modelValue(m),
+    label: m.name,
+    ...(state ? { description: state.name } : {}),
+    ...(hint ? { descriptionKey: hint } : {}),
+    ...(state?.reauth ? { warn: true } : {}),
+  }
+}
+
+/** The models of usable providers (`ProviderAccess`), grouped; a hidden server default falls back to the first. */
 function modelDescriptor(c: Catalog, sel: Selection): ChatOptionDescriptor {
+  const access = c.access ?? null
   const values = c.models
-    .filter((m) => m.enabled !== false)
-    .map((m) => ({ value: modelValue(m), label: m.name }))
-    .sort(byLabel)
-  const fallback = c.defaultModel ? modelValue(c.defaultModel) : (values[0]?.value ?? null)
+    .filter((m) => m.enabled !== false && (!access || access.has(m.providerID)))
+    .map((m) => modelChoice(m, access))
+    .sort(byGroup)
+  const def = c.defaultModel
+  const usableDefault = def ? values.find((v) => v.value === modelValue(def)) : undefined
+  const fallback = usableDefault ? usableDefault.value : (values[0]?.value ?? null)
   return {
     key: CHAT_OPTION_KEYS.model,
     type: OPTION_TYPE.enum,

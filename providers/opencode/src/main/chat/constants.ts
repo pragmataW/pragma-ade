@@ -137,7 +137,7 @@ export const PART_ID_SEPARATOR = ':'
 export const IMAGE_MEDIA_PREFIX = 'image/'
 export const INLINE_SOURCE = { type: 'inline' } as const
 export const DATA_URI = (mediaType: string, base64: string) => `data:${mediaType};base64,${base64}`
-export const ERROR_TYPE_HINTS = { auth: 'Auth', rateLimit: 'RateLimit' } as const
+export const ERROR_TYPE_HINTS = { rateLimit: 'RateLimit' } as const
 
 export const REASON = {
   upgradeRequired: 'opencode:chat.unsupported.upgradeRequired',
@@ -208,6 +208,17 @@ export const SUBAGENT_TOOLS = ['subagent', 'task'] as const
 export const SUBAGENT_RESULT_RE = /<subagent\b[^>]*>(?<body>[\s\S]*?)<\/subagent>/
 /** Task name when OpenCode names no agent. */
 export const TASK_FALLBACK_NAME = 'subagent'
+
+/** Hosts of a local model server (`new URL(baseURL).hostname`). */
+export const LOOPBACK_HOSTS = ['127.0.0.1', 'localhost', '[::1]', '::1'] as const
+export const PROVIDER_ACTIVATION = { disabled: 'disabled' } as const
+/** Hints on model choices (the picker shows them under the model). */
+export const MODEL_HINT_KEYS = {
+  reauth: 'opencode:chat.model.reauth',
+  local: 'opencode:chat.model.local',
+} as const
+/** Errors that mean the provider rejected the saved credential (`provider.auth`, `api_key_expired`, …). */
+export const AUTH_ERROR_RE = /auth|api[_-]?key|credential|unauthori[sz]ed/i
 
 /** `ask`: OpenCode's permission rules decide (risky actions ask); `auto`: every request is approved once. */
 export const PERMISSION_MODES = ['ask', 'auto'] as const

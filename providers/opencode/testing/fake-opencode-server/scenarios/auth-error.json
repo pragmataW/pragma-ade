@@ -1,0 +1,115 @@
+{
+  "extends": "basic",
+  "models": [
+    {
+      "id": "fake-model",
+      "providerID": "fakeprov",
+      "name": "Fake Model",
+      "variants": [],
+      "limit": { "context": 10000, "output": 4000 },
+      "enabled": true
+    },
+    {
+      "id": "free-model",
+      "providerID": "freeprov",
+      "name": "Free Model",
+      "variants": [],
+      "limit": { "context": 200000, "output": 4000 },
+      "enabled": true
+    },
+    {
+      "id": "llama",
+      "providerID": "localprov",
+      "name": "Llama",
+      "variants": [],
+      "limit": { "context": 4096, "output": 1000 },
+      "enabled": true
+    },
+    {
+      "id": "gpt",
+      "providerID": "brokenprov",
+      "name": "GPT",
+      "variants": [],
+      "limit": { "context": 100000, "output": 4000 },
+      "enabled": true
+    },
+    {
+      "id": "nope",
+      "providerID": "hiddenprov",
+      "name": "Nope",
+      "variants": [],
+      "limit": { "context": 100000, "output": 4000 },
+      "enabled": true
+    }
+  ],
+  "defaultModel": "nope",
+  "providers": [
+    { "id": "fakeprov", "name": "Fake Provider", "integrationID": "fakeprov", "activation": "auto" },
+    {
+      "id": "freeprov",
+      "name": "Free Provider",
+      "integrationID": "freeprov",
+      "activation": "enabled",
+      "settings": { "apiKey": "public" }
+    },
+    {
+      "id": "localprov",
+      "name": "Local",
+      "activation": "enabled",
+      "settings": { "baseURL": "http://127.0.0.1:11434/v1" }
+    },
+    { "id": "brokenprov", "name": "Broken", "integrationID": "brokenprov", "activation": "enabled" },
+    { "id": "hiddenprov", "name": "Hidden", "integrationID": "hiddenprov", "activation": "auto" }
+  ],
+  "integrations": [
+    {
+      "id": "fakeprov",
+      "name": "Fake Provider",
+      "methods": [{ "type": "key" }],
+      "connections": [{ "type": "credential", "id": "cred_fake", "label": "API key", "method": "key" }]
+    },
+    { "id": "freeprov", "name": "Free Provider", "methods": [{ "type": "key" }], "connections": [] },
+    {
+      "id": "brokenprov",
+      "name": "Broken",
+      "methods": [{ "type": "key" }],
+      "connections": [{ "type": "credential", "id": "cred_broken", "label": "OAuth", "method": "oauth" }]
+    },
+    { "id": "hiddenprov", "name": "Hidden", "methods": [{ "type": "key" }], "connections": [] }
+  ],
+  "turns": [
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "model": { "id": "gpt", "providerID": "brokenprov" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.step.failed",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "error": { "type": "provider.auth", "message": "Invalid API key", "status": 401 }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.execution.failed",
+            "data": {
+              "sessionID": "$SID",
+              "error": { "type": "provider.auth", "message": "Invalid API key", "status": 401 }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

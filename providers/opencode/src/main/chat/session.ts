@@ -43,6 +43,7 @@ import {
   type Catalog,
   contextWindowOf,
   modelInputOf,
+  modelRefOf,
   modelValue,
   type Selection,
 } from './mapping/options'
@@ -70,17 +71,19 @@ const MODEL_OPTION_KEYS = new Set<string>([CHAT_OPTION_KEYS.model, CHAT_OPTION_K
 
 async function loadCatalog(conn: OpencodeConnection): Promise<{ catalog: Catalog; commands: OpencodeCommand[] }> {
   const { client } = conn
-  const [models, def, agents, commands] = await Promise.all([
+  const [models, def, agents, commands, access] = await Promise.all([
     conn.models(),
     client.model.default(),
     client.agent.list(),
     client.command.list(),
+    conn.access(),
   ])
   return {
     catalog: {
       models,
       defaultModel: defaultModelSchema.parse(def).data,
       agents: listOf(agentInfoSchema).parse(agents).data,
+      access,
     },
     commands: listOf(commandSchema).parse(commands).data,
   }
@@ -101,6 +104,14 @@ function withInitialOptions(
   }, sel)
 }
 
+/** Without a pick, the server default unless the picker hides it (its provider cannot answer): then the first. */
+function withUsableModel(sel: Selection, catalog: Catalog): Selection {
+  if (sel.model) return sel
+  const fallback = buildOptionDescriptors(catalog, sel).find((d) => d.key === CHAT_OPTION_KEYS.model)?.default
+  const serverDefault = catalog.defaultModel ? modelValue(catalog.defaultModel) : null
+  return typeof fallback === 'string' && fallback !== serverDefault ? { ...sel, model: fallback } : sel
+}
+
 const selectionOf = (info: SessionInfo): Selection => ({
   ...(info.model ? { model: modelValue(info.model), effort: info.model.variant ?? null } : {}),
   ...(info.agent ? { agent: info.agent } : {}),
@@ -114,7 +125,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
   readonly #log: Log
   readonly #mapper: EventMapper
   readonly #subagents: SubagentTracker
-  readonly #catalog: Catalog
+  #catalog: Catalog
   readonly #commands: string[]
   readonly #forms = new Map<string, FormField[]>()
   readonly #unsubscribe: (() => void)[] = []
@@ -174,7 +185,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
   }
 
   static async #create(conn: OpencodeConnection, ctx: ChatSessionContext, catalog: Catalog) {
-    const sel = withInitialOptions({}, catalog, ctx.initialOptions)
+    const sel = withUsableModel(withInitialOptions({}, catalog, ctx.initialOptions), catalog)
     const model = modelInputOf(sel)
     const raw = await conn.client.session.create({
       ...(sel.agent ? { agent: sel.agent } : {}),
@@ -203,6 +214,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
     this.#unsubscribe.push(
       hub.subscribe(this.externalSessionId, (e) => this.#onEvent(e)),
       hub.onReconnect(() => void this.#resync()),
+      this.#conn.onCatalogChange(() => void this.#refreshCatalog()),
       this.#conn.onExit((code) => this.#onServerExit(code)),
     )
     this.#emit({
@@ -217,6 +229,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
 
   #emit(e: ChatEvent): void {
     if (e.kind === K.turnEnd) this.#turnActive = false
+    if (e.kind === K.error && e.code === ERROR_CODE.auth) this.#authFailed()
     if (e.kind === K.permissionRequest && this.#autoApprove) queueMicrotask(() => this.#approve(e.requestId))
     if (e.kind === K.custom && e.type === CUSTOM.form && e.eventId) {
       const form = formPayloadSchema.safeParse(e.data)
@@ -279,6 +292,25 @@ export class OpencodeChatSession implements ChatSessionHandle {
       if (synthetic && synthetic.type !== OTHER_EVENT) this.#onEvent(synthetic)
     } catch (e) {
       this.#log.warn(`opencode chat ${this.#ctx.sessionId}: resync failed`, e)
+    }
+  }
+
+  /** The provider of the model in use rejected its credential: the picker flags it (per server) until it is fixed. */
+  #authFailed(): void {
+    const model = this.#mapper.model ?? (this.#sel.model ? modelRefOf(this.#sel.model) : undefined)
+    if (model) this.#conn.markAuthFailed(model.providerID)
+  }
+
+  /** Models or provider access changed on the server: the option list follows. */
+  async #refreshCatalog(): Promise<void> {
+    try {
+      const [models, access] = await Promise.all([this.#conn.models(), this.#conn.access()])
+      if (this.#closed) return
+      this.#catalog = { ...this.#catalog, models, access }
+      this.#options = buildOptionDescriptors(this.#catalog, this.#sel)
+      this.#emit({ kind: K.options, options: this.#options })
+    } catch (e) {
+      this.#log.warn(`opencode chat ${this.#ctx.sessionId}: catalog refresh failed`, e)
     }
   }
 

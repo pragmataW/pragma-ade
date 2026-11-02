@@ -226,6 +226,9 @@ function route(ctx, r) {
       return send(res, OK, located(ctx.scenario.agents))
     case 'GET /api/command':
       return send(res, OK, located(ctx.scenario.commands))
+    case 'GET /api/provider':
+    case 'GET /api/integration':
+      return listRoute(res, ctx.scenario[path === '/api/provider' ? 'providers' : 'integrations'])
     case 'POST /api/session':
       return send(res, OK, { data: createSession(ctx, r.body ?? {}) })
     case 'GET /api/session/active':
@@ -234,9 +237,18 @@ function route(ctx, r) {
       return openSse(ctx, req, res)
     case 'POST /__test/drop-sse':
       return dropSse(ctx, res)
+    case 'POST /__test/broadcast':
+      if (process.env[ENV.testRoutes] !== '1') return send(res, NOT_FOUND, { error: 'not found' })
+      ctx.broadcast(r.body?.type, r.body?.data ?? {})
+      return send(res, NO_CONTENT)
     default:
       return sessionRoute(ctx, r)
   }
+}
+
+/** A scenario list (`providers`, `integrations`); 404 like an older server when the scenario has none. */
+function listRoute(res, list) {
+  return list ? send(res, OK, located(list)) : send(res, NOT_FOUND, { error: 'not found' })
 }
 
 function legacyRoute(res, key) {
