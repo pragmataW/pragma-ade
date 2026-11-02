@@ -2,8 +2,20 @@ import { homedir, userInfo } from 'node:os'
 import { TEST_MODE_ENABLED, TEST_MODE_ENV } from '@pragma/sdk'
 import type { MainContext } from '@pragma/sdk/main'
 import { WIN32 } from '../constants'
-import { type CliIntegrationSettings, type CliIntegrationStatus, cliIntegrationIpc, type SkillTargetStatus } from '../contract'
-import { type CliInstallDeps, cliInstallStatus, defaultInstallDir, installCli, uninstallCli, windowsUserPath } from './install-cli'
+import {
+  type CliIntegrationSettings,
+  type CliIntegrationStatus,
+  cliIntegrationIpc,
+  type SkillTargetStatus,
+} from '../contract'
+import {
+  type CliInstallDeps,
+  cliInstallStatus,
+  defaultInstallDir,
+  installCli,
+  uninstallCli,
+  windowsUserPath,
+} from './install-cli'
 import type { CliPaths } from './paths'
 import { assertSafeHome } from './safe-home'
 
@@ -28,7 +40,8 @@ export function createCliIntegrationService(ctx: Ctx, paths: CliPaths, skills: S
     shellPath: async () => (await ctx.env.getShellEnv()).PATH,
     userPath: process.platform === WIN32 ? windowsUserPath() : { get: async () => '', set: async () => undefined },
   })
-  const dirOf = (h: string): string => ctx.settings.get().installDir ?? defaultInstallDir(process.platform, h, paths.binDir)
+  const dirOf = (h: string): string =>
+    ctx.settings.get().installDir ?? defaultInstallDir(process.platform, h, paths.binDir)
   const status = async (h = homedir()): Promise<CliIntegrationStatus> => ({
     cli: await cliInstallStatus(dirOf(h), deps(h)),
     skills: await skills.statuses(h),

@@ -13,6 +13,7 @@ import type { MainContext } from '@pragma/sdk/main'
 import { afterEach } from 'vitest'
 import { CLI_INTEGRATION_SETTINGS_DEFAULTS, type CliIntegrationSettings } from '../../src/contract'
 import mainModule from '../../src/main'
+import type { SkillProvider } from '../../src/main/skills-installer'
 import { fakeAgents, fakeBoard, fakeComments, fakeProjects } from './fakes'
 
 const MODULE_ROOT = join(import.meta.dirname, '..', '..')
@@ -25,7 +26,9 @@ afterEach(async () => {
  * The real main module activated on a fake `MainContext` with fake projects/agents/board/comments and a REAL bridge
  * server, temp userData and temp HOME. `without` leaves optional modules out.
  */
-export async function activateModule(o: { without?: ('board' | 'comments')[]; shellPath?: string } = {}) {
+export async function activateModule(
+  o: { without?: ('board' | 'comments')[]; shellPath?: string; skillProviders?: SkillProvider[] } = {},
+) {
   const root = mkdtempSync(join(tmpdir(), 'pragma-cli-module-'))
   const userData = join(root, 'user-data')
   const bridge = await startTestBridgeServer()
@@ -38,18 +41,33 @@ export async function activateModule(o: { without?: ('board' | 'comments')[]; sh
   ]
   if (!o.without?.includes('board')) services.push([BoardServiceToken, fakeBoard()])
   if (!o.without?.includes('comments')) services.push([CommentsServiceToken, fakeComments()])
+  const skillProviders = o.skillProviders ?? []
   const fake = fakeMainCtx<CliIntegrationSettings>({ settings: CLI_INTEGRATION_SETTINGS_DEFAULTS, services })
   let settings = { ...CLI_INTEGRATION_SETTINGS_DEFAULTS }
   const notifications: NotificationInput[] = []
   const ctx = {
     ...fake.ctx,
-    module: { id: 'cli-integration', version: '0.1.0', paths: { root: MODULE_ROOT, data: join(userData, 'modules', 'cli-integration') } },
-    paths: { userData, logs: join(root, 'logs'), temp: join(root, 'tmp'), resource: (_id: string, rel: string) => join(MODULE_ROOT, rel) },
+    module: {
+      id: 'cli-integration',
+      version: '0.1.0',
+      paths: { root: MODULE_ROOT, data: join(userData, 'modules', 'cli-integration') },
+    },
+    paths: {
+      userData,
+      logs: join(root, 'logs'),
+      temp: join(root, 'tmp'),
+      resource: (_id: string, rel: string) => join(MODULE_ROOT, rel),
+    },
     env: { getShellEnv: async () => ({ PATH: o.shellPath ?? '/usr/bin:/bin' }), resolveCommand: async () => null },
     notifications: { show: (n: NotificationInput) => notifications.push(n) },
     i18n: { t: (key: string) => key },
     testMode: true,
-    providers: { providersWith: () => [], capability: () => undefined, list: () => [], get: () => undefined },
+    providers: {
+      providersWith: () => skillProviders,
+      capability: (id: string) => skillProviders.find((p) => p.id === id)?.skills,
+      list: () => skillProviders,
+      get: (id: string) => skillProviders.find((p) => p.id === id),
+    },
     settings: {
       get: () => settings,
       set: (v: CliIntegrationSettings) => (settings = v),

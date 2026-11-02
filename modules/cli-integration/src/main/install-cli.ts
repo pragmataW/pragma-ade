@@ -1,9 +1,25 @@
 import { execFile } from 'node:child_process'
-import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, symlinkSync, unlinkSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readlinkSync,
+  symlinkSync,
+  unlinkSync,
+} from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { DEFAULT_POSIX_INSTALL_SUBDIR, PATH_DELIMITERS, POWERSHELL, WIN32 } from '../constants'
-import { CLI_BIN_NAME, CLI_CMD_SHIM_NAME, CLI_ERROR, CLI_INSTALL_STATE, type CliInstallState, type CliInstallStatus } from '../contract'
+import {
+  CLI_BIN_NAME,
+  CLI_CMD_SHIM_NAME,
+  CLI_ERROR,
+  CLI_INSTALL_STATE,
+  type CliInstallState,
+  type CliInstallStatus,
+} from '../contract'
 import { CliError } from './cli-error'
 import type { CliPaths } from './paths'
 
@@ -55,9 +71,12 @@ function posixState(link: string, shimPath: string): CliInstallState {
 
 /** win32: the copied `.cmd` must equal our shim, and the dir must be on the user PATH. */
 async function winState(dir: string, link: string, d: CliInstallDeps): Promise<CliInstallState> {
-  const ours = link === d.paths.shimPath || (existsSync(link) && readFileSync(link, UTF8) === readFileSync(d.paths.shimPath, UTF8))
+  const ours =
+    link === d.paths.shimPath || (existsSync(link) && readFileSync(link, UTF8) === readFileSync(d.paths.shimPath, UTF8))
   if (!ours && existsSync(link)) return CLI_INSTALL_STATE.conflict
-  return ours && onPath(await d.userPath.get(), dir, true) ? CLI_INSTALL_STATE.installed : CLI_INSTALL_STATE.not_installed
+  return ours && onPath(await d.userPath.get(), dir, true)
+    ? CLI_INSTALL_STATE.installed
+    : CLI_INSTALL_STATE.not_installed
 }
 
 async function dirOnPath(dir: string, d: CliInstallDeps): Promise<boolean | null> {
@@ -94,7 +113,10 @@ async function removeFromUserPath(dir: string, api: UserPathApi): Promise<void> 
 export async function installCli(dir: string, d: CliInstallDeps): Promise<CliInstallStatus> {
   const status = await cliInstallStatus(dir, d)
   if (status.state === CLI_INSTALL_STATE.conflict)
-    throw new CliError(CLI_ERROR.conflict, `${status.linkPath} already exists and is not Pragma's; remove it or pick another folder.`)
+    throw new CliError(
+      CLI_ERROR.conflict,
+      `${status.linkPath} already exists and is not Pragma's; remove it or pick another folder.`,
+    )
   if (status.state === CLI_INSTALL_STATE.installed) return status
   mkdirSync(dir, { recursive: true })
   if (d.platform !== WIN32) symlinkSync(d.paths.shimPath, status.linkPath)
@@ -128,7 +150,9 @@ export function windowsUserPath(): UserPathApi {
       return stdout.trim()
     },
     async set(value) {
-      await run(POWERSHELL.exe, [...POWERSHELL.args, POWERSHELL.setUserPath], { env: { ...process.env, [POWERSHELL.valueEnv]: value } })
+      await run(POWERSHELL.exe, [...POWERSHELL.args, POWERSHELL.setUserPath], {
+        env: { ...process.env, [POWERSHELL.valueEnv]: value },
+      })
     },
   }
 }

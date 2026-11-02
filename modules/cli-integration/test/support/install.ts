@@ -12,7 +12,9 @@ afterEach(() => {
 })
 
 /** A temp HOME with a generated shim in `<root>/ud/bin`; win32 is simulated with a fake user PATH. */
-export function makeInstallDeps(o: { platform?: NodeJS.Platform; shellPath?: string | undefined; userPath?: string } = {}) {
+export function makeInstallDeps(
+  o: { platform?: NodeJS.Platform; shellPath?: string | undefined; userPath?: string } = {},
+) {
   const root = mkdtempSync(join(tmpdir(), 'pragma-install-'))
   roots.push(root)
   const platform = o.platform ?? 'darwin'

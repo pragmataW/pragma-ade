@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { type AgentProfile, AgentSessionsServiceToken } from '@pragma/module-agents/contract'
 import { BoardServiceToken } from '@pragma/module-board/contract'
 import { BridgeServerToken } from '@pragma/module-bridge/contract'
@@ -20,6 +21,7 @@ import { createNotifier } from './notifier'
 import { type CliPaths, resolveCliPaths } from './paths'
 import { createCliIntegrationService, registerCliIntegrationIpc } from './service'
 import { writeShims } from './shim'
+import { createSkillsPort } from './skills-port'
 import { runtimeState } from './state'
 
 type Ctx = MainContext<CliIntegrationSettings>
@@ -85,8 +87,11 @@ export default defineMainModule<CliIntegrationSettings>({
     runtimeState.paths = paths
     await installShimAndDecorator(ctx, paths)
     registerBridge(ctx)
-    const noSkills = { statuses: async () => [], install: async () => undefined }
-    registerCliIntegrationIpc(ctx, createCliIntegrationService(ctx, paths, noSkills))
+    const skills = createSkillsPort(ctx, paths)
+    registerCliIntegrationIpc(ctx, createCliIntegrationService(ctx, paths, skills))
+    skills
+      .checkForUpdates(homedir())
+      .catch((e: unknown) => ctx.log.warn(`cli-integration: skill update check failed: ${String(e)}`))
   },
   deactivate() {
     for (const dispose of disposers.splice(0)) dispose()
