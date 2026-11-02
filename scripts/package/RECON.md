@@ -71,3 +71,8 @@ The plan's examples (`to: 'pty-daemon'`, `to: 'pragma-bridge.vsix'`) differ from
 ## npm cross-platform install (Task 5)
 
 `npm install --os=win32 --cpu=x64 --prefer-offline` installed `@parcel/watcher` **without** `@parcel/watcher-win32-x64` (cached packuments); the same command without `--prefer-offline` installs it. The tool therefore does not pass `--prefer-offline`.
+
+## Docker (Task 6)
+
+- `docker pull` / `docker run` with the user's client config hung indefinitely (Docker Desktop credential helper `desktop`); with an anonymous config (`DOCKER_CONFIG` → `<cache>/docker-config/config.json` = `{"auths":{}}`) plus `DOCKER_HOST` from `docker context inspect`, `debian:bookworm-slim` pulled in seconds. The tool always runs Docker this way; the user's `~/.docker` is only read.
+- `docker.int.ts` `compiles node-pty for linux-x64`: passed (`node:22-bullseye`, linux/amd64); `pty.node` is ELF x86-64, max `GLIBC_2.x` ≤ 2.31.

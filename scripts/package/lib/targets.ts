@@ -1,8 +1,9 @@
-import { DARWIN } from '../constants.ts'
+import { DARWIN, LINUX, WIN32 } from '../constants.ts'
+import { TargetIdSchema } from './schema.ts'
 
-export const TARGET_IDS = ['darwin-arm64', 'darwin-x64', 'linux-x64', 'win32-x64'] as const
+export const TARGET_IDS = TargetIdSchema.options
 export type TargetId = (typeof TARGET_IDS)[number]
-export const PLATFORMS = ['darwin', 'linux', 'win32'] as const
+export const PLATFORMS = [DARWIN, LINUX, WIN32] as const
 export type TargetPlatform = (typeof PLATFORMS)[number]
 export const TARGET_ARCHES = ['arm64', 'x64'] as const
 export type TargetArch = (typeof TARGET_ARCHES)[number]
@@ -38,20 +39,20 @@ export const TARGETS: Readonly<Record<TargetId, Target>> = {
   'darwin-x64': mac('x64'),
   'linux-x64': {
     id: 'linux-x64',
-    platform: 'linux',
+    platform: LINUX,
     arch: 'x64',
-    builderPlatform: 'linux',
+    builderPlatform: LINUX,
     builderTargets: ['AppImage', 'deb'],
-    npm: { os: 'linux', cpu: 'x64', libc: 'glibc' },
+    npm: { os: LINUX, cpu: 'x64', libc: 'glibc' },
     binaryFormat: 'elf',
   },
   'win32-x64': {
     id: 'win32-x64',
-    platform: 'win32',
+    platform: WIN32,
     arch: 'x64',
     builderPlatform: 'win',
     builderTargets: ['nsis', 'zip'],
-    npm: { os: 'win32', cpu: 'x64' },
+    npm: { os: WIN32, cpu: 'x64' },
     binaryFormat: 'pe',
   },
 }

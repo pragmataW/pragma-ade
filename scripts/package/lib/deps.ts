@@ -14,6 +14,7 @@ export const loadYaml = (): YamlModule => requireHere(DEP.yaml) as YamlModule
 
 export interface AsarModule {
   listPackage(archive: string, options: { isPack: boolean }): string[]
+  createPackage(src: string, dest: string): Promise<void>
 }
 export const loadAsar = async (): Promise<AsarModule> => (await import(DEP.asar)) as AsarModule
 

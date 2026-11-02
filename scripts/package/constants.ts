@@ -25,7 +25,6 @@ export const UTF8 = 'utf8'
 export const STREAM_EVENT = { data: 'data', error: 'error', close: 'close', end: 'end' } as const
 export const TEMP_LABEL_SEPARATOR = ' '
 export const TOOL_DEP_MARKER = 'electron-builder'
-export const PACKAGE_DIR_FROM_REPO = 'scripts/package'
 
 // --- commands ---
 export const NODE = 'node'
@@ -149,3 +148,135 @@ export const PRUNE_RULES: readonly { package: string; remove: (t: Target) => rea
       t.platform === WIN32 ? [`third_party/conpty/*/win10-${t.arch === 'x64' ? 'arm64' : 'x64'}`] : ['third_party'],
   },
 ]
+
+// --- natives and docker ---
+export const NATIVE_MARKERS = ['binding.gyp', 'prebuilds'] as const
+export const BUILD_DIR = 'build'
+export const RELEASE_DIR = 'Release'
+export const ELECTRON_HEADERS_URL = 'https://electronjs.org/headers'
+export const NODE_GYP_VERSION = '13.1.0'
+export const NODE_GYP_SCRIPT = 'node_modules/node-gyp/bin/node-gyp.js'
+export const NATIVE_COMPILE_TIMEOUT_MS = 1_200_000
+export const CACHE_KEY_SCOPE_SEP = '+'
+export const DOCKER_APP_PATH = '/Applications/Docker.app'
+export const OPEN_BIN = 'open'
+export const DOCKER_POLL_MS = 2_000
+export const DOCKER_START_TIMEOUT_MS = 180_000
+export const DOCKER_PLATFORM = 'linux/amd64'
+export const LINUX_BUILD_IMAGE = 'node:22-bullseye'
+export const LINUX_PROBE_IMAGE = 'debian:bookworm-slim'
+export const DOCKER_WORK_DIR = '/work'
+export const GLIBC_BASELINE_MINOR = 31
+export const LIST_SEP = ', '
+
+// --- electron-builder and icon ---
+export const BUILDER_CONFIG_FILE = 'electron-builder.yml'
+export const BUILD_RESOURCES_DIR = 'build'
+export const ICON_SVG = 'build/icon.svg'
+export const ICON_PNG = 'build/icon.png'
+export const ICON_SIZE_PX = 1024
+export const ICON_RENDER_TIMEOUT_MS = 60_000
+export const DESKTOP_DIR = 'apps/desktop'
+export const ELECTRON_PACKAGE = 'electron'
+export const CSC_DISCOVERY_ENV = 'CSC_IDENTITY_AUTO_DISCOVERY'
+export const ELECTRON_RUN_AS_NODE_ENV = 'ELECTRON_RUN_AS_NODE'
+export const ICON_FIELD = 'icon'
+export const BUILDER_PLATFORM_KEYS = ['mac', 'linux', 'win'] as const
+/** electron-builder leaves these next to the artifacts; Biome would lint the unpacked apps' JS (RECON.md). */
+export const BUILDER_SCRATCH_FILES = ['builder-debug.yml', 'builder-effective-config.yaml'] as const
+export const MIN_ARTIFACT_BYTES = 10_000_000
+
+// --- archives, layout and probe ---
+export const DITTO = 'ditto'
+export const TAR = 'tar'
+export const HDIUTIL = 'hdiutil'
+export const ARCHIVE_EXT = { zip: '.zip', deb: '.deb', dmg: '.dmg', appImage: '.AppImage', exe: '.exe' } as const
+export const DEB_DATA_PREFIX = 'data.tar'
+export const APP_BUNDLE_EXT = '.app'
+export const MAC_CONTENTS = 'Contents'
+export const MAC_EXECUTABLE_DIR = 'MacOS'
+export const MAC_RESOURCES_DIR = 'Resources'
+export const RESOURCES_DIR = 'resources'
+export const APP_ASAR = 'app.asar'
+export const ASAR_UNPACKED_SUFFIX = '.unpacked'
+export const DEB_INSTALL_ROOT = 'opt'
+export const EXE_EXT = '.exe'
+export const PROBE_SCRIPT = 'probe/natives.cjs'
+export const PROBE_TIMEOUT_MS = 120_000
+export const LINUX_PROBE_TIMEOUT_MS = 900_000
+export const ENABLED = '1'
+export const DOCKER_APP_MOUNT = '/app'
+export const DOCKER_PROBE_MOUNT = '/probe'
+export const LINUX_RUNTIME_LIBS = [
+  'libnss3',
+  'libatk1.0-0',
+  'libatk-bridge2.0-0',
+  'libcups2',
+  'libdrm2',
+  'libgtk-3-0',
+  'libgbm1',
+  'libasound2',
+  'libxss1',
+  'libxkbcommon0',
+  'libxcomposite1',
+  'libxdamage1',
+  'libxrandr2',
+  'libpango-1.0-0',
+  'libcairo2',
+] as const
+export const EMULATION_CRASH = /qemu|rosetta error/i
+export const SKIP_REASON = {
+  docker: 'docker unavailable',
+  emulation: 'emulation',
+  unsupported: 'unsupported host',
+} as const
+
+// --- audit ---
+export const FILE_BIN = 'file'
+export const CODESIGN = 'codesign'
+export const DEB_CONTROL_PREFIX = 'control.tar'
+export const DEB_CONTROL_MEMBER = './control'
+export const DEB_ARCHITECTURE = { x64: 'amd64', arm64: 'arm64' } as const
+export const DEB_ARCH_FIELD = /^Architecture:\s*(\S+)/m
+export const SQUASHFS_MAGIC = 'hsqs'
+export const NSIS_MARKER = 'Nullsoft'
+/** Bytes searched for the AppImage squashfs magic and the NSIS marker. */
+export const MAGIC_SCAN_BYTES = 8_388_608
+export const AUDIT_DETAIL_LIMIT = 10
+export const BLOCKMAP_EXT = '.blockmap'
+export const SHA_PREFIX_CHARS = 12
+
+// --- orchestration and reports ---
+export const DIST_DIR = 'dist'
+export const MANIFEST_FILE = 'manifest.json'
+export const SUMMARY_FILE = 'SUMMARY.md'
+export const SMOKE_RESULTS_FILE = 'smoke-results.json'
+export const BYTES_PER_MB = 1_048_576
+export const MB_DECIMALS = 1
+export const GIT = 'git'
+export const BUILD_SCRIPT = 'build'
+export const DOCKER_CONFIG_ENV = 'DOCKER_CONFIG'
+export const DOCKER_HOST_ENV = 'DOCKER_HOST'
+export const DOCKER_CONFIG_DIR = 'docker-config'
+/** Anonymous pulls of public images: no `credsStore` (Docker Desktop's helper hung pulls on this Mac, RECON.md). */
+export const DOCKER_ANON_CONFIG = '{"auths":{}}\n'
+export const DOCKER_CONFIG_FILE = 'config.json'
+export const LINUX = 'linux'
+export const RUN_SUBCOMMAND = 'run'
+export const STATUS = { ok: 'ok', failed: 'failed' } as const
+export const SEVERITY = { error: 'error', warn: 'warn' } as const
+export const PROBE_CHECK = 'probe'
+export const MISSING = 'missing'
+export const TAR_EXTRACT = '-xf'
+/** electron-builder downloads (Electron zips, tool bundles) that failed this way are retried once. */
+export const TRANSIENT_NETWORK_ERROR = /certificate|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|network/i
+
+// --- smoke ---
+export const SMOKE_CONFIG = 'test/e2e/packaging/playwright.config.ts'
+export const SMOKE_DIST_ENV = 'PRAGMA_SMOKE_DIST'
+export const SMOKE_TIMEOUT_MS = 1_800_000
+export const PLAYWRIGHT_STATUS = { passed: 'passed', failed: 'failed', skipped: 'skipped' } as const
+export const SKIP_ANNOTATION = 'skip'
+/** dist/ is gitignored but Biome has no VCS ignore: a nested config keeps Biome out of the outputs (RECON.md). */
+export const DIST_BIOME_FILE = 'biome.json'
+export const DIST_BIOME_CONFIG = '{ "root": false, "files": { "includes": ["!**"] } }\n'

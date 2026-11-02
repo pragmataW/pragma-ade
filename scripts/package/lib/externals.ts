@@ -6,6 +6,7 @@ import {
   ELECTRON_MODULE,
   EXPORT_CONDITIONS,
   JS_EXTENSIONS,
+  LIST_SEP,
   NODE_MODULES,
   NODE_PROTOCOL,
   PACKAGE_JSON,
@@ -20,20 +21,13 @@ import {
   WORKSPACE_SCOPE,
 } from '../constants.ts'
 import { readJson, walkFiles } from './fsx.ts'
-import { type PackageJson, PackageJsonSchema } from './schema.ts'
+import { type ExternalRef, type PackageJson, PackageJsonSchema } from './schema.ts'
+
+export type { ExternalRef } from './schema.ts'
 
 export interface SpecifierHit {
   file: string
   specifier: string
-}
-
-export interface ExternalRef {
-  name: string
-  version: string
-  /** The installed package dir the bundle was built against. */
-  sourceDir: string
-  /** Path inside the package; '' is the package entry. */
-  subpath: string
 }
 
 export interface Rewrite {
@@ -205,5 +199,5 @@ export function analyzeBundle(
 /** Workspace packages must be bundled, never loaded at runtime. */
 export function assertNoWorkspaceExternals(scan: ExternalScan): void {
   const bad = scan.externals.filter((e) => e.name.startsWith(WORKSPACE_SCOPE)).map((e) => e.name)
-  if (bad.length > 0) throw new BundleError(`workspace packages are external in the bundle: ${bad.join(', ')}`)
+  if (bad.length > 0) throw new BundleError(`workspace packages are external in the bundle: ${bad.join(LIST_SEP)}`)
 }

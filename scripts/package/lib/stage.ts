@@ -29,7 +29,6 @@ import {
   RENDERER_DIR,
   RESOURCE_PACKAGE_SUFFIX,
   RESOURCE_PACKAGE_VERSION,
-  SCOPE_PREFIX,
   SPAWN_HELPER,
   STAGE_APP_DIR,
   STAGE_DIR,
@@ -49,6 +48,7 @@ import {
   packageRootOf,
 } from './externals.ts'
 import { cacheRoot, copyDir, expandStars, isDir, walkFiles } from './fsx.ts'
+import { packageDirs, readPackageMeta } from './packages.ts'
 import { ModuleTypeSchema, type PackageJson } from './schema.ts'
 import type { Target } from './targets.ts'
 import type { ResourceDecl } from './workspace.ts'
@@ -130,19 +130,6 @@ export function applyRewrites(rewrites: ExternalScan['rewrites'], fromRoot: stri
   }
 }
 
-/** Every installed package dir below a node_modules dir (scoped and nested ones included). */
-function packageDirs(nodeModulesDir: string): string[] {
-  if (!existsSync(nodeModulesDir)) return []
-  const out: string[] = []
-  for (const name of readdirSync(nodeModulesDir)) {
-    const path = join(nodeModulesDir, name)
-    if (!isDir(path)) continue
-    const dirs = name.startsWith(SCOPE_PREFIX) ? readdirSync(path).map((n) => join(path, n)) : [path]
-    for (const dir of dirs.filter(isDir)) out.push(dir, ...packageDirs(join(dir, NODE_MODULES)))
-  }
-  return out
-}
-
 /** `darwin-x64+arm64` / `linux-x64.node` → platform and arches; null for other names. */
 function parsePrebuildName(entry: string): { platform: string; arches: string[] } | null {
   const name = entry.endsWith(NATIVE_EXT) ? entry.slice(0, -NATIVE_EXT.length) : entry
@@ -165,19 +152,12 @@ function prunePrebuilds(pkgDir: string, target: Target): string[] {
 }
 
 function applyPruneRules(pkgDir: string, target: Target): string[] {
-  const name = pkgName(pkgDir)
+  const name = readPackageMeta(pkgDir)?.name
   const rule = PRUNE_RULES.find((r) => r.package === name)
   if (!rule) return []
   const removed = rule.remove(target).flatMap((pattern) => expandStars(pkgDir, pattern))
   for (const rel of removed) rmSync(join(pkgDir, rel), { recursive: true, force: true })
   return removed.map((rel) => join(pkgDir, rel))
-}
-
-function pkgName(pkgDir: string): string | undefined {
-  const file = join(pkgDir, PACKAGE_JSON)
-  if (!existsSync(file)) return undefined
-  const name: unknown = JSON.parse(readFileSync(file, UTF8)).name
-  return typeof name === 'string' ? name : undefined
 }
 
 /** Removes other platforms' prebuilds and payloads (`PRUNE_RULES`); returns the removed paths. */
@@ -201,8 +181,7 @@ export async function fixExecutableBits(dir: string, target: Target): Promise<st
 function nearestType(path: string): PackageJson['type'] {
   const root = packageRootOf(join(path, PACKAGE_JSON))
   if (!root) return undefined
-  const type: unknown = JSON.parse(readFileSync(join(root, PACKAGE_JSON), UTF8)).type
-  const parsed = ModuleTypeSchema.safeParse(type)
+  const parsed = ModuleTypeSchema.safeParse(readPackageMeta(root)?.type)
   return parsed.success ? parsed.data : undefined
 }
 

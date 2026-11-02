@@ -18,7 +18,7 @@ import {
 const SHA256 = 'sha256'
 const HEX = 'hex'
 
-/** Every regular file (and symlink) below `root`, depth first; `skipDirs` names are not entered. */
+/** Every regular file below `root`, depth first; symlinks are skipped, `skipDirs` names are not entered. */
 export function walkFiles(root: string, opts: { skipDirs?: readonly string[] } = {}): string[] {
   const out: string[] = []
   const skip = new Set(opts.skipDirs ?? [])
@@ -27,7 +27,7 @@ export function walkFiles(root: string, opts: { skipDirs?: readonly string[] } =
       const path = join(dir, entry.name)
       if (entry.isDirectory()) {
         if (!skip.has(entry.name)) visit(path)
-      } else out.push(path)
+      } else if (entry.isFile()) out.push(path)
     }
   }
   visit(root)
