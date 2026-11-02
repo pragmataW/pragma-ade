@@ -14,7 +14,7 @@ import {
   EFFORT_LEVELS,
   FAST_MODE_OPTION,
   FLAG_VALUE_SEPARATOR,
-  PERMISSION_FLAGS,
+  PERMISSION_FLAG,
   PERMISSION_MODE,
   PERMISSION_MODE_STYLE,
   PERMISSION_MODES,
@@ -25,30 +25,49 @@ import {
 import { buildClaudeChildEnv } from './env'
 import type { ClaudeProcessSpawn } from './spawn'
 
-const FLAGS = new Set<string>(PERMISSION_FLAGS)
+const MODES = new Set<string>(PERMISSION_MODES)
+const isPermissionMode = (v: string | undefined): v is ClaudePermissionMode => v !== undefined && MODES.has(v)
 
-/** The profile args already decide permissions (`--dangerously-skip-permissions`, `--permission-mode[=…]`, …). */
-export const hasPermissionFlag = (args: readonly string[]): boolean =>
-  args.some((a) => FLAGS.has(a.split(FLAG_VALUE_SEPARATOR)[0] ?? a))
+export interface ProfilePermission {
+  /** The mode the profile args ask for (the last permission flag wins), else `null`. */
+  startMode: ClaudePermissionMode | null
+  /** The profile args without any permission flag (and without the value of `--permission-mode <m>`). */
+  args: string[]
+}
+
+/** Splits the permission flags (`--dangerously-skip-permissions`, `--permission-mode[=]<m>`, …) off profile args. */
+export function splitPermissionArgs(args: readonly string[]): ProfilePermission {
+  let startMode: ClaudePermissionMode | null = null
+  const rest: string[] = []
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i] ?? ''
+    const [flag, inline] = arg.split(FLAG_VALUE_SEPARATOR)
+    if (flag === PERMISSION_FLAG.skip) startMode = PERMISSION_MODE.bypassPermissions
+    else if (flag === PERMISSION_FLAG.mode) {
+      const value = inline ?? args[++i]
+      if (isPermissionMode(value)) startMode = value
+    } else if (flag !== PERMISSION_FLAG.allowSkip) rest.push(arg)
+  }
+  return { startMode, args: rest }
+}
 
 export interface ClaudeOptionState {
   model: string | null
   effort: string | null
-  permissionMode: string | null
+  permissionMode: string
   fastMode: boolean
 }
 
 const asString = (v: ChatOptionValue | undefined): string | null => (typeof v === 'string' ? v : null)
 
+/** A saved choice (`initialOptions`) wins over the profile's permission flag, which wins over `default`. */
 export function initialOptionState(ctx: Pick<ChatSessionContext, 'initialOptions' | 'profile'>): ClaudeOptionState {
   const o = ctx.initialOptions ?? {}
-  const permission = hasPermissionFlag(ctx.profile.args)
-    ? null
-    : (asString(o.permissionMode) ?? DEFAULT_PERMISSION_MODE)
   return {
     model: asString(o.model),
     effort: asString(o.effort),
-    permissionMode: permission,
+    permissionMode:
+      asString(o.permissionMode) ?? splitPermissionArgs(ctx.profile.args).startMode ?? DEFAULT_PERMISSION_MODE,
     fastMode: o[FAST_MODE_OPTION] === true,
   }
 }
@@ -83,7 +102,7 @@ export function buildQueryOptions(
     abortController: abort,
     model: state.model ?? undefined,
     effort: (state.effort ?? undefined) as Options['effort'],
-    permissionMode: (state.permissionMode ?? undefined) as Options['permissionMode'],
+    permissionMode: state.permissionMode as Options['permissionMode'],
   }
   return ctx.resumeExternalSessionId ? { ...options, resume: sessionId } : { ...options, sessionId }
 }
@@ -154,8 +173,7 @@ const modeChoice = (value: ClaudePermissionMode) => ({
 })
 
 /** Every mode; `auto` only when the model supports it (or it is already on). */
-function permissionDescriptor(models: ModelInfo[], state: ClaudeOptionState): ChatOptionDescriptor | undefined {
-  if (state.permissionMode === null) return undefined
+function permissionDescriptor(models: ModelInfo[], state: ClaudeOptionState): ChatOptionDescriptor {
   const auto = currentModel(models, state.model)?.supportsAutoMode === true
   const offered = PERMISSION_MODES.filter(
     (m) => m !== PERMISSION_MODE.auto || auto || state.permissionMode === PERMISSION_MODE.auto,
@@ -180,7 +198,7 @@ export function planModes(options: ChatOptionDescriptor[]): string[] {
 
 /**
  * `model` (every supported model), `effort` (its levels, when the model has them), `fastMode` (when supported) and
- * `permissionMode` (unless the profile args set it).
+ * `permissionMode` (always; the profile's permission flag only picks the start mode).
  */
 export function describeClaudeOptions(
   init: Pick<SDKControlInitializeResponse, 'models'>,

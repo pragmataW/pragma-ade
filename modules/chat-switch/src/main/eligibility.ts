@@ -1,5 +1,5 @@
 import { z } from '@pragma/sdk'
-import { SESSION_STATUS_STARTING, SWITCH_REASON, switchReasonKey } from '../constants'
+import { SWITCH_REASON, switchReasonKey } from '../constants'
 import { type Eligibility, SWITCH_TARGET, type SwitchEligibility, type SwitchTarget } from '../contract'
 
 /** The provider has no `chat` capability at all. */
@@ -24,15 +24,15 @@ export type EligibilityInput = z.infer<typeof eligibilityInputSchema>
 const OK: Eligibility = { ok: true }
 const no = (reason: keyof typeof SWITCH_REASON): Eligibility => ({ ok: false, reasonKey: switchReasonKey(reason) })
 
-/** Rules shared by both targets, first match wins (null = none matched). */
+/**
+ * Rules shared by both targets, first match wins (null = none matched). A missing id or a `starting` row (a terminal
+ * without status hooks stays `starting`) never blocks: the switch then starts a fresh session in the target view.
+ */
 function commonRule(input: EligibilityInput, target: SwitchTarget): Eligibility | null {
   const { session } = input
   if (target === session.mode) return no(SWITCH_REASON.currentMode)
   if (input.switching) return no(SWITCH_REASON.switching)
   if (!input.hasResume) return no(SWITCH_REASON.noResume)
-  // without agent-status a terminal row stays `starting`; the missing id is the real reason then
-  if (!session.externalSessionId) return no(SWITCH_REASON.idUnknown)
-  if (session.status === SESSION_STATUS_STARTING) return no(SWITCH_REASON.starting)
   if (input.busyOwnerSessionId !== undefined && input.busyOwnerSessionId !== session.id) return no(SWITCH_REASON.busy)
   return null
 }

@@ -54,6 +54,7 @@ import {
   describeClaudeOptions,
   initialOptionState,
   planModes,
+  splitPermissionArgs,
 } from './options'
 import { answerPlan, answerQuestion, PROMPT_TOOLS, type PromptOutcome, promptEvent } from './prompts'
 import { type ClaudeProcessSpawn, createClaudeProcessSpawn, type SpawnDeps } from './spawn'
@@ -144,7 +145,11 @@ export class ClaudeChatSession implements ChatSessionHandle {
     this.#ctx = ctx
     this.#log = deps.log
     this.externalSessionId = ctx.resumeExternalSessionId ?? randomUUID()
-    this.#spawner = createClaudeProcessSpawn({ command: ctx.profile.command, prefixArgs: ctx.profile.args }, deps.spawn)
+    this.#spawner = createClaudeProcessSpawn(
+      // the profile's permission flag is the start mode only (`permissionMode`): kept off the CLI args
+      { command: ctx.profile.command, prefixArgs: splitPermissionArgs(ctx.profile.args).args },
+      deps.spawn,
+    )
     this.#state = initialOptionState(ctx)
     const options = buildQueryOptions(ctx, this.#spawner, this.#canUseTool, this.#abort, this.externalSessionId)
     this.#q = (deps.query ?? query)({ prompt: this.#queue.messages, options })

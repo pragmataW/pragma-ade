@@ -113,17 +113,28 @@ export function createChatSwitchService(d: SwitchServiceDeps): SwitchServiceImpl
     await lease?.release()
   }
 
-  /** The provider's answer in the session's worktree with its launch env; true when it cannot tell. */
-  async function hasConversation(session: AgentSession, externalSessionId: string): Promise<boolean> {
+  /**
+   * Prepares the provider's "is there a conversation" lookup (true when it cannot tell). The launch env is built
+   * now, while the old process still runs: `buildLaunchEnv` runs every launch decorator for the row's CURRENT mode,
+   * and after the stop 04's status decorator would re-track the exited chat as an `external` source that the new
+   * terminal then inherits (its hook status and id would never reach the row). The lookup itself runs after the stop.
+   */
+  async function prepareLookup(session: AgentSession, externalSessionId: string): Promise<() => Promise<boolean>> {
     const resume = d.providers.capability(session.providerId, RESUME_CAPABILITY)
-    if (!resume?.hasConversation) return true
-    const worktreePath = await d.worktreePath(session.worktreeId)
-    if (!worktreePath) return true
-    const env = await d.agents.buildLaunchEnv({ sessionId: session.id })
-    return resume.hasConversation({ externalSessionId, worktreePath, env }).catch((e: unknown) => {
+    const lookup = resume?.hasConversation
+    if (!lookup) return async () => true
+    const cannotTell = (e: unknown) => {
       d.log.warn(`chat-switch: conversation lookup of ${session.id} failed, resuming anyway`, e)
       return true
-    })
+    }
+    try {
+      const worktreePath = await d.worktreePath(session.worktreeId)
+      if (!worktreePath) return async () => true
+      const env = await d.agents.buildLaunchEnv({ sessionId: session.id })
+      return () => lookup({ externalSessionId, worktreePath, env }).catch(cannotTell)
+    } catch (e) {
+      return async () => cannotTell(e)
+    }
   }
 
   /** Nothing to resume (e.g. no message was sent yet): a new session in the target view, same row and worktree. */
@@ -137,7 +148,10 @@ export function createChatSwitchService(d: SwitchServiceDeps): SwitchServiceImpl
     return { ok: true, sessionId: s.id, noticeKey }
   }
 
-  /** Stop → look up the conversation → relaunch the same row resuming it (or fresh when there is none). */
+  /**
+   * Stop → look up the conversation → relaunch the same row resuming it (or fresh when there is none). Without an
+   * external id (nothing reported yet) there is nothing to resume: the old process stops and the target starts fresh.
+   */
   async function relaunch(
     session: AgentSession,
     profile: AgentProfile | null,
@@ -145,12 +159,17 @@ export function createChatSwitchService(d: SwitchServiceDeps): SwitchServiceImpl
     externalSessionId: string,
   ): Promise<SwitchResult> {
     const sessionId = session.id
+    if (!externalSessionId) {
+      await d.agents.stopSession(sessionId)
+      return startFresh(sessionId, target)
+    }
     // the serve lease is taken while the chat still holds it (OpenCode `--server`)
     const serverUrl =
       target === SWITCH_TARGET.terminal ? await retainServe(session, profile, externalSessionId) : undefined
+    const hasConversation = await prepareLookup(session, externalSessionId)
     // the old process is fully gone before its conversation is looked up (03's relaunch then skips the stop)
     await d.agents.stopSession(sessionId)
-    if (!(await hasConversation(session, externalSessionId))) return startFresh(sessionId, target)
+    if (!(await hasConversation())) return startFresh(sessionId, target)
     const resume = { externalSessionId, ...(serverUrl ? { serverUrl } : {}) }
     const s = await d.agents.relaunchSession(sessionId, { mode: target, resume })
     d.publish({ sessionId, phase: SWITCH_PHASE.done })
@@ -164,7 +183,10 @@ export function createChatSwitchService(d: SwitchServiceDeps): SwitchServiceImpl
     const verdict = (await evaluate(loaded, false))[target]
     if (!verdict.ok) return { ok: false, errorKey: verdict.reasonKey }
     const externalSessionId = session.externalSessionId ?? ''
-    const claim = d.guard.claim({ providerId: session.providerId, externalSessionId }, sessionId)
+    // no id: no conversation to guard (a fresh session follows)
+    const claim = externalSessionId
+      ? d.guard.claim({ providerId: session.providerId, externalSessionId }, sessionId)
+      : { ok: true }
     if (!claim.ok) return { ok: false, errorKey: switchErrorKey(SWITCH_ERROR.busy) }
     d.publish({ sessionId, phase: SWITCH_PHASE.switching })
     try {

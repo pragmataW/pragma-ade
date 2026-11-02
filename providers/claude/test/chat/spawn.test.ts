@@ -43,14 +43,22 @@ describe('Claude chat spawn contract (real SDK + fake CLI)', () => {
     expect(normalize(argv)).not.toContain('--session-id')
   })
 
+  // the profile's permission flag is only the START mode: it goes to the SDK as `permissionMode` and is dropped from
+  // the prefix args, so a later `set_permission_mode` is not overridden by a flag on the command line
   it.each([
-    [[], 'default'],
-    [['--dangerously-skip-permissions'], undefined],
-    [['--permission-mode=plan'], undefined],
-  ])('--permission-mode default unless profile args carry a permission flag (%o)', async (args, mode) => {
+    [[], 'default', []],
+    [['--dangerously-skip-permissions'], 'bypassPermissions', []],
+    [['--permission-mode=plan'], 'plan', []],
+    [['--permission-mode', 'acceptEdits', '--wrapper-flag'], 'acceptEdits', ['--wrapper-flag']],
+    [['--allow-dangerously-skip-permissions'], 'default', []],
+    [['--permission-mode', 'nonsense'], 'default', []],
+  ])('profile args %o → start mode %s, prefix %o', async (args, mode, prefix) => {
     const { report } = await startSession('basic', { args })
     const argv = report()?.argv ?? []
-    expect(after(argv.slice(args.length), '--permission-mode')).toBe(mode)
+    expect(argv.slice(0, prefix.length + 1)).toEqual([...prefix, SDK_FLAGS[0]])
+    expect(normalize(argv).filter((a) => a === '--permission-mode')).toHaveLength(1)
+    expect(after(argv, '--permission-mode')).toBe(mode)
+    expect(argv).not.toContain('--dangerously-skip-permissions')
   })
 
   it('child env keeps PROFILE_MARK and strips CLAUDECODE', async () => {

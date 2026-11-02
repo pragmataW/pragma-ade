@@ -28,12 +28,15 @@ export const CLAUDE_CUSTOM_EVENTS = { compactBoundary: 'claude.compact-boundary'
 
 export const STDERR_TAIL_BYTES = 8192
 export const KILL_GRACE_MS = 3000
-/** Profile args that already decide the permission mode. */
-export const PERMISSION_FLAGS = [
-  '--dangerously-skip-permissions',
-  '--allow-dangerously-skip-permissions',
-  '--permission-mode',
-] as const
+/**
+ * Profile args that set the permission mode. In chat they only pick the START mode (passed as `permissionMode`) and
+ * are dropped from the CLI args, so the user can switch modes freely; `allowSkip` is always set by the chat itself.
+ */
+export const PERMISSION_FLAG = {
+  skip: '--dangerously-skip-permissions',
+  allowSkip: '--allow-dangerously-skip-permissions',
+  mode: '--permission-mode',
+} as const
 export const FLAG_VALUE_SEPARATOR = '='
 /** The SDK runs script executables through a runtime, keeping the script at argv[0]. */
 export const SCRIPT_EXECUTABLE_RE = /\.(c|m)?js$|\.ts$/

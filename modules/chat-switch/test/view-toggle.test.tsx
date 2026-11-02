@@ -23,7 +23,7 @@ await i18n.use(initReactI18next).init({
 })
 
 const OK = { ok: true } as const
-const ID_UNKNOWN = { ok: false, reasonKey: 'chat-switch:reason.idUnknown' } as const
+const NO_CHAT = { ok: false, reasonKey: 'chat-switch:reason.noChat' } as const
 
 function stubClient(o: { eligibility?: SwitchEligibility; result?: SwitchResult; confirm?: boolean } = {}) {
   const changed = new Set<(e: ChangedEvent) => void>()
@@ -75,9 +75,9 @@ describe('Chat | Terminal toggle', () => {
   })
 
   it('ineligible target disabled with reason tooltip', async () => {
-    renderToggle(makeSession({ mode: 'terminal' }), stubClient({ eligibility: { terminal: OK, chat: ID_UNKNOWN } }))
+    renderToggle(makeSession({ mode: 'terminal' }), stubClient({ eligibility: { terminal: OK, chat: NO_CHAT } }))
     await waitFor(() => expect(item(T.toChat)).toBeDisabled())
-    expect(item(T.toChat).parentElement).toHaveAttribute('title', 'The agent has not reported its session ID yet.')
+    expect(item(T.toChat).parentElement).toHaveAttribute('title', 'Chat view is not available for this agent.')
   })
 
   it('to chat confirms; cancel sends nothing; confirm invokes switch {target: chat}', async () => {
@@ -131,6 +131,16 @@ describe('Chat | Terminal toggle', () => {
     expect(await screen.findByTestId(T.alert)).toHaveTextContent(
       'This conversation is already running in another session.',
     )
+  })
+
+  it('a rejected switch call is not swallowed: start-failed alert, the toggle is usable again', async () => {
+    const c = renderToggle(makeSession({ mode: 'chat' }))
+    c.switchTo.mockRejectedValueOnce(new Error('ipc closed'))
+    await waitFor(() => expect(item(T.toTerminal)).toBeEnabled())
+    await userEvent.click(item(T.toTerminal))
+    expect(await screen.findByTestId(T.alert)).toHaveTextContent('Could not reopen the session. Try again.')
+    expect(screen.getByTestId(T.toggle)).toHaveAttribute('data-phase', 'failed')
+    await waitFor(() => expect(item(T.toTerminal)).toBeEnabled())
   })
 
   it('a conflict for this session shows the conflict alert', async () => {
