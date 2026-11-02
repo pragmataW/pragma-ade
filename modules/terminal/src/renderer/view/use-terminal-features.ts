@@ -3,9 +3,17 @@ import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import type { Terminal } from '@xterm/xterm'
 import { useCallback, useState } from 'react'
+import { SHIFT_ENTER_SEQUENCE } from '../../constants'
 import { terminalIpc } from '../../contract'
 import { getRuntime } from '../runtime'
-import { classifyKey, KEY_PLATFORM, keyPlatform, TERMINAL_KEY_ACTION, type TerminalKeyAction } from './keymap'
+import {
+  classifyKey,
+  isNewlineKey,
+  KEY_PLATFORM,
+  keyPlatform,
+  TERMINAL_KEY_ACTION,
+  type TerminalKeyAction,
+} from './keymap'
 
 export interface TerminalFeatures {
   /** Installs keys, search and links on a new xterm instance; returns its cleanup. */
@@ -36,6 +44,10 @@ function runAction(action: TerminalKeyAction, term: Terminal, openSearch: () => 
     case TERMINAL_KEY_ACTION.search:
       openSearch()
       return
+    case TERMINAL_KEY_ACTION.newline:
+      // goes out through onData → ptyWrite, like any typed key
+      term.input(SHIFT_ENTER_SEQUENCE, true)
+      return
     default: {
       const unreachable: never = action
       void unreachable
@@ -43,7 +55,7 @@ function runAction(action: TerminalKeyAction, term: Terminal, openSearch: () => 
   }
 }
 
-/** Copy/paste/find shortcuts, the find bar's addon, and modifier-click web links. */
+/** Copy/paste/find shortcuts, Shift+Enter newline, the find bar's addon, and modifier-click web links. */
 export function useTerminalFeatures(): TerminalFeatures {
   const [search, setSearch] = useState<SearchAddon | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -54,7 +66,8 @@ export function useTerminalFeatures(): TerminalFeatures {
     setSearch(addon)
     term.attachCustomKeyEventHandler((e) => {
       const action = classifyKey(e, platform, term.hasSelection())
-      if (!action) return true
+      // the keypress/keyup of a handled Shift+Enter must not let xterm send its own CR
+      if (!action) return !isNewlineKey(e)
       e.preventDefault()
       runAction(action, term, () => setSearchOpen(true))
       return false
