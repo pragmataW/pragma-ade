@@ -1,0 +1,15 @@
+{
+  "chatUi": {
+    "retry": {
+      "title": "Retrying (attempt {{attempt}})"
+    },
+    "form": {
+      "submit": "Send answer",
+      "cancel": "Skip",
+      "answered": "Answered",
+      "cancelled": "Skipped",
+      "custom": "Other…",
+      "required": "Required"
+    }
+  }
+}

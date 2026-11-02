@@ -1,0 +1,15 @@
+{
+  "chat": {
+    "unsupported": {
+      "upgradeRequired": "Chat mode needs OpenCode 2.x (found {{detail}}). Please upgrade OpenCode.",
+      "infoFailed": "opencode serve did not answer /api/info: {{detail}}",
+      "emptyCommand": "The profile has no command"
+    },
+    "option": {
+      "agent": "Agent"
+    },
+    "error": {
+      "serverExited": "The opencode server exited unexpectedly"
+    }
+  }
+}

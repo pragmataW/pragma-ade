@@ -1,0 +1,365 @@
+{
+  "version": "2.2.5",
+  "models": [
+    {
+      "id": "fake-model",
+      "providerID": "fakeprov",
+      "name": "Fake Model",
+      "variants": [
+        {
+          "id": "high"
+        },
+        {
+          "id": "low"
+        }
+      ],
+      "limit": {
+        "context": 10000,
+        "output": 4000
+      },
+      "enabled": true
+    },
+    {
+      "id": "fake-small",
+      "providerID": "fakeprov",
+      "name": "Fake Small",
+      "variants": [],
+      "limit": {
+        "context": 4000,
+        "output": 1000
+      },
+      "enabled": true
+    }
+  ],
+  "defaultModel": "fake-model",
+  "agents": [
+    {
+      "id": "build",
+      "name": "Build",
+      "mode": "primary",
+      "hidden": false
+    },
+    {
+      "id": "plan",
+      "name": "Plan",
+      "mode": "primary",
+      "hidden": false
+    },
+    {
+      "id": "general",
+      "name": "General",
+      "mode": "subagent",
+      "hidden": false
+    },
+    {
+      "id": "title",
+      "name": "Title",
+      "mode": "primary",
+      "hidden": true
+    }
+  ],
+  "commands": [
+    {
+      "name": "init",
+      "description": "Create AGENTS.md"
+    },
+    {
+      "name": "review",
+      "description": "Review changes"
+    }
+  ],
+  "turns": [
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "model": {
+                "id": "fake-model",
+                "providerID": "fakeprov"
+              }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.reasoning.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "delta": "Thinking about it"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.reasoning.ended",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "text": "Thinking about it"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 1,
+              "delta": "Hello "
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 1,
+              "delta": "from fake OpenCode"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.ended",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 1,
+              "text": "Hello from fake OpenCode"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.input.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_read",
+              "name": "read"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.called",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_read",
+              "input": {
+                "path": "README.md"
+              }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.success",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "# fixture"
+                }
+              ],
+              "executed": true
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.input.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_edit",
+              "name": "edit"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.called",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_edit",
+              "input": {
+                "path": "src/a.ts",
+                "oldString": "a",
+                "newString": "b"
+              }
+            }
+          }
+        },
+        {
+          "awaitPermission": {
+            "id": "per_1",
+            "action": "edit",
+            "resources": ["src/a.ts"],
+            "save": ["*"],
+            "source": {
+              "type": "tool",
+              "messageID": "$AMID",
+              "id": "call_edit"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.success",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_edit",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Edited src/a.ts"
+                }
+              ],
+              "executed": true,
+              "metadata": {
+                "files": [
+                  {
+                    "file": "src/a.ts",
+                    "patch": "--- a/src/a.ts\n+++ b/src/a.ts\n@@ -1 +1 @@\n-a\n+b\n",
+                    "additions": 1,
+                    "deletions": 1,
+                    "status": "modified"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.input.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_todo",
+              "name": "todo"
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.called",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_todo",
+              "input": {
+                "todos": [
+                  {
+                    "content": "Write tests",
+                    "status": "completed",
+                    "priority": "high"
+                  },
+                  {
+                    "content": "Ship",
+                    "status": "in_progress",
+                    "priority": "medium"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.tool.success",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "id": "call_todo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "2 todos"
+                }
+              ],
+              "executed": true,
+              "metadata": {
+                "todos": [
+                  {
+                    "content": "Write tests",
+                    "status": "completed",
+                    "priority": "high"
+                  },
+                  {
+                    "content": "Ship",
+                    "status": "in_progress",
+                    "priority": "medium"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.step.ended",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "finish": "stop",
+              "tokens": {
+                "input": 1200,
+                "output": 300,
+                "reasoning": 0,
+                "cache": {
+                  "read": 500,
+                  "write": 0
+                }
+              },
+              "cost": 0.0123
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.usage.updated",
+            "data": {
+              "sessionID": "$SID",
+              "tokens": {
+                "input": 1200,
+                "output": 300,
+                "reasoning": 0,
+                "cache": {
+                  "read": 500,
+                  "write": 0
+                }
+              },
+              "cost": 0.0123
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.execution.succeeded",
+            "data": {
+              "sessionID": "$SID"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
