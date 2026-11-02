@@ -168,6 +168,8 @@ export const chatEventSchema = z.discriminatedUnion(KIND_KEY, [
     text: z.string(),
     attachments: z.array(chatAttachmentRefSchema),
     origin: z.enum(MESSAGE_ORIGINS),
+    /** Sent while a turn was running (`ChatCapability.midTurnInput`); cleared by `message-ack`. */
+    midTurn: z.boolean().optional(),
   }),
   z.object({ kind: z.literal(K.turnStart), turnId: z.string() }),
   z.object({ kind: z.literal(K.textDelta), ...textPart }),
@@ -289,6 +291,8 @@ export const chatEventSchema = z.discriminatedUnion(KIND_KEY, [
   rateLimitEventSchema,
   /** The provider retries a failed API request; cleared by the next output or turn end. */
   retryEventSchema,
+  /** The agent took in the user message `messageId` (clears its mid-turn marker). */
+  z.object({ kind: z.literal(K.messageAck), messageId: z.string() }),
 ])
 export type ChatEvent = z.infer<typeof chatEventSchema>
 export type ChatEventKind = ChatEvent['kind']

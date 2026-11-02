@@ -29,6 +29,8 @@ export interface MessageItem {
   attachments: ChatAttachmentRef[]
   /** When the message was sent (envelope time). */
   at: number
+  /** Sent while the agent worked and not yet taken in (`message-ack` clears it). */
+  midTurn?: boolean
 }
 export interface TextItem<Kind extends typeof K.textDelta | typeof K.thinking = typeof K.textDelta> {
   kind: Kind
@@ -309,6 +311,14 @@ function applyResponseResolved(t: ChatTranscript, e: ChatEventOf<typeof K.respon
   return awaits(prev) ? closed(next) : next
 }
 
+/** The message no longer waits to be taken in. */
+function applyMessageAck(t: ChatTranscript, messageId: string): ChatTranscript {
+  const prev = find<MessageItem>(t, K.message, messageId)
+  if (!prev?.midTurn) return t
+  const { midTurn: _done, ...rest } = prev
+  return upsert(t, rest)
+}
+
 function applyTask(t: ChatTranscript, e: ChatEventOf<typeof K.task>): ChatTranscript {
   const { kind, taskId, ...rest } = e
   const prev = find<TaskItem>(t, K.task, taskId)
@@ -364,7 +374,17 @@ function apply(t: ChatTranscript, e: ChatEvent, seq: number, at: number): ChatTr
     case K.options:
       return { ...t, info: { ...t.info, options: e.options } }
     case K.message:
-      return upsert(t, { kind: K.message, id: e.messageId, role: e.role, text: e.text, attachments: e.attachments, at })
+      return upsert(t, {
+        kind: K.message,
+        id: e.messageId,
+        role: e.role,
+        text: e.text,
+        attachments: e.attachments,
+        at,
+        ...(e.midTurn ? { midTurn: true } : {}),
+      })
+    case K.messageAck:
+      return applyMessageAck(t, e.messageId)
     case K.turnStart:
       return { ...t, turnActive: true, turnStartedAt: at }
     case K.textDelta:

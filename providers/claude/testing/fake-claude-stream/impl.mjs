@@ -185,6 +185,7 @@ function emitResult(s = {}) {
       },
     },
     permission_denials: [],
+    queued_turn_count: pendingUsers.length,
     ...(ok ? { result: '' } : { errors: s.errors ?? [] }),
     ...base(),
   }
@@ -238,6 +239,9 @@ function onLine(line) {
   }
   if (frame.type !== 'user') return
   report.userMessages.push({ at: Date.now(), frame })
+  // --replay-user-messages: acknowledge the message as soon as it arrives (mid-turn ones included)
+  if (argv.includes('--replay-user-messages'))
+    write({ ...frame, isReplay: true, uuid: frame.uuid ?? randomUUID(), session_id: sessionId })
   writeReport()
   record('user', frame.message, frame.uuid ?? randomUUID())
   const waiter = userWaiters.shift()

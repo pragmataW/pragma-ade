@@ -2,7 +2,7 @@ import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { describe, expect, it, vi } from 'vitest'
-import { CHAT_TESTIDS, MAX_DIFF_CHARS } from '../../../src/contract'
+import { CHAT_TESTIDS, type ChatEvent, MAX_DIFF_CHARS } from '../../../src/contract'
 import { ErrorRow } from '../../../src/renderer/kit/parts/ErrorRow'
 import { FileEditDiff } from '../../../src/renderer/kit/parts/FileEditDiff'
 import { CHAT_FALLBACK_ICON_TESTID } from '../../../src/renderer/kit/parts/lib/StatusGlyph'
@@ -10,6 +10,7 @@ import { PermissionCard } from '../../../src/renderer/kit/parts/PermissionCard'
 import { ThinkingBlock } from '../../../src/renderer/kit/parts/ThinkingBlock'
 import { TodoList } from '../../../src/renderer/kit/parts/TodoList'
 import { ToolCallCard } from '../../../src/renderer/kit/parts/ToolCallCard'
+import { UserMessage } from '../../../src/renderer/kit/parts/UserMessage'
 import { WorkingLine } from '../../../src/renderer/kit/parts/WorkingLine'
 import { stubChatHost, stubSessionApi } from '../../../testing'
 import { renderChat, renderPart } from '../support'
@@ -18,6 +19,26 @@ import { edit, permission, result, tool } from './samples'
 const StatusIcon = ({ status }: { status: string }) => <i data-testid="status-icon" data-status={status} />
 
 describe('kit parts', () => {
+  it('a mid-turn message shows "sent while working" until the agent acknowledges it', () => {
+    const message: ChatEvent = {
+      kind: 'message',
+      messageId: 'm',
+      role: 'user',
+      text: 'also add tests',
+      attachments: [],
+      origin: 'live',
+      midTurn: true,
+    }
+    const { unmount } = renderPart(UserMessage, [message])
+    expect(screen.getByTestId(CHAT_TESTIDS.midTurn)).toHaveTextContent('Sent while working')
+    unmount()
+    renderPart(UserMessage, [
+      { ...message, origin: 'live', midTurn: true },
+      { kind: 'message-ack', messageId: 'm' },
+    ])
+    expect(screen.queryByTestId(CHAT_TESTIDS.midTurn)).toBeNull()
+  })
+
   it('thinking collapsed by default', async () => {
     renderPart(ThinkingBlock, [
       { kind: 'thinking', messageId: 'm', partId: 'p', text: 'secret plan', mode: 'snapshot' },

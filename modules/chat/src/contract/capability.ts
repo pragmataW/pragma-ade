@@ -38,6 +38,8 @@ export const chatUserInputSchema = z.object({
   text: z.string(),
   images: z.array(chatImageSchema),
   files: z.array(chatFileSchema).optional(),
+  /** Core-filled: the transcript id of this user message (a provider may reuse it as its own message id). */
+  messageId: z.string().optional(),
 })
 export type ChatUserInput = z.infer<typeof chatUserInputSchema>
 
@@ -103,6 +105,11 @@ export type ChatSupport = { ok: true } | { ok: false; reasonKey: string; detail?
 export interface ChatCapability {
   /** Attachment kinds `send` accepts; default `['image']` (the core drops `files` of other kinds). */
   attachmentKinds?: readonly ChatAttachmentKind[]
+  /**
+   * The provider takes user messages while a turn runs (the agent folds them in itself): the core sends them right
+   * away (`message.midTurn`) instead of queueing them until the turn ends. Default false.
+   */
+  midTurnInput?: boolean
   checkSupport(profile: AgentProfile): Promise<ChatSupport>
   /** Resolves after the protocol handshake; rejects with `ChatStartupError`. */
   createSession(ctx: ChatSessionContext): Promise<ChatSessionHandle>

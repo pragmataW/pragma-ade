@@ -291,6 +291,10 @@ export class ChatSessionController {
       await this.#relaunch(input)
       return { queued: false }
     }
+    if (this.#takesMidTurnInput()) {
+      await this.#dispatch(input, true)
+      return { queued: false }
+    }
     if (this.#busy() || !this.#handle) {
       this.#queue = [...this.#queue, { ...input, id: randomUUID() }]
       this.#emitQueue()
@@ -307,24 +311,34 @@ export class ChatSessionController {
     await this.#d.agents.relaunchSession(this.#d.sessionId, { mode: CHAT_MODE, ...(resume ? { resume } : {}) })
   }
 
-  async #dispatch(input: ChatUserInput): Promise<void> {
+  /** A running turn of a `midTurnInput` provider takes the message now (the agent folds it in itself). */
+  #takesMidTurnInput(): boolean {
+    return Boolean(
+      this.#handle && this.#capability?.midTurnInput && this.#transcript.turnActive && this.#status !== S.starting,
+    )
+  }
+
+  /** `midTurn`: into the running turn (no new turn; a failure does not end it). */
+  async #dispatch(input: ChatUserInput, midTurn = false): Promise<void> {
     const handle = this.#handle
     if (!handle) return
     const accepted = acceptedInput(input, this.#capability?.attachmentKinds)
+    const messageId = randomUUID()
     this.#emit({
       kind: K.message,
-      messageId: randomUUID(),
+      messageId,
       role: USER_ROLE,
       text: input.text,
       attachments: attachmentRefs(accepted),
       origin: MESSAGE_ORIGIN.live,
+      ...(midTurn ? { midTurn } : {}),
     })
-    this.#emit({ kind: K.turnStart, turnId: randomUUID() })
+    if (!midTurn) this.#emit({ kind: K.turnStart, turnId: randomUUID() })
     try {
-      await handle.send(accepted)
+      await handle.send({ ...accepted, messageId })
     } catch (e) {
       this.#emit({ kind: K.error, code: ERROR_CODE.unknown, message: String(e), fatal: false })
-      this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
+      if (!midTurn) this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
     }
   }
 

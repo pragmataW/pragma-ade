@@ -22,12 +22,16 @@ tests (real SDK `query()` against this process) and the chat E2E tests. Derived 
 each turn waits for the next `user` frame. `system/init` (with `session_id` from `--session-id`/`--resume`) precedes
 the first turn's frames. A user frame after the last turn gets a one-line answer.
 
-Steps: `emit`, `emitText {messageId, text, chunks, chunkDelayMs?}`, `emitThinking`, `emitToolUse {messageId, id, name,
+`mcpServers` answers `mcp_status` (names and states also go into `system/init`). With `--replay-user-messages` every
+user frame is echoed back with `isReplay: true` on arrival; `result.queued_turn_count` counts user frames still waiting.
+
+Steps (`emitText`, `emitThinking`, `emitToolUse`, `emitToolResult` take `parentToolUseId` for subagent output): `emit`, `emitText {messageId, text, chunks, chunkDelayMs?}`, `emitThinking`, `emitToolUse {messageId, id, name,
 input}`, `emitToolResult {toolUseId, content, isError?, toolUseResult?}`, `requestPermission {requestId, toolName,
 input, toolUseId, suggestions?}` (waits for the matching `control_response`), `awaitInterrupt`, `result {subtype?,
 costUsd?, contextWindow?, errors?}`, `stdoutRaw`, `stderr`, `delayMs`, `exit`.
 
-Control requests: `initialize` is answered with `init` (never when `protocol: false`); `interrupt` ends the current
+Control requests: `initialize` is answered with `init` (never when `protocol: false`); `mcp_status` with
+`mcpServers`; `rewind_files` with `canRewind: true`; `interrupt` ends the current
 turn (with an `error_during_execution` result unless the turn is in `awaitInterrupt`); everything else (`set_model`,
 `set_permission_mode`, `apply_flag_settings`, …) gets a success reply and is recorded.
 

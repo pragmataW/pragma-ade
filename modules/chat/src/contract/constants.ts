@@ -39,6 +39,7 @@ export const CHAT_EVENT_KINDS = [
   'mcp-status',
   'rate-limit',
   'retry',
+  'message-ack',
 ] as const
 export const EVENT_KIND = {
   sessionInfo: 'session-info',
@@ -66,6 +67,7 @@ export const EVENT_KIND = {
   mcpStatus: 'mcp-status',
   rateLimit: 'rate-limit',
   retry: 'retry',
+  messageAck: 'message-ack',
 } as const satisfies Record<string, (typeof CHAT_EVENT_KINDS)[number]>
 
 export const CHAT_PERMISSION_OPTIONS = ['allow_once', 'allow_always', 'deny'] as const

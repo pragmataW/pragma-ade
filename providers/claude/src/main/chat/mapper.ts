@@ -24,6 +24,7 @@ import {
   FRAME,
   IMAGE_NAME,
   JOIN_NEWLINE,
+  NEXT_TURN_SUFFIX,
   PART_ID_SEPARATOR,
   RESULT_SUBTYPE,
   STREAM_EVENT,
@@ -225,6 +226,8 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
   }
 
   function user(frame: Obj): ChatEvent[] {
+    // `--replay-user-messages`: the CLI took in this user message (its uuid is the core's message id)
+    if (frame.isReplay === true) return history ? [] : replayAck(frame)
     const content = obj(frame.message).content
     const results = list(content).filter((b) => b.type === BLOCK.toolResult)
     if (results.length === 0) return userText(frame, content)
@@ -232,6 +235,17 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
       .filter((b) => !cardTools.has(str(b.tool_use_id) ?? ''))
       .flatMap((b) => toolResult(b, frame.tool_use_result))
   }
+
+  function replayAck(frame: Obj): ChatEvent[] {
+    const messageId = str(frame.uuid)
+    return messageId && !str(frame.parent_tool_use_id) ? [{ kind: K.messageAck, messageId }] : []
+  }
+
+  /** More sends wait in the CLI's queue: their turn starts right after this result. */
+  const nextTurn = (frame: Obj): ChatEvent[] =>
+    num(frame.queued_turn_count) > 0
+      ? [{ kind: K.turnStart, turnId: `${str(frame.uuid) ?? ''}${NEXT_TURN_SUFFIX}` }]
+      : []
 
   function turnEnd(frame: Obj): ChatEvent[] {
     const subtype = str(frame.subtype)
@@ -265,7 +279,7 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
       ...(contextWindow > 0 ? { contextWindow } : {}),
       ...(contextTokens > 0 ? { contextTokens } : {}),
     }
-    return [usageEvent, ...turnEnd(frame)]
+    return [usageEvent, ...turnEnd(frame), ...nextTurn(frame)]
   }
 
   function init(frame: Obj): ChatEvent[] {

@@ -13,6 +13,8 @@ export function createClaudeChatCapability(
   return {
     // images, PDFs and text files become image / document blocks of the user turn
     attachmentKinds: ATTACHMENT_KINDS,
+    // messages sent mid-turn go straight to the CLI, which folds them into the running turn itself
+    midTurnInput: true,
     checkSupport: (profile) => checkClaudeSupport(profile, (cmd) => capCtx.resolveCommand(cmd)),
     async createSession(ctx) {
       let session: ClaudeChatSession | undefined

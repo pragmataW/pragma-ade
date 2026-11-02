@@ -19,6 +19,7 @@ import {
   PERMISSION_MODE_STYLE,
   PERMISSION_MODES,
   PLAN_APPROVE_MODES,
+  REPLAY_USER_MESSAGES_FLAG,
   SYSTEM_PRESET,
 } from './constants'
 import { buildClaudeChildEnv } from './env'
@@ -75,6 +76,8 @@ export function buildQueryOptions(
     allowDangerouslySkipPermissions: true,
     // backups before each edit, so `rewind` can restore the files of an earlier user message
     enableFileCheckpointing: true,
+    // mid-turn messages: the CLI echoes each user message once it takes it in (clears the "sent while working" mark)
+    extraArgs: { [REPLAY_USER_MESSAGES_FLAG]: null },
     systemPrompt: { ...SYSTEM_PRESET },
     canUseTool,
     abortController: abort,

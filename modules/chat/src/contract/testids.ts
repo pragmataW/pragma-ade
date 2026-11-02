@@ -65,6 +65,7 @@ export const CHAT_TESTIDS = {
   mcpReconnect: (name: string) => `chat-mcp-reconnect-${name}`,
   mcpRefresh: 'chat-mcp-refresh',
   rateLimit: 'chat-rate-limit',
+  midTurn: 'chat-message-mid-turn',
   retry: 'chat-retry',
   attachFile: 'chat-attach-file',
   attachmentFile: 'chat-attachment-file',

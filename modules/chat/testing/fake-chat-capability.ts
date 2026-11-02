@@ -111,6 +111,7 @@ export interface FakeChatCapabilityOptions {
   /** Optional action methods the sessions implement. */
   actions?: ChatSessionActionKind[]
   attachmentKinds?: ChatAttachmentKind[]
+  midTurnInput?: boolean
 }
 
 export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
@@ -119,6 +120,7 @@ export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
   const historyRequests: string[] = []
   const capability: ChatCapability = {
     ...(opts.attachmentKinds ? { attachmentKinds: opts.attachmentKinds } : {}),
+    ...(opts.midTurnInput ? { midTurnInput: true } : {}),
     async checkSupport(profile) {
       supportChecks.push(profile)
       return opts.support ?? { ok: true }

@@ -56,6 +56,7 @@ export function nextStatus(
     case K.mcpStatus:
     case K.rateLimit:
     case K.retry:
+    case K.messageAck:
       return prev
     default: {
       const never: never = e

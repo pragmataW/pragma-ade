@@ -201,5 +201,8 @@
   "resume": {
     "notFound": "Could not continue the previous conversation: the agent has no record of it",
     "failed": "Could not continue the previous conversation"
+  },
+  "message": {
+    "midTurn": "Sent while working · the agent reads it next"
   }
 }

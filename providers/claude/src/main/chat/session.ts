@@ -217,6 +217,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
 
   #emit(e: ChatEvent): void {
     if (e.kind === K.turnEnd) this.#turnActive = false
+    if (e.kind === K.turnStart) this.#turnActive = true
     this.#ctx.emit(e)
     // `system/init` lists names and states only: follow it with the detailed list
     if (e.kind === K.mcpStatus) void this.#refreshMcp()
@@ -356,7 +357,9 @@ export class ClaudeChatSession implements ChatSessionHandle {
 
   async send(input: ChatUserInput): Promise<void> {
     this.#turnActive = true
-    this.#queue.push(toSdkUserMessage(input, this.externalSessionId, randomUUID()))
+    // the core's message id doubles as the SDK uuid: replays ack it and `rewind` finds it
+    const { messageId, ...content } = input
+    this.#queue.push(toSdkUserMessage(content, this.externalSessionId, messageId ?? randomUUID()))
   }
 
   // ── MCP ──────────────────────────────────────────────────────────────────────────────────────────────────

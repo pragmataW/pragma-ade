@@ -51,6 +51,8 @@ export const ENOENT = 'ENOENT'
 /** stderr of `--resume <id>` when the CLI has no transcript for the id (claude 2.1.316). */
 export const NO_CONVERSATION_RE = /No conversation found with session ID/i
 export const PART_ID_SEPARATOR = ':'
+/** Turn id of a turn the CLI starts for a queued send (result uuid + suffix). */
+export const NEXT_TURN_SUFFIX = ':next'
 export const JOIN_NEWLINE = '\n'
 export const BEHAVIOR = { allow: 'allow', deny: 'deny' } as const
 export const ABORT_EVENT = 'abort'
@@ -65,6 +67,8 @@ export const SUMMARY_SEPARATOR = ' · '
 export const DEFAULT_PERMISSION_MODE = 'default'
 /** The init model entry that stands for the CLI's default model. */
 export const DEFAULT_MODEL_VALUE = 'default'
+/** `--replay-user-messages`: the CLI acknowledges each user message it takes in. */
+export const REPLAY_USER_MESSAGES_FLAG = 'replay-user-messages'
 export const SYSTEM_PRESET = { type: 'preset', preset: 'claude_code' } as const
 export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
 /** Claude's permission modes, in Shift+Tab cycle order (`bypassPermissions` is outside the cycle). */
