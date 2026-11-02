@@ -47,6 +47,11 @@ export const documentKindOf = (mediaType: ChatFile['mediaType']): ChatAttachment
 
 export type ChatPermissionDecision = ChatPermissionOptionId
 
+/** What the core tells `send` besides the input (adapters map `messageId` to their own ids, e.g. for `rewind`). */
+export interface ChatSendMeta {
+  messageId: string
+}
+
 export interface ChatSessionContext {
   sessionId: string
   profile: AgentProfile
@@ -73,8 +78,8 @@ export interface ChatSessionHandle {
   describeOptions(): ChatOptionDescriptor[]
   /** Rejects on an unknown key or an invalid value. */
   setOption(key: string, value: ChatOptionValue): Promise<void>
-  /** The core calls this only when no turn is active. */
-  send(input: ChatUserInput): Promise<void>
+  /** The core calls this only when no turn is active; `meta.messageId` is the transcript `message` it started. */
+  send(input: ChatUserInput, meta?: ChatSendMeta): Promise<void>
   interrupt(): Promise<void>
   respondPermission(requestId: string, decision: ChatPermissionDecision): Promise<void>
   /** §10.3: reply to an `awaitsResponse` custom event; the adapter validates `payload`. */

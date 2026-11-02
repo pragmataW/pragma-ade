@@ -26,6 +26,15 @@ describe('ChatSessionController', () => {
     expect(h.statuses()).toEqual(['idle', 'working', 'idle'])
   })
 
+  it('handle.send gets the id of the message item it starts (rewind targets)', async () => {
+    const h = harness()
+    const c = await h.attached()
+    await c.send(input('hi'))
+    const message = h.published.map((p) => p.event).find((e) => e.kind === 'message')
+    const messageId = message?.kind === 'message' ? message.messageId : 'none'
+    expect(h.fake.lastSession().sentMeta).toEqual([{ messageId }])
+  })
+
   it('sends during a turn queue FIFO and dispatch after each turn-end', async () => {
     const h = harness()
     const c = await h.attached()

@@ -311,9 +311,10 @@ export class ChatSessionController {
     const handle = this.#handle
     if (!handle) return
     const accepted = acceptedInput(input, this.#capability?.attachmentKinds)
+    const messageId = randomUUID()
     this.#emit({
       kind: K.message,
-      messageId: randomUUID(),
+      messageId,
       role: USER_ROLE,
       text: input.text,
       attachments: attachmentRefs(accepted),
@@ -321,7 +322,7 @@ export class ChatSessionController {
     })
     this.#emit({ kind: K.turnStart, turnId: randomUUID() })
     try {
-      await handle.send(accepted)
+      await handle.send(accepted, { messageId })
     } catch (e) {
       this.#emit({ kind: K.error, code: ERROR_CODE.unknown, message: String(e), fatal: false })
       this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
