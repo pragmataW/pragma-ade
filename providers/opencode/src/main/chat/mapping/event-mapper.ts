@@ -143,6 +143,8 @@ export class EventMapper {
   #lastStep: { tokens: Tokens; model?: ModelRef } | null = null
   #turnActive = false
   #stepFailed = false
+  /** The last step error of the turn (`execution.failed` repeats it: shown once). */
+  #stepError: string | undefined
   #interrupted = false
   #rateLimited = false
   readonly #now: () => number
@@ -243,6 +245,7 @@ export class EventMapper {
         ]
       case EV.stepFailed:
         this.#stepFailed = true
+        this.#stepError = e.data.error.message
         return this.#errorEvents(e.data.error)
       case EV.stepEnded:
         this.#lastStep = { tokens: e.data.tokens, model: this.#model }
@@ -342,7 +345,8 @@ export class EventMapper {
 
   #failed(error: StructuredError): ChatEvent[] {
     if (this.#interrupted) return this.#end(TURN_END_REASON.interrupted)
-    return [...this.#errorEvents(error), ...this.#end(TURN_END_REASON.error)]
+    const repeated = error.message === this.#stepError
+    return [...(repeated ? [] : this.#errorEvents(error)), ...this.#end(TURN_END_REASON.error)]
   }
 
   /** The error row; a rate limit also raises the kit's banner (with the reset time when OpenCode knows it). */
@@ -375,6 +379,7 @@ export class EventMapper {
   #endTurn(reason: (typeof TURN_END_REASON)[keyof typeof TURN_END_REASON]): ChatEvent[] {
     this.#turnActive = false
     this.#stepFailed = false
+    this.#stepError = undefined
     this.#interrupted = false
     this.#permissions.clear()
     this.#forms.clear()

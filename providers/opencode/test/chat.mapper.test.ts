@@ -40,6 +40,20 @@ const err = (message = 'boom', extra: Record<string, unknown> = {}) => ({ type: 
 const started = ev('session.execution.started', {})
 
 describe('EventMapper', () => {
+  it('a step error repeated by execution.failed is shown once; 429 raises then clears the rate-limit banner', () => {
+    const m = new EventMapper({ contextWindow: () => WINDOW, now: () => 1000 })
+    const limited = { type: 'ProviderError', message: 'slow down', status: 429, retryAfterMs: 5000 }
+    const out = feed(m, [
+      started,
+      ev('session.step.failed', { error: limited }),
+      ev('session.execution.failed', { error: limited }),
+    ])
+    expect(kinds(out)).toEqual(['error', 'rate-limit', 'turn-end'])
+    expect(ofKind(out, 'rate-limit')[0]).toMatchObject({ status: 'rejected', resetsAt: 6000 })
+    const next = feed(m, [started, ev('session.execution.succeeded', {})])
+    expect(ofKind(next, 'rate-limit')).toEqual([{ kind: 'rate-limit', status: 'cleared' }])
+  })
+
   it('maps the basic scenario turn', () => {
     const out = feed(newMapper(), basicTurn())
     expect(kinds(out)).toEqual([
