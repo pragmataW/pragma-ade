@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { PLATFORM, SHELL_ENV_TIMEOUT_MS } from '../../constants'
 
 export type Runner = (cmd: string, args: string[], opts: { timeoutMs: number }) => Promise<string>
@@ -6,13 +6,37 @@ export type Runner = (cmd: string, args: string[], opts: { timeoutMs: number }) 
 const DEFAULT_SHELL = '/bin/sh'
 const ENV_ARGS = ['-ilc', 'env -0']
 const NUL = '\0'
-const MAX_BUFFER_BYTES = 16_777_216
+const IGNORE = 'ignore'
+const ERROR_EVENT = 'error'
 
+/**
+ * stdin is /dev/null so an rc file that starts another interactive shell (`.bashrc` → `zsh`) reads EOF and exits.
+ * Timeout SIGKILLs the whole process group: interactive bash ignores SIGTERM and its children keep stdout open.
+ */
 const defaultRunner: Runner = (cmd, args, { timeoutMs }) =>
   new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout: timeoutMs, maxBuffer: MAX_BUFFER_BYTES, encoding: 'utf8' }, (error, stdout) =>
-      error ? reject(error) : resolve(stdout),
-    )
+    const child = spawn(cmd, args, { stdio: [IGNORE, 'pipe', IGNORE], detached: true })
+    let stdout = ''
+    child.stdout.setEncoding('utf8').on('data', (d: string) => {
+      stdout += d
+    })
+    const timer = setTimeout(() => {
+      try {
+        if (child.pid !== undefined) process.kill(-child.pid, 'SIGKILL')
+      } catch {
+        // already gone
+      }
+      reject(new Error(`${cmd} timed out`))
+    }, timeoutMs)
+    child.on(ERROR_EVENT, (e) => {
+      clearTimeout(timer)
+      reject(e)
+    })
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      if (code === 0) resolve(stdout)
+      else reject(new Error(`${cmd} exited with ${code}`))
+    })
   })
 
 const cache = new WeakMap<Runner, Map<string, Promise<Record<string, string>>>>()
