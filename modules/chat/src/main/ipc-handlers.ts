@@ -1,6 +1,12 @@
 import type { Disposable } from '@pragma/sdk'
 import type { MainIpcApi } from '@pragma/sdk/main'
-import { type ChatSupport, type ComposerEntry, chatIpc } from '../contract'
+import {
+  type ChatCapability,
+  type ChatSupport,
+  type ComposerEntry,
+  chatIpc,
+  PROVIDER_CALL_UNSUPPORTED_KEY,
+} from '../contract'
 import type { ChatAgentsApi } from './agents-adapter'
 import type { ChatSessionRegistry } from './registry'
 
@@ -10,7 +16,10 @@ export interface ChatIpcDeps {
   search(path: string, query: string, limit: number): Promise<string[]>
   checkSupport(profileId: string): Promise<ChatSupport>
   takeInbox(sessionId: string): ComposerEntry[]
+  capability(providerId: string): Pick<ChatCapability, 'settingsCall'> | undefined
 }
+
+export class ProviderCallUnsupportedError extends Error {}
 
 /** The `chat.*` invoke handlers; each routes to the session's controller. */
 export function registerChatIpc(ipc: Pick<MainIpcApi, 'handle'>, d: ChatIpcDeps): Disposable[] {
@@ -44,5 +53,10 @@ export function registerChatIpc(ipc: Pick<MainIpcApi, 'handle'>, d: ChatIpcDeps)
     }),
     ipc.handle(chatIpc.checkSupport, ({ profileId }) => d.checkSupport(profileId)),
     ipc.handle(chatIpc.takeComposerInbox, ({ sessionId }) => ({ entries: d.takeInbox(sessionId) })),
+    ipc.handle(chatIpc.providerCall, async ({ providerId, request }) => {
+      const call = d.capability(providerId)?.settingsCall
+      if (!call) throw new ProviderCallUnsupportedError(PROVIDER_CALL_UNSUPPORTED_KEY)
+      return call(request)
+    }),
   ]
 }

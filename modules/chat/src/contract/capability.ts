@@ -113,6 +113,11 @@ export interface ChatCapability {
   createSession(ctx: ChatSessionContext): Promise<ChatSessionHandle>
   /** Owner widening: the transcript of an earlier session. */
   loadHistory?(ctx: ChatHistoryContext): Promise<ChatEvent[]>
+  /**
+   * Provider-owned settings RPC: the provider's `chatUi.settingsPage` sends `request` through `chat.providerCall`
+   * (e.g. connecting model providers); the adapter validates it and answers plain data.
+   */
+  settingsCall?(request: unknown): Promise<unknown>
   /** §10.2: closes every live handle on app quit. */
   dispose?(): Promise<void> | void
   /**

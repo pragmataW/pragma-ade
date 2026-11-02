@@ -22,6 +22,7 @@ function activate() {
     },
     settingsPages: { register: (p: SettingsPage) => void pages.push(p) },
     ipc: { subscribe: () => ({ dispose: () => undefined }) },
+    providers: { providersWithRenderer: () => [], rendererCapability: () => undefined },
   } as unknown as RendererContext<never>
   chatRenderer.activate(ctx)
   return { slots, pages }

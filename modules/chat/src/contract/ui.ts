@@ -102,6 +102,21 @@ export interface ChatUiDefinition {
   groupToolCalls?: boolean
   /** Default `AssistantTurnHeader` (provider mark + name + time); null hides it. */
   turnHeader?: ComponentType<ChatTurnHeaderProps> | null
+  /** A Settings page of this provider (registered by the chat module; talks to `ChatCapability.settingsCall`). */
+  settingsPage?: ChatProviderSettingsPage
+}
+
+export interface ChatProviderSettingsProps {
+  providerId: string
+  /** `ChatCapability.settingsCall(request)` of this provider (validate the answer). */
+  call(request: unknown): Promise<unknown>
+}
+
+export interface ChatProviderSettingsPage {
+  titleKey: string
+  /** A kebab-case lucide name. */
+  icon?: string
+  component: ComponentType<ChatProviderSettingsProps>
 }
 
 declare module '@pragma/sdk' {
@@ -141,6 +156,8 @@ export interface ChatHost {
   confirm(o: ConfirmInput): Promise<boolean>
   searchFiles(sessionId: string, query: string): Promise<string[]>
   checkSupport(profileId: string): Promise<ChatSupport>
+  /** A provider settings page's RPC (`chat.providerCall`). */
+  providerCall(providerId: string, request: unknown): Promise<unknown>
   chatUi(providerId: string): ChatUiDefinition | undefined
   providerName(providerId: string): string
   ProviderMark: ComponentType<{ providerId: string; size?: number }>

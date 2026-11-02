@@ -103,6 +103,7 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
     action: record('action', undefined),
     setOption: record('setOption', undefined),
     confirm: record('confirm', true),
+    providerCall: record('providerCall', undefined),
     async searchFiles(sessionId, query) {
       calls.push({ method: 'searchFiles', args: [sessionId, query] })
       return (over.files ?? []).filter((f) => f.includes(query))

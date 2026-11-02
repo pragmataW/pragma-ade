@@ -163,6 +163,7 @@ export const CHAT_IPC = {
   searchFiles: 'chat.searchFiles',
   checkSupport: 'chat.checkSupport',
   takeComposerInbox: 'chat.takeComposerInbox',
+  providerCall: 'chat.providerCall',
   testSnapshot: 'chat.test.snapshot',
 } as const
 export const CHAT_IPC_EVENTS = { event: 'chat.event', composerInboxChanged: 'chat.composerInboxChanged' } as const
@@ -190,3 +191,6 @@ export const RESUME_REASON = {
 } as const
 export const RESPOND_UNSUPPORTED_KEY = 'chat:errors.respondUnsupported'
 export const ACTION_UNSUPPORTED_KEY = 'chat:errors.actionUnsupported'
+export const PROVIDER_CALL_UNSUPPORTED_KEY = 'chat:errors.providerCallUnsupported'
+/** Settings page id of a provider's `chatUi.settingsPage` (`<prefix><providerId>`). */
+export const PROVIDER_SETTINGS_PAGE_PREFIX = 'chat.provider.'

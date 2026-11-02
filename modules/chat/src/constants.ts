@@ -14,6 +14,10 @@ export const CHAT_MODE_OPTION_ID = 'chat.mode'
 export const CHAT_STATUSBAR_ID = 'chat.context'
 export const CHAT_STATUSBAR_ORDER = 60
 export const CHAT_SETTINGS_ICON = 'message-square'
+/** Order gap between provider settings pages after Settings › Chat. */
+export const PROVIDER_PAGE_ORDER_STEP = 0.1
+/** The renderer capability key of a provider's chat UI. */
+export const CHAT_UI_CAPABILITY = 'chatUi'
 export const PERCENT = 100
 /** Kit metrics (ui-notes). */
 export const CONTEXT_WARN_RATIO = 0.8
