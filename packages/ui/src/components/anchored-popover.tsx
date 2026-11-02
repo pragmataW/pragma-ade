@@ -24,8 +24,8 @@ export function AnchoredPopover({
   guardMode?: OverlayGuardMode
   children: ReactNode
 }) {
-  useOverlayGuard(open, { mode: guardMode })
   const ref = useRef<HTMLDivElement>(null)
+  useOverlayGuard(open, { mode: guardMode, target: ref })
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null)
   useLayoutEffect(() => {
     const el = ref.current

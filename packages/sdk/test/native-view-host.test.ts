@@ -1,19 +1,20 @@
-import { describe, expect, it, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { CoreIpc } from '../src/common/core-ipc'
 import type { Rect } from '../src/common/shell'
+import { SNAPSHOT_CAPTURE_TIMEOUT_MS, SNAPSHOT_CLEAR_DELAY_MS, SNAPSHOT_PAINT_DELAY_MS } from '../src/constants'
 import { DuplicateViewError, NativeViewHost, type NativeViewLike } from '../src/runtime/main/native-view-host'
 
 const TAB_RECT: Rect = { x: 10, y: 20, width: 300, height: 200 }
 
-function fakeView(): NativeViewLike & { bounds: Rect[]; visible: boolean[] } {
+function fakeView() {
   const view = {
     bounds: [] as Rect[],
     visible: [] as boolean[],
     setBounds: (r: Rect) => view.bounds.push(r),
     setVisible: (v: boolean) => view.visible.push(v),
-    capture: vi.fn(async () => 'data:x'),
+    capture: vi.fn<() => Promise<string>>(async () => 'data:x'),
   }
-  return view
+  return view satisfies NativeViewLike
 }
 function fakeContainer() {
   return {
@@ -79,27 +80,118 @@ test('null tab bounds hides', () => {
   expect(v.visible.at(-1)).toBe(false)
 })
 
-describe('overlay snapshot', () => {
-  it.each([
-    ['hide', { hide: true, snapshot: false }, 0],
-    ['snapshot', { hide: false, snapshot: true }, 1],
-  ])('%s mode', async (_mode, occlusion, snapshots) => {
-    const { host, events } = setup()
-    host.setTabBounds('t', TAB_RECT)
-    const v = fakeView()
-    host.attach('a', v, { panelTabId: 't' })
-    await host.setOcclusion(occlusion)
-    expect(host.state('a')?.visible).toBe(false)
-    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(snapshots)
-    if (snapshots)
-      expect(events(CoreIpc.nativeViewsSnapshot.channel)[0]).toEqual({
-        viewId: 'a',
-        bounds: TAB_RECT,
-        dataUrl: 'data:x',
-      })
-    await host.setOcclusion({ hide: false, snapshot: false })
+const MENU_BELOW = { mode: 'hide' as const, rect: { x: 20, y: 240, width: 100, height: 80 } }
+const MENU_OVER = { mode: 'hide' as const, rect: { x: 250, y: 150, width: 100, height: 80 } }
+const MODAL = { mode: 'hide' as const, rect: null }
+const NONE = { covers: [] }
+
+/** With fake timers: lets a cover's snapshot paint delay pass, then waits for the cover to finish. */
+async function settle(p: Promise<void>): Promise<void> {
+  await vi.advanceTimersByTimeAsync(SNAPSHOT_PAINT_DELAY_MS)
+  await p
+}
+
+function covered() {
+  const s = setup()
+  s.host.setTabBounds('t', TAB_RECT)
+  const v = fakeView()
+  s.host.attach('a', v, { panelTabId: 't' })
+  return { ...s, v }
+}
+
+describe('overlay occlusion', () => {
+  afterEach(() => vi.useRealTimers())
+
+  test('an overlay that does not intersect the view leaves it alone', async () => {
+    const { host, v, publish } = covered()
+    await host.setOcclusion({ covers: [MENU_BELOW] })
     expect(host.state('a')?.visible).toBe(true)
-    expect(events(CoreIpc.nativeViewsSnapshotCleared.channel)).toHaveLength(snapshots)
+    expect(v.visible).toEqual([true])
+    expect(v.capture).not.toHaveBeenCalled()
+    expect(publish).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['an intersecting menu', MENU_OVER],
+    ['a modal backdrop (whole window)', MODAL],
+  ])('%s: snapshot is published before the view hides; it is cleared only after the view is back', async (_l, c) => {
+    vi.useFakeTimers()
+    const { host, v, events, publish } = covered()
+    const order: string[] = []
+    v.setVisible = (on) => order.push(on ? 'show' : 'hide')
+    publish.mockImplementation((c: { channel: string }) => order.push(c.channel))
+    await settle(host.setOcclusion({ covers: [c] }))
+    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toEqual([{ viewId: 'a', bounds: TAB_RECT, dataUrl: 'data:x' }])
+    expect(host.state('a')?.visible).toBe(false)
+    await host.setOcclusion(NONE)
+    expect(host.state('a')?.visible).toBe(true)
+    expect(events(CoreIpc.nativeViewsSnapshotCleared.channel)).toHaveLength(0)
+    vi.advanceTimersByTime(SNAPSHOT_CLEAR_DELAY_MS)
+    expect(events(CoreIpc.nativeViewsSnapshotCleared.channel)).toEqual([{ viewId: 'a' }])
+    const [snap, cleared] = [CoreIpc.nativeViewsSnapshot.channel, CoreIpc.nativeViewsSnapshotCleared.channel]
+    expect(order).toEqual([snap, 'hide', 'show', cleared])
+  })
+
+  test('captures once per open overlay, even when it moves', async () => {
+    const { host, v } = covered()
+    await host.setOcclusion({ covers: [MENU_OVER] })
+    await host.setOcclusion({ covers: [{ ...MENU_OVER, rect: { ...MENU_OVER.rect, x: 260 } }] })
+    expect(v.capture).toHaveBeenCalledOnce()
+  })
+
+  test('the overlay moving off the view brings the view back', async () => {
+    const { host } = covered()
+    await host.setOcclusion({ covers: [MENU_OVER] })
+    await host.setOcclusion({ covers: [MENU_BELOW] })
+    expect(host.state('a')?.visible).toBe(true)
+  })
+
+  test('a slow or failing capture falls back to hiding without a snapshot', async () => {
+    vi.useFakeTimers()
+    const { host, v, events } = covered()
+    v.capture.mockImplementation(() => new Promise<string>(() => undefined))
+    const done = host.setOcclusion({ covers: [MENU_OVER] })
+    await vi.advanceTimersByTimeAsync(SNAPSHOT_CAPTURE_TIMEOUT_MS)
+    await done
+    expect(host.state('a')?.visible).toBe(false)
+    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(0)
+  })
+
+  test('snapshot mode waits for the capture', async () => {
+    vi.useFakeTimers()
+    const { host, v, events } = covered()
+    let resolve: (s: string) => void = () => undefined
+    v.capture.mockImplementation(() => new Promise<string>((r) => (resolve = r)))
+    const done = host.setOcclusion({ covers: [{ mode: 'snapshot', rect: null }] })
+    await vi.advanceTimersByTimeAsync(SNAPSHOT_CAPTURE_TIMEOUT_MS * 2)
+    resolve('data:late')
+    await vi.advanceTimersByTimeAsync(SNAPSHOT_PAINT_DELAY_MS)
+    await done
+    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(1)
+    expect(host.state('a')?.visible).toBe(false)
+  })
+
+  test('closing the overlay while capturing never hides the view nor leaves a snapshot', async () => {
+    const { host, v, events } = covered()
+    let resolve: (s: string) => void = () => undefined
+    v.capture.mockImplementation(() => new Promise<string>((r) => (resolve = r)))
+    const opening = host.setOcclusion({ covers: [MENU_OVER] })
+    await host.setOcclusion(NONE)
+    resolve('data:x')
+    await opening
+    expect(v.visible).toEqual([true])
+    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(0)
+  })
+
+  test('reopening within the clear delay keeps the fresh snapshot', async () => {
+    vi.useFakeTimers()
+    const { host, events } = covered()
+    await settle(host.setOcclusion({ covers: [MENU_OVER] }))
+    await host.setOcclusion(NONE)
+    await settle(host.setOcclusion({ covers: [MENU_OVER] }))
+    vi.advanceTimersByTime(SNAPSHOT_CLEAR_DELAY_MS)
+    expect(events(CoreIpc.nativeViewsSnapshotCleared.channel)).toHaveLength(0)
+    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(2)
   })
 })
 test('freeze/unfreeze', async () => {
@@ -111,8 +203,8 @@ test('freeze/unfreeze', async () => {
   expect(v.capture).toHaveBeenCalledOnce()
   expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(1)
   expect(host.state('a')?.visible).toBe(false)
-  await host.setOcclusion({ hide: true, snapshot: false })
-  await host.setOcclusion({ hide: false, snapshot: false })
+  await host.setOcclusion({ covers: [MODAL] })
+  await host.setOcclusion(NONE)
   expect(host.state('a')?.visible).toBe(false)
   expect(events(CoreIpc.nativeViewsSnapshotCleared.channel)).toHaveLength(0)
   await host.unfreeze('a')

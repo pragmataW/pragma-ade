@@ -1,3 +1,4 @@
+import { OVERLAY_GUARD_MODES } from '@pragma/ui/constants/overlay'
 import { z } from 'zod'
 import { CommandMetaSchema, CommandRefSchema } from './commands'
 import { defineIpc, defineIpcEvent } from './ipc'
@@ -95,7 +96,10 @@ export const DialogStubsSchema = z.object({
 })
 export type DialogStubs = z.infer<typeof DialogStubsSchema>
 
-export const OcclusionSchema = z.object({ hide: z.boolean(), snapshot: z.boolean() })
+/** One open `@pragma/ui` overlay: its window rect, or `null` when it covers the whole window (modal backdrop). */
+export const OverlayCoverSchema = z.object({ mode: z.enum(OVERLAY_GUARD_MODES), rect: RectSchema.nullable() })
+export type OverlayCover = z.infer<typeof OverlayCoverSchema>
+export const OcclusionSchema = z.object({ covers: z.array(OverlayCoverSchema) })
 export type Occlusion = z.infer<typeof OcclusionSchema>
 export const ViewIdSchema = z.object({ viewId: z.string() })
 export const SnapshotSchema = z.object({ viewId: z.string(), bounds: RectSchema, dataUrl: z.string() })

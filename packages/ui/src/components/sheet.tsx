@@ -1,4 +1,4 @@
-import { withOverlayGuard } from '../lib/overlay-guard'
+import { MODAL_COVER, withOverlayGuard } from '../lib/overlay-guard'
 import { SheetContent as VendorSheetContent } from '../vendor/sheet'
 
 export {
@@ -12,4 +12,4 @@ export {
 } from '../vendor/sheet'
 
 /** Overlay-guarded; the vendor's untranslated close button is off by default. */
-export const SheetContent = withOverlayGuard(VendorSheetContent, { showCloseButton: false })
+export const SheetContent = withOverlayGuard(VendorSheetContent, { showCloseButton: false }, MODAL_COVER)

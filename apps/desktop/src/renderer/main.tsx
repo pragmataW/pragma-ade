@@ -1,7 +1,7 @@
 import { CoreIpc } from '@pragma/sdk'
 import { RendererHostProvider } from '@pragma/sdk/renderer'
 import { createRendererHost, type IpcClient, type PragmaBridge } from '@pragma/sdk/runtime/renderer'
-import { type OverlayGuardMode, setOverlayGuardReporter } from '@pragma/ui/lib/overlay-guard'
+import { setOverlayGuardReporter } from '@pragma/ui/lib/overlay-guard'
 import { createRoot } from 'react-dom/client'
 import { coreLocales, rendererModules } from '../generated/modules.renderer'
 import { applyTheme } from './lib/apply-theme'
@@ -21,20 +21,13 @@ declare global {
 
 const ROOT_ID = 'root'
 
-/** One count per guard mode; `core.nativeViews.occlusion` is sent whenever either flag flips. */
+/**
+ * Sends every open overlay's cover to main, which swaps only the native views they intersect for snapshots. Setting
+ * the reporter sends the current (empty) list at once: a reloaded renderer starts with no overlays, while main may
+ * still hold the old page's covers.
+ */
 function wireOverlayGuard(ipc: IpcClient): void {
-  const counts: Record<OverlayGuardMode, number> = { hide: 0, snapshot: 0 }
-  let last = { hide: false, snapshot: false }
-  setOverlayGuardReporter((delta, mode) => {
-    counts[mode] += delta
-    const next = { hide: counts.hide > 0, snapshot: counts.snapshot > 0 }
-    if (next.hide === last.hide && next.snapshot === last.snapshot) return
-    last = next
-    void ipc.invoke(CoreIpc.nativeViewsOcclusion, next)
-  })
-  // A reloaded renderer starts at zero overlays; main may still hold the old page's state, which would keep every
-  // native view hidden until some overlay opened and closed again.
-  void ipc.invoke(CoreIpc.nativeViewsOcclusion, last)
+  setOverlayGuardReporter((covers) => void ipc.invoke(CoreIpc.nativeViewsOcclusion, { covers }))
 }
 
 async function boot(): Promise<void> {

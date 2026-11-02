@@ -1,4 +1,4 @@
-import { withOverlayGuard } from '../lib/overlay-guard'
+import { MODAL_COVER, withOverlayGuard } from '../lib/overlay-guard'
 import { DialogContent as VendorDialogContent } from '../vendor/dialog'
 
 export {
@@ -14,4 +14,4 @@ export {
 } from '../vendor/dialog'
 
 /** Overlay-guarded; the vendor's untranslated close button is off by default (callers render their own). */
-export const DialogContent = withOverlayGuard(VendorDialogContent, { showCloseButton: false })
+export const DialogContent = withOverlayGuard(VendorDialogContent, { showCloseButton: false }, MODAL_COVER)
