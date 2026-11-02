@@ -74,7 +74,7 @@ describe('claudeChatUi', () => {
   it('permissionMode bypass value shown in warn colour', async () => {
     await renderClaude()
     const picker = screen.getByTestId(CHAT_TESTIDS.optionPicker('permissionMode'))
-    expect(picker).toHaveTextContent('Skip permissions')
+    expect(picker).toHaveTextContent('Bypass permissions')
     expect(picker).toHaveClass('text-warn')
   })
 })

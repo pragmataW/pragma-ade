@@ -11,6 +11,7 @@ import {
 import {
   CHAT_OPTION_KEYS,
   type ChatEvent,
+  type ChatMcpServer,
   type ChatOptionDescriptor,
   type ChatOptionValue,
   type ChatPermissionDecision,
@@ -41,10 +42,12 @@ import {
   FAST_MODE_OPTION,
   NO_CONVERSATION_RE,
   PERMISSION_CANCELLED_MESSAGE,
+  REWIND_FAILED,
   SDK_SETTING_EFFORT,
   SDK_SETTING_FAST_MODE,
 } from './constants'
 import { createSdkMessageMapper, type SdkMessageMapper } from './mapper'
+import { toMcpServer } from './notices'
 import {
   buildQueryOptions,
   type ClaudeOptionState,
@@ -126,6 +129,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
   #state: ClaudeOptionState
   #init: Pick<SDKControlInitializeResponse, 'models' | 'commands'> = { models: [], commands: [] }
   #turnActive = false
+  #mcpShown = false
   #closing = false
   #ended = false
 
@@ -198,6 +202,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
     this.#ctx.emit({ kind: K.sessionInfo, externalSessionId: this.externalSessionId, commands })
     this.#emitOptions()
     if (this.#state.fastMode) void this.#flags({ [SDK_SETTING_FAST_MODE]: true }).catch(() => undefined)
+    void this.#refreshMcp()
     void this.#pump()
   }
 
@@ -213,6 +218,8 @@ export class ClaudeChatSession implements ChatSessionHandle {
   #emit(e: ChatEvent): void {
     if (e.kind === K.turnEnd) this.#turnActive = false
     this.#ctx.emit(e)
+    // `system/init` lists names and states only: follow it with the detailed list
+    if (e.kind === K.mcpStatus) void this.#refreshMcp()
   }
 
   async #crash(error: unknown): Promise<void> {
@@ -349,7 +356,39 @@ export class ClaudeChatSession implements ChatSessionHandle {
 
   async send(input: ChatUserInput): Promise<void> {
     this.#turnActive = true
-    this.#queue.push(toSdkUserMessage(input, this.externalSessionId))
+    this.#queue.push(toSdkUserMessage(input, this.externalSessionId, randomUUID()))
+  }
+
+  // ── MCP ──────────────────────────────────────────────────────────────────────────────────────────────────
+  async listMcp(): Promise<ChatMcpServer[]> {
+    return ((await this.#q.mcpServerStatus()) ?? []).map((s) => toMcpServer(s))
+  }
+
+  async toggleMcp(name: string, enabled: boolean): Promise<void> {
+    await this.#q.toggleMcpServer(name, enabled)
+    await this.#refreshMcp()
+  }
+
+  async reconnectMcp(name: string): Promise<void> {
+    await this.#q.reconnectMcpServer(name)
+    await this.#refreshMcp()
+  }
+
+  /** Emits the detailed server list (tool counts, errors); an empty list only replaces an earlier one. */
+  async #refreshMcp(): Promise<void> {
+    const servers = await this.listMcp().catch((e: unknown) => {
+      this.#log?.warn(`claude chat ${this.#ctx.sessionId}: mcp status failed (${errorMessage(e)})`)
+      return undefined
+    })
+    if (!servers || (servers.length === 0 && !this.#mcpShown)) return
+    this.#mcpShown = true
+    this.#ctx.emit({ kind: K.mcpStatus, servers })
+  }
+
+  /** Restores the files to before the user message `messageId` (an SDK message uuid; file checkpointing is on). */
+  async rewind(messageId: string): Promise<void> {
+    const r = await this.#q.rewindFiles(messageId)
+    if (!r.canRewind) throw new Error(r.error ?? REWIND_FAILED)
   }
 
   async interrupt(): Promise<void> {

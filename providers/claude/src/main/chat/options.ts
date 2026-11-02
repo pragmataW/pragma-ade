@@ -73,6 +73,8 @@ export function buildQueryOptions(
     perTaskStopAffordance: true,
     // lets the user switch to `bypassPermissions` mid-session (the kit confirms it first); the start mode is unchanged
     allowDangerouslySkipPermissions: true,
+    // backups before each edit, so `rewind` can restore the files of an earlier user message
+    enableFileCheckpointing: true,
     systemPrompt: { ...SYSTEM_PRESET },
     canUseTool,
     abortController: abort,

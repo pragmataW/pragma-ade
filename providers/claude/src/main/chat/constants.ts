@@ -95,6 +95,11 @@ export const SDK_SETTING_FAST_MODE = 'fastMode'
 /** The session option key of the fast mode toggle. */
 export const FAST_MODE_OPTION = 'fastMode'
 export const IMAGE_NAME = 'image'
+export const DOCUMENT_NAME = 'document'
+/** The media type of every text document block (the API's text source accepts only this). */
+export const TEXT_PLAIN = 'text/plain'
+/** A turn-local error: `rewindFiles` could not restore. */
+export const REWIND_FAILED = 'rewind failed'
 
 /** SDK frame type / subtype names the mapper reads. */
 export const FRAME = {

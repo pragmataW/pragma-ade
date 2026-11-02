@@ -1,10 +1,13 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import {
+  ATTACHMENT_KIND,
+  type ChatAttachmentRef,
   type ChatEvent,
   ERROR_CODE,
   EVENT_KIND as K,
   MAX_TOOL_OUTPUT_CHARS,
   MESSAGE_ORIGIN,
+  PDF_MEDIA_TYPE,
   TEXT_MODE,
   TOOL_STATUS,
   TRUNCATION_MARKER,
@@ -17,6 +20,7 @@ import {
   CLAUDE_CUSTOM_EVENTS,
   CLAUDE_TOOLS,
   DELTA,
+  DOCUMENT_NAME,
   FRAME,
   IMAGE_NAME,
   JOIN_NEWLINE,
@@ -79,6 +83,15 @@ const DELTA_KINDS: Record<string, { block: string; field: string; kind: typeof K
 const assistantErrorCode = (e: string) => {
   if (e === ASSISTANT_ERROR.auth) return ERROR_CODE.auth
   return e === ASSISTANT_ERROR.rateLimit ? ERROR_CODE.rate_limit : ERROR_CODE.unknown
+}
+
+/** The attachment chip of an image or document block of a user turn. */
+function attachmentOf(b: Obj): ChatAttachmentRef[] {
+  const mediaType = str(obj(b.source).media_type) ?? ''
+  if (b.type === BLOCK.image) return [{ kind: ATTACHMENT_KIND.image, name: IMAGE_NAME, mediaType }]
+  if (b.type !== BLOCK.document) return []
+  const kind = mediaType === PDF_MEDIA_TYPE ? ATTACHMENT_KIND.pdf : ATTACHMENT_KIND.text
+  return [{ kind, name: str(b.title) ?? DOCUMENT_NAME, mediaType }]
 }
 
 /** Stateful SDK → chat event mapping (part ids `<message.id>:<block index>`, RF5 truncation). */
@@ -196,9 +209,7 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
       .map((b) => (b.type === BLOCK.text ? str(b.text) : undefined))
       .filter((t): t is string => t !== undefined)
       .join(JOIN_NEWLINE)
-    const attachments = blocks
-      .filter((b) => b.type === BLOCK.image)
-      .map((b) => ({ kind: BLOCK.image, name: IMAGE_NAME, mediaType: str(obj(b.source).media_type) ?? '' }))
+    const attachments = blocks.flatMap(attachmentOf)
     if (!text && attachments.length === 0) return []
     const messageId = str(frame.uuid) ?? `${FRAME.user}${PART_ID_SEPARATOR}${++userMessages}`
     return [{ kind: K.message, messageId, role: USER_ROLE, text, attachments, origin: MESSAGE_ORIGIN.history }]
