@@ -87,7 +87,10 @@ describe('comments handler', () => {
 
 it('invalid payload → invalid_argument', async () => {
   const h = createCliHandlers(makeDeps())
-  expect(await h.worktreeCreate({ context: context() })).toMatchObject({ ok: false, error: { code: 'invalid_argument' } })
+  expect(await h.worktreeCreate({ context: context() })).toMatchObject({
+    ok: false,
+    error: { code: 'invalid_argument' },
+  })
 })
 
 it('an unexpected throw → internal', async () => {

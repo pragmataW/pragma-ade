@@ -1,4 +1,11 @@
-import { CLI_ERROR, type CliMethod, type CliRequest, type CliResponse, type CliResult, cliRequestSchemas } from '../../contract'
+import {
+  CLI_ERROR,
+  type CliMethod,
+  type CliRequest,
+  type CliResponse,
+  type CliResult,
+  cliRequestSchemas,
+} from '../../contract'
 import { CliError } from '../cli-error'
 import { toCliError } from '../mappers'
 
@@ -12,7 +19,8 @@ export function defineCliHandler<M extends CliMethod>(
   const schema = cliRequestSchemas[method]
   return async (payload) => {
     const parsed = schema.safeParse(payload)
-    if (!parsed.success) return { ok: false, error: new CliError(CLI_ERROR.invalid_argument, parsed.error.message).toDto() }
+    if (!parsed.success)
+      return { ok: false, error: new CliError(CLI_ERROR.invalid_argument, parsed.error.message).toDto() }
     try {
       return { ok: true, result: await fn(parsed.data as CliRequest<M>) }
     } catch (e) {

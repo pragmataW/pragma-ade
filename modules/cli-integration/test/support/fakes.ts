@@ -1,4 +1,9 @@
-import type { AgentProfile, AgentSession, AgentSessionsService, StartSessionInput } from '@pragma/module-agents/contract'
+import type {
+  AgentProfile,
+  AgentSession,
+  AgentSessionsService,
+  StartSessionInput,
+} from '@pragma/module-agents/contract'
 import { aProfile, aSession } from '@pragma/module-agents/testing'
 import type {
   BoardSection,
@@ -96,7 +101,16 @@ export function fakeAgents(o: { profiles?: AgentProfile[]; sessions?: AgentSessi
 }
 
 export const aComment = (id: string, over: Partial<Comment> = {}): Comment =>
-  ({ id, worktreeId: 'w1', source: 'editor', filePath: 'a.ts', body: id, createdAt: NOW, updatedAt: NOW, ...over }) as Comment
+  ({
+    id,
+    worktreeId: 'w1',
+    source: 'editor',
+    filePath: 'a.ts',
+    body: id,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...over,
+  }) as Comment
 
 export function fakeComments(comments: Comment[] = []) {
   return asService<CommentsService>({

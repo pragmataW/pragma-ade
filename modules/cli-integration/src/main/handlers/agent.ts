@@ -22,7 +22,11 @@ export function agentHandlers({ projects, agents, nameOf }: CliHandlerDeps): Rec
     agentSpawn: defineCliHandler(CLI_METHOD.agentSpawn, async (req) => {
       const worktree = await resolveWorktree(projects, req.worktreeId, req.context)
       const profile = await resolveProfile(agents, req.profile, nameOf)
-      const input = { worktreeId: worktree.id, profileId: profile.id, ...(req.prompt ? { initialPrompt: req.prompt } : {}) }
+      const input = {
+        worktreeId: worktree.id,
+        profileId: profile.id,
+        ...(req.prompt ? { initialPrompt: req.prompt } : {}),
+      }
       return toCliSession(await agents.startSession(input), nameOf(profile))
     }),
     profileList: defineCliHandler(CLI_METHOD.profileList, async () => {
