@@ -34,5 +34,5 @@ test('re-computes when ctx.theme changes', () => {
   const { result } = renderHook(() => useXtermTheme(theme.api))
   expect(result.current.background).toBe(palettes.vscode.dark.pn)
   act(() => theme.set(themeState('light')))
-  expect(result.current.background).toBe(palettes.vscode.light.pn)
+  expect(result.current.background).toBe(palettes.vscode.light.hv)
 })

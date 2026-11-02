@@ -39,27 +39,34 @@ export const ANSI_DARK: Record<AnsiName, string> = {
   brightWhite: '#e5e5e5',
 }
 
+/**
+ * Light ANSI colours tuned for the grey light background (`hv`): every colour reaches WCAG 4.5:1 on all light
+ * palettes, the greys (`white`, `brightWhite`, `brightBlack`) 3:1. VS Code's light defaults (yellow, green, cyan
+ * around 2:1) are unreadable there, and so are the app's `ok`/`warn` tokens, so light mode keeps these status colours.
+ */
 export const ANSI_LIGHT: Record<AnsiName, string> = {
   black: '#000000',
-  red: '#cd3131',
-  green: '#00bc00',
-  yellow: '#949800',
+  red: '#b42020',
+  green: '#0b6e0b',
+  yellow: '#735c00',
   blue: '#0451a5',
-  magenta: '#bc05bc',
-  cyan: '#0598bc',
-  white: '#555555',
-  brightBlack: '#666666',
-  brightRed: '#cd3131',
-  brightGreen: '#14ce14',
-  brightYellow: '#b5ba00',
-  brightBlue: '#0451a5',
-  brightMagenta: '#bc05bc',
-  brightCyan: '#0598bc',
-  brightWhite: '#a5a5a5',
+  magenta: '#a2129f',
+  cyan: '#06657e',
+  white: '#5a5a5a',
+  brightBlack: '#6b6b6b',
+  brightRed: '#b8302f',
+  brightGreen: '#11702a',
+  brightYellow: '#785c00',
+  brightBlue: '#1a5fc0',
+  brightMagenta: '#9c2c9c',
+  brightCyan: '#0b6d88',
+  brightWhite: '#7c7c7c',
 }
 
+type TokenMap = Partial<Record<keyof ITheme, string>>
+
 /** xterm theme keys taken from design tokens (`ctx.theme` tokens, ui-notes "Color tokens"). */
-const TOKEN_MAP = {
+const TOKEN_MAP_DARK = {
   background: 'pn',
   foreground: 'tx',
   cursor: 'ac',
@@ -69,14 +76,25 @@ const TOKEN_MAP = {
   green: 'ok',
   yellow: 'warn',
   blue: 'info',
-} as const satisfies Partial<Record<keyof ITheme, string>>
+} as const satisfies TokenMap
 
-/** The app palette in xterm form: surfaces and status colours from tokens, the other ANSI colours VS Code's. */
+/** Light: the grey hover surface instead of the near-white panel; status colours stay `ANSI_LIGHT`'s. */
+const TOKEN_MAP_LIGHT = {
+  background: 'hv',
+  foreground: 'tx',
+  cursor: 'ac',
+  cursorAccent: 'hv',
+  selectionBackground: 'acs',
+} as const satisfies TokenMap
+
+/** The app palette in xterm form: surfaces from tokens, ANSI colours per mode (status colours from tokens in dark). */
 export function buildXtermTheme(tokens: Readonly<Record<string, string>>, mode: ThemeMode): ITheme {
-  const theme: ITheme = { ...(mode === 'dark' ? ANSI_DARK : ANSI_LIGHT) }
-  for (const [key, token] of Object.entries(TOKEN_MAP)) {
+  const dark = mode === 'dark'
+  const theme: Record<string, string> = { ...(dark ? ANSI_DARK : ANSI_LIGHT) }
+  const map: TokenMap = dark ? TOKEN_MAP_DARK : TOKEN_MAP_LIGHT
+  for (const [key, token] of Object.entries(map)) {
     const value = tokens[token]
-    if (value) theme[key as keyof typeof TOKEN_MAP] = value
+    if (value) theme[key] = value
   }
   return theme
 }

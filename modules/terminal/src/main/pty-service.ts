@@ -1,4 +1,4 @@
-import type { Logger } from '@pragma/sdk'
+import type { Logger, ThemeMode } from '@pragma/sdk'
 import {
   DAEMON_ERROR,
   type DaemonEvent,
@@ -11,7 +11,14 @@ import {
   type SpawnSpec,
   TERM_NAME,
 } from '@pragma/terminal-pty-daemon/protocol'
-import { COLORTERM_VALUE, PATH_SEPARATOR_RE, RUN_AS_NODE_ENV, TERM_PROGRAM_NAME } from '../constants'
+import {
+  COLORFGBG_BY_MODE,
+  COLORFGBG_ENV,
+  COLORTERM_VALUE,
+  PATH_SEPARATOR_RE,
+  RUN_AS_NODE_ENV,
+  TERM_PROGRAM_NAME,
+} from '../constants'
 import {
   PTY_EXIT_REASON,
   PTY_SPAWN_ERROR,
@@ -32,6 +39,8 @@ export interface PtyServiceDeps {
   shellEnv: () => Promise<Record<string, string>>
   resolveCommand: (cmd: string) => Promise<string | null>
   settings: () => TerminalSettings
+  /** The resolved app theme (`ctx.theme`), read at spawn; running shells keep theirs. */
+  themeMode: () => ThemeMode
   platform: NodeJS.Platform
   exists: (p: string) => boolean
   log: Logger
@@ -97,6 +106,7 @@ export class PtyServiceImpl implements PtyService {
       const { command, args } = await this.#command(opts, shellEnv)
       const env: Record<string, string> = {
         ...shellEnv,
+        [COLORFGBG_ENV]: COLORFGBG_BY_MODE[this.#deps.themeMode()],
         ...opts.env,
         TERM: TERM_NAME,
         COLORTERM: COLORTERM_VALUE,
