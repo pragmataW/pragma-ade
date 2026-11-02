@@ -22,3 +22,11 @@ export const WIN32 = 'win32'
 export const PATH_KEY_RE = /^path$/i
 export const PATH_KEYS = { posix: 'PATH', win32: 'Path' } as const
 export const PATH_DELIMITERS = { posix: ':', win32: ';' } as const
+/** PowerShell commands for the Windows user PATH; the new value travels in an env var (no quoting issues). */
+export const POWERSHELL = {
+  exe: 'powershell',
+  args: ['-NoProfile', '-NonInteractive', '-Command'],
+  getUserPath: "[Environment]::GetEnvironmentVariable('Path','User')",
+  setUserPath: "[Environment]::SetEnvironmentVariable('Path', $env:PRAGMA_NEW_USER_PATH, 'User')",
+  valueEnv: 'PRAGMA_NEW_USER_PATH',
+} as const

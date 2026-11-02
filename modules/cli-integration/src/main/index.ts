@@ -18,6 +18,7 @@ import { runHandoff } from './handoff'
 import { createCliLaunchDecorator } from './launch-decorator'
 import { createNotifier } from './notifier'
 import { type CliPaths, resolveCliPaths } from './paths'
+import { createCliIntegrationService, registerCliIntegrationIpc } from './service'
 import { writeShims } from './shim'
 import { runtimeState } from './state'
 
@@ -84,6 +85,8 @@ export default defineMainModule<CliIntegrationSettings>({
     runtimeState.paths = paths
     await installShimAndDecorator(ctx, paths)
     registerBridge(ctx)
+    const noSkills = { statuses: async () => [], install: async () => undefined }
+    registerCliIntegrationIpc(ctx, createCliIntegrationService(ctx, paths, noSkills))
   },
   deactivate() {
     for (const dispose of disposers.splice(0)) dispose()

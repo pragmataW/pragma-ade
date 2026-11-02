@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { makeLaunchContext } from '@pragma/module-agents/testing'
 import { describe, expect, it } from 'vitest'
 import { LAUNCH_DECORATOR_ID } from '../src/constants'
+import { cliIntegrationIpc } from '../src/contract'
 import { activateModule } from './support/module-ctx'
 
 describe('cli-integration main module', () => {
@@ -34,5 +35,14 @@ describe('cli-integration main module', () => {
     const { default: mainModule } = await import('../src/main')
     await mainModule.deactivate?.()
     expect(m.agents.state.decorators).toEqual([])
+  })
+})
+
+describe('settings IPC', () => {
+  it('getStatus reports the CLI under <home>/.local/bin as not installed', async () => {
+    const m = await activateModule()
+    const status = await m.fake.invoke(cliIntegrationIpc.getStatus, undefined)
+    expect(status.cli).toMatchObject({ state: 'not_installed', bundleFound: true })
+    expect(status.cli.linkPath.endsWith(join('.local', 'bin', 'pragma'))).toBe(true)
   })
 })
