@@ -28,6 +28,22 @@ const CONFIRM: Record<SwitchTarget, { titleKey: string; messageKey: string; conf
 const needsConfirm = (target: SwitchTarget, status: string): boolean =>
   target === SWITCH_TARGET.chat || CONFIRM_STATUSES.has(status)
 
+const NOTE_CLASS =
+  'absolute top-full right-0 z-50 mt-1 w-64 rounded-md border border-bd bg-el px-2.5 py-1.5 text-[12px] shadow-lg'
+
+/** A small box under the toggle: a failure or conflict (`alert`, warn tone) or an info notice (`<output>` = status). */
+function InlineNote(p: { alert: boolean; testId: string; text: string }) {
+  return p.alert ? (
+    <div role="alert" data-testid={p.testId} className={`${NOTE_CLASS} text-warn`}>
+      {p.text}
+    </div>
+  ) : (
+    <output data-testid={p.testId} className={`${NOTE_CLASS} text-tx`}>
+      {p.text}
+    </output>
+  )
+}
+
 /** ui-notes "Center": the compact Chat | Terminal segmented toggle of an agent session. */
 export function ViewToggle({ session }: AgentSessionToolbarProps) {
   const t = useT()
@@ -83,13 +99,9 @@ export function ViewToggle({ session }: AgentSessionToolbarProps) {
         })}
       </ToggleGroup>
       {state.alertKey ? (
-        <div
-          role="alert"
-          data-testid={T.alert}
-          className="absolute top-full right-0 z-50 mt-1 w-64 rounded-md border border-bd bg-el px-2.5 py-1.5 text-[12px] text-warn shadow-lg"
-        >
-          {t(state.alertKey)}
-        </div>
+        <InlineNote alert testId={T.alert} text={t(state.alertKey)} />
+      ) : state.noticeKey ? (
+        <InlineNote alert={false} testId={T.notice} text={t(state.noticeKey)} />
       ) : null}
     </div>
   )

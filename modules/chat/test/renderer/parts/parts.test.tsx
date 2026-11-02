@@ -96,19 +96,17 @@ describe('kit parts', () => {
     expect(rows.map((r) => r.getAttribute('data-status'))).toEqual(['done', 'active', 'pending'])
   })
 
-  it('ErrorRow translates unsupported reason', () => {
-    renderPart(ErrorRow, [
-      {
-        kind: 'error',
-        code: 'startup_unsupported',
-        message: 'chat:unsupported.noProtocol',
-        detail: 'stderr',
-        fatal: true,
-      },
-    ])
-    expect(screen.getByTestId(CHAT_TESTIDS.errorRow)).toHaveTextContent(
+  it.each([
+    [
+      'startup_unsupported',
+      'chat:unsupported.noProtocol',
       'Chat mode not supported: the CLI did not start the stream-json protocol in time',
-    )
+    ],
+    // 11c: a failed resume is not an "unsupported" verdict
+    ['unknown', 'chat:resume.failed', 'Could not continue the previous conversation'],
+  ] as const)('ErrorRow translates a %s reason key', (code, message, text) => {
+    renderPart(ErrorRow, [{ kind: 'error', code, message, detail: 'stderr', fatal: true }])
+    expect(screen.getByTestId(CHAT_TESTIDS.errorRow)).toHaveTextContent(text)
   })
 
   it('WorkingLine shows elapsed and only while working', () => {

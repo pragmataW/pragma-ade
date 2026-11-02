@@ -7,7 +7,14 @@ import {
 import type { ChatSupport, RetainedServer } from '@pragma/module-chat/contract'
 import type { Logger } from '@pragma/sdk'
 import type { MainContext } from '@pragma/sdk/main'
-import { CHAT_CAPABILITY, CHAT_SWITCH_KEY_PREFIX, RESUME_CAPABILITY, SWITCH_ERROR, switchErrorKey } from '../constants'
+import {
+  CHAT_CAPABILITY,
+  CHAT_SWITCH_KEY_PREFIX,
+  freshStartNoticeKey,
+  RESUME_CAPABILITY,
+  SWITCH_ERROR,
+  switchErrorKey,
+} from '../constants'
 import {
   type ChangedEvent,
   type ChatSwitchService,
@@ -21,7 +28,7 @@ import {
 import { type EligibilityInput, evaluateSwitch, NO_CHAT_CAPABILITY } from './eligibility'
 
 export interface SwitchServiceDeps {
-  agents: Pick<AgentSessionsService, 'getSession' | 'getProfile' | 'relaunchSession'>
+  agents: Pick<AgentSessionsService, 'getSession' | 'getProfile' | 'relaunchSession' | 'stopSession' | 'buildLaunchEnv'>
   providers: Pick<MainContext['providers'], 'capability'>
   guard: ExternalSessionGuard
   worktreePath(worktreeId: string): Promise<string | null>
@@ -106,6 +113,50 @@ export function createChatSwitchService(d: SwitchServiceDeps): SwitchServiceImpl
     await lease?.release()
   }
 
+  /** The provider's answer in the session's worktree with its launch env; true when it cannot tell. */
+  async function hasConversation(session: AgentSession, externalSessionId: string): Promise<boolean> {
+    const resume = d.providers.capability(session.providerId, RESUME_CAPABILITY)
+    if (!resume?.hasConversation) return true
+    const worktreePath = await d.worktreePath(session.worktreeId)
+    if (!worktreePath) return true
+    const env = await d.agents.buildLaunchEnv({ sessionId: session.id })
+    return resume.hasConversation({ externalSessionId, worktreePath, env }).catch((e: unknown) => {
+      d.log.warn(`chat-switch: conversation lookup of ${session.id} failed, resuming anyway`, e)
+      return true
+    })
+  }
+
+  /** Nothing to resume (e.g. no message was sent yet): a new session in the target view, same row and worktree. */
+  async function startFresh(sessionId: string, target: SwitchTarget): Promise<SwitchResult> {
+    d.log.info(`chat-switch: ${sessionId} has no conversation to resume, starting a new ${target} session`)
+    await releaseServe(sessionId)
+    d.guard.release(sessionId)
+    const s = await d.agents.relaunchSession(sessionId, { mode: target })
+    const noticeKey = freshStartNoticeKey(target)
+    d.publish({ sessionId, phase: SWITCH_PHASE.done, noticeKey })
+    return { ok: true, sessionId: s.id, noticeKey }
+  }
+
+  /** Stop → look up the conversation → relaunch the same row resuming it (or fresh when there is none). */
+  async function relaunch(
+    session: AgentSession,
+    profile: AgentProfile | null,
+    target: SwitchTarget,
+    externalSessionId: string,
+  ): Promise<SwitchResult> {
+    const sessionId = session.id
+    // the serve lease is taken while the chat still holds it (OpenCode `--server`)
+    const serverUrl =
+      target === SWITCH_TARGET.terminal ? await retainServe(session, profile, externalSessionId) : undefined
+    // the old process is fully gone before its conversation is looked up (03's relaunch then skips the stop)
+    await d.agents.stopSession(sessionId)
+    if (!(await hasConversation(session, externalSessionId))) return startFresh(sessionId, target)
+    const resume = { externalSessionId, ...(serverUrl ? { serverUrl } : {}) }
+    const s = await d.agents.relaunchSession(sessionId, { mode: target, resume })
+    d.publish({ sessionId, phase: SWITCH_PHASE.done })
+    return { ok: true, sessionId: s.id }
+  }
+
   async function run(sessionId: string, target: SwitchTarget): Promise<SwitchResult> {
     const loaded = await load(sessionId)
     const { session, profile } = loaded
@@ -117,12 +168,7 @@ export function createChatSwitchService(d: SwitchServiceDeps): SwitchServiceImpl
     if (!claim.ok) return { ok: false, errorKey: switchErrorKey(SWITCH_ERROR.busy) }
     d.publish({ sessionId, phase: SWITCH_PHASE.switching })
     try {
-      const serverUrl =
-        target === SWITCH_TARGET.terminal ? await retainServe(session, profile, externalSessionId) : undefined
-      const resume = { externalSessionId, ...(serverUrl ? { serverUrl } : {}) }
-      const s = await d.agents.relaunchSession(sessionId, { mode: target, resume })
-      d.publish({ sessionId, phase: SWITCH_PHASE.done })
-      return { ok: true, sessionId: s.id }
+      return await relaunch(session, profile, target, externalSessionId)
     } catch (e) {
       await releaseServe(sessionId).catch(() => undefined)
       d.guard.release(sessionId)

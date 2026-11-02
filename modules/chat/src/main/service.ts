@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  type ChatResumeFallbackListener,
   type ChatService,
   type ChatStartGuard,
   type ChatStartGuardInput,
@@ -29,6 +30,20 @@ export class StartGuards {
   }
 }
 
+/** Listeners of resumes that fell back to a fresh session (11c shows a notice). */
+export class ResumeFallbacks {
+  readonly #listeners = new Set<ChatResumeFallbackListener>()
+
+  subscribe(listener: ChatResumeFallbackListener): () => void {
+    this.#listeners.add(listener)
+    return () => this.#listeners.delete(listener)
+  }
+
+  readonly notify: ChatResumeFallbackListener = (e) => {
+    for (const listener of this.#listeners) listener(e)
+  }
+}
+
 /** Per-session composer additions kept in main until the composer takes them (survives unmounts and reloads). */
 export class ComposerInbox {
   readonly #entries = new Map<string, ComposerEntry[]>()
@@ -55,6 +70,7 @@ export function createChatService(deps: {
   registry: Pick<ChatSessionRegistry, 'snapshot'>
   inbox: ComposerInbox
   guards: StartGuards
+  fallbacks: ResumeFallbacks
   publishInboxChanged(sessionId: string): void
 }): ChatService {
   return {
@@ -64,5 +80,6 @@ export function createChatService(deps: {
     },
     getHistory: async (sessionId) => (await deps.registry.snapshot(sessionId)).transcript,
     registerStartGuard: (guard) => deps.guards.register(guard),
+    onResumeFallback: (listener) => deps.fallbacks.subscribe(listener),
   }
 }

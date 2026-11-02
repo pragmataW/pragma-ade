@@ -10,7 +10,7 @@ import type { ChatService, ChatStartGuardResult } from '@pragma/module-chat/cont
 import type { CommentsService } from '@pragma/module-comments/contract'
 import type { Disposable, Logger } from '@pragma/sdk'
 import type { MainContext, MainIpcApi } from '@pragma/sdk/main'
-import { SWITCH_REASON, switchReasonKey } from '../constants'
+import { freshStartNoticeKey, SWITCH_REASON, switchReasonKey } from '../constants'
 import {
   type ChatSwitchService,
   chatSwitchIpc,
@@ -25,8 +25,11 @@ import { createResumeDecorator } from './resume-decorator'
 import { createChatSwitchService } from './switch-service'
 
 export interface ChatSwitchMainDeps {
-  agents: Pick<AgentSessionsService, 'getSession' | 'getProfile' | 'relaunchSession' | 'registerLaunchDecorator'>
-  chat: Pick<ChatService, 'registerStartGuard' | 'appendToComposer'>
+  agents: Pick<
+    AgentSessionsService,
+    'getSession' | 'getProfile' | 'relaunchSession' | 'stopSession' | 'buildLaunchEnv' | 'registerLaunchDecorator'
+  >
+  chat: Pick<ChatService, 'registerStartGuard' | 'appendToComposer' | 'onResumeFallback'>
   comments: Pick<CommentsService, 'registerDeliveryTarget'>
   providers: Pick<MainContext['providers'], 'capability'>
   events: Pick<MainContext['events'], 'on'>
@@ -81,6 +84,14 @@ export function activateChatSwitch(d: ChatSwitchMainDeps): ChatSwitchMain {
       guard.claim({ providerId: s.providerId, externalSessionId: s.externalSessionId }, s.sessionId).ok
         ? ALLOWED
         : { ok: false, reasonKey: switchReasonKey(SWITCH_REASON.busy) },
+    ),
+    // the chat found nothing to resume and started fresh (e.g. a provider without `hasConversation`)
+    d.chat.onResumeFallback(({ sessionId }) =>
+      d.ipc.publish(chatSwitchIpcEvents.changed, {
+        sessionId,
+        phase: SWITCH_PHASE.idle,
+        noticeKey: freshStartNoticeKey(SWITCH_TARGET.chat),
+      }),
     ),
     d.events.on(agentSessionStatusChanged, (p) => {
       if (!p.externalSessionId || !isRunningStatus(p.status) || service.isSwitching(p.sessionId)) return

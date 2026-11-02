@@ -89,7 +89,7 @@ export interface RetainedServer {
 
 const STARTUP_ERROR_NAME = 'ChatStartupError'
 
-/** A session that could not start; `reasonKey` is a `chat:unsupported.*` key. */
+/** A session that could not start; `reasonKey` is a `chat:unsupported.*` or a `chat:resume.*` (`RESUME_REASON`) key. */
 export class ChatStartupError extends Error {
   readonly reasonKey: string
   readonly detail?: string

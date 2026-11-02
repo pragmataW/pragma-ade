@@ -9,10 +9,12 @@ import {
   type ChatEventEnvelope,
   type ChatOptionValue,
   type ChatPermissionDecision,
+  type ChatResumeFallbackListener,
   type ChatSessionHandle,
   type ChatSessionStatus,
   type ChatSettings,
   type ChatStartGuard,
+  type ChatStartupError,
   type ChatTranscript,
   type ChatUserInput,
   ERROR_CODE,
@@ -22,10 +24,12 @@ import {
   MESSAGE_ORIGIN,
   nextStatus,
   RESPOND_UNSUPPORTED_KEY,
+  RESUME_REASON,
   reduceEvents,
   reduceTranscript,
   SESSION_EXIT_REASON,
   TURN_END_REASON,
+  UNSUPPORTED_PREFIX,
   UNSUPPORTED_REASON,
   USER_ROLE,
   validateOptionValue,
@@ -45,6 +49,8 @@ export interface ControllerDeps {
   statusReporter: StatusReporter
   /** 11c: refuses a resume of an external session another app session owns. */
   startGuard?: ChatStartGuard
+  /** A resume found no conversation and a fresh session was started instead. */
+  onResumeFallback?: ChatResumeFallbackListener
   log: Pick<Logger, 'info' | 'warn'>
   now?: () => number
 }
@@ -177,25 +183,57 @@ export class ChatSessionController {
     const refused = this.#guardRefusal(req)
     if (refused) return this.#fatalStartup(ERROR_CODE.unknown, refused)
     try {
-      const env = await this.#d.agents.buildLaunchEnv({ sessionId: this.#d.sessionId, resume: req.resume })
-      const handle = await capability.createSession({
-        sessionId: this.#d.sessionId,
-        profile: req.profile,
-        worktreePath: req.worktree.path,
-        env,
-        resumeExternalSessionId: req.resume?.externalSessionId,
-        initialOptions: { ...this.#pendingOptions },
-        startupTimeoutMs: this.#d.settings().startupTimeoutMs,
-        emit: (e) => {
-          if (generation === this.#generation) this.#emit(e)
-        },
-      })
+      const handle = await this.#open(capability, req, generation, req.resume).catch((e: unknown) =>
+        this.#openFresh(capability, req, generation, e),
+      )
       await this.#ready(handle, req)
     } catch (e) {
-      if (isChatStartupError(e)) return this.#startupFailed(req.profile, e.reasonKey, e.detail)
+      if (isChatStartupError(e)) return this.#startupError(req.profile, e)
       this.#d.log.warn(`chat ${this.#d.sessionId}: startup failed`, e)
       this.#fatalStartup(ERROR_CODE.unknown, String(e))
     }
+  }
+
+  async #open(
+    capability: ChatCapability,
+    req: ModeStartRequest,
+    generation: number,
+    resume: ModeStartRequest['resume'],
+  ): Promise<ChatSessionHandle> {
+    const env = await this.#d.agents.buildLaunchEnv({ sessionId: this.#d.sessionId, resume })
+    return capability.createSession({
+      sessionId: this.#d.sessionId,
+      profile: req.profile,
+      worktreePath: req.worktree.path,
+      env,
+      resumeExternalSessionId: resume?.externalSessionId,
+      initialOptions: { ...this.#pendingOptions },
+      startupTimeoutMs: this.#d.settings().startupTimeoutMs,
+      emit: (e) => {
+        if (generation === this.#generation) this.#emit(e)
+      },
+    })
+  }
+
+  /** A resume of a conversation the agent has no record of starts a fresh session in the same worktree (once). */
+  async #openFresh(
+    capability: ChatCapability,
+    req: ModeStartRequest,
+    generation: number,
+    error: unknown,
+  ): Promise<ChatSessionHandle> {
+    const from = req.resume?.externalSessionId
+    if (!from || !isChatStartupError(error) || error.reasonKey !== RESUME_REASON.notFound) throw error
+    this.#d.log.info(`chat ${this.#d.sessionId}: nothing to resume for ${from} (${error.detail ?? ''}), starting fresh`)
+    const handle = await this.#open(capability, req, generation, undefined)
+    this.#d.onResumeFallback?.({ sessionId: this.#d.sessionId, externalSessionId: from })
+    return handle
+  }
+
+  /** `chat:unsupported.*` marks the profile unsupported; any other reason (a failed resume) only fails this start. */
+  #startupError(profile: AgentProfile, e: ChatStartupError): void {
+    if (e.reasonKey.startsWith(UNSUPPORTED_PREFIX)) this.#startupFailed(profile, e.reasonKey, e.detail)
+    else this.#fatalStartup(ERROR_CODE.unknown, e.reasonKey, e.detail)
   }
 
   async #ready(handle: ChatSessionHandle, req: ModeStartRequest): Promise<void> {

@@ -1,5 +1,5 @@
 import { SESSION_STATUS } from '@pragma/module-agents/contract'
-import { CHAT_SWITCH_MODULE_ID } from './contract'
+import { CHAT_SWITCH_MODULE_ID, type SwitchTarget } from './contract'
 
 /** Module-internal constants of chat-switch (§9.2). */
 export const SESSION_STATUS_STARTING = SESSION_STATUS.starting
@@ -25,6 +25,8 @@ export const SWITCH_ERROR = Object.fromEntries(SWITCH_ERROR_LIST.map((e) => [e, 
   readonly [K in (typeof SWITCH_ERROR_LIST)[number]]: K
 }
 export const switchErrorKey = (error: keyof typeof SWITCH_ERROR): string => `${CHAT_SWITCH_MODULE_ID}:error.${error}`
+/** Nothing to resume: a fresh session was started in the target view. */
+export const freshStartNoticeKey = (target: SwitchTarget): string => `${CHAT_SWITCH_MODULE_ID}:notice.fresh.${target}`
 
 export const RESUME_CAPABILITY = 'resume'
 export const RESUME_DECORATOR_ID = 'chat-switch.resume'

@@ -1,7 +1,7 @@
 import { agentSessionStatusChanged } from '@pragma/module-agent-status/contract'
 import { agentSessionExited, agentSessionUpdated } from '@pragma/module-agents/contract'
 import { describe, expect, it } from 'vitest'
-import { chatSwitchIpc } from '../src/contract'
+import { chatSwitchIpc, chatSwitchIpcEvents } from '../src/contract'
 import { activateChatSwitch } from '../src/main/activate'
 import {
   CLAUDE,
@@ -48,6 +48,14 @@ describe('chat-switch main wiring', () => {
     const s = setup()
     expect(s.agents.decorators.map((d) => d.id)).toEqual(['chat-switch.resume'])
     expect([...s.ipc.handlers.keys()]).toEqual([chatSwitchIpc.eligibility.channel, chatSwitchIpc.switch.channel])
+  })
+
+  it('a chat resume that fell back to a fresh session publishes the notice for that session', () => {
+    const s = setup()
+    for (const l of s.chat.fallbacks) l({ sessionId: SESSION_ID, externalSessionId: EXTERNAL_ID })
+    expect(s.published(chatSwitchIpcEvents.changed.channel)).toEqual([
+      { sessionId: SESSION_ID, phase: 'idle', noticeKey: 'chat-switch:notice.fresh.chat' },
+    ])
   })
 
   it('exited during a switch does not release', async () => {

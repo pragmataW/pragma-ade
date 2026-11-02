@@ -5,7 +5,7 @@ import type { ChatAgentsApi } from './agents-adapter'
 import { createFileSearch } from './file-search'
 import { registerChatIpc } from './ipc-handlers'
 import { ChatSessionRegistry } from './registry'
-import { ComposerInbox, createChatService, StartGuards } from './service'
+import { ComposerInbox, createChatService, ResumeFallbacks, StartGuards } from './service'
 import { createStatusReporter } from './status-reporter'
 import { SupportCache } from './support-cache'
 import { checkChatSupport } from './support-check'
@@ -30,6 +30,7 @@ export function activateChat(d: ChatMainDeps): ChatMain {
   const supportCache = new SupportCache()
   const inbox = new ComposerInbox()
   const guards = new StartGuards()
+  const fallbacks = new ResumeFallbacks()
   const resolveCapability = (p: { providerId: string }) => d.capability(p.providerId)
   const registry = new ChatSessionRegistry({
     agents: d.agents,
@@ -39,6 +40,7 @@ export function activateChat(d: ChatMainDeps): ChatMain {
     supportCache,
     statusReporter: createStatusReporter(d.agents),
     startGuard: (s) => guards.check(s),
+    onResumeFallback: fallbacks.notify,
     log: d.log,
   })
   const disposeMode = d.agents.registerModeHandler(CHAT_MODE, {
@@ -60,6 +62,7 @@ export function activateChat(d: ChatMainDeps): ChatMain {
     registry,
     inbox,
     guards,
+    fallbacks,
     publishInboxChanged: (sessionId) => d.ipc.publish(chatIpcEvents.composerInboxChanged, { sessionId }),
   })
   d.provideService(service)

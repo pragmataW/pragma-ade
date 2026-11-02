@@ -1,6 +1,6 @@
 import { AgentsError } from '@pragma/module-agents/contract'
 import { describe, expect, it, vi } from 'vitest'
-import type { ChangedEvent } from '../src/contract'
+import type { ChangedEvent, ResumeCapability } from '../src/contract'
 import { createExternalSessionGuard } from '../src/main/external-session-guard'
 import { createChatSwitchService } from '../src/main/switch-service'
 import {
@@ -11,6 +11,7 @@ import {
   type FakeCaps,
   fakeAgents,
   fakeProviders,
+  LAUNCH_ENV,
   makeSession,
   OTHER_SESSION_ID,
   SERVE_URL,
@@ -37,12 +38,24 @@ function setup(o: { session?: Parameters<typeof makeSession>[0]; caps?: FakeCaps
   return { agents, guard, events, service, phases: () => events.map((e) => e.phase) }
 }
 
+/** Claude whose `hasConversation` answers `found` (after recording its call order). */
+function withConversation(found: boolean | Error) {
+  const hasConversation = vi.fn(async () => {
+    if (found instanceof Error) throw found
+    return found
+  })
+  const s = setup({
+    caps: { resume: { [CLAUDE]: { ...claudeResume(), hasConversation } }, chat: { [CLAUDE]: chatOk() } },
+  })
+  return { ...s, hasConversation }
+}
+
 /** OpenCode with a chat capability whose `retainServer` returns a lease on `SERVE_URL`. */
-function withRetain() {
+function withRetain(hasConversation?: ResumeCapability['hasConversation']) {
   const release = vi.fn(async () => undefined)
   const retainServer = vi.fn(async () => ({ url: SERVE_URL, release }))
   const caps: FakeCaps = {
-    resume: { opencode: claudeResume() },
+    resume: { opencode: { ...claudeResume(), ...(hasConversation ? { hasConversation } : {}) } },
     chat: { opencode: { ...chatOk(), retainServer } },
   }
   const s = setup({
@@ -170,6 +183,47 @@ describe('ChatSwitchService', () => {
     expect(await s.service.eligibility(SESSION_ID)).toEqual({
       terminal: { ok: false, reasonKey: 'chat-switch:reason.currentMode' },
       chat: { ok: false, reasonKey: 'chat-switch:reason.noChat' },
+    })
+  })
+
+  describe('nothing to resume (hasConversation)', () => {
+    it.each(['terminal', 'chat'] as const)('→ %s: relaunches without resume and returns the notice', async (target) => {
+      const s = withConversation(false)
+      const from = target === 'chat' ? 'terminal' : 'chat'
+      s.agents.rows.set(SESSION_ID, makeSession({ mode: from }))
+      const r = await s.service.switchTo(SESSION_ID, target)
+      const noticeKey = `chat-switch:notice.fresh.${target}`
+      expect(r).toEqual({ ok: true, sessionId: SESSION_ID, noticeKey })
+      expect(s.agents.relaunches).toEqual([{ id: SESSION_ID, opts: { mode: target } }])
+      expect(s.events.at(-1)).toEqual({ sessionId: SESSION_ID, phase: 'done', noticeKey })
+      expect(s.guard.ownerOf({ providerId: CLAUDE, externalSessionId: EXTERNAL_ID })).toBeUndefined()
+    })
+
+    it('asks after the old process stopped, in the worktree with the launch env', async () => {
+      const s = withConversation(true)
+      await s.service.switchTo(SESSION_ID, 'terminal')
+      const stopped = s.agents.stopSession.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY
+      expect(stopped).toBeLessThan(s.hasConversation.mock.invocationCallOrder[0] ?? 0)
+      expect(s.agents.stops).toEqual([SESSION_ID])
+      expect(s.hasConversation).toHaveBeenCalledWith({
+        externalSessionId: EXTERNAL_ID,
+        worktreePath: '/w',
+        env: LAUNCH_ENV,
+      })
+      expect(s.agents.relaunches[0]?.opts).toEqual({ mode: 'terminal', resume: { externalSessionId: EXTERNAL_ID } })
+    })
+
+    it('a failing lookup resumes anyway', async () => {
+      const s = withConversation(new Error('EACCES'))
+      expect(await s.service.switchTo(SESSION_ID, 'terminal')).toEqual({ ok: true, sessionId: SESSION_ID })
+      expect(s.agents.relaunches[0]?.opts.resume).toEqual({ externalSessionId: EXTERNAL_ID })
+    })
+
+    it('a retained serve lease is released when nothing is resumed', async () => {
+      const s = withRetain(vi.fn(async () => false))
+      await s.service.switchTo(SESSION_ID, 'terminal')
+      expect(s.release).toHaveBeenCalledTimes(1)
+      expect(s.agents.relaunches[0]?.opts).toEqual({ mode: 'terminal' })
     })
   })
 })

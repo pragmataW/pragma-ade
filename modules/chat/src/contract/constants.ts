@@ -136,4 +136,12 @@ export const UNSUPPORTED_REASON = {
   profileDisabled: 'chat:unsupported.profileDisabled',
 } as const
 export const UNSUPPORTED_PREFIX = 'chat:unsupported.'
+/**
+ * Startup reason keys (`chat:resume.*`) of a resume that failed. They are not an "unsupported" verdict (the support
+ * cache is left alone); `notFound` (the agent has no record of the conversation) makes the core start a fresh session.
+ */
+export const RESUME_REASON = {
+  notFound: 'chat:resume.notFound',
+  failed: 'chat:resume.failed',
+} as const
 export const RESPOND_UNSUPPORTED_KEY = 'chat:errors.respondUnsupported'

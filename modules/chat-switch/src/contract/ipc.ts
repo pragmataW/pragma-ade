@@ -32,6 +32,8 @@ export const changedEventSchema = z.object({
   sessionId: z.string(),
   phase: switchPhaseSchema,
   errorKey: z.string().optional(),
+  /** An info notice for the session (e.g. nothing to resume, a fresh session was started). */
+  noticeKey: z.string().optional(),
 })
 export type ChangedEvent = z.infer<typeof changedEventSchema>
 

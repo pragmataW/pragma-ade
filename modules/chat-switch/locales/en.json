@@ -37,5 +37,11 @@
       "body": "A turn is in progress. Switching will interrupt it.",
       "action": "Continue in terminal"
     }
+  },
+  "notice": {
+    "fresh": {
+      "chat": "No previous conversation to continue — started a new chat.",
+      "terminal": "No previous conversation to continue — started a new terminal session."
+    }
   }
 }
