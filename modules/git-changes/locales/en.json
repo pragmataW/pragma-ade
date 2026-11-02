@@ -64,7 +64,7 @@
   "diff": {
     "prevChange": "Previous change (Shift+N)",
     "nextChange": "Next change (N)",
-    "openInEditor": "Open in editor",
+    "openInEditor": "Open diff in editor",
     "newFile": "New file",
     "deletedFile": "Deleted file",
     "loading": "Loading diff…",

@@ -6,6 +6,7 @@ import {
   type EditorStatus,
   editorErrorI18nKey,
   normalizeFolderKey,
+  type OpenDiffArgs,
   type OpenFileArgs,
   type OpenFileResult,
   type ThemeMode,
@@ -21,7 +22,7 @@ export type { ServerController }
 export interface EditorServiceDeps {
   server: ServerController
   views: Pick<ViewManager, 'show'>
-  bridge: Pick<EditorBridge, 'openFile' | 'pushTheme'>
+  bridge: Pick<EditorBridge, 'openFile' | 'openDiff' | 'pushTheme'>
   up: Pick<EditorUpstream, 'getWorktree' | 'getActiveWorktreeId' | 'selectWorktree'>
   settings: () => EditorSettings
   /** `ctx.ipc.publish(revealRequested)`; the renderer activates the Files tab. */
@@ -49,9 +50,31 @@ export class EditorServiceImpl implements EditorService {
   }
 
   /** Starts the server if needed, selects the worktree, shows its view, reveals the Files tab, opens the file. */
-  async openFile(args: OpenFileArgs): Promise<OpenFileResult> {
+  openFile(args: OpenFileArgs): Promise<OpenFileResult> {
+    return this.#reveal(args.worktreeId, `editor.openFile ${args.path}`, (folderKey) =>
+      this.#d.bridge.openFile(folderKey, {
+        path: args.path,
+        ...(args.line ? { line: args.line } : {}),
+        ...(args.column ? { column: args.column } : {}),
+      }),
+    )
+  }
+
+  /** Like `openFile`, but the workbench opens the file's git diff. */
+  openDiff(args: OpenDiffArgs): Promise<OpenFileResult> {
+    return this.#reveal(args.worktreeId, `editor.openDiff ${args.path}`, (folderKey) =>
+      this.#d.bridge.openDiff(folderKey, {
+        path: args.path,
+        ...(args.oldPath ? { oldPath: args.oldPath } : {}),
+        ...(args.refs ? { refs: args.refs } : {}),
+        ...(args.line ? { line: args.line } : {}),
+      }),
+    )
+  }
+
+  async #reveal(worktreeId: string, what: string, send: (folderKey: string) => Promise<void>): Promise<OpenFileResult> {
     const d = this.#d
-    const wt = await d.up.getWorktree(args.worktreeId)
+    const wt = await d.up.getWorktree(worktreeId)
     if (!wt) return { ok: false, errorKey: NOT_FOUND }
     try {
       const status = await d.server.ensureRunning()
@@ -60,14 +83,10 @@ export class EditorServiceImpl implements EditorService {
       if (d.up.getActiveWorktreeId() !== wt.id) await d.up.selectWorktree(wt.id)
       d.views.show(wt)
       d.publishReveal(wt.id)
-      await d.bridge.openFile(normalizeFolderKey(wt.path), {
-        path: args.path,
-        ...(args.line ? { line: args.line } : {}),
-        ...(args.column ? { column: args.column } : {}),
-      })
+      await send(normalizeFolderKey(wt.path))
       return { ok: true }
     } catch (error) {
-      d.log?.(`editor.openFile ${args.path} failed`, error)
+      d.log?.(`${what} failed`, error)
       return { ok: false, errorKey: OPEN_FAILED }
     }
   }

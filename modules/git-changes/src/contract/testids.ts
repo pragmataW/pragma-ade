@@ -12,6 +12,9 @@ export const GitChangesTestIds = {
   toggleFull: 'gc-toggle-full',
   tree: 'gc-tree',
   treeRow: 'gc-tree-row',
+  /** Right-click menu of a file row. */
+  rowMenu: 'gc-row-menu',
+  rowMenuOpenInEditor: 'gc-row-menu-open-in-editor',
   empty: 'gc-empty',
   diff: 'gc-diff',
   diffHeader: 'gc-diff-header',
