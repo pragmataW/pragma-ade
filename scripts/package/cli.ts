@@ -11,10 +11,14 @@ import {
   JSON_INDENT,
   NODE_MODULES,
   NPM,
+  PARENT_SEGMENT,
   TOOL_DEP_MARKER,
 } from './constants.ts'
 import { doctor } from './lib/doctor.ts'
 import { run } from './lib/exec.ts'
+import { auditTargets, type BuildOptions, buildTargets } from './lib/pipeline.ts'
+import { exitCodeFor } from './lib/report.ts'
+import { runSmoke } from './lib/smoke.ts'
 import { isTargetSpec, parseTargets, TARGET_IDS, type TargetId } from './lib/targets.ts'
 
 export type Command = (typeof COMMANDS)[number]
@@ -31,7 +35,7 @@ export interface CliArgs {
 }
 
 const TOOL_DIR = import.meta.dirname
-const DEFAULT_REPO = resolve(TOOL_DIR, '..', '..')
+const DEFAULT_REPO = resolve(TOOL_DIR, PARENT_SEGMENT, PARENT_SEGMENT)
 const isCommand = (s: string): s is Command => (COMMANDS as readonly string[]).includes(s)
 
 /** `<command> [targets…] [flags]`; a leading target spec means `build` (root `package:*` scripts pass only targets). */
@@ -83,9 +87,25 @@ function formatDoctor(r: Awaited<ReturnType<typeof doctor>>): string {
     ['docker daemon', r.docker.serverVersion ?? 'not running'],
     ['wine', r.wine ?? 'not installed (not needed)'],
     ['free disk GB', r.freeDiskGb.toFixed(1)],
-    ['ok', r.ok],
+    ['ok?', r.ok],
   ]
   return rows.map(([k, v]) => `${k.padEnd(DOCTOR_LABEL_WIDTH)}${v}`).join('\n')
+}
+
+const buildOptions = (a: CliArgs): BuildOptions => ({
+  repoRoot: a.repo,
+  targets: a.targets,
+  skipAppBuild: a.skipAppBuild,
+  dockerAutoStart: a.dockerAutoStart,
+  keepStage: a.keepStage,
+  deep: a.deep,
+})
+
+/** `smoke` judges the targets in the manifest; `all` judges every requested target. */
+async function smokeCommand(args: CliArgs): Promise<number> {
+  const m = await runSmoke(args.repo)
+  const built = TARGET_IDS.filter((id) => m.targets[id] !== undefined)
+  return exitCodeFor(m, args.command === CMD.all ? args.targets : built)
 }
 
 async function dispatch(args: CliArgs): Promise<number> {
@@ -93,10 +113,15 @@ async function dispatch(args: CliArgs): Promise<number> {
     case CMD.doctor:
       return doctorCommand(args)
     case CMD.build:
+      return exitCodeFor(await buildTargets(buildOptions(args)), args.targets)
     case CMD.audit:
+      return exitCodeFor(await auditTargets(args.repo, args.targets, args.deep), args.targets)
     case CMD.smoke:
-    case CMD.all:
-      throw new Error(`command ${args.command} is not implemented yet`)
+      return smokeCommand(args)
+    case CMD.all: {
+      await buildTargets(buildOptions(args))
+      return smokeCommand(args)
+    }
     default: {
       const never: never = args.command
       throw new Error(`unknown command ${String(never)}`)
