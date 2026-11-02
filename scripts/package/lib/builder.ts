@@ -8,6 +8,7 @@ import {
   BUILDER_SCRATCH_FILES,
   CSC_DISCOVERY_ENV,
   ICON_FIELD,
+  LEGAL_FILES,
   NATIVE_EXT,
   NODE_MODULES,
   TRANSIENT_NETWORK_ERROR,
@@ -53,6 +54,11 @@ function absoluteIcons(config: BuilderConfig, repoRoot: string): BuilderConfig {
   return out
 }
 
+/** LICENSE and THIRD_PARTY_NOTICES.md from the repo root, copied next to the app's resources. */
+function legalFiles(repoRoot: string): { from: string; to: string }[] {
+  return LEGAL_FILES.map((name) => ({ from: join(repoRoot, name), to: name })).filter((f) => existsSync(f.from))
+}
+
 /** The base config plus the per-target fields only the tool knows. */
 export function computeConfig(base: BuilderConfig, ctx: BuilderContext): BuilderConfig {
   const config: BuilderConfig = {
@@ -65,7 +71,11 @@ export function computeConfig(base: BuilderConfig, ctx: BuilderContext): Builder
     electronVersion: ctx.electronVersion,
     asarUnpack: [`**/*${NATIVE_EXT}`, ...ctx.nativePackageNames.map((n) => `${NODE_MODULES}/${n}/**`)],
   }
-  if (hasEntries(ctx.resourcesDir)) config.extraResources = [{ from: ctx.resourcesDir, to: '.', filter: ['**/*'] }]
+  const extraResources = [
+    ...(hasEntries(ctx.resourcesDir) ? [{ from: ctx.resourcesDir, to: '.', filter: ['**/*'] }] : []),
+    ...legalFiles(ctx.repoRoot),
+  ]
+  if (extraResources.length > 0) config.extraResources = extraResources
   return config
 }
 

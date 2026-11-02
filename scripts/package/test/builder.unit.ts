@@ -28,7 +28,9 @@ describe('computeConfig', () => {
       buildResources: join(REPO, 'build'),
     })
     expect(c.electronVersion).toBe('45.2.1')
-    expect((c.mac as { icon: string }).icon).toBe(join(REPO, 'build/icon.png'))
+    expect((c.mac as { icon: string }).icon).toBe(join(REPO, 'build/icon.icns'))
+    expect((c.win as { icon: string }).icon).toBe(join(REPO, 'build/icon.ico'))
+    expect((c.linux as { icon: string }).icon).toBe(join(REPO, 'build/icons'))
   })
   it('asarUnpack lists native packages', () =>
     expect(computeConfig(base, ctx(empty)).asarUnpack).toEqual([
@@ -36,12 +38,19 @@ describe('computeConfig', () => {
       'node_modules/better-sqlite3/**',
       'node_modules/@parcel/watcher/**',
     ]))
-  it('extraResources only when the resources dir has content', () => {
-    expect(computeConfig(base, ctx(empty)).extraResources).toBeUndefined()
+  it('extraResources: the resources dir when it has content, then the legal files', () => {
+    const legal = [
+      { from: join(REPO, 'LICENSE'), to: 'LICENSE' },
+      { from: join(REPO, 'THIRD_PARTY_NOTICES.md'), to: 'THIRD_PARTY_NOTICES.md' },
+    ]
+    expect(computeConfig(base, ctx(empty)).extraResources).toEqual(legal)
     expect(computeConfig(base, ctx(withResources)).extraResources).toEqual([
       { from: withResources, to: '.', filter: ['**/*'] },
+      ...legal,
     ])
   })
+  it('no extraResources without resources or legal files', () =>
+    expect(computeConfig(base, { ...ctx(empty), repoRoot: empty }).extraResources).toBeUndefined())
   it('base keys survive', () => {
     const c = computeConfig(base, ctx(empty))
     expect(c.appId).toBe('dev.pragma.ade')

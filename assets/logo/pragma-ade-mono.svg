@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Pragma ADE (monochrome)</title>
+  <!-- Single-colour variant: the tile in currentColor (black by default) with the mark cut out. -->
+  <defs>
+    <mask id="pragma-ade-cutout">
+      <rect width="1024" height="1024" fill="#FFFFFF"/>
+      <g fill="#000000">
+        <path fill-rule="evenodd" d="M292 272H399.62L732.64 430L392 591.62V752H292Z M392 379.06L499.36 430L392 480.94Z"/>
+        <rect x="466" y="680" width="170" height="72"/>
+      </g>
+    </mask>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="184" fill="currentColor" mask="url(#pragma-ade-cutout)"/>
+</svg>

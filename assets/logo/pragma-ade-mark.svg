@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="272 252 480 520" width="480" height="520">
+  <title>Pragma ADE mark</title>
+  <!-- The mark alone, navy on transparent (use on light backgrounds; set fill to #FFFFFF on dark ones). -->
+  <g fill="#1B2A4A">
+    <path fill-rule="evenodd" d="M292 272H399.62L732.64 430L392 591.62V752H292Z M392 379.06L499.36 430L392 480.94Z"/>
+    <rect x="466" y="680" width="170" height="72"/>
+  </g>
+</svg>

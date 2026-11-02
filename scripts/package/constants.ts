@@ -169,19 +169,17 @@ export const DOCKER_WORK_DIR = '/work'
 export const GLIBC_BASELINE_MINOR = 31
 export const LIST_SEP = ', '
 
-// --- electron-builder and icon ---
+// --- electron-builder, icons (scripts/make-icons.sh) and legal files ---
 export const BUILDER_CONFIG_FILE = 'electron-builder.yml'
 export const BUILD_RESOURCES_DIR = 'build'
-export const ICON_SVG = 'build/icon.svg'
-export const ICON_PNG = 'build/icon.png'
-export const ICON_SIZE_PX = 1024
-export const ICON_RENDER_TIMEOUT_MS = 60_000
 export const DESKTOP_DIR = 'apps/desktop'
 export const ELECTRON_PACKAGE = 'electron'
 export const CSC_DISCOVERY_ENV = 'CSC_IDENTITY_AUTO_DISCOVERY'
 export const ELECTRON_RUN_AS_NODE_ENV = 'ELECTRON_RUN_AS_NODE'
 export const ICON_FIELD = 'icon'
 export const BUILDER_PLATFORM_KEYS = ['mac', 'linux', 'win'] as const
+/** Shipped next to the app (Resources/ on macOS, resources/ elsewhere) when present in the repo root. */
+export const LEGAL_FILES = ['LICENSE', 'THIRD_PARTY_NOTICES.md'] as const
 /** electron-builder leaves these next to the artifacts; Biome would lint the unpacked apps' JS (RECON.md). */
 export const BUILDER_SCRATCH_FILES = ['builder-debug.yml', 'builder-effective-config.yaml'] as const
 export const MIN_ARTIFACT_BYTES = 10_000_000
@@ -280,5 +278,5 @@ export const SKIP_ANNOTATION = 'skip'
 /** dist/ is gitignored but Biome has no VCS ignore: a nested config keeps Biome out of the outputs (RECON.md). */
 export const DIST_BIOME_FILE = 'biome.json'
 export const DIST_BIOME_CONFIG = '{ "root": false, "files": { "includes": ["!**"] } }\n'
-/** Required by electron-builder for Linux packages (deb/AppImage metadata); there is no public homepage yet. */
-export const APP_HOMEPAGE = 'https://pragma-ade.localhost'
+/** Required by electron-builder for Linux packages (deb/AppImage metadata). */
+export const APP_HOMEPAGE = 'https://github.com/pragmataW/pragma-ade'

@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { palettes } from '@pragma/ui/tokens'
 import { BrowserWindow } from 'electron'
 import { DARWIN, PRELOAD_FILE, RENDERER_FILE, RENDERER_URL_ENV, TRAFFIC_LIGHT_POSITION, WINDOW } from '../constants'
+import appIcon from './assets/icon.png?asset'
 
 const READY_TO_SHOW = 'ready-to-show'
 const WILL_NAVIGATE = 'will-navigate'
@@ -23,7 +24,10 @@ export function createMainWindow(opts: { title: string; hidden?: boolean }): Bro
     title: opts.title,
     show: false,
     backgroundColor: palettes.vscode.dark.bg,
-    ...(isMac ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: TRAFFIC_LIGHT_POSITION } : {}),
+    // macOS takes the Dock icon from the app bundle; Linux and Windows use the window icon.
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: TRAFFIC_LIGHT_POSITION }
+      : { icon: appIcon }),
     webPreferences: {
       preload: join(import.meta.dirname, PRELOAD_FILE),
       contextIsolation: true,
