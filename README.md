@@ -80,7 +80,7 @@ brew install --cask pragmataW/tap/pragma-ade
 
 The cask picks the arm64 or x64 build and clears the quarantine flag after install.
 
-Manual install: download [`pragma-ade-0.9.0-mac-arm64.dmg`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.0/pragma-ade-0.9.0-mac-arm64.dmg) (Apple silicon) or [`pragma-ade-0.9.0-mac-x64.dmg`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.0/pragma-ade-0.9.0-mac-x64.dmg) (Intel),
+Manual install: download [`pragma-ade-0.9.1-mac-arm64.dmg`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.1/pragma-ade-0.9.1-mac-arm64.dmg) (Apple silicon) or [`pragma-ade-0.9.1-mac-x64.dmg`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.1/pragma-ade-0.9.1-mac-x64.dmg) (Intel),
 open it and drag **Pragma ADE** to **Applications** (the `.zip` builds contain the same app). Because the app is
 unsigned, macOS blocks the first launch. Either:
 
@@ -96,22 +96,22 @@ If macOS says the app "is damaged and can't be opened", that is the quarantine f
 
 ### Linux (x64)
 
-Both packages are attached to the [v0.9.0 release](https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.0).
+Both packages are attached to the [v0.9.1 release](https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.1).
 
 Debian, Ubuntu and derivatives — download and install the `.deb` (adds a menu entry and the `pragma-ade` command):
 
 ```sh
-curl -LO https://github.com/pragmataW/pragma-ade/releases/download/v0.9.0/pragma-ade-0.9.0-linux-amd64.deb
-sudo apt install ./pragma-ade-0.9.0-linux-amd64.deb
-# or: sudo dpkg -i pragma-ade-0.9.0-linux-amd64.deb && sudo apt-get install -f
+curl -LO https://github.com/pragmataW/pragma-ade/releases/download/v0.9.1/pragma-ade-0.9.1-linux-amd64.deb
+sudo apt install ./pragma-ade-0.9.1-linux-amd64.deb
+# or: sudo dpkg -i pragma-ade-0.9.1-linux-amd64.deb && sudo apt-get install -f
 ```
 
 Any distribution — download and run the AppImage:
 
 ```sh
-curl -LO https://github.com/pragmataW/pragma-ade/releases/download/v0.9.0/pragma-ade-0.9.0-linux-x86_64.AppImage
-chmod +x pragma-ade-0.9.0-linux-x86_64.AppImage
-./pragma-ade-0.9.0-linux-x86_64.AppImage
+curl -LO https://github.com/pragmataW/pragma-ade/releases/download/v0.9.1/pragma-ade-0.9.1-linux-x86_64.AppImage
+chmod +x pragma-ade-0.9.1-linux-x86_64.AppImage
+./pragma-ade-0.9.1-linux-x86_64.AppImage
 ```
 
 AppImages need FUSE 2 (`libfuse2`, called `libfuse2t64` on Ubuntu 24.04). On Ubuntu 24.04 and later, AppArmor blocks
@@ -119,7 +119,7 @@ the Chromium sandbox of AppImages; prefer the `.deb` there.
 
 ### Windows (x64)
 
-Download [`pragma-ade-0.9.0-win-x64-setup.exe`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.0/pragma-ade-0.9.0-win-x64-setup.exe) and run it, or unzip [`pragma-ade-0.9.0-win-x64.zip`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.0/pragma-ade-0.9.0-win-x64.zip) anywhere and start
+Download [`pragma-ade-0.9.1-win-x64-setup.exe`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.1/pragma-ade-0.9.1-win-x64-setup.exe) and run it, or unzip [`pragma-ade-0.9.1-win-x64.zip`](https://github.com/pragmataW/pragma-ade/releases/download/v0.9.1/pragma-ade-0.9.1-win-x64.zip) anywhere and start
 `Pragma ADE.exe`. The builds are unsigned, so SmartScreen shows "Windows protected your PC": click **More info ›
 Run anyway**. Windows builds are less tested than macOS ones.
 
