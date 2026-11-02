@@ -7,10 +7,10 @@ routes the chat adapter uses (`/api/info`, `/api/model[/default]`, `/api/agent`,
 - **Ready / lease:** `--stdio` prints one line `{"url":"http://127.0.0.1:<port>"}` and exits 0 when stdin closes.
 - **Auth:** `OPENCODE_SERVER_PASSWORD` (or `OPENCODE_PASSWORD`), `Authorization: Basic base64("opencode:<pw>")`,
   else 401.
-- **Env:** `FAKE_OPENCODE_SCENARIO` (JSON), `FAKE_OPENCODE_LOG` (JSONL: `start`, `request`, `form-cancel`; the
+- **Env:** `FAKE_OPENCODE_SCENARIO` (JSON), `FAKE_OPENCODE_LOG` (JSONL: `start`, `ready` (url), `request`, `form-cancel`; `/__test/*` routes need no auth; the
   `authorization` header is never logged), `FAKE_OPENCODE_LOG_ENV` (comma-separated names recorded in `start.env`),
   `FAKE_OPENCODE_STATE_DIR` (sessions + messages survive restarts), `FAKE_OPENCODE_TEST_ROUTES=1`
-  (`POST /__test/drop-sse`), `FAKE_OPENCODE_MODE`: `normal`, `no-ready`, `exit-early` (stderr `boom`, exit 3),
+  (`POST /__test/drop-sse[?holdMs=n]`: drops every SSE stream and refuses new ones for `n` ms), `FAKE_OPENCODE_MODE`: `normal`, `no-ready`, `exit-early` (stderr `boom`, exit 3),
   `legacy-1x` (1.x ready line, only `/global/health`, `--version` → `1.1.36`), `version:<v>`, `die-after-ms:<n>`,
   `ignore-lease` (ignores stdin end and SIGTERM).
 - **Scenarios** (`scenarios/*.json`): `{version, models, defaultModel, agents, commands, turns}`; a turn is

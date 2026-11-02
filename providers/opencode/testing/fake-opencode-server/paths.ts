@@ -40,7 +40,11 @@ export interface FakeFormCancelRecord {
   formId: string
   message: string | null
 }
-export type FakeLogRecord = FakeStartRecord | FakeRequestRecord | FakeFormCancelRecord
+export interface FakeReadyRecord {
+  kind: 'ready'
+  url: string
+}
+export type FakeLogRecord = FakeStartRecord | FakeReadyRecord | FakeRequestRecord | FakeFormCancelRecord
 
 /** The fake's JSONL log (empty when the file does not exist yet). */
 export function parseLog(text: string): FakeLogRecord[] {

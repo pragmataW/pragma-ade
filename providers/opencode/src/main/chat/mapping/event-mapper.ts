@@ -142,7 +142,7 @@ export class EventMapper {
     return [...this.#forms]
   }
 
-  /** The user stopped the turn: a later `execution.failed` ends it as interrupted. */
+  /** The user stopped the turn: whatever ends it next (`succeeded`/`failed`) ends it as interrupted. */
   markInterrupted(): void {
     this.#interrupted = true
   }
@@ -211,7 +211,7 @@ export class EventMapper {
       case EV.usageUpdated:
         return [usageEvent(e.data, this.#lastStep, this.#contextWindow)]
       case EV.executionSucceeded:
-        return this.#end(this.#stepFailed ? TURN_END_REASON.error : TURN_END_REASON.completed)
+        return this.#end(this.#succeededReason())
       case EV.executionFailed:
         return this.#failed(e.data.error)
       case EV.executionInterrupted:
@@ -286,6 +286,11 @@ export class EventMapper {
     const { id, title, fields } = e.data.form
     this.#forms.add(id)
     return { kind: K.custom, type: CUSTOM.form, data: { formId: id, title, fields }, eventId: id, awaitsResponse: true }
+  }
+
+  #succeededReason() {
+    if (this.#interrupted) return TURN_END_REASON.interrupted
+    return this.#stepFailed ? TURN_END_REASON.error : TURN_END_REASON.completed
   }
 
   #resolved(pending: Set<string>, id: string, event: () => ChatEvent): ChatEvent[] {

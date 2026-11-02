@@ -30,9 +30,11 @@ const NO_CONTENT = 204
 const BAD_REQUEST = 400
 const UNAUTHORIZED = 401
 const NOT_FOUND = 404
+const UNAVAILABLE = 503
 const SESSION_ROUTE = /^\/api\/session\/([^/]+)(?:\/(.*))?$/
 const REPLY_ROUTE = /^(permission|form)\/([^/]+)\/reply$/
 const FORM_ROUTE = /^form\/([^/]+)$/
+const TEST_ROUTE_PREFIX = '/__test/'
 const ATTACHMENT_URI = /^(file:\/\/\/|data:)/
 
 // ── process plumbing ──────────────────────────────────────────────────────
@@ -88,6 +90,7 @@ function serve(scenario, argv, flags) {
   app.server.listen(port, flagValue(flags, '--hostname') ?? '127.0.0.1', () => {
     const url = `http://127.0.0.1:${app.server.address().port}`
     app.url = url
+    log({ kind: 'ready', url })
     announce({ url, stdio, passwordSet })
     const dieAfter = modeArg('die-after-ms')
     if (dieAfter) setTimeout(() => process.exit(DIE_EXIT_CODE), Number(dieAfter))
@@ -145,7 +148,7 @@ function createApp({ scenario, password }) {
     const frame = `data: ${JSON.stringify({ id: `evt_${++seq}`, created: Date.now(), type, data })}\n\n`
     for (const res of sse) res.write(frame)
   }
-  const ctx = { scenario, store, broadcast, runs, sse }
+  const ctx = { scenario, store, broadcast, runs, sse, holdSseUntil: 0 }
   app.server = createServer((req, res) => {
     readBody(req).then((body) => {
       const url = new URL(req.url ?? '/', 'http://fake')
@@ -159,7 +162,9 @@ function createApp({ scenario, password }) {
         body,
         directoryHeader: directory ? decodeURIComponent(String(directory)) : null,
       })
-      if (req.headers.authorization !== expectedAuth) return send(res, UNAUTHORIZED, { error: 'unauthorized' })
+      const testRoute = url.pathname.startsWith(TEST_ROUTE_PREFIX)
+      if (!testRoute && req.headers.authorization !== expectedAuth)
+        return send(res, UNAUTHORIZED, { error: 'unauthorized' })
       route(ctx, { req, res, path: url.pathname, query, body, app })
     })
   })
@@ -232,6 +237,7 @@ function legacyRoute(res, key) {
 }
 
 function openSse(ctx, req, res) {
+  if (Date.now() < ctx.holdSseUntil) return send(res, UNAVAILABLE, { error: 'held' })
   res.writeHead(OK, SSE_TYPE)
   res.write(`data: ${JSON.stringify({ id: 'evt_connected', type: 'server.connected', data: {} })}\n\n`)
   ctx.sse.add(res)
@@ -247,6 +253,7 @@ function dropSse(ctx, res) {
   if (process.env[ENV.testRoutes] !== '1') return send(res, NOT_FOUND, { error: 'not found' })
   for (const s of ctx.sse) s.destroy()
   ctx.sse.clear()
+  ctx.holdSseUntil = Date.now() + Number(new URL(res.req.url, 'http://fake').searchParams.get('holdMs') ?? 0)
   return send(res, NO_CONTENT)
 }
 

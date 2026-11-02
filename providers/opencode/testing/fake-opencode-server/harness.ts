@@ -4,10 +4,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AgentProfile } from '@pragma/module-agents/contract'
-import { aProfile } from '@pragma/module-agents/testing'
+import { aProfile, fakeCapabilityContext } from '@pragma/module-agents/testing'
 import type { ChatEvent, ChatSessionContext } from '@pragma/module-chat/contract'
 
 import { PASSWORD_ENV, SERVE_ARGS } from '../../src/main/chat/constants'
+import { createOpencodeChat, type OpencodeChatCapability } from '../../src/main/chat/factory'
 import { type ConnectionPool, createConnectionPool } from '../../src/main/chat/server/connection'
 import {
   BIN,
@@ -334,6 +335,62 @@ export function newTestPool(idleGraceMs = 0): ConnectionPool {
 
 /** `afterEach` for tests that use pools: dispose them, then kill fakes and remove temp dirs. */
 export async function cleanupAll(): Promise<void> {
-  await Promise.all(pools.splice(0).map((p) => p.disposeAll()))
+  await Promise.all(
+    [...pools.splice(0), ...caps.splice(0)].map((p) => ('disposeAll' in p ? p.disposeAll() : p.dispose())),
+  )
   cleanupFakes()
+}
+
+/** A capability context whose `resolveCommand` finds any absolute path and whose shell env is this process's PATH. */
+export const fakeCapCtx = (over: Parameters<typeof fakeCapabilityContext>[0] = {}) =>
+  fakeCapabilityContext({
+    resolveCommand: async (cmd) => (cmd.startsWith('/') ? cmd : null),
+    getShellEnv: async () => ({ PATH: process.env.PATH ?? '' }),
+    ...over,
+  })
+
+const caps: OpencodeChatCapability[] = []
+/** The `chat` capability (idle grace 0) disposed by `cleanupAll`. */
+export function newTestCapability(): OpencodeChatCapability {
+  const cap = createOpencodeChat(fakeCapCtx(), { idleGraceMs: 0 })
+  caps.push(cap)
+  return cap
+}
+
+/** A capability, a fake home and a recording context for one chat session. */
+export function chatSetup(
+  o: FakeOptions &
+    Partial<
+      Pick<
+        Parameters<typeof ctxFor>[0],
+        'sessionId' | 'resumeExternalSessionId' | 'initialOptions' | 'startupTimeoutMs'
+      >
+    > & {
+      home?: FakeHome
+      cap?: OpencodeChatCapability
+    } = {},
+) {
+  const h = o.home ?? tempOpencodeHome()
+  const cap = o.cap ?? newTestCapability()
+  const { ctx, events } = ctxFor({
+    profile: fakeProfile({ prefixArgs: o.prefixArgs }),
+    worktreePath: h.worktree,
+    env: fakeContextEnv(h, o),
+    sessionId: o.sessionId,
+    resumeExternalSessionId: o.resumeExternalSessionId,
+    initialOptions: o.initialOptions,
+    startupTimeoutMs: o.startupTimeoutMs,
+  })
+  return { h, cap, ctx, events, start: () => cap.createSession(ctx) }
+}
+
+/** The URL the fake (last started in `log`) listens on. */
+export const fakeUrl = (log: string): string | undefined =>
+  readLog(log)
+    .flatMap((r) => (r.kind === 'ready' ? [r.url] : []))
+    .at(-1)
+
+/** Drops the fake's SSE streams and refuses reconnects for `holdMs` (events in between are lost). */
+export async function dropSse(log: string, holdMs = 0): Promise<void> {
+  await fetch(`${fakeUrl(log)}/__test/drop-sse?holdMs=${holdMs}`, { method: 'POST' })
 }
