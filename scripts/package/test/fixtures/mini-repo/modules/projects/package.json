@@ -1,0 +1,11 @@
+{
+  "name": "@mini/module-projects",
+  "private": true,
+  "pragma": {
+    "id": "projects",
+    "kind": "feature"
+  },
+  "dependencies": {
+    "@parcel/watcher": "2.6.0"
+  }
+}

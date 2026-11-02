@@ -280,3 +280,5 @@ export const SKIP_ANNOTATION = 'skip'
 /** dist/ is gitignored but Biome has no VCS ignore: a nested config keeps Biome out of the outputs (RECON.md). */
 export const DIST_BIOME_FILE = 'biome.json'
 export const DIST_BIOME_CONFIG = '{ "root": false, "files": { "includes": ["!**"] } }\n'
+/** Required by electron-builder for Linux packages (deb/AppImage metadata); there is no public homepage yet. */
+export const APP_HOMEPAGE = 'https://pragma-ade.localhost'

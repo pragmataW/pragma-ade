@@ -1,0 +1,38 @@
+appId: dev.pragma.ade
+productName: Pragma ADE
+copyright: Copyright © 2026 Pragma ADE contributors
+asar: true
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+publish: null
+artifactName: pragma-ade-${version}-${os}-${arch}.${ext}
+files: ["out/**", "package.json", "node_modules/**"]
+mac:
+  {
+    category: public.app-category.developer-tools,
+    target: [dmg, zip],
+    icon: build/icon.png,
+    identity: "-",
+    hardenedRuntime: false,
+    gatekeeperAssess: false,
+  }
+dmg: { writeUpdateInfo: false }
+linux:
+  {
+    target: [AppImage, deb],
+    icon: build/icon.png,
+    executableName: pragma-ade,
+    category: Development,
+    synopsis: Agentic development environment,
+    maintainer: "Pragma ADE contributors <pragma-ade@users.noreply.localhost>",
+  }
+win: { target: [nsis, zip], icon: build/icon.png, signExecutable: false }
+nsis:
+  {
+    oneClick: false,
+    perMachine: false,
+    allowToChangeInstallationDirectory: true,
+    differentialPackage: false,
+    artifactName: "pragma-ade-${version}-win-${arch}-setup.${ext}",
+  }

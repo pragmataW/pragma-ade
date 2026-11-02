@@ -1,0 +1,8 @@
+{
+  "name": "@mini/module-terminal",
+  "private": true,
+  "pragma": {
+    "id": "terminal",
+    "kind": "feature"
+  }
+}

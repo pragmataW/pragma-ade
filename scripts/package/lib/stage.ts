@@ -11,6 +11,7 @@ import {
 } from 'node:fs'
 import { basename, dirname, join, relative } from 'node:path'
 import {
+  APP_HOMEPAGE,
   ARCH_JOINER,
   BUNDLE_OUT_DIR,
   EXEC_MODE,
@@ -85,6 +86,7 @@ export type StagedPackageMeta = Pick<PackageJson, 'name' | 'version' | 'type' | 
   productName?: string
   description?: string
   author?: { name: string }
+  homepage?: string
 }
 
 export class StageError extends Error {}
@@ -238,6 +240,7 @@ async function stageApp(input: StageInput, appDir: string, warnings: string[]): 
     version,
     description: DEFAULT_DESCRIPTION,
     author: { name: input.productName },
+    homepage: APP_HOMEPAGE,
     main,
     type,
   })
