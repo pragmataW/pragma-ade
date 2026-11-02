@@ -13,18 +13,14 @@ export const PAGE_IDS = {
   appearance: 'appearance',
   shortcuts: 'shortcuts',
   modules: 'modules',
-  beta: 'beta',
 } as const
 export const PAGE_ICONS = {
   general: 'settings-2',
   appearance: 'palette',
   shortcuts: 'keyboard',
   modules: 'blocks',
-  beta: 'flask-conical',
 } as const
 
-/** Beta features: each is a module the Beta page switches on and off (strings under `beta.features.<id>`). */
-export const BETA_FEATURES = [{ id: 'chatMode', module: 'chat', icon: 'messages-square' }] as const
 export const QUICK_TOGGLE_SLOT_ID = 'settings-general.quick-theme'
 export const QUICK_TOGGLE_ORDER = 100
 export const QUICK_TOGGLE_ICONS = { dark: 'moon', light: 'sun' } as const
