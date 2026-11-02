@@ -53,12 +53,17 @@ export function useChangeList(worktreeId: string | null, mode: ChangeMode): Load
   return loaded
 }
 
+/** Both sides of an entry; with `stash`, of that stash's file. */
 export function useFileContents(
   worktreeId: string | null,
   mode: ChangeMode,
   file: ChangedFile | null,
+  stash?: string,
 ): Loaded<FileDiffContents> {
-  const key = worktreeId === null || file === null ? null : `${worktreeId}:${mode}:${entryKey(file)}:${file.status}`
+  const key =
+    worktreeId === null || file === null
+      ? null
+      : `${worktreeId}:${mode}:${stash ?? ''}:${entryKey(file)}:${file.status}`
   const loaded = useKeyedLatest(key, () => {
     const { path, oldPath, status, staged } = file as ChangedFile
     return getRendererCtx().ipc.invoke(fileContentsIpc, {
@@ -68,6 +73,7 @@ export function useFileContents(
       status,
       ...(oldPath ? { oldPath } : {}),
       ...(staged ? { staged } : {}),
+      ...(stash ? { stash } : {}),
     })
   })
   useReloadOnChanges(worktreeId, loaded.reload)

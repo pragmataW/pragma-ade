@@ -11,9 +11,23 @@ export interface WorktreeView {
   /** Entry keys of the last reconciled list in display order (to keep the selection's index when it disappears). */
   order: string[]
   composer: CommentContext | null
+  /** A file of a stash shown in the diff pane instead of the selected entry. */
+  stashFile: StashFile | null
 }
 
-const INITIAL_VIEW: WorktreeView = { mode: CHANGE_MODE.uncommitted, selectedPath: null, order: [], composer: null }
+/** A stash (by commit sha) and one of its files (`scm.stashFiles`). */
+export interface StashFile {
+  sha: string
+  file: ChangedFile
+}
+
+const INITIAL_VIEW: WorktreeView = {
+  mode: CHANGE_MODE.uncommitted,
+  selectedPath: null,
+  order: [],
+  composer: null,
+  stashFile: null,
+}
 
 /**
  * Keeps `prev` while it is listed; otherwise the file now at its old index, else the last file, else null. Without a
@@ -45,6 +59,8 @@ export interface GitChangesState {
   reconcile(worktreeId: string, files: readonly ChangedFile[]): void
   /** `key`: the entry to select (`entryKey`); `uncommittedKeys`: the uncommitted list's keys, null when unknown. */
   reveal(worktreeId: string, key: string, uncommittedKeys: readonly string[] | null): void
+  /** Shows a stash's file in the diff pane (null: back to the selected entry). */
+  showStashFile(worktreeId: string, stashFile: StashFile | null): void
   openComposer(worktreeId: string, context: CommentContext): void
   closeComposer(worktreeId: string): void
 }
@@ -64,7 +80,11 @@ export const useGitChangesStore = create<GitChangesState>()((set) => {
     setTreeCollapsed: (collapsed) => set((s) => (s.treeCollapsed === collapsed ? {} : { treeCollapsed: collapsed })),
     toggleTree: () => set((s) => ({ treeCollapsed: !s.treeCollapsed })),
     setMode: (id, mode) => patch(id, (v) => (v.mode === mode ? {} : { mode, order: [], composer: null })),
-    select: (id, path) => patch(id, (v) => (v.selectedPath === path ? {} : { selectedPath: path, composer: null })),
+    select: (id, path) =>
+      patch(id, (v) =>
+        v.selectedPath === path && v.stashFile === null ? {} : { selectedPath: path, composer: null, stashFile: null },
+      ),
+    showStashFile: (id, stashFile) => patch(id, () => ({ stashFile, composer: null })),
     reconcile: (id, files) =>
       patch(id, (v) => {
         const selectedPath = reconcileSelection(v.selectedPath, v.order, files)

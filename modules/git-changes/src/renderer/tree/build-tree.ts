@@ -131,6 +131,10 @@ export function buildGroups(files: readonly ChangedFile[], opts: { grouped: bool
   return parts.flatMap(([group, entries]) => (entries.length === 0 ? [] : [groupNode(group, build(entries))]))
 }
 
+/** The entries under a node (itself for a file), in display order. */
+export const filesUnder = (node: TreeNode): ChangedFile[] =>
+  node.file ? [node.file] : (node.children ?? []).flatMap(filesUnder)
+
 /** Entry keys (`entryKey`) in display order (depth first). */
 export const leafOrder = (nodes: readonly TreeNode[]): string[] =>
   nodes.flatMap((n) => (n.kind === FILE && n.file ? [entryKey(n.file)] : leafOrder(n.children ?? [])))

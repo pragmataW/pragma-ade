@@ -53,6 +53,8 @@ export const COMMENTS_OPEN_DRAWER_COMMAND = 'comments.openDrawer'
 export const PIERRE_THEMES = { dark: 'pierre-dark', light: 'pierre-light' } as const
 export const HUNK_SEPARATORS = 'line-info'
 
+/** The commit message box grows with its text up to this many rows. */
+export const COMMIT_BOX_MAX_ROWS = 6
 /** fetch / pull / push may wait on the network much longer than local git calls. */
 export const NETWORK_TIMEOUT_MS = 120_000
 
@@ -71,8 +73,10 @@ export const STAGED_KEY_PREFIX = '/staged/'
 /** Tree height until the container is measured (jsdom, first paint). */
 export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14
+export const ROW_ACTION_ICON_PX = 13
 export const DIFF_ICON_PX = 14
 /** Repeated UI attribute values. */
+export const BUTTON_TYPE = 'button'
 export const ROLE_ALERT = 'alert'
 export const VARIANT_OUTLINE = 'outline'
 export const VARIANT_GHOST = 'ghost'

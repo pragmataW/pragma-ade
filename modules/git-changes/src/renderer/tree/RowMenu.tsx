@@ -9,13 +9,17 @@ import { SquareArrowOutUpRight } from '@pragma/ui/icons'
 import type { CSSProperties } from 'react'
 import { TREE_ICON_PX } from '../../constants'
 import { GitChangesTestIds as T } from '../../contract'
+import type { TreeNode } from './build-tree'
+import { ROW_ACTIONS, type RowHandlers, rowButtons } from './RowActions'
 
-/** Where a file row was right-clicked, relative to the tree container. */
+/** Which file row was right-clicked, and where (relative to the tree container). */
 export interface RowMenuAt {
-  path: string
+  node: TreeNode
   x: number
   y: number
 }
+
+const [OPEN] = ROW_ACTIONS
 
 const anchorStyle = (at: RowMenuAt | null): CSSProperties => ({
   position: 'absolute',
@@ -25,10 +29,19 @@ const anchorStyle = (at: RowMenuAt | null): CSSProperties => ({
   height: 0,
 })
 
-/** The file row's right-click menu (a dropdown anchored at the pointer): "Open diff in editor". */
-export function RowMenu(props: { at: RowMenuAt | null; onClose(): void; onOpenInEditor(path: string): void }) {
+/**
+ * The file row's right-click menu (a dropdown anchored at the pointer): "Open diff in editor" (with the editor
+ * module), then the row's Source Control actions (uncommitted mode).
+ */
+export function RowMenu(props: {
+  at: RowMenuAt | null
+  onClose(): void
+  onOpenInEditor?(path: string): void
+  handlers?: RowHandlers
+}) {
   const t = useT()
-  const { at } = props
+  const { at, onOpenInEditor, handlers } = props
+  const scm = at && handlers ? rowButtons(at.node, handlers).filter((b) => b.action !== OPEN) : []
   return (
     <DropdownMenu
       open={at !== null}
@@ -40,15 +53,23 @@ export function RowMenu(props: { at: RowMenuAt | null; onClose(): void; onOpenIn
         <span aria-hidden style={anchorStyle(at)} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" data-testid={T.rowMenu}>
-        <DropdownMenuItem
-          data-testid={T.rowMenuOpenInEditor}
-          onSelect={() => {
-            if (at) props.onOpenInEditor(at.path)
-          }}
-        >
-          <SquareArrowOutUpRight size={TREE_ICON_PX} aria-hidden />
-          {t('git-changes:diff.openInEditor')}
-        </DropdownMenuItem>
+        {onOpenInEditor ? (
+          <DropdownMenuItem
+            data-testid={T.rowMenuOpenInEditor}
+            onSelect={() => {
+              if (at) onOpenInEditor(at.node.path)
+            }}
+          >
+            <SquareArrowOutUpRight size={TREE_ICON_PX} aria-hidden />
+            {t('git-changes:diff.openInEditor')}
+          </DropdownMenuItem>
+        ) : null}
+        {scm.map((b) => (
+          <DropdownMenuItem key={b.action} data-testid={T.rowMenuItem(b.action)} onSelect={b.run}>
+            <b.icon size={TREE_ICON_PX} aria-hidden />
+            {t(b.labelKey)}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )

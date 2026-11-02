@@ -1,34 +1,49 @@
 import { useModuleSettings, useT } from '@pragma/sdk/renderer'
-import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef } from 'react'
+import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef } from 'react'
 import {
   CHANGE_LIST_STATE,
   CHANGE_MODE,
   type ChangedFile,
   type ChangeMode,
   type GitChangesSettings,
+  type StashEntry,
   GitChangesTestIds as T,
   VIEW_MODES,
 } from '../contract'
 import { ReviewBar } from './comments/ReviewBar'
-import { useDiffReview } from './comments/use-diff-review'
+import { type DiffReview, useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
+import { HunkBar } from './diff/HunkBar'
 import { EmptyState } from './EmptyState'
 import { keyToAction, NEXT_CHANGE, NEXT_FILE, PREV_FILE } from './keyboard'
-import { editorOpener } from './lib/editor'
+import { type EditorOpener, editorOpener } from './lib/editor'
 import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
-import { useGitChangesStore, useWorktreeView } from './store'
+import { type ScmActions, scmActions } from './scm/actions'
+import { ScmBar } from './scm/ScmBar'
+import { StashList } from './scm/StashList'
+import { useStashes } from './scm/use-scm'
+import { useGitChangesStore, useWorktreeView, type WorktreeView } from './store'
 import { type ChangeLists, Toolbar } from './Toolbar'
-import { buildGroups, entryKey, leafOrder } from './tree/build-tree'
+import { buildGroups, entryKey, leafOrder, type TreeNode } from './tree/build-tree'
 import { ChangesTree } from './tree/ChangesTree'
+import type { RowHandlers } from './tree/RowActions'
 import { useChangeList } from './use-changes'
 
 const [TREE] = VIEW_MODES
 const EMPTY_KINDS = { noWorktree: 'noWorktree', loading: 'loading', failed: 'failed', noChanges: 'noChanges' } as const
+const NO_FILES: ChangedFile[] = []
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
 
 const isEditable = (target: EventTarget): boolean =>
   target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null
+
+/** The tree rows' Stage / Unstage / Discard (uncommitted mode). */
+const rowHandlers = (scm: ScmActions): RowHandlers => ({
+  stage: (files) => void scm.stage(files),
+  unstage: (files) => void scm.unstage(files),
+  discard: (files, all) => void scm.discard(files, all),
+})
 
 /** The entries of the current list in display order (grouped in uncommitted mode, tree or flat). */
 function useDisplay(files: ChangedFile[], viewMode: GitChangesSettings['viewMode'], mode: ChangeMode) {
@@ -45,6 +60,81 @@ function neighbour(ordered: ChangedFile[], selected: string | null, step: number
   const index = ordered.findIndex((f) => entryKey(f) === selected)
   const next = ordered[Math.min(Math.max(index + step, 0), ordered.length - 1)]
   return next ? entryKey(next) : null
+}
+
+/** The left pane: the change tree (or "No changes") above the Stashes section. */
+function FileListPane(props: {
+  worktreeId: string
+  files: ChangedFile[]
+  nodes: TreeNode[]
+  view: WorktreeView
+  commentCounts: Record<string, number>
+  onOpenInEditor?(path: string): void
+  handlers?: RowHandlers
+  stashes: StashEntry[]
+  scm: ScmActions
+}) {
+  const t = useT()
+  const { worktreeId, view } = props
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {props.files.length === 0 ? (
+          <EmptyState kind={EMPTY_KINDS.noChanges} text={t('git-changes:empty.noChanges')} />
+        ) : (
+          <ChangesTree
+            nodes={props.nodes}
+            selectedPath={view.selectedPath}
+            onSelect={(key) => useGitChangesStore.getState().select(worktreeId, key)}
+            commentCounts={props.commentCounts}
+            onOpenInEditor={props.onOpenInEditor}
+            handlers={props.handlers}
+          />
+        )}
+      </div>
+      <StashList worktreeId={worktreeId} stashes={props.stashes} selected={view.stashFile} actions={props.scm} />
+    </div>
+  )
+}
+
+/** The right pane: a stash file's diff, else the selected entry's diff (with hunk actions when uncommitted). */
+function DiffPane(props: {
+  worktreeId: string
+  view: WorktreeView
+  selected: ChangedFile | null
+  settings: GitChangesSettings
+  review: DiffReview
+  diffRef: RefObject<DiffViewHandle | null>
+  onOpenInEditor: EditorOpener | null
+}) {
+  const { worktreeId, view, selected, settings, review } = props
+  if (view.stashFile)
+    return (
+      <DiffView
+        worktreeId={worktreeId}
+        mode={view.mode}
+        file={view.stashFile.file}
+        stash={view.stashFile.sha}
+        settings={settings}
+      />
+    )
+  if (!selected) return null
+  return (
+    <DiffView
+      ref={props.diffRef}
+      worktreeId={worktreeId}
+      mode={view.mode}
+      file={selected}
+      settings={settings}
+      composer={view.composer}
+      composerRange={review.composerRange}
+      annotations={review.annotations}
+      renderAnnotation={review.renderAnnotation}
+      onRange={review.onRange}
+      onOpenInEditor={props.onOpenInEditor}
+      hunkBar={view.mode === CHANGE_MODE.uncommitted ? <HunkBar worktreeId={worktreeId} file={selected} /> : null}
+    />
+  )
 }
 
 function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
@@ -69,6 +159,10 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
         if (file) openInEditor(file)
       }
     : undefined
+  const scm = useMemo(() => scmActions(worktreeId), [worktreeId])
+  const stashes = useStashes(worktreeId)
+  const isUncommitted = view.mode === CHANGE_MODE.uncommitted
+  const uncommittedFiles = uncommitted.data?.state === CHANGE_LIST_STATE.ok ? uncommitted.data.files : NO_FILES
 
   useEffect(() => {
     if (okList) useGitChangesStore.getState().reconcile(worktreeId, ordered)
@@ -94,39 +188,38 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
         settings={settings}
         onModeChange={(m) => store.setMode(worktreeId, m)}
       />
+      <ScmBar worktreeId={worktreeId} files={uncommittedFiles} stashes={stashes} actions={scm} />
       <Body
         loading={current.data === undefined && current.error === undefined}
         failed={current.error !== undefined}
         noBase={current.data !== undefined && !okList}
-        empty={files.length === 0}
+        empty={files.length === 0 && stashes.length === 0}
         t={t}
       >
         <SplitPane
           left={
-            <ChangesTree
+            <FileListPane
+              worktreeId={worktreeId}
+              files={files}
               nodes={nodes}
-              selectedPath={view.selectedPath}
-              onSelect={(key) => store.select(worktreeId, key)}
+              view={view}
               commentCounts={review.counts}
               onOpenInEditor={openPathInEditor}
+              handlers={isUncommitted ? rowHandlers(scm) : undefined}
+              stashes={stashes}
+              scm={scm}
             />
           }
           right={
-            selected ? (
-              <DiffView
-                ref={diffRef}
-                worktreeId={worktreeId}
-                mode={view.mode}
-                file={selected}
-                settings={settings}
-                composer={view.composer}
-                composerRange={review.composerRange}
-                annotations={review.annotations}
-                renderAnnotation={review.renderAnnotation}
-                onRange={review.onRange}
-                onOpenInEditor={openInEditor}
-              />
-            ) : null
+            <DiffPane
+              worktreeId={worktreeId}
+              view={view}
+              selected={selected}
+              settings={settings}
+              review={review}
+              diffRef={diffRef}
+              onOpenInEditor={openInEditor}
+            />
           }
         />
       </Body>

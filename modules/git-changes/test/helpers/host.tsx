@@ -10,12 +10,32 @@ import type { IpcContract, ModuleManifest } from '@pragma/sdk'
 import type { MainModule } from '@pragma/sdk/main'
 import { type RendererModule, useRendererHost } from '@pragma/sdk/renderer'
 import type { ModuleRecord } from '@pragma/sdk/runtime/main'
-import { loadModuleRecord } from '@pragma/test-support'
+import { createFakePlatform, type FakePlatform, loadModuleRecord } from '@pragma/test-support'
 import { type RenderedWithHost, rendererRecordOf, renderWithRendererHost } from '@pragma/test-support/dom'
 import { type ReactElement, useSyncExternalStore } from 'react'
-import { fileContentsIpc, listBranchesIpc, listChangesIpc, setBaseBranchIpc } from '../../src/contract'
+import {
+  fileContentsIpc,
+  listBranchesIpc,
+  listChangesIpc,
+  scmApplyHunkIpc,
+  scmCommitIpc,
+  scmDiscardIpc,
+  scmHunksIpc,
+  scmRemoteIpc,
+  scmStageIpc,
+  scmStashClearIpc,
+  scmStashFilesIpc,
+  scmStashIpc,
+  scmStashListIpc,
+  scmStashPushIpc,
+  scmStateIpc,
+  scmUndoCommitIpc,
+  scmUnstageIpc,
+  setBaseBranchIpc,
+} from '../../src/contract'
 import renderer from '../../src/renderer/index'
 import { setRendererCtx } from '../../src/renderer/lib/sdk'
+import { useScmStore } from '../../src/renderer/scm/scm-store'
 import { useGitChangesStore } from '../../src/renderer/store'
 import { WT_ID } from './ids'
 
@@ -27,7 +47,44 @@ const OWN_CONTRACTS: IpcContract<unknown, unknown>[] = [
   fileContentsIpc,
   listBranchesIpc,
   setBaseBranchIpc,
+  scmStateIpc,
+  scmHunksIpc,
+  scmStageIpc,
+  scmUnstageIpc,
+  scmDiscardIpc,
+  scmApplyHunkIpc,
+  scmCommitIpc,
+  scmUndoCommitIpc,
+  scmStashListIpc,
+  scmStashPushIpc,
+  scmStashIpc,
+  scmStashClearIpc,
+  scmStashFilesIpc,
+  scmRemoteIpc,
 ] as never
+
+/** Source Control answers when a test gives none: a clean branch with an upstream, no stashes, no hunks, ok. */
+const OK = { ok: true }
+const SCM_DEFAULTS: Answers = {
+  [scmStateIpc.channel]: () => ({ branch: 'feature', upstream: 'origin/feature', ahead: 0, behind: 0, hasHead: true }),
+  [scmStashListIpc.channel]: () => ({ stashes: [] }),
+  [scmHunksIpc.channel]: () => ({ hunks: [] }),
+  [scmStashFilesIpc.channel]: () => ({ files: [] }),
+  ...Object.fromEntries(
+    [
+      scmStageIpc,
+      scmUnstageIpc,
+      scmDiscardIpc,
+      scmApplyHunkIpc,
+      scmCommitIpc,
+      scmUndoCommitIpc,
+      scmStashPushIpc,
+      scmStashIpc,
+      scmStashClearIpc,
+      scmRemoteIpc,
+    ].map((c) => [c.channel, () => OK]),
+  ),
+}
 
 /** An observer that never reports (jsdom has no layout); react-resizable-panels constructs one per group. */
 class SilentResizeObserver {
@@ -131,6 +188,8 @@ function GitChangesTab() {
 export interface PanelHarness extends RenderedWithHost {
   calls: [string, unknown][]
   callsOn(channel: string): unknown[]
+  /** Every platform call (e.g. `dialogs.confirm` with its input). */
+  platform: FakePlatform
 }
 
 /**
@@ -150,12 +209,16 @@ export async function mountPanel(
     render?: ReactElement
     /** Renderer commands other modules would register (e.g. 06's `editor.openDiff`). */
     commands?: Record<string, (args: unknown) => unknown>
+    /** The answer of every confirmation dialog (default: confirmed). */
+    confirm?: boolean
   } = {},
 ): Promise<PanelHarness> {
   polyfillDom()
   useGitChangesStore.setState({ views: {}, treeCollapsed: null })
+  useScmStore.setState({ feedback: {} })
   const calls: [string, unknown][] = []
-  const answers = opts.answers ?? {}
+  const answers = { ...SCM_DEFAULTS, ...opts.answers }
+  const platform = createFakePlatform({ dialogReplies: { confirm: opts.confirm ?? true } })
   const own = await loadModuleRecord(MODULE_DIR)
   const ownMain = { ...answeringMain(OWN_CONTRACTS, answers, calls), settings: own.main?.settings }
   const ownRecord: ModuleRecord = { ...own, main: ownMain, testHooks: undefined }
@@ -180,6 +243,7 @@ export async function mountPanel(
     activate: (ctx) => void ctx.services.provide(CommentsUiServiceToken, ui),
   }
   const r = await renderWithRendererHost(opts.render ?? <GitChangesTab />, {
+    platform,
     mainModules: [projects, comments, ownRecord],
     records: [
       rendererRecordOf(projects, projectsRenderer),
@@ -190,6 +254,7 @@ export async function mountPanel(
   return {
     ...r,
     calls,
+    platform,
     callsOn: (channel) => calls.filter(([c]) => c === channel).map(([, i]) => i),
     async dispose() {
       await r.dispose()

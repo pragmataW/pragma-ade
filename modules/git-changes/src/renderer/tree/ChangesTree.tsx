@@ -5,6 +5,7 @@ import {
   type CSSProperties,
   createContext,
   type MouseEvent,
+  type ReactNode,
   type RefObject,
   useContext,
   useLayoutEffect,
@@ -21,6 +22,7 @@ import {
 } from '../../constants'
 import { FILE_STATUS, type FileStatus, GitChangesTestIds as T } from '../../contract'
 import { entryKey, TREE_NODE_KINDS, type TreeNode } from './build-tree'
+import { RowActions, type RowHandlers, rowButtons } from './RowActions'
 import { RowMenu, type RowMenuAt } from './RowMenu'
 
 export interface ChangesTreeProps {
@@ -33,6 +35,8 @@ export interface ChangesTreeProps {
   treeRef?: RefObject<TreeApi<TreeNode> | null>
   /** File rows get a right-click menu with "Open diff in editor" (absent without the editor module). */
   onOpenInEditor?(path: string): void
+  /** Uncommitted mode: inline Stage / Unstage / Discard buttons and menu items. */
+  handlers?: RowHandlers
 }
 
 const RENAME_ARROW = ' → '
@@ -74,7 +78,7 @@ function StatusLetter({ status }: { status: FileStatus }) {
 }
 
 /** A group header ("Staged Changes" / "Changes"): section-label type, entry count. */
-function GroupLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
+function GroupLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node']; actions: ReactNode }) {
   const t = useT()
   const Chevron = node.isOpen ? ChevronDown : ChevronRight
   return (
@@ -83,6 +87,7 @@ function GroupLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
       <span className="min-w-0 flex-1 truncate font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.06em]">
         {t(`git-changes:groups.${node.data.group}`)}
       </span>
+      {actions}
       <span className="shrink-0 rounded-full bg-[var(--hv)] px-1.5 text-[11px] text-muted-foreground">
         {node.data.fileCount}
       </span>
@@ -90,7 +95,7 @@ function GroupLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
   )
 }
 
-function DirLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
+function DirLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node']; actions: ReactNode }) {
   const Chevron = node.isOpen ? ChevronDown : ChevronRight
   const FolderIcon = node.isOpen ? FolderOpen : Folder
   return (
@@ -98,12 +103,13 @@ function DirLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
       <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
       <FolderIcon size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{node.data.name}</span>
+      {actions}
       <span className="shrink-0 text-[11px] text-muted-foreground">{node.data.fileCount}</span>
     </>
   )
 }
 
-function FileLabel({ data, comments }: { data: TreeNode; comments: number }) {
+function FileLabel({ data, comments, actions }: { data: TreeNode; comments: number; actions: ReactNode }) {
   const status = data.file?.status ?? FILE_STATUS.M
   return (
     <>
@@ -117,30 +123,45 @@ function FileLabel({ data, comments }: { data: TreeNode; comments: number }) {
           {comments}
         </span>
       ) : null}
+      {actions}
       <StatusLetter status={status} />
     </>
   )
 }
 
-function RowLabel({ node, comments }: { node: NodeRendererProps<TreeNode>['node']; comments: number }) {
-  if (node.data.kind === GROUP_KIND) return <GroupLabel node={node} />
-  return node.isInternal ? <DirLabel node={node} /> : <FileLabel data={node.data} comments={comments} />
+function RowLabel(props: { node: NodeRendererProps<TreeNode>['node']; comments: number; actions: ReactNode }) {
+  const { node, comments, actions } = props
+  if (node.data.kind === GROUP_KIND) return <GroupLabel node={node} actions={actions} />
+  if (node.isInternal) return <DirLabel node={node} actions={actions} />
+  return <FileLabel data={node.data} comments={comments} actions={actions} />
 }
 
-const CommentCounts = createContext<Record<string, number>>(NO_COUNTS)
-type OpenRowMenu = (e: MouseEvent<HTMLDivElement>, path: string) => void
-const RowMenuOpener = createContext<OpenRowMenu | null>(null)
+type OpenRowMenu = (e: MouseEvent<HTMLDivElement>, node: TreeNode) => void
+/** What every row reads: comment counts, the context-menu opener, the inline handlers, "Open in editor". */
+interface RowContextValue {
+  counts: Record<string, number>
+  openMenu: OpenRowMenu | null
+  handlers?: RowHandlers
+  onOpenInEditor?(path: string): void
+}
+const RowContext = createContext<RowContextValue>({ counts: NO_COUNTS, openMenu: null })
 
-/** One react-arborist row (directory or file). */
+function InlineActions({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
+  const { handlers, onOpenInEditor } = useContext(RowContext)
+  if (!handlers) return null
+  const open = onOpenInEditor ? () => onOpenInEditor(node.data.path) : undefined
+  return <RowActions buttons={rowButtons(node.data, handlers, open)} visible={node.isSelected} />
+}
+
+/** One react-arborist row (group, directory or file). */
 function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
-  const counts = useContext(CommentCounts)
-  const openMenu = useContext(RowMenuOpener)
+  const { counts, openMenu } = useContext(RowContext)
   const { data } = node
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: the right-click menu repeats the diff header's button
     <div
       style={style}
-      onContextMenu={openMenu && data.kind === FILE_KIND ? (e) => openMenu(e, data.path) : undefined}
+      onContextMenu={openMenu && data.kind === FILE_KIND ? (e) => openMenu(e, data) : undefined}
       data-testid={T.treeRow}
       data-path={data.path}
       data-kind={data.kind}
@@ -150,62 +171,62 @@ function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
       data-selected={node.isSelected || undefined}
       title={titleOf(data)}
       className={cn(
-        'flex h-full cursor-default select-none items-center gap-1 pr-2 text-[13px]',
+        'group flex h-full cursor-default select-none items-center gap-1 pr-2 text-[13px]',
         node.isSelected ? 'bg-[var(--hv)] text-[var(--tx)]' : 'hover:bg-[var(--hv)]',
       )}
     >
-      <RowLabel node={node} comments={counts[data.path] ?? 0} />
+      <RowLabel node={node} comments={counts[data.path] ?? 0} actions={<InlineActions node={node} />} />
     </div>
   )
 }
 
 /** The compressed, indented changes tree (22px rows, 12px indent), single selection, keyboard via react-arborist. */
 export function ChangesTree(props: ChangesTreeProps) {
-  const { nodes, selectedPath, onSelect, commentCounts = NO_COUNTS, treeRef, onOpenInEditor } = props
+  const { nodes, selectedPath, onSelect, commentCounts = NO_COUNTS, treeRef, onOpenInEditor, handlers } = props
   const t = useT()
   const [containerRef, height] = useContainerHeight()
   const [menuAt, setMenuAt] = useState<RowMenuAt | null>(null)
-  const openMenu: OpenRowMenu = (e, path) => {
+  const openMenu: OpenRowMenu = (e, node) => {
     e.preventDefault()
     const box = containerRef.current?.getBoundingClientRect()
-    setMenuAt({ path, x: e.clientX - (box?.left ?? 0), y: e.clientY - (box?.top ?? 0) })
+    setMenuAt({ node, x: e.clientX - (box?.left ?? 0), y: e.clientY - (box?.top ?? 0) })
   }
+  const hasMenu = onOpenInEditor !== undefined || handlers !== undefined
+  const row: RowContextValue = { counts: commentCounts, openMenu: hasMenu ? openMenu : null, handlers, onOpenInEditor }
   return (
-    <CommentCounts.Provider value={commentCounts}>
-      <RowMenuOpener.Provider value={onOpenInEditor ? openMenu : null}>
-        <div ref={containerRef} data-testid={T.tree} className="relative h-full min-h-0 overflow-hidden">
-          <Tree<TreeNode>
-            ref={treeRef}
-            data={nodes}
-            idAccessor="id"
-            childrenAccessor={(n) => n.children ?? null}
-            openByDefault
-            width="100%"
-            height={height}
-            rowHeight={TREE_ROW_HEIGHT_PX}
-            indent={TREE_INDENT_PX}
-            disableDrag
-            disableDrop
-            disableEdit
-            disableMultiSelection
-            selectionFollowsFocus
-            selection={selectedPath ? FILE_ID_PREFIX + selectedPath : undefined}
-            aria-label={t('git-changes:tree.label')}
-            onSelect={(selected) => {
-              const n = selected[0]
-              if (n?.data.kind === FILE_KIND && n.data.file) onSelect(entryKey(n.data.file))
-            }}
-            onActivate={(n) => {
-              if (n.isInternal) n.toggle()
-            }}
-          >
-            {ChangeRow}
-          </Tree>
-          {onOpenInEditor ? (
-            <RowMenu at={menuAt} onClose={() => setMenuAt(null)} onOpenInEditor={onOpenInEditor} />
-          ) : null}
-        </div>
-      </RowMenuOpener.Provider>
-    </CommentCounts.Provider>
+    <RowContext.Provider value={row}>
+      <div ref={containerRef} data-testid={T.tree} className="relative h-full min-h-0 overflow-hidden">
+        <Tree<TreeNode>
+          ref={treeRef}
+          data={nodes}
+          idAccessor="id"
+          childrenAccessor={(n) => n.children ?? null}
+          openByDefault
+          width="100%"
+          height={height}
+          rowHeight={TREE_ROW_HEIGHT_PX}
+          indent={TREE_INDENT_PX}
+          disableDrag
+          disableDrop
+          disableEdit
+          disableMultiSelection
+          selectionFollowsFocus
+          selection={selectedPath ? FILE_ID_PREFIX + selectedPath : undefined}
+          aria-label={t('git-changes:tree.label')}
+          onSelect={(selected) => {
+            const n = selected[0]
+            if (n?.data.kind === FILE_KIND && n.data.file) onSelect(entryKey(n.data.file))
+          }}
+          onActivate={(n) => {
+            if (n.isInternal) n.toggle()
+          }}
+        >
+          {ChangeRow}
+        </Tree>
+        {hasMenu ? (
+          <RowMenu at={menuAt} onClose={() => setMenuAt(null)} onOpenInEditor={onOpenInEditor} handlers={handlers} />
+        ) : null}
+      </div>
+    </RowContext.Provider>
   )
 }
