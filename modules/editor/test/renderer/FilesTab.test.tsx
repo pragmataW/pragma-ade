@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   EDITOR_SETTINGS_ICON,
@@ -13,10 +14,31 @@ import editorRenderer from '../../src/renderer/index'
 import { renderEditor, text } from '../support/renderer'
 
 const status = (s: EditorStatus) => ({ [EditorIpc.getStatus.channel]: s })
+const TOGGLE = 'toggle-visible'
+
+/** The dock mounts FilesTab hidden at launch; the button flips `visible` like switching tabs. */
+function Dock() {
+  const [visible, setVisible] = useState(false)
+  return (
+    <>
+      <button type="button" data-testid={TOGGLE} onClick={() => setVisible((v) => !v)} />
+      <FilesTab visible={visible} />
+    </>
+  )
+}
 
 describe('FilesTab', () => {
+  it('starts the editor only on its first showing, once', async () => {
+    const r = await renderEditor(<Dock />, { replies: status({ state: 'not-installed', version: 'v', sizeBytes: 1 }) })
+    const starts = () => r.calls.filter((c) => c.channel === EditorIpc.ensureReady.channel).length
+    expect(starts()).toBe(0)
+    expect(r.calls.map((c) => c.channel)).toEqual([EditorIpc.getStatus.channel])
+    for (let i = 0; i < 3; i++) fireEvent.click(screen.getByTestId(TOGGLE))
+    expect(starts()).toBe(1)
+  })
+
   it('downloading shows progressbar with 50% and Cancel calls editor.cancelDownload', async () => {
-    const r = await renderEditor(<FilesTab />, {
+    const r = await renderEditor(<FilesTab visible />, {
       replies: status({ state: 'downloading', version: 'v', received: 50, total: 100 }),
     })
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('50')
@@ -40,19 +62,19 @@ describe('FilesTab', () => {
     ],
     ['starting shows text', { state: 'starting', version: 'v' }, [], 'status.starting'],
   ] as const)('%s', async (_label, s, ids, key) => {
-    await renderEditor(<FilesTab />, { replies: status(s as EditorStatus) })
+    await renderEditor(<FilesTab visible />, { replies: status(s as EditorStatus) })
     for (const id of ids) expect(screen.getByTestId(id)).toBeTruthy()
     if (key) expect(screen.getByText(text(key))).toBeTruthy()
   })
 
   it('ready renders no status text', async () => {
-    await renderEditor(<FilesTab />, { replies: status({ state: 'ready', version: 'v', port: 1 }) })
+    await renderEditor(<FilesTab visible />, { replies: status({ state: 'ready', version: 'v', port: 1 }) })
     expect(screen.getByTestId(T.filesTab)).toBeTruthy()
     expect(screen.queryByTestId(T.status)).toBeNull()
   })
 
   it('no worktree shows noWorktree text', async () => {
-    await renderEditor(<FilesTab />, {
+    await renderEditor(<FilesTab visible />, {
       activeWorktree: null,
       replies: status({ state: 'ready', version: 'v', port: 1 }),
     })
@@ -60,7 +82,7 @@ describe('FilesTab', () => {
   })
 
   it('statusChanged updates the panel', async () => {
-    const r = await renderEditor(<FilesTab />, { replies: status({ state: 'starting', version: 'v' }) })
+    const r = await renderEditor(<FilesTab visible />, { replies: status({ state: 'starting', version: 'v' }) })
     await r.emit(EditorIpcEvents.statusChanged, { state: 'ready', version: 'v', port: 1 })
     expect(screen.queryByTestId(T.status)).toBeNull()
   })

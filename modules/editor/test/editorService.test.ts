@@ -15,7 +15,13 @@ function setup(status: EditorStatus = READY) {
   const calls: string[] = []
   const opened: unknown[] = []
   const themes: unknown[] = []
-  const server = { ensureRunning: async () => status, status: () => status } as unknown as ServerController
+  const server = {
+    ensureRunning: async () => {
+      calls.push('start')
+      return status
+    },
+    status: () => status,
+  } as unknown as ServerController
   const service = new EditorServiceImpl({
     server,
     views: { show: (w) => void calls.push(`show:${w.id}`) },
@@ -45,7 +51,7 @@ describe('EditorServiceImpl', () => {
     const { service, calls, opened, up } = setup()
     expect(await service.openFile({ worktreeId: 'w1', path: 'src/long.ts', line: 42, column: 3 })).toEqual({ ok: true })
     expect(up.selected).toEqual([])
-    expect(calls).toEqual(['activated', 'show:w1', 'reveal:w1'])
+    expect(calls).toEqual(['activated', 'reveal:w1', 'start', 'show:w1'])
     expect(opened).toEqual([['/work/one', { path: 'src/long.ts', line: 42, column: 3 }]])
   })
 
@@ -55,12 +61,13 @@ describe('EditorServiceImpl', () => {
     expect(up.selected).toEqual(['w2'])
   })
 
-  it('openFile while the server cannot start → openFileFailed', async () => {
-    const { service } = setup({ state: 'error', version: 'v', errorKey: 'x', retryable: true })
+  it('openFile while the server cannot start → openFileFailed, after revealing the Files tab (its status shows)', async () => {
+    const { service, calls } = setup({ state: 'error', version: 'v', errorKey: 'x', retryable: true })
     expect(await service.openFile({ worktreeId: 'w1', path: 'a.ts' })).toEqual({
       ok: false,
       errorKey: 'editor:errors.openFileFailed',
     })
+    expect(calls).toEqual(['activated', 'reveal:w1', 'start'])
   })
 
   it('openDiff reveals like openFile and sends bridge openDiff with refs, oldPath and line', async () => {
@@ -70,7 +77,7 @@ describe('EditorServiceImpl', () => {
       ok: true,
     })
     expect(up.selected).toEqual(['w2'])
-    expect(calls).toEqual(['activated', 'show:w2', 'reveal:w2'])
+    expect(calls).toEqual(['activated', 'reveal:w2', 'start', 'show:w2'])
     expect(opened).toEqual([['diff', '/work/two', { path: 'b.ts', oldPath: 'a.ts', refs, line: 7 }]])
   })
 
