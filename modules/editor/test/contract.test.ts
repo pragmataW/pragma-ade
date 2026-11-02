@@ -27,10 +27,10 @@ describe('contract', () => {
     expect(EditorSettingsSchema.parse(editorSettingsDefaults)).toEqual(editorSettingsDefaults)
   })
 
-  it('editorBridge declares hello/comment/testResponse requests and openFile/setTheme/testRequest events', () => {
+  it('editorBridge declares hello/comment/testResponse requests and openFile/openDiff/setTheme/testRequest events', () => {
     expect(editorBridge.name).toBe('editor')
     expect(Object.keys(editorBridge.requests)).toEqual(expect.arrayContaining(['hello', 'comment', 'testResponse']))
-    expect(Object.keys(editorBridge.events)).toEqual(['openFile', 'setTheme', 'testRequest'])
+    expect(Object.keys(editorBridge.events)).toEqual(['openFile', 'openDiff', 'setTheme', 'testRequest'])
   })
 
   it('EDITOR_TEST_IDS values are unique', () => {

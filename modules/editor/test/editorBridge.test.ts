@@ -65,6 +65,17 @@ describe('EditorBridge', () => {
     expect(two.received).toEqual([])
   })
 
+  it("openDiff is sent only to that folder's client", async () => {
+    const { bridge, ext } = await setup()
+    const [one, two] = [await ext('/work/one'), await ext('/work/two')]
+    await one.hello()
+    await two.hello()
+    await bridge.openDiff(two.folderKey, { path: 'b.ts', refs: { old: 'abc', new: 'HEAD' } })
+    await until(() => two.received.length === 1)
+    expect(two.received).toEqual([{ name: 'openDiff', payload: { path: 'b.ts', refs: { old: 'abc', new: 'HEAD' } } }])
+    expect(one.received).toEqual([])
+  })
+
   it('client disconnect clears readiness', async () => {
     const { bridge, ext } = await setup()
     const e = await ext('/work/one')

@@ -34,8 +34,13 @@ export const TAB_ICON = 'git-compare'
 /** 06's editor tab, activated after "Open in editor". */
 export const FILES_TAB_ID = 'files'
 
-/** Other modules' commands (optional dependencies, looked up with `commands.has`). */
-export const EDITOR_OPEN_FILE_COMMAND = 'editor.openFile'
+/**
+ * Other modules' commands (optional dependencies, looked up with `commands.has`). "Open in editor" opens the file's git
+ * diff in 06's workbench (user decision 2026-11-02, revised): `editor.openDiff`, not `editor.openFile`.
+ */
+export const EDITOR_OPEN_DIFF_COMMAND = 'editor.openDiff'
+/** `refs.new` of a branch-mode diff (merge-base ↔ HEAD). */
+export const HEAD_REF = 'HEAD'
 export const COMMENTS_OPEN_DRAWER_COMMAND = 'comments.openDrawer'
 
 /** `@pierre/diffs` theme names per resolved mode. */
@@ -44,7 +49,7 @@ export const HUNK_SEPARATORS = 'line-info'
 
 /** Prefix of every git call (paths stay unquoted, unicode intact). */
 export const GIT_FLAGS = ['-c', 'core.quotepath=false'] as const
-/** Test hook switch: register a fake `editor.openFile` recorder (PRAGMA_TEST only). */
+/** Test hook switch: register a fake `editor.openDiff` recorder (PRAGMA_TEST only). */
 export const FAKE_EDITOR_ENV = 'PRAGMA_TEST_FAKE_EDITOR'
 
 /** Tree node ids: `d:<dir path>` / `f:<file path>`. */

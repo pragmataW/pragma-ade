@@ -1,6 +1,10 @@
 /** Constants shared by main, renderer, the bridge extension and other modules' E2E (§9.2). */
 export const EDITOR_MODULE_ID = 'editor'
 export const EDITOR_OPEN_FILE = 'editor.openFile'
+/** Opens a changed file's git diff (VS Code's own SCM diff); added for Git Changes › Open in editor (2026-11-02). */
+export const EDITOR_OPEN_DIFF = 'editor.openDiff'
+/** The `refs.new` value naming the checked-out commit. */
+export const GIT_HEAD_REF = 'HEAD'
 export const FILES_TAB_ID = 'files'
 export const FILES_TAB_ORDER = 30
 export const FILES_TAB_ICON = 'file-code'

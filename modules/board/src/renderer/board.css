@@ -1,0 +1,33 @@
+/* board: label colours per theme (ui-notes tokens cover the rest) and column metrics. */
+:root,
+:root[data-theme="dark"] {
+  --board-label-gray: #8b949e;
+  --board-label-red: #f85149;
+  --board-label-orange: #db6d28;
+  --board-label-yellow: #d29922;
+  --board-label-green: #3fb950;
+  --board-label-teal: #39c5cf;
+  --board-label-blue: #58a6ff;
+  --board-label-purple: #a371f7;
+}
+
+:root[data-theme="light"] {
+  --board-label-gray: #6e7781;
+  --board-label-red: #cf222e;
+  --board-label-orange: #bc4c00;
+  --board-label-yellow: #9a6700;
+  --board-label-green: #1a7f37;
+  --board-label-teal: #1b7c83;
+  --board-label-blue: #0969da;
+  --board-label-purple: #8250df;
+}
+
+.board-column {
+  width: 248px;
+  min-width: 248px;
+}
+
+.board-drawer {
+  width: 420px;
+  max-width: 420px;
+}

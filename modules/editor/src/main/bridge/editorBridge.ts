@@ -16,6 +16,7 @@ import {
   type EditorHello,
   type EditorHelloReply,
   type EditorLanguageStatus,
+  type EditorOpenDiffMsg,
   type EditorOpenFileMsg,
   type EditorSetThemeMsg,
   type EditorTestRequest,
@@ -59,7 +60,7 @@ function replyForSend(commentId: string, r: SendResult): EditorCommentReply {
 
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
-/** Main side of the `editor` namespace: client registry (folder → client), openFile/theme/test requests, comments. */
+/** Main side of the `editor` namespace: client registry (folder → client), openFile/openDiff/theme/test requests, comments. */
 export class EditorBridge {
   readonly #up: EditorUpstream
   readonly #o: EditorBridgeOptions
@@ -113,6 +114,11 @@ export class EditorBridge {
   async openFile(folderKey: string, m: EditorOpenFileMsg, timeoutMs?: number): Promise<void> {
     await this.whenReady(folderKey, timeoutMs)
     this.#sendTo(folderKey, EVENT('openFile'), m)
+  }
+
+  async openDiff(folderKey: string, m: EditorOpenDiffMsg, timeoutMs?: number): Promise<void> {
+    await this.whenReady(folderKey, timeoutMs)
+    this.#sendTo(folderKey, EVENT('openDiff'), m)
   }
 
   pushTheme(override?: EditorSetThemeMsg): void {
