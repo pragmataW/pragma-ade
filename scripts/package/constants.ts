@@ -82,3 +82,20 @@ export const PE_DLL_FLAG = 0x2000
 export const PE_MACHINE = { x64: 0x8664, arm64: 0xaa64, ia32: 0x14c } as const
 export const U16_BYTES = 2
 export const U32_BYTES = 4
+
+// --- workspace and manifests ---
+export const PNPM_WORKSPACE_FILE = 'pnpm-workspace.yaml'
+export const GLOB_STAR = '*'
+export const GLOB_GLOBSTAR = '**'
+export const GLOB_NEGATION = '!'
+export const EXCLUDED_DIR_PREFIX = '_'
+export const HIDDEN_DIR_PREFIX = '.'
+export const OWNER_ROOTS = ['modules', 'providers'] as const
+export const APP_ROOT = 'apps'
+export const SUB_PACKAGES_DIR = 'packages'
+export const RESOURCE_MODULES_DIR = 'modules'
+export const PARENT_SEGMENT = '..'
+export const POSIX_SEP = '/'
+export const WIN_SEP = '\\'
+/** Optional tool-only packages, loaded with non-literal specifiers (see lib/deps.ts). */
+export const DEP = { yaml: 'yaml', asar: '@electron/asar', builder: 'electron-builder' } as const
