@@ -922,6 +922,9 @@ importers:
       '@pragma/module-chat':
         specifier: workspace:*
         version: link:../../modules/chat
+      '@pragma/module-cli-integration':
+        specifier: workspace:*
+        version: link:../../modules/cli-integration
       '@pragma/provider-claude-hooks':
         specifier: workspace:*
         version: link:packages/hooks
@@ -977,6 +980,9 @@ importers:
       '@pragma/module-bridge':
         specifier: workspace:*
         version: link:../../modules/bridge
+      '@pragma/module-cli-integration':
+        specifier: workspace:*
+        version: link:../../modules/cli-integration
       '@pragma/provider-opencode-hooks':
         specifier: workspace:*
         version: link:packages/hooks

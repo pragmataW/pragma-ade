@@ -75,3 +75,9 @@ Same license text and copyright (Lovecast Inc.) as above. Derived files (each ke
 | `@anthropic-ai/claude-agent-sdk` 0.3.316 | Anthropic Commercial Terms (see its README) | `providers/claude` (chat capability) |
 | `@pierre/diffs` 1.6.2 | Apache-2.0 | `modules/chat` (inline diffs; already used by 07) |
 | `@tanstack/react-virtual` 3.14.24 | MIT | `modules/chat` (message list) |
+
+## stablyai/orca — MIT License (phase 10, CLI handoff skill)
+
+Same license text and copyright (Lovecast Inc.) as above.
+
+- `modules/cli-integration/skills/handoff/SKILL.md` — handoff classification, completion rule and "do not wait" guidance adapted from `skill-guides/orca-cli.md` § Full Handoffs and `skills/orca-cli/SKILL.md`
