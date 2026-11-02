@@ -44,6 +44,12 @@ export const GitChangesTestIds = {
   stashKind: (kind: string) => `gc-stash-kind-${kind}`,
   stashBanner: 'gc-stash-banner',
   syncPrimary: 'gc-sync-primary',
+  findBar: 'gc-find-bar',
+  findInput: 'gc-find-input',
+  findCount: 'gc-find-count',
+  findPrev: 'gc-find-prev',
+  findNext: 'gc-find-next',
+  findClose: 'gc-find-close',
   scmError: 'gc-scm-error',
   /** Inline actions of a tree row (`stage`, `unstage`, `discard`, `open`) and of the diff's hunk list. */
   rowAction: (action: string) => `gc-row-${action}`,

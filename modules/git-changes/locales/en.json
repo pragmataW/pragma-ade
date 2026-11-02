@@ -171,7 +171,11 @@
       "submit_other": "Stash {{count}} files",
       "viewing": "Stash: {{message}}",
       "close": "Back to changes",
-      "short": { "apply": "Apply", "pop": "Pop", "drop": "Drop" },
+      "short": {
+        "apply": "Apply",
+        "pop": "Pop",
+        "drop": "Drop"
+      },
       "files_one": "{{count}} file",
       "files_other": "{{count}} files"
     },
@@ -208,5 +212,13 @@
       "dropAll": "Are you sure you want to drop ALL {{count}} stashes? They can be brought back from Local History for a while.",
       "dropAllAction": "Drop All"
     }
+  },
+  "find": {
+    "placeholder": "Find in file",
+    "count": "{{current}} of {{total}}",
+    "none": "No results",
+    "prev": "Previous match (Shift+Enter)",
+    "next": "Next match (Enter)",
+    "close": "Close (Escape)"
   }
 }

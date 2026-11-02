@@ -1,6 +1,6 @@
-export const KEY_ACTIONS = ['nextFile', 'prevFile', 'nextChange', 'prevChange'] as const
+export const KEY_ACTIONS = ['nextFile', 'prevFile', 'nextChange', 'prevChange', 'find'] as const
 export type KeyAction = (typeof KEY_ACTIONS)[number]
-export const [NEXT_FILE, PREV_FILE, NEXT_CHANGE, PREV_CHANGE] = KEY_ACTIONS
+export const [NEXT_FILE, PREV_FILE, NEXT_CHANGE, PREV_CHANGE, FIND] = KEY_ACTIONS
 
 export interface PanelKey {
   key: string
@@ -20,8 +20,15 @@ const PLAIN = new Map<string, KeyAction>([
 ])
 const SHIFTED = new Map<string, KeyAction>([['N', PREV_CHANGE]])
 
-/** Panel shortcuts (j / k / n / Shift+N); none while typing or with alt/meta/ctrl. */
+const FIND_KEY = 'f'
+
+/** Cmd/Ctrl+F (also while typing): find in the open diff. */
+const isFind = (e: PanelKey): boolean =>
+  (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === FIND_KEY
+
+/** Panel shortcuts (j / k / n / Shift+N, Cmd/Ctrl+F); the letters not while typing or with alt/meta/ctrl. */
 export function keyToAction(e: PanelKey): KeyAction | null {
+  if (isFind(e)) return FIND
   if (e.altKey || e.metaKey || e.ctrlKey || e.targetIsEditable) return null
   return (e.shiftKey ? SHIFTED : PLAIN).get(e.key) ?? null
 }
