@@ -6,7 +6,8 @@ export const PLATFORMS = ['darwin', 'linux', 'win32'] as const
 export type TargetPlatform = (typeof PLATFORMS)[number]
 export const TARGET_ARCHES = ['arm64', 'x64'] as const
 export type TargetArch = (typeof TARGET_ARCHES)[number]
-export const BINARY_FORMATS = ['macho', 'elf', 'pe'] as const
+export const FORMAT = { macho: 'macho', elf: 'elf', pe: 'pe' } as const
+export const BINARY_FORMATS = [FORMAT.macho, FORMAT.elf, FORMAT.pe] as const
 export type BinaryFormat = (typeof BINARY_FORMATS)[number]
 export const TARGET_ALIAS_NAMES = ['mac', 'linux', 'win', 'all'] as const
 export type TargetAlias = (typeof TARGET_ALIAS_NAMES)[number]
@@ -29,7 +30,7 @@ const mac = (arch: TargetArch): Target => ({
   builderPlatform: 'mac',
   builderTargets: MAC_TARGETS,
   npm: { os: DARWIN, cpu: arch },
-  binaryFormat: 'macho',
+  binaryFormat: FORMAT.macho,
 })
 
 export const TARGETS: Readonly<Record<TargetId, Target>> = {

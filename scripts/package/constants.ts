@@ -53,3 +53,32 @@ export const FLAGS = {
   deep: '--deep',
   json: '--json',
 } as const
+
+// --- binary headers (Mach-O, fat, ELF, PE) ---
+export const HEADER_BYTES = 512
+export const MACHO64_MAGIC_LE = 0xfeedfacf
+export const MACHO_CPUTYPE_OFFSET = 4
+export const MACHO_FILETYPE_OFFSET = 12
+export const MH_EXECUTE = 2
+export const CPU_TYPE = { x64: 0x01000007, arm64: 0x0100000c, ia32: 0x00000007 } as const
+export const FAT_MAGIC = 0xcafebabe
+export const FAT_MAGIC_64 = 0xcafebabf
+export const FAT_NARCH_OFFSET = 4
+export const FAT_ENTRIES_OFFSET = 8
+export const FAT_ENTRY_STRIDE = 20
+export const FAT64_ENTRY_STRIDE = 32
+export const MAX_FAT_ARCHES = 20
+export const ELF_MAGIC = 0x7f454c46
+export const ELF_TYPE_OFFSET = 16
+export const ELF_MACHINE_OFFSET = 18
+export const ET_EXEC = 2
+export const ELF_MACHINE = { x64: 0x3e, arm64: 0xb7, ia32: 0x03 } as const
+export const MZ_MAGIC = 0x5a4d
+export const PE_LFANEW_OFFSET = 0x3c
+export const PE_SIGNATURE = 0x00004550
+export const PE_MACHINE_OFFSET = 4
+export const PE_CHARACTERISTICS_OFFSET = 22
+export const PE_DLL_FLAG = 0x2000
+export const PE_MACHINE = { x64: 0x8664, arm64: 0xaa64, ia32: 0x14c } as const
+export const U16_BYTES = 2
+export const U32_BYTES = 4
