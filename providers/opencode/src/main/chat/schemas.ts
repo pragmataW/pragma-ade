@@ -236,6 +236,7 @@ export const agentInfoSchema = z.looseObject({
   name: z.string(),
   mode: z.string(),
   hidden: z.boolean().default(false),
+  description: z.string().optional(),
 })
 export type AgentInfo = z.infer<typeof agentInfoSchema>
 

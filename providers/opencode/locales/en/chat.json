@@ -9,6 +9,12 @@
       "agent": "Agent",
       "defaultVariant": "Default"
     },
+    "permission": {
+      "ask": "Ask",
+      "askHint": "OpenCode's permission rules decide; risky actions ask you first",
+      "auto": "Auto-approve",
+      "autoHint": "Every permission request in this chat is approved without asking"
+    },
     "error": {
       "serverExited": "The opencode server exited unexpectedly"
     }

@@ -208,3 +208,11 @@ export const SUBAGENT_TOOLS = ['subagent', 'task'] as const
 export const SUBAGENT_RESULT_RE = /<subagent\b[^>]*>(?<body>[\s\S]*?)<\/subagent>/
 /** Task name when OpenCode names no agent. */
 export const TASK_FALLBACK_NAME = 'subagent'
+
+/** `ask`: OpenCode's permission rules decide (risky actions ask); `auto`: every request is approved once. */
+export const PERMISSION_MODES = ['ask', 'auto'] as const
+export const PERMISSION_MODE = { ask: 'ask', auto: 'auto' } as const
+export const PERMISSION_MODE_KEYS = {
+  ask: { label: 'opencode:chat.permission.ask', description: 'opencode:chat.permission.askHint' },
+  auto: { label: 'opencode:chat.permission.auto', description: 'opencode:chat.permission.autoHint' },
+} as const

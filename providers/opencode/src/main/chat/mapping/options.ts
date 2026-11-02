@@ -1,5 +1,6 @@
 import {
   CHAT_OPTION_KEYS,
+  CHAT_TONE,
   type ChatOptionDescriptor,
   type ChatOptionValue,
   OPTION_TYPE,
@@ -13,17 +14,27 @@ import {
   DEFAULT_VARIANT_LABEL_KEY,
   INVALID_OPTION,
   MODEL_REF_SEPARATOR,
+  PERMISSION_MODE,
+  PERMISSION_MODE_KEYS,
+  type PERMISSION_MODES,
 } from '../constants'
 import type { AgentInfo, ModelInfo, ModelRef } from '../schemas'
 
 const MODEL_LABEL_KEY = 'chat:option.model'
 const EFFORT_LABEL_KEY = 'chat:option.effort'
+const PERMISSION_LABEL_KEY = 'chat:option.permissionMode'
 
-/** The user's picks; `model` is `<providerID>/<id>`, `effort` a variant id (null = the model's default). */
+export type PermissionMode = (typeof PERMISSION_MODES)[number]
+
+/**
+ * The user's picks; `model` is `<providerID>/<id>`, `effort` a variant id (null = the model's default),
+ * `permissionMode` whether permission requests are answered by the user (`ask`) or approved automatically (`auto`).
+ */
 export interface Selection {
   model?: string
   effort?: string | null
   agent?: string
+  permissionMode?: PermissionMode
 }
 
 export interface Catalog {
@@ -69,7 +80,7 @@ function modelDescriptor(c: Catalog, sel: Selection): ChatOptionDescriptor {
 function agentDescriptor(c: Catalog, sel: Selection): ChatOptionDescriptor | null {
   const values = c.agents
     .filter((a) => (a.mode === AGENT_MODES.primary || a.mode === AGENT_MODES.all) && !a.hidden)
-    .map((a) => ({ value: a.id, label: a.name }))
+    .map((a) => ({ value: a.id, label: a.name, ...(a.description ? { description: a.description } : {}) }))
   if (values.length === 0) return null
   const fallback = values.some((v) => v.value === DEFAULT_AGENT) ? DEFAULT_AGENT : (values[0]?.value ?? null)
   return {
@@ -99,11 +110,43 @@ function effortDescriptor(model: ModelInfo | undefined, sel: Selection): ChatOpt
   }
 }
 
-/** Model (enabled, sorted), agent (primary, visible; default `build`), effort (only when the model has variants). */
+/** `ask` (OpenCode's rules decide, risky actions ask) or `auto` (every request approved once, after a confirmation). */
+function permissionDescriptor(sel: Selection): ChatOptionDescriptor {
+  const { ask, auto } = PERMISSION_MODE
+  return {
+    key: CHAT_OPTION_KEYS.permissionMode,
+    type: OPTION_TYPE.enum,
+    labelKey: PERMISSION_LABEL_KEY,
+    values: [
+      {
+        value: ask,
+        labelKey: PERMISSION_MODE_KEYS.ask.label,
+        descriptionKey: PERMISSION_MODE_KEYS.ask.description,
+        tone: CHAT_TONE.info,
+      },
+      {
+        value: auto,
+        labelKey: PERMISSION_MODE_KEYS.auto.label,
+        descriptionKey: PERMISSION_MODE_KEYS.auto.description,
+        tone: CHAT_TONE.warn,
+        warn: true,
+        dangerous: true,
+        requiresConfirm: true,
+      },
+    ],
+    default: ask,
+    current: sel.permissionMode ?? ask,
+  }
+}
+
+/**
+ * Permission mode, model (enabled, sorted), agent (primary, visible; default `build`), effort (only when the model
+ * has variants).
+ */
 export function buildOptionDescriptors(c: Catalog, sel: Selection): ChatOptionDescriptor[] {
   const model = modelDescriptor(c, sel)
   const current = c.models.find((m) => modelValue(m) === model.current)
-  return [model, agentDescriptor(c, sel), effortDescriptor(current, sel)].filter(
+  return [permissionDescriptor(sel), model, agentDescriptor(c, sel), effortDescriptor(current, sel)].filter(
     (d): d is ChatOptionDescriptor => d !== null,
   )
 }
@@ -124,6 +167,8 @@ export function applyOption(
       return { ...sel, model: String(value), effort: null }
     case CHAT_OPTION_KEYS.effort:
       return { ...sel, effort: value === null ? null : String(value) }
+    case CHAT_OPTION_KEYS.permissionMode:
+      return { ...sel, permissionMode: value === PERMISSION_MODE.auto ? PERMISSION_MODE.auto : PERMISSION_MODE.ask }
     default:
       return { ...sel, agent: String(value) }
   }

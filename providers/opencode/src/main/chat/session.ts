@@ -29,6 +29,7 @@ import {
   MESSAGE_TYPES,
   ORDER,
   OTHER_EVENT,
+  PERMISSION_MODE,
   REASON,
   SERVER_EXITED_KEY,
   SESSION_NOT_FOUND,
@@ -64,6 +65,8 @@ import type { HubEvent } from './wire/event-hub'
 
 type Log = Pick<Logger, 'info' | 'warn'>
 const [SUCCEEDED, FAILED] = IDLE_OUTCOMES
+/** Options that change the session's model (`switchModel`). */
+const MODEL_OPTION_KEYS = new Set<string>([CHAT_OPTION_KEYS.model, CHAT_OPTION_KEYS.effort])
 
 async function loadCatalog(conn: OpencodeConnection): Promise<{ catalog: Catalog; commands: OpencodeCommand[] }> {
   const { client } = conn
@@ -214,6 +217,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
 
   #emit(e: ChatEvent): void {
     if (e.kind === K.turnEnd) this.#turnActive = false
+    if (e.kind === K.permissionRequest && this.#autoApprove) queueMicrotask(() => this.#approve(e.requestId))
     if (e.kind === K.custom && e.type === CUSTOM.form && e.eventId) {
       const form = formPayloadSchema.safeParse(e.data)
       if (form.success) this.#forms.set(e.eventId, form.data.fields)
@@ -234,6 +238,11 @@ export class OpencodeChatSession implements ChatSessionHandle {
   /** The root mapper and every subagent's, with the session each one translates. */
   #mappers(): { sessionId: string; mapper: EventMapper }[] {
     return [{ sessionId: this.externalSessionId, mapper: this.#mapper }, ...this.#subagents.mappers]
+  }
+
+  #approve(requestId: string): void {
+    const owner = this.#mappers().find((x) => x.mapper.pendingPermissions.includes(requestId))
+    if (owner) this.#approveAll(owner.sessionId, owner.mapper)
   }
 
   /** The session (root or subagent) a pending permission or form belongs to. */
@@ -308,10 +317,23 @@ export class OpencodeChatSession implements ChatSessionHandle {
     const model = modelInputOf(next)
     if (key === AGENT_OPTION_KEY && next.agent)
       await this.#conn.client.session.switchAgent({ sessionID, agent: next.agent })
-    else if (key !== AGENT_OPTION_KEY && model) await this.#conn.client.session.switchModel({ sessionID, model })
+    else if (MODEL_OPTION_KEYS.has(key) && model) await this.#conn.client.session.switchModel({ sessionID, model })
     this.#sel = next
     this.#options = buildOptionDescriptors(this.#catalog, next)
     this.#emit({ kind: K.options, options: this.#options })
+    if (this.#autoApprove) for (const { sessionId, mapper } of this.#mappers()) this.#approveAll(sessionId, mapper)
+  }
+
+  get #autoApprove(): boolean {
+    return this.#sel.permissionMode === PERMISSION_MODE.auto
+  }
+
+  /** Auto-approve mode: every pending permission request of `sessionId` is allowed once. */
+  #approveAll(sessionId: string, mapper: EventMapper): void {
+    for (const requestID of mapper.pendingPermissions)
+      void this.#conn.client.permission
+        .reply({ sessionID: sessionId, requestID, decision: toDecision(PERMISSION_OPTION.allow_once) })
+        .catch(this.#warn)
   }
 
   #currentModel(): string | undefined {
