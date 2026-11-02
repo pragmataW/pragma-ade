@@ -3,24 +3,19 @@ import { describe, expect, it } from 'vitest'
 import { createSdkMessageMapper, type MapperFrame } from '../../src/main/chat/mapper'
 import * as F from './frames'
 
-const mapAll = (frames: unknown[], opts?: Parameters<typeof createSdkMessageMapper>[0]) => {
-  const m = createSdkMessageMapper(opts)
-  return frames.flatMap((f) => m.map(f as MapperFrame))
-}
-
 describe('createSdkMessageMapper', () => {
   it('stream deltas use the content_block index for part ids', () => {
-    const events = mapAll([F.messageStart('m1'), F.blockStart(0, { type: 'text', text: '' }), F.textDelta(0, 'He')])
+    const events = F.mapAll([F.messageStart('m1'), F.blockStart(0, { type: 'text', text: '' }), F.textDelta(0, 'He')])
     expect(events).toEqual([{ kind: 'text-delta', messageId: 'm1', partId: 'm1:0', text: 'He', mode: 'delta' }])
   })
 
   it('thinking deltas map to thinking', () => {
-    const events = mapAll([F.messageStart('m1'), F.blockStart(0, { type: 'thinking' }), F.thinkingDelta(0, 'hm')])
+    const events = F.mapAll([F.messageStart('m1'), F.blockStart(0, { type: 'thinking' }), F.thinkingDelta(0, 'hm')])
     expect(events).toEqual([{ kind: 'thinking', messageId: 'm1', partId: 'm1:0', text: 'hm', mode: 'delta' }])
   })
 
   it('one block per assistant frame yields msg:0 thinking and msg:1 text snapshots', () => {
-    const events = mapAll([F.assistant('msg', F.thinking('plan')), F.assistant('msg', F.text('done'))])
+    const events = F.mapAll([F.assistant('msg', F.thinking('plan')), F.assistant('msg', F.text('done'))])
     expect(events).toEqual([
       { kind: 'thinking', messageId: 'msg', partId: 'msg:0', text: 'plan', mode: 'snapshot' },
       { kind: 'text-delta', messageId: 'msg', partId: 'msg:1', text: 'done', mode: 'snapshot' },
@@ -28,7 +23,7 @@ describe('createSdkMessageMapper', () => {
   })
 
   it('tool_use start emits a pending tool-call; the assistant frame emits running + file-edit', () => {
-    const events = mapAll([
+    const events = F.mapAll([
       F.messageStart('m'),
       F.blockStart(0, { type: 'tool_use', id: 'toolu_edit_1', name: 'Edit', input: {} }),
       F.assistant('m', F.editUse()),
@@ -44,14 +39,14 @@ describe('createSdkMessageMapper', () => {
 
   it('TodoWrite emits a todo instead of a file-edit', () => {
     const input = { todos: [{ content: 'x', status: 'in_progress' }] }
-    const events = mapAll([F.assistant('m', F.toolUse('t1', 'TodoWrite', input))])
+    const events = F.mapAll([F.assistant('m', F.toolUse('t1', 'TodoWrite', input))])
     expect(events.map((e) => e.kind)).toEqual(['tool-call', 'todo'])
     expect(events[1]).toMatchObject({ toolCallId: 't1', items: [{ status: 'active' }] })
   })
 
   it('tool_result maps output, is_error and a Write originalFile', () => {
     const write = F.toolUse('w1', 'Write', { file_path: 'a.txt', content: 'new' })
-    const events = mapAll([
+    const events = F.mapAll([
       F.assistant('m', write),
       F.toolResult('w1', [{ type: 'text', text: 'ok' }], { tool_use_result: { originalFile: 'old' } }),
       F.toolResult('x', 'boom', {}, true),
@@ -70,7 +65,7 @@ describe('createSdkMessageMapper', () => {
   })
 
   it('5 MB tool output truncated to ≤ 32 768 chars plus marker with outputTruncated', () => {
-    const [event] = mapAll([F.toolResult('t', 'x'.repeat(5 * 1024 * 1024))])
+    const [event] = F.mapAll([F.toolResult('t', 'x'.repeat(5 * 1024 * 1024))])
     expect(event).toMatchObject({ kind: 'tool-result', outputTruncated: true })
     const output = (event as { output: string }).output
     expect(output.length).toBeLessThanOrEqual(MAX_TOOL_OUTPUT_CHARS + TRUNCATION_MARKER.length)
@@ -78,7 +73,7 @@ describe('createSdkMessageMapper', () => {
   })
 
   it('result emits usage then turn-end completed', () => {
-    const events = mapAll([F.assistant('m', F.text('a')), F.result()])
+    const events = F.mapAll([F.assistant('m', F.text('a')), F.result()])
     expect(events.slice(1)).toEqual([
       {
         kind: 'usage',
@@ -98,7 +93,7 @@ describe('createSdkMessageMapper', () => {
     ['error_max_turns', 'limit'],
     ['error_max_budget_usd', 'limit'],
   ])('%s → turn-end %s', (subtype, reason) => {
-    expect(mapAll([F.result(subtype)]).at(-1)).toEqual({ kind: 'turn-end', reason })
+    expect(F.mapAll([F.result(subtype)]).at(-1)).toEqual({ kind: 'turn-end', reason })
   })
 
   it('error_during_execution after markInterruptRequested → interrupted; otherwise turn_failed', () => {
@@ -116,11 +111,11 @@ describe('createSdkMessageMapper', () => {
   })
 
   it('system/init becomes session-info with the session id', () => {
-    expect(mapAll([F.init()])).toEqual([{ kind: 'session-info', externalSessionId: 'sess-1' }])
+    expect(F.mapAll([F.init()])).toEqual([{ kind: 'session-info', externalSessionId: 'sess-1' }])
   })
 
   it('compact_boundary becomes custom claude.compact-boundary', () => {
-    expect(mapAll([F.compactBoundary()])).toEqual([
+    expect(F.mapAll([F.compactBoundary()])).toEqual([
       { kind: 'custom', type: 'claude.compact-boundary', data: { trigger: 'auto', preTokens: 48_000 } },
     ])
   })
@@ -129,18 +124,18 @@ describe('createSdkMessageMapper', () => {
     ['authentication_failed', 'auth'],
     ['rate_limit', 'rate_limit'],
   ])('assistant error %s → %s', (error, code) => {
-    expect(mapAll([F.assistant('m', F.text(''), { error })]).at(-1)).toMatchObject({ kind: 'error', code })
+    expect(F.mapAll([F.assistant('m', F.text(''), { error })]).at(-1)).toMatchObject({ kind: 'error', code })
   })
 
   it('unknown frame type maps to []', () => {
-    expect(mapAll([{ type: 'message_kind_from_the_future' }, { type: 'system', subtype: 'status' }])).toEqual([])
+    expect(F.mapAll([{ type: 'message_kind_from_the_future' }, { type: 'system', subtype: 'status' }])).toEqual([])
   })
 
   it('history user text becomes message{origin:history}; tool-result-only frames produce no message', () => {
-    const events = mapAll([F.userText('u1', 'hello'), F.toolResult('t', 'x')], { origin: 'history' })
+    const events = F.mapAll([F.userText('u1', 'hello'), F.toolResult('t', 'x')], { origin: 'history' })
     expect(events.map((e) => e.kind)).toEqual(['message', 'tool-result'])
     expect(events[0]).toMatchObject({ messageId: 'u1', text: 'hello', origin: 'history' })
-    expect(mapAll([F.userText('u1', 'live')])).toEqual([])
+    expect(F.mapAll([F.userText('u1', 'live')])).toEqual([])
   })
 
   it('finish completes tools that never got a result', () => {

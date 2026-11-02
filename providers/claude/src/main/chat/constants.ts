@@ -17,7 +17,10 @@ export const CLAUDE_TOOLS = {
   webSearch: 'WebSearch',
   task: 'Task',
   agent: 'Agent',
+  workflow: 'Workflow',
   todoWrite: 'TodoWrite',
+  askUserQuestion: 'AskUserQuestion',
+  exitPlanMode: 'ExitPlanMode',
 } as const
 
 /** Provider-specific chat events (`custom:<type>` parts). */
@@ -58,9 +61,24 @@ export const DEFAULT_PERMISSION_MODE = 'default'
 export const DEFAULT_MODEL_VALUE = 'default'
 export const SYSTEM_PRESET = { type: 'preset', preset: 'claude_code' } as const
 export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
-export const PERMISSION_MODES = ['default', 'acceptEdits', 'plan', 'auto', 'bypassPermissions'] as const
-export const BYPASS_PERMISSIONS = 'bypassPermissions'
+/** Claude's permission modes, in Shift+Tab cycle order (`bypassPermissions` is outside the cycle). */
+export const PERMISSION_MODES = ['default', 'acceptEdits', 'plan', 'auto', 'dontAsk', 'bypassPermissions'] as const
+export type ClaudePermissionMode = (typeof PERMISSION_MODES)[number]
+export const PERMISSION_MODE = {
+  default: 'default',
+  acceptEdits: 'acceptEdits',
+  plan: 'plan',
+  auto: 'auto',
+  dontAsk: 'dontAsk',
+  bypassPermissions: 'bypassPermissions',
+} as const satisfies Record<ClaudePermissionMode, ClaudePermissionMode>
+export const BYPASS_PERMISSIONS = PERMISSION_MODE.bypassPermissions
+/** Modes a plan approval can continue in (the kit lists them in this order). */
+export const PLAN_APPROVE_MODES = [PERMISSION_MODE.acceptEdits, PERMISSION_MODE.auto, PERMISSION_MODE.default] as const
 export const SDK_SETTING_EFFORT = 'effortLevel'
+export const SDK_SETTING_FAST_MODE = 'fastMode'
+/** The session option key of the fast mode toggle. */
+export const FAST_MODE_OPTION = 'fastMode'
 export const IMAGE_NAME = 'image'
 
 /** SDK frame type / subtype names the mapper reads. */
@@ -70,8 +88,33 @@ export const FRAME = {
   result: 'result',
   system: 'system',
   streamEvent: 'stream_event',
+  rateLimit: 'rate_limit_event',
 } as const
-export const SYSTEM_SUBTYPE = { init: 'init', compactBoundary: 'compact_boundary' } as const
+export const SYSTEM_SUBTYPE = {
+  init: 'init',
+  compactBoundary: 'compact_boundary',
+  taskStarted: 'task_started',
+  taskUpdated: 'task_updated',
+  taskProgress: 'task_progress',
+  taskNotification: 'task_notification',
+  backgroundTasksChanged: 'background_tasks_changed',
+  apiRetry: 'api_retry',
+  permissionDenied: 'permission_denied',
+} as const
+/** SDK `task_type` values with their own card kind. */
+export const TASK_TYPE = { agent: 'local_agent', workflow: 'local_workflow', bash: 'local_bash' } as const
+/** Card names of jobs without a subagent type or workflow name (tool names, as the tool rows show them). */
+export const TASK_TYPE_NAMES: Record<string, string> = { [TASK_TYPE.bash]: CLAUDE_TOOLS.bash }
+/** `task_notification.status` → chat task status. */
+export const NOTIFICATION_STATUS = { completed: 'completed', failed: 'failed', stopped: 'killed' } as const
+/** `rate_limit_info.status` → chat rate-limit status. */
+export const RATE_LIMIT_INFO_STATUS = { allowed: 'cleared', allowed_warning: 'warning', rejected: 'rejected' } as const
+/** SDK `resetsAt` is in seconds; values above this are already milliseconds. */
+export const EPOCH_SECONDS_MAX = 1e11
+export const MS_PER_SECOND = 1000
+export const PERCENT = 100
+/** `mcp_servers[].status` values the chat contract knows; others read as pending. */
+export const MCP_PENDING = 'pending'
 export const STREAM_EVENT = {
   messageStart: 'message_start',
   blockStart: 'content_block_start',
@@ -83,6 +126,7 @@ export const BLOCK = {
   toolUse: 'tool_use',
   toolResult: 'tool_result',
   image: 'image',
+  document: 'document',
 } as const
 export const DELTA = { text: 'text_delta', thinking: 'thinking_delta' } as const
 export const RESULT_SUBTYPE = {

@@ -18,7 +18,9 @@
         "displayName": "Default (recommended)",
         "description": "Fake default",
         "supportsEffort": true,
-        "supportedEffortLevels": ["low", "medium", "high"]
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
       },
       {
         "value": "fake-opus",

@@ -57,6 +57,10 @@ export function buildQueryOptions(
     env: buildClaudeChildEnv(ctx.env),
     spawnClaudeCodeProcess: spawner.spawn,
     includePartialMessages: true,
+    // subagents: their full conversation (nested cards), live one-line summaries, and our per-task Stop control
+    forwardSubagentText: true,
+    agentProgressSummaries: true,
+    perTaskStopAffordance: true,
     systemPrompt: { ...SYSTEM_PRESET },
     canUseTool,
     abortController: abort,

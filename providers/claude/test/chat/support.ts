@@ -182,6 +182,10 @@ export async function startSession(scenario: ScenarioName, setup: SessionSetup =
   }
 }
 
+/** The events of one kind, typed. */
+export const ofKind = <K extends ChatEvent['kind']>(events: ChatEvent[], kind: K) =>
+  events.filter((e): e is Extract<ChatEvent, { kind: K }> => e.kind === kind)
+
 export const isKind =
   <K extends ChatEvent['kind']>(kind: K, extra: (e: Extract<ChatEvent, { kind: K }>) => boolean = () => true) =>
   (e: ChatEvent) =>

@@ -1,0 +1,80 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitToolUse": {
+          "messageId": "msg_bg_0",
+          "id": "toolu_bg_1",
+          "name": "Bash",
+          "input": {
+            "command": "npm run dev",
+            "run_in_background": true
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "bash_bg_1",
+          "tool_use_id": "toolu_bg_1",
+          "task_type": "local_bash",
+          "is_backgrounded": true,
+          "description": "npm run dev",
+          "uuid": "task_started-bash_bg_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_bg_1",
+          "content": "Command running in background with ID: bash_bg_1"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_bg_1",
+          "text": "The dev server is running in the background.",
+          "chunks": 4
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitToolUse": {
+          "messageId": "msg_q_0",
+          "id": "toolu_question_1",
+          "name": "AskUserQuestion",
+          "input": {
+            "questions": [
+              {
+                "question": "Which test runner should we use?",
+                "header": "Runner",
+                "multiSelect": false,
+                "options": [
+                  {
+                    "label": "Vitest",
+                    "description": "Fast, Vite-native"
+                  },
+                  {
+                    "label": "Jest",
+                    "description": "The classic"
+                  }
+                ]
+              },
+              {
+                "question": "Which checks should run on commit?",
+                "header": "Checks",
+                "multiSelect": true,
+                "options": [
+                  {
+                    "label": "Lint",
+                    "description": "Biome"
+                  },
+                  {
+                    "label": "Types",
+                    "description": "tsc"
+                  },
+                  {
+                    "label": "Tests",
+                    "description": "Unit tests"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "requestPermission": {
+          "requestId": "perm-question-1",
+          "toolName": "AskUserQuestion",
+          "input": {
+            "questions": [
+              {
+                "question": "Which test runner should we use?",
+                "header": "Runner",
+                "multiSelect": false,
+                "options": [
+                  {
+                    "label": "Vitest",
+                    "description": "Fast, Vite-native"
+                  },
+                  {
+                    "label": "Jest",
+                    "description": "The classic"
+                  }
+                ]
+              },
+              {
+                "question": "Which checks should run on commit?",
+                "header": "Checks",
+                "multiSelect": true,
+                "options": [
+                  {
+                    "label": "Lint",
+                    "description": "Biome"
+                  },
+                  {
+                    "label": "Types",
+                    "description": "tsc"
+                  },
+                  {
+                    "label": "Tests",
+                    "description": "Unit tests"
+                  }
+                ]
+              }
+            ]
+          },
+          "toolUseId": "toolu_question_1"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_question_1",
+          "content": "Your questions have been answered."
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_q_1",
+          "text": "Thanks, setting it up that way.",
+          "chunks": 4
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ]
+}

@@ -76,7 +76,8 @@ function record(type, message, uuid, extra = {}) {
 // ── output ──────────────────────────────────────────────────────────────────────────────────────────────────
 const write = (frame) => process.stdout.write(`${JSON.stringify(frame)}\n`)
 const base = () => ({ uuid: randomUUID(), session_id: sessionId })
-const streamEvent = (event) => write({ type: 'stream_event', event, parent_tool_use_id: null, ...base() })
+const streamEvent = (event, parent = null) =>
+  write({ type: 'stream_event', event, parent_tool_use_id: parent, ...base() })
 const usage = { input_tokens: 120, output_tokens: 40, cache_read_input_tokens: 30, cache_creation_input_tokens: 10 }
 const blockIndex = new Map()
 const nextIndex = (messageId) => {
@@ -85,29 +86,31 @@ const nextIndex = (messageId) => {
   return k
 }
 
-function emitAssistant(messageId, block) {
+function emitAssistant(messageId, block, parent = null) {
   const frame = {
     type: 'assistant',
     message: { id: messageId, type: 'message', role: 'assistant', model: MODEL, content: [block], usage },
-    parent_tool_use_id: null,
+    parent_tool_use_id: parent,
     ...base(),
   }
   write(frame)
   record('assistant', frame.message, frame.uuid)
 }
 
-async function streamBlock(messageId, start, deltas, final, chunkDelayMs) {
+/** `parent`: the spawning tool call id when a subagent streams the block. */
+async function streamBlock(messageId, start, deltas, final, chunkDelayMs, parent = null) {
   const index = nextIndex(messageId)
+  const event = (e) => streamEvent(e, parent)
   if (index === 0)
-    streamEvent({ type: 'message_start', message: { id: messageId, role: 'assistant', model: MODEL, content: [] } })
-  streamEvent({ type: 'content_block_start', index, content_block: start })
+    event({ type: 'message_start', message: { id: messageId, role: 'assistant', model: MODEL, content: [] } })
+  event({ type: 'content_block_start', index, content_block: start })
   for (const delta of deltas) {
     if (turnAborted) return
-    streamEvent({ type: 'content_block_delta', index, delta })
+    event({ type: 'content_block_delta', index, delta })
     if (chunkDelayMs) await sleep(chunkDelayMs)
   }
-  streamEvent({ type: 'content_block_stop', index })
-  emitAssistant(messageId, final)
+  event({ type: 'content_block_stop', index })
+  emitAssistant(messageId, final, parent)
 }
 
 const chunksOf = (text, n = 1) => {
@@ -124,6 +127,7 @@ const emitText = (s) =>
     chunksOf(s.text, s.chunks).map((text) => ({ type: 'text_delta', text })),
     { type: 'text', text: s.text },
     s.chunkDelayMs,
+    s.parentToolUseId,
   )
 const emitThinking = (s) =>
   streamBlock(
@@ -132,6 +136,7 @@ const emitThinking = (s) =>
     chunksOf(s.text, s.chunks).map((thinking) => ({ type: 'thinking_delta', thinking })),
     { type: 'thinking', thinking: s.text, signature: 'sig' },
     s.chunkDelayMs,
+    s.parentToolUseId,
   )
 const emitToolUse = (s) =>
   streamBlock(
@@ -139,6 +144,8 @@ const emitToolUse = (s) =>
     { type: 'tool_use', id: s.id, name: s.name, input: {} },
     [{ type: 'input_json_delta', partial_json: JSON.stringify(s.input) }],
     { type: 'tool_use', id: s.id, name: s.name, input: s.input },
+    0,
+    s.parentToolUseId,
   )
 
 function emitToolResult(s) {
@@ -146,7 +153,7 @@ function emitToolResult(s) {
     role: 'user',
     content: [{ type: 'tool_result', tool_use_id: s.toolUseId, content: s.content, is_error: s.isError === true }],
   }
-  const frame = { type: 'user', message, parent_tool_use_id: null, ...base() }
+  const frame = { type: 'user', message, parent_tool_use_id: s.parentToolUseId ?? null, ...base() }
   if (s.toolUseResult !== undefined) frame.tool_use_result = s.toolUseResult
   write(frame)
   record('user', message, frame.uuid, s.toolUseResult === undefined ? {} : { toolUseResult: s.toolUseResult })
@@ -206,6 +213,8 @@ function onControlRequest(frame) {
   if (scenario.protocol === false) return
   const subtype = frame.request?.subtype
   if (subtype === 'initialize') return reply(frame, initResponse())
+  if (subtype === 'mcp_status') return reply(frame, { mcpServers: scenario.mcpServers ?? [] })
+  if (subtype === 'rewind_files') return reply(frame, { canRewind: true, filesChanged: ['README.md'] })
   reply(frame)
   if (subtype !== 'interrupt') return
   interrupted = true
@@ -256,6 +265,9 @@ function initResponse() {
   }
 }
 
+const mcpInit = () =>
+  scenario.mcpServers ? { mcp_servers: scenario.mcpServers.map(({ name, status }) => ({ name, status })) } : {}
+
 // ── steps ───────────────────────────────────────────────────────────────────────────────────────────────────
 const INTERRUPTED = Symbol('interrupted')
 const raceInterrupt = (p) => Promise.race([p, interruptSignal().then(() => INTERRUPTED)])
@@ -274,6 +286,7 @@ function requestPermission(s) {
       tool_name: s.toolName,
       input: s.input,
       tool_use_id: s.toolUseId,
+      ...(s.agentId ? { agent_id: s.agentId } : {}),
       ...(s.suggestions ? { permission_suggestions: s.suggestions } : {}),
       ...(s.decisionReason ? { decision_reason: s.decisionReason } : {}),
     },
@@ -330,7 +343,8 @@ async function main() {
   if (scenario.protocol === false) return
   for (let turn = 0; ; turn++) {
     await nextUser()
-    if (turn === 0) write({ type: 'system', subtype: 'init', cwd: process.cwd(), model: MODEL, tools: [], ...base() })
+    if (turn === 0)
+      write({ type: 'system', subtype: 'init', cwd: process.cwd(), model: MODEL, tools: [], ...mcpInit(), ...base() })
     await runTurn(scenario.turns?.[turn] ?? FALLBACK_TURN)
   }
 }

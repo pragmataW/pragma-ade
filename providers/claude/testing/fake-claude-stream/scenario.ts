@@ -13,18 +13,34 @@ const DIR = import.meta.dirname
 export const fakeClaudePath = join(DIR, 'fake-claude')
 export const scenariosDir = join(DIR, 'scenarios')
 
-export interface TextStep {
+/** `parentToolUseId`: the frame comes from the subagent that tool call spawned. */
+interface Nested {
+  parentToolUseId?: string
+}
+export interface TextStep extends Nested {
   messageId: string
   text: string
   chunks?: number
   chunkDelayMs?: number
 }
+export interface ToolUseStep extends Nested {
+  messageId: string
+  id: string
+  name: string
+  input: Record<string, unknown>
+}
+export interface ToolResultStep extends Nested {
+  toolUseId: string
+  content: string
+  isError?: boolean
+  toolUseResult?: unknown
+}
 export type Step =
   | { emit: Record<string, unknown> }
   | { emitText: TextStep }
   | { emitThinking: TextStep }
-  | { emitToolUse: { messageId: string; id: string; name: string; input: Record<string, unknown> } }
-  | { emitToolResult: { toolUseId: string; content: string; isError?: boolean; toolUseResult?: unknown } }
+  | { emitToolUse: ToolUseStep }
+  | { emitToolResult: ToolResultStep }
   | {
       requestPermission: {
         requestId: string
@@ -33,6 +49,8 @@ export type Step =
         toolUseId: string
         suggestions?: unknown[]
         decisionReason?: string
+        /** The subagent (task id) asking. */
+        agentId?: string
       }
     }
   | { awaitInterrupt: true }
@@ -48,12 +66,23 @@ export interface FakeModel {
   description: string
   supportsEffort?: boolean
   supportedEffortLevels?: string[]
+  supportsFastMode?: boolean
+  supportsAutoMode?: boolean
+}
+export interface FakeMcpServer {
+  name: string
+  status: string
+  scope?: string
+  error?: string
+  tools?: { name: string }[]
 }
 export interface Scenario {
   /** false: never answer `initialize` (a wrapper that does not speak stream-json). */
   protocol?: boolean
   init?: { commands: { name: string; description: string; argumentHint: string }[]; models: FakeModel[] }
   preamble?: Step[]
+  /** Answer of `mcp_status`; also listed (name + status) in `system/init`. */
+  mcpServers?: FakeMcpServer[]
   /** Each turn first awaits the next user frame. */
   turns: Step[][]
 }
@@ -82,6 +111,8 @@ export const FAKE_MODELS: FakeModel[] = [
     description: 'Fake default',
     supportsEffort: true,
     supportedEffortLevels: ['low', 'medium', 'high'],
+    supportsFastMode: true,
+    supportsAutoMode: true,
   },
   { value: 'fake-opus', displayName: 'Fake Opus', description: 'Bigger fake', supportsEffort: false },
 ]
@@ -210,6 +241,253 @@ export const compactScenario = (): Scenario => ({
   ],
 })
 
+// ── subagents, workflows, background jobs ────────────────────────────────────────────────────────────────────
+export const FAKE_AGENT_TOOL_ID = 'toolu_agent_1'
+export const FAKE_TASK_ID = 'a1b2c3d4e5f6'
+export const FAKE_SUBAGENT_TEXT = 'The repository has a README.md and a src/ folder.'
+const sys = (subtype: string, fields: Record<string, unknown>): Step => ({
+  emit: { type: 'system', subtype, ...fields, uuid: `${subtype}-${String(fields.task_id ?? '')}`, session_id: 'fake' },
+})
+const tool = (messageId: string, id: string, name: string, input: Record<string, unknown>, parent?: string): Step => ({
+  emitToolUse: { messageId, id, name, input, ...(parent ? { parentToolUseId: parent } : {}) },
+})
+const toolDone = (toolUseId: string, content: string, parent?: string): Step => ({
+  emitToolResult: { toolUseId, content, ...(parent ? { parentToolUseId: parent } : {}) },
+})
+const nestedText = (messageId: string, t: string, parent: string): Step => ({
+  emitText: { messageId, text: t, chunks: 2, parentToolUseId: parent },
+})
+const usage = (tokens: number, toolUses: number) => ({ total_tokens: tokens, tool_uses: toolUses, duration_ms: 4200 })
+/** A slow beat so the UI shows the running state. */
+const BEAT_MS = 400
+
+/** The Agent call that starts `taskId` (`fields` add workflow / nesting details). */
+function spawnTask(agentToolId: string, taskId: string, fields: Record<string, unknown>, parent?: string): Step[] {
+  return [
+    tool(
+      `msg_spawn_${taskId}`,
+      agentToolId,
+      'Agent',
+      { description: fields.description, prompt: 'List the files' },
+      parent,
+    ),
+    sys('task_started', {
+      task_id: taskId,
+      tool_use_id: agentToolId,
+      task_type: 'local_agent',
+      is_backgrounded: false,
+      spawn_depth: 1,
+      ...fields,
+    }),
+  ]
+}
+
+const finishTask = (taskId: string, agentToolId: string, summary: string, parent?: string): Step[] => [
+  sys('task_notification', {
+    task_id: taskId,
+    tool_use_id: agentToolId,
+    status: 'completed',
+    output_file: '/tmp/fake-task.output',
+    summary,
+    usage: usage(18_400, 3),
+  }),
+  toolDone(agentToolId, summary, parent),
+]
+
+export const subagentScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      text('msg_sub_0', 'I will ask a subagent to look around.', 2),
+      ...spawnTask(FAKE_AGENT_TOOL_ID, FAKE_TASK_ID, { subagent_type: 'Explore', description: 'List the files' }),
+      nestedText('msg_sub_1', 'Listing the repository root.', FAKE_AGENT_TOOL_ID),
+      tool('msg_sub_1', 'toolu_sub_ls', 'Bash', { command: 'ls' }, FAKE_AGENT_TOOL_ID),
+      toolDone('toolu_sub_ls', 'README.md\nsrc', FAKE_AGENT_TOOL_ID),
+      sys('task_progress', {
+        task_id: FAKE_TASK_ID,
+        tool_use_id: FAKE_AGENT_TOOL_ID,
+        description: 'Running ls',
+        summary: 'Reading the repository root',
+        usage: usage(9_800, 1),
+        last_tool_name: 'Bash',
+      }),
+      { delayMs: BEAT_MS },
+      nestedText('msg_sub_2', FAKE_SUBAGENT_TEXT, FAKE_AGENT_TOOL_ID),
+      ...finishTask(FAKE_TASK_ID, FAKE_AGENT_TOOL_ID, FAKE_SUBAGENT_TEXT),
+      text('msg_sub_3', 'The subagent found a README.md and a src/ folder.'),
+      done,
+    ],
+  ],
+})
+
+export const FAKE_WORKFLOW_TASK_ID = 'wf_spec_1'
+const WORKFLOW_TOOL_ID = 'toolu_workflow_1'
+const WORKFLOW_CHILD_TOOL_ID = 'toolu_wf_agent_1'
+
+/** A `spec` workflow that runs one nested subagent. */
+export const workflowScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      tool('msg_wf_0', WORKFLOW_TOOL_ID, 'Workflow', { name: 'spec' }),
+      sys('task_started', {
+        task_id: FAKE_WORKFLOW_TASK_ID,
+        tool_use_id: WORKFLOW_TOOL_ID,
+        task_type: 'local_workflow',
+        workflow_name: 'spec',
+        description: 'Write a spec for the feature',
+      }),
+      ...spawnTask(
+        WORKFLOW_CHILD_TOOL_ID,
+        'wf_child_1',
+        { subagent_type: 'Plan', description: 'Draft the spec', parent_task_id: FAKE_WORKFLOW_TASK_ID, spawn_depth: 2 },
+        WORKFLOW_TOOL_ID,
+      ),
+      nestedText('msg_wf_1', 'Drafting the spec outline.', WORKFLOW_CHILD_TOOL_ID),
+      { delayMs: BEAT_MS },
+      ...finishTask('wf_child_1', WORKFLOW_CHILD_TOOL_ID, 'Spec outline drafted.', WORKFLOW_TOOL_ID),
+      ...finishTask(FAKE_WORKFLOW_TASK_ID, WORKFLOW_TOOL_ID, 'The spec is ready in docs/spec.md.'),
+      text('msg_wf_2', 'The spec workflow finished.'),
+      done,
+    ],
+  ],
+})
+
+export const FAKE_BACKGROUND_TASK_ID = 'bash_bg_1'
+const BACKGROUND_TOOL_ID = 'toolu_bg_1'
+
+/** `npm run dev` moved to the background; it keeps running after the turn. */
+export const backgroundTaskScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      tool('msg_bg_0', BACKGROUND_TOOL_ID, 'Bash', { command: 'npm run dev', run_in_background: true }),
+      sys('task_started', {
+        task_id: FAKE_BACKGROUND_TASK_ID,
+        tool_use_id: BACKGROUND_TOOL_ID,
+        task_type: 'local_bash',
+        is_backgrounded: true,
+        description: 'npm run dev',
+      }),
+      toolDone(BACKGROUND_TOOL_ID, `Command running in background with ID: ${FAKE_BACKGROUND_TASK_ID}`),
+      text('msg_bg_1', 'The dev server is running in the background.'),
+      done,
+    ],
+  ],
+})
+
+// ── questions, plans ─────────────────────────────────────────────────────────────────────────────────────────
+export const FAKE_QUESTION_ID = 'perm-question-1'
+export const FAKE_QUESTION = 'Which test runner should we use?'
+const QUESTION_TOOL_ID = 'toolu_question_1'
+export const FAKE_QUESTION_INPUT = {
+  questions: [
+    {
+      question: FAKE_QUESTION,
+      header: 'Runner',
+      multiSelect: false,
+      options: [
+        { label: 'Vitest', description: 'Fast, Vite-native' },
+        { label: 'Jest', description: 'The classic' },
+      ],
+    },
+    {
+      question: 'Which checks should run on commit?',
+      header: 'Checks',
+      multiSelect: true,
+      options: [
+        { label: 'Lint', description: 'Biome' },
+        { label: 'Types', description: 'tsc' },
+        { label: 'Tests', description: 'Unit tests' },
+      ],
+    },
+  ],
+}
+
+export const askQuestionScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      tool('msg_q_0', QUESTION_TOOL_ID, 'AskUserQuestion', FAKE_QUESTION_INPUT),
+      {
+        requestPermission: {
+          requestId: FAKE_QUESTION_ID,
+          toolName: 'AskUserQuestion',
+          input: FAKE_QUESTION_INPUT,
+          toolUseId: QUESTION_TOOL_ID,
+        },
+      },
+      toolDone(QUESTION_TOOL_ID, 'Your questions have been answered.'),
+      text('msg_q_1', 'Thanks, setting it up that way.'),
+      done,
+    ],
+  ],
+})
+
+export const FAKE_PLAN_ID = 'perm-plan-1'
+export const FAKE_PLAN = '## Plan\n\n1. Add a `world` line to `a.txt`.\n2. Run the tests.\n'
+const PLAN_TOOL_ID = 'toolu_plan_1'
+
+export const planApproveScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      text('msg_plan_0', 'Here is my plan.', 2),
+      tool('msg_plan_0', PLAN_TOOL_ID, 'ExitPlanMode', { plan: FAKE_PLAN }),
+      {
+        requestPermission: {
+          requestId: FAKE_PLAN_ID,
+          toolName: 'ExitPlanMode',
+          input: { plan: FAKE_PLAN },
+          toolUseId: PLAN_TOOL_ID,
+        },
+      },
+      toolDone(PLAN_TOOL_ID, 'User has approved your plan.'),
+      text('msg_plan_1', 'Implementing the plan now.'),
+      done,
+    ],
+  ],
+})
+
+// ── session notices ──────────────────────────────────────────────────────────────────────────────────────────
+export const FAKE_MCP_SERVERS: FakeMcpServer[] = [
+  { name: 'github', status: 'connected', scope: 'user', tools: [{ name: 'search' }, { name: 'issue' }] },
+  { name: 'linear', status: 'needs-auth', scope: 'project' },
+  { name: 'postgres', status: 'failed', scope: 'local', error: 'spawn pg-mcp ENOENT' },
+]
+
+export const mcpStatusScenario = (): Scenario => ({
+  ...basicScenario(),
+  mcpServers: FAKE_MCP_SERVERS,
+})
+
+/** 5 h window */
+const FAKE_RESETS_AT_S = 1_893_456_000
+export const rateLimitScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      {
+        emit: {
+          type: 'rate_limit_event',
+          rate_limit_info: {
+            status: 'allowed_warning',
+            resetsAt: FAKE_RESETS_AT_S,
+            rateLimitType: 'five_hour',
+            unifiedWindows: { five_hour: { utilization: 0.92 } },
+          },
+          uuid: 'rl-1',
+          session_id: 'fake',
+        },
+      },
+      sys('api_retry', { attempt: 1, max_retries: 10, retry_delay_ms: 2000, error_status: 529, error: 'overloaded' }),
+      { delayMs: BEAT_MS },
+      text('msg_rl_1', 'Answer after one retry.'),
+      done,
+    ],
+  ],
+})
+
 export const SCENARIOS = {
   basic: basicScenario,
   'tool-edit-permission': toolEditPermissionScenario,
@@ -221,6 +499,13 @@ export const SCENARIOS = {
   'exit-early': exitEarlyScenario,
   'banner-then-protocol': bannerThenProtocolScenario,
   compact: compactScenario,
+  subagent: subagentScenario,
+  workflow: workflowScenario,
+  'background-task': backgroundTaskScenario,
+  'ask-question': askQuestionScenario,
+  'plan-approve': planApproveScenario,
+  'mcp-status': mcpStatusScenario,
+  'rate-limit': rateLimitScenario,
 } as const
 export type ScenarioName = keyof typeof SCENARIOS
 

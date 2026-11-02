@@ -287,6 +287,11 @@ export class ClaudeChatSession implements ChatSessionHandle {
     await this.#q.interrupt()
   }
 
+  /** Stops a subagent, workflow or background job (`task_notification` stopped follows). */
+  async stopTask(taskId: string): Promise<void> {
+    await this.#q.stopTask(taskId)
+  }
+
   async respondPermission(requestId: string, decision: ChatPermissionDecision): Promise<void> {
     this.#resolvePending(requestId, OUTCOME_OF[decision])
   }
