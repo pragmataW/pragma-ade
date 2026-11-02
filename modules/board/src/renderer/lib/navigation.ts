@@ -9,6 +9,9 @@ export const showView = async (id: string): Promise<void> => {
   await boardCtx().commands.execute(CoreCommands.activateView, { id })
 }
 export const showBoard = (): Promise<void> => showView(BOARD_VIEW_ID)
+const warnLeave = (e: unknown) => console.warn('board: leaving the board failed', e)
+/** Back / Esc: the main workspace view (agents). */
+export const leaveBoard = (): void => void showView(AGENTS_VIEW_ID).catch(warnLeave)
 
 /** Selects the worktree and shows the agents view. */
 export async function goToWorktree(worktreeId: string): Promise<void> {

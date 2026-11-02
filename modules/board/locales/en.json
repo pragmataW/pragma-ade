@@ -1,6 +1,6 @@
 {
   "module": { "name": "Task Board" },
-  "view": { "title": "Task Board" },
+  "view": { "title": "Task Board", "back": "Back" },
   "sidebar": { "entry": "Task Board", "count": "{{count}} open tasks" },
   "commands": { "open": "Open task board" },
   "scope": { "all": "All projects", "label": "Board" },
