@@ -1,4 +1,6 @@
 /** Module-internal literals (§9.2); anything other modules need lives in `contract/constants.ts`. */
+import { LABEL_COLORS } from './contract/constants'
+import type { LabelColor } from './contract/dto'
 
 /** Branch slug cap (ui-notes: `feat/<key>-<slug>`). */
 export const SLUG_MAX_CHARS = 40
@@ -26,9 +28,10 @@ export const LAST_SCOPE_STORAGE_KEY = 'pragma.board.lastScope'
 export const SIDEBAR_ENTRY_ID = 'board.sidebar'
 export const SIDEBAR_ENTRY_ORDER = 100
 export const VIEW_ICON = 'kanban'
-/** The board's Back button, like the Settings view's. */
-export const BACK_ICON = 'arrow-left'
 export const SETTINGS_ICON = 'kanban'
+/** The header's Back control, the Settings view's icon. */
+export const BACK_ICON = 'arrow-left'
+export const KEYDOWN_EVENT = 'keydown'
 export const ICON_PX = { row: 14, small: 12 } as const
 export const VARIANT = {
   ghost: 'ghost',
@@ -48,7 +51,6 @@ export const MONOGRAM_LETTERS = 2
 /** ui-notes mark sizes: 20px on cards. */
 export const AGENT_MARK_PX = 20
 export const ESCAPE_KEY = 'Escape'
-export const KEYDOWN_EVENT = 'keydown'
 export const ENTER_KEY = 'Enter'
 /** Pointer travel before a drag starts (clicks stay clicks). */
 export const DRAG_ACTIVATION_PX = 5
@@ -61,3 +63,7 @@ export const BRANCH_CHECK_DEBOUNCE_MS = 250
 /** Radix Select needs a non-empty value for "no worktree". */
 export const NONE_WORKTREE_VALUE = '__none__'
 export const ROLE_ALERT = 'alert'
+/** Colours given to new labels in turn: gray reads as "no colour" (ui-notes: label chips have a coloured dot). */
+export const AUTO_LABEL_COLORS: readonly LabelColor[] = LABEL_COLORS.filter((c) => c !== 'gray')
+/** A GFM task list item: bullet or number, then `[ ]` / `[x]` and some text (fenced code is not excluded). */
+export const CHECKLIST_ITEM_RE = /^[ \t]*(?:[-*+]|\d+[.)])[ \t]+\[(?<mark>[ xX])\][ \t]+\S/gm

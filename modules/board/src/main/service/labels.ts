@@ -1,8 +1,8 @@
+import { AUTO_LABEL_COLORS } from '../../constants'
 import {
   BOARD_ERROR,
   BoardError,
   CHANGE_KIND,
-  LABEL_COLORS,
   type LabelColor,
   type LabelDto,
   type LabelId,
@@ -14,11 +14,11 @@ import { parseLabelIds, serializeLabelIds, toLabelDto } from '../lib/mappers'
 import type { BoardRow, LabelRow } from '../schema'
 import type { BoardCore } from './core'
 
-/** Labels per board; names match case-insensitively, new ones take the next colour round-robin. */
+/** Labels per board; names match case-insensitively, new ones take the next colour round-robin (never gray). */
 export function createLabelOps(core: BoardCore) {
   const { repo } = core
   const nextColor = (board: BoardRow): LabelColor =>
-    LABEL_COLORS[repo.listLabels(board.id).length % LABEL_COLORS.length] as LabelColor
+    AUTO_LABEL_COLORS[repo.listLabels(board.id).length % AUTO_LABEL_COLORS.length] as LabelColor
   const byName = (board: BoardRow, name: string): LabelRow | undefined =>
     repo.listLabels(board.id).find((l) => columnMergeKey(l.name) === columnMergeKey(name))
 

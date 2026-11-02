@@ -3,7 +3,7 @@ export const BOARD_TESTIDS = {
   sidebarEntry: 'board-sidebar-entry',
   sidebarCount: 'board-sidebar-count',
   view: 'board-view',
-  /** Top-left Back: leaves the board for the agents view (Esc does the same). */
+  /** Header far left: back to the view the board was opened from (Esc does the same). */
   back: 'board-back',
   scopePicker: 'board-scope-picker',
   search: 'board-search',
@@ -43,6 +43,7 @@ export const BOARD_TESTIDS = {
   drawerDescription: 'task-drawer-description',
   drawerPreviewToggle: 'task-drawer-preview-toggle',
   drawerPreview: 'task-drawer-preview',
+  drawerChecklist: 'task-drawer-checklist',
   drawerStatus: 'task-drawer-status',
   drawerPriority: 'task-drawer-priority',
   drawerLabels: 'task-drawer-labels',
