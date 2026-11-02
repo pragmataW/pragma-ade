@@ -2,7 +2,8 @@
   "module": { "name": "Local History" },
   "tab": {
     "title": "Local History",
-    "empty": "Nothing to restore yet. What Git Changes discards, deletes, drops or undoes shows up here.",
+    "empty": "Nothing to restore in this worktree yet. What Git Changes discards, deletes, drops or undoes here shows up in this list.",
+    "noWorktree": "Select a worktree to see what can be restored in it.",
     "restore": "Restore",
     "restoreAll": "Restore all",
     "remove": "Delete entry",
@@ -33,8 +34,17 @@
   },
   "confirm": {
     "restoreTitle": "Restore from local history?",
-    "restoreMessage": "Files are overwritten with the saved version. Their current content is saved first, so this can be undone.",
+    "restoreFile": "Restore {{file}} to the saved version? Its current content is saved to Local History first, so you can undo this.",
+    "restoreFiles_one": "Restore {{count}} file to the saved version? Its current content is saved to Local History first, so you can undo this.",
+    "restoreFiles_other": "Restore {{count}} files to the saved version? Their current content is saved to Local History first, so you can undo this.",
     "restoreConfirm": "Restore",
+    "stashTitle": "Bring back the stash?",
+    "restoreStash_one": "Put the dropped stash back on the stash list? Your files are not changed; apply or pop it from Git Changes.",
+    "restoreStash_other": "Put the {{count}} dropped stashes back on the stash list? Your files are not changed; apply or pop them from Git Changes.",
+    "stashConfirm": "Bring back stash",
+    "commitTitle": "Redo the commit?",
+    "restoreCommit": "Redo the undone commit {{sha}}? This only works while nothing was committed after it. Your files are not changed.",
+    "commitConfirm": "Redo commit",
     "clearTitle": "Clear local history?",
     "clearMessage": "Every saved entry is deleted. This cannot be undone.",
     "clearConfirm": "Clear"

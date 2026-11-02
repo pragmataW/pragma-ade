@@ -29,7 +29,7 @@ let timer: ReturnType<typeof setInterval> | undefined
 const subscriptions: Disposable[] = []
 
 function registerIpc(ipc: MainContext['ipc'], s: LocalHistoryService): void {
-  ipc.handle(LocalHistoryIpc.list, () => s.list())
+  ipc.handle(LocalHistoryIpc.list, ({ worktreeId }) => s.list(worktreeId))
   ipc.handle(LocalHistoryIpc.detail, ({ id }) => s.detail(id))
   ipc.handle(LocalHistoryIpc.fileContent, ({ id, path }) => s.fileContent(id, path))
   ipc.handle(LocalHistoryIpc.restore, ({ id, paths }) => s.restore(id, paths))

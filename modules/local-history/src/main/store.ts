@@ -235,7 +235,14 @@ export function createHistoryStore(d: StoreDeps): LocalHistoryService {
 
   return {
     record,
-    list: () => db.select().from(entries).orderBy(desc(entries.createdAt), desc(entries.id)).all().map(summarize),
+    list: (worktreeId) =>
+      db
+        .select()
+        .from(entries)
+        .where(worktreeId === undefined ? undefined : eq(entries.worktreeId, worktreeId))
+        .orderBy(desc(entries.createdAt), desc(entries.id))
+        .all()
+        .map(summarize),
     detail,
     fileContent(id, path) {
       const row = db

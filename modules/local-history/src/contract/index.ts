@@ -9,6 +9,7 @@ import {
   FileContentSchema,
   FileRefSchema,
   IdSchema,
+  ListInputSchema,
   type RecordInput,
   RestoreInputSchema,
   type RestoreResult,
@@ -19,7 +20,7 @@ const none = z.void()
 
 /** Renderer ↔ main channels (`local-history.*`); `changed` is main → renderer after any write. */
 export const LocalHistoryIpc = {
-  list: defineIpc({ channel: IPC.list, input: none, output: z.array(EntrySummarySchema) }),
+  list: defineIpc({ channel: IPC.list, input: ListInputSchema, output: z.array(EntrySummarySchema) }),
   detail: defineIpc({ channel: IPC.detail, input: IdSchema, output: EntryDetailSchema.nullable() }),
   fileContent: defineIpc({ channel: IPC.fileContent, input: FileRefSchema, output: FileContentSchema.nullable() }),
   restore: defineIpc({ channel: IPC.restore, input: RestoreInputSchema, output: RestoreResultSchema }),
@@ -31,7 +32,8 @@ export const LocalHistoryIpc = {
 /** Main-side store; other modules may record before their own destructive work (optional dependency). */
 export interface LocalHistoryService {
   record(input: RecordInput): Promise<EntrySummary | null>
-  list(): EntrySummary[]
+  /** Newest first; only `worktreeId`'s entries when given. */
+  list(worktreeId?: string): EntrySummary[]
   detail(id: number): EntryDetail | null
   fileContent(id: number, path: string): FileContent | null
   restore(id: number, paths?: string[]): Promise<RestoreResult>

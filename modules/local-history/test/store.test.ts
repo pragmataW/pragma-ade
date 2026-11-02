@@ -198,6 +198,15 @@ describe('local history store', () => {
     expect(store.list()).toHaveLength(3)
   })
 
+  it("lists one worktree's entries when asked", async () => {
+    const { store, cwd } = await setup()
+    await store.record({ ...discard(cwd, ['a.txt']), worktreeId: 'one' })
+    await store.record({ ...discard(cwd, ['src/b.ts']), worktreeId: 'two' })
+    expect(store.list('one').map((e) => e.worktreeId)).toEqual(['one'])
+    expect(store.list('none')).toEqual([])
+    expect(store.list()).toHaveLength(2)
+  })
+
   it('maps a Git Changes snapshot', () => {
     expect(
       toRecordInput({
