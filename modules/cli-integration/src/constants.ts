@@ -16,3 +16,5 @@ export const POSIX_EXEC_MODE = 0o755
 export const DEFAULT_POSIX_INSTALL_SUBDIR = ['.local', 'bin'] as const
 /** Bundle and skills, relative to the module (dev) and to `resources/modules/cli-integration` (packaged). */
 export const RESOURCE_PATHS = { bundle: 'packages/cli/dist/pragma.cjs', skills: 'skills' } as const
+export const BOARD_MODULE_ID = 'board'
+export const COMMENTS_MODULE_ID = 'comments'
