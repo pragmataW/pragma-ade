@@ -33,13 +33,18 @@ export interface IpcDeps {
 const localFirst = (a: BaseBranchOption, b: BaseBranchOption): number =>
   Number(b.kind === LOCAL) - Number(a.kind === LOCAL)
 
-/** The four `git-changes.*` handlers; the base branch and the worktree path always come from projects (01). */
-export function registerIpc(ctx: Pick<MainContext, 'ipc'>, deps: IpcDeps): void {
-  const withWorktree = async (id: string): Promise<Worktree> => {
-    const wt = await deps.projects.getWorktree(id)
+/** Looks a worktree up in projects (01); an unknown id rejects with `worktreeNotFound`. */
+export const worktreeLookup =
+  (projects: Pick<ProjectsService, 'getWorktree'>) =>
+  async (id: string): Promise<Worktree> => {
+    const wt = await projects.getWorktree(id)
     if (!wt) throw new GitChangesError(WORKTREE_NOT_FOUND)
     return wt
   }
+
+/** The four `git-changes.*` handlers; the base branch and the worktree path always come from projects (01). */
+export function registerIpc(ctx: Pick<MainContext, 'ipc'>, deps: IpcDeps): void {
+  const withWorktree = worktreeLookup(deps.projects)
   ctx.ipc.handle(listChangesIpc, async ({ worktreeId, mode }) => {
     const wt = await withWorktree(worktreeId)
     return deps.diff.listChanges({ worktreeId, cwd: wt.path, mode, baseBranch: wt.baseBranch })

@@ -1,6 +1,13 @@
 import { BRANCH_KINDS } from '@pragma/module-projects/contract'
 import { defineIpc, defineIpcEvent, z } from '@pragma/sdk'
-import { ChangeListSchema, ChangeModeSchema, FileDiffContentsSchema, FileStatusSchema, RepoPathSchema } from './schemas'
+import {
+  ChangeListSchema,
+  ChangeModeSchema,
+  FileDiffContentsSchema,
+  FileStatusSchema,
+  RepoPathSchema,
+  ShaSchema,
+} from './schemas'
 
 /** Renderer → main channels and the main → renderer event. */
 export const GIT_CHANGES_CHANNELS = {
@@ -27,6 +34,8 @@ export const FileContentsInputSchema = z.object({
   status: FileStatusSchema,
   /** Uncommitted mode: the staged side (HEAD ↔ index) instead of the unstaged one (index ↔ worktree). */
   staged: z.boolean().optional(),
+  /** A file of this stash (`scm.stashFiles`): its base commit ↔ the stash (untracked files: absent ↔ `^3`). */
+  stash: ShaSchema.optional(),
 })
 export type FileContentsInput = z.infer<typeof FileContentsInputSchema>
 export const fileContentsIpc = defineIpc({

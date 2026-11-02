@@ -36,6 +36,8 @@ export type FileContentsRequest = Omit<FileContentsInput, 'worktreeId'> & { cwd:
 const HEAD = 'HEAD'
 /** `<rev>:<path>` with an empty rev is `:<path>`, the index (stage 0) version. */
 const INDEX_REV = ''
+/** A stash commit's parents: `^1` the commit it was made on, `^3` its untracked files (when stashed with `-u`). */
+const STASH_PARENT = { base: '^1', untracked: '^3' } as const
 const COMMIT_PEEL = '^{commit}'
 const ALLOW = { allowFailure: true } as const
 const GIT_ARGS = {
@@ -95,6 +97,15 @@ export class DiffService {
     return { path, ...(oldPath ? { oldPath } : {}), status, old: oldSide, new: newSide }
   }
 
+  /** The files a stash changed: tracked ones against its base commit, then its untracked files (`U`), each by path. */
+  async listStash(cwd: string, sha: string): Promise<ChangedFile[]> {
+    const [tracked, untracked] = await Promise.all([
+      this.diffFiles(cwd, [`${sha}${STASH_PARENT.base}`, sha]),
+      this.stashUntracked(cwd, sha),
+    ])
+    return [...tracked, ...untracked]
+  }
+
   /** `HEAD` / `<base>^{commit}` as a sha, or null when it does not resolve. */
   protected async resolveRev(cwd: string, rev: string): Promise<string | null> {
     const r = await this.git(cwd, [...GIT_ARGS.verify, rev === HEAD ? HEAD : `${rev}${COMMIT_PEEL}`], true)
@@ -123,14 +134,16 @@ export class DiffService {
 
   private readNew(input: FileContentsRequest, max: number): Promise<FileVersion> {
     if (input.status === FILE_STATUS.D) return Promise.resolve(ABSENT)
-    if (input.mode === CHANGE_MODE.branch) return readRevSide(this.#git, input.cwd, HEAD, input.path, max)
-    return input.staged
-      ? readRevSide(this.#git, input.cwd, INDEX_REV, input.path, max)
-      : readDiskSide(this.#fs, input.cwd, input.path, max)
+    const rev = newRev(input)
+    return rev === null
+      ? readDiskSide(this.#fs, input.cwd, input.path, max)
+      : readRevSide(this.#git, input.cwd, rev, input.path, max)
   }
 
-  private async oldRev({ cwd, mode, baseBranch, staged }: FileContentsRequest): Promise<string | null> {
-    if (mode === CHANGE_MODE.uncommitted) return staged ? ((await this.resolveRev(cwd, HEAD)) ?? EMPTY_TREE_SHA) : INDEX_REV
+  private async oldRev({ cwd, mode, baseBranch, staged, stash }: FileContentsRequest): Promise<string | null> {
+    if (stash) return `${stash}${STASH_PARENT.base}`
+    if (mode === CHANGE_MODE.uncommitted)
+      return staged ? ((await this.resolveRev(cwd, HEAD)) ?? EMPTY_TREE_SHA) : INDEX_REV
     const base = await this.branchBase(cwd, baseBranch)
     return base.found ? base.mergeBase : null
   }
@@ -161,6 +174,13 @@ export class DiffService {
     const diff = (format: string) => this.git(cwd, [...GIT_ARGS.diff, format, ...revs, GIT_ARGS.endOfRevs])
     const [nameStatus, numstat] = await Promise.all([diff(GIT_ARGS.nameStatus), diff(GIT_ARGS.numstat)])
     return mergeChanges(parseNameStatusZ(nameStatus.stdout), parseNumstatZ(numstat.stdout))
+  }
+
+  private async stashUntracked(cwd: string, sha: string): Promise<ChangedFile[]> {
+    const untracked = `${sha}${STASH_PARENT.untracked}`
+    if (!(await this.resolveRev(cwd, untracked))) return []
+    const files = await this.diffFiles(cwd, [EMPTY_TREE_SHA, untracked])
+    return files.map((f) => ({ ...f, status: FILE_STATUS.U }))
   }
 
   private async untrackedFiles(cwd: string): Promise<ChangedFile[]> {
@@ -194,6 +214,13 @@ export class DiffService {
       }
     }
   }
+}
+
+/** The new side's revision, or null for the disk file (an unstaged entry). */
+function newRev({ mode, staged, stash, status }: FileContentsRequest): string | null {
+  if (stash) return status === FILE_STATUS.U ? `${stash}${STASH_PARENT.untracked}` : stash
+  if (mode === CHANGE_MODE.branch) return HEAD
+  return staged ? INDEX_REV : null
 }
 
 function okList(

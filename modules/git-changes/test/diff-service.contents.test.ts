@@ -11,7 +11,7 @@ const service = new DiffService({ git, maxFileBytes: () => MAX })
 let fx: StandardFixture
 let small: StandardFixture
 
-type Req = { mode: ChangeMode; path: string; status: FileStatus; oldPath?: string; staged?: boolean }
+type Req = { mode: ChangeMode; path: string; status: FileStatus; oldPath?: string; staged?: boolean; stash?: string }
 const get = (r: Req, f: StandardFixture = fx) => service.getFileContents({ cwd: f.repo.path, baseBranch: 'main', ...r })
 const textOf = (v: FileVersion): string => (v.kind === 'text' ? v.contents : `<${v.kind}>`)
 
@@ -132,5 +132,27 @@ describe('DiffService.getFileContents', () => {
       status: 'M',
     })
     expect([c.old.kind, c.new.kind]).toEqual(['absent', 'text'])
+  })
+})
+
+describe('DiffService stashes', () => {
+  it('lists a stash’s tracked and untracked files and reads both sides of each', async () => {
+    const f = await buildStandardFixture()
+    f.repo.git('stash', 'push', '-q', '--include-untracked', '-m', 'wip')
+    const sha = f.repo.git('rev-parse', 'stash@{0}')
+    const files = await service.listStash(f.repo.path, sha)
+    const app = await get({ mode: 'uncommitted', path: 'src/app.ts', status: 'M', stash: sha }, f)
+    const todo = await get({ mode: 'uncommitted', path: 'notes/todo.txt', status: 'U', stash: sha }, f)
+    f.repo.cleanup()
+    expect(files.map((x) => [x.path, x.status])).toEqual([
+      ['README.md', 'M'],
+      ['assets/logo.png', 'M'],
+      ['src/app.ts', 'M'],
+      ['notes/todo.txt', 'U'],
+    ])
+    expect(files.at(-1)).toMatchObject({ additions: 2 })
+    expect(textOf(app.old)).toMatch(/^app 1\n/)
+    expect(textOf(app.new)).toContain('app 10 edited')
+    expect([todo.old.kind, textOf(todo.new)]).toEqual(['absent', 'first\nsecond\n'])
   })
 })

@@ -47,6 +47,9 @@ export const COMMENTS_OPEN_DRAWER_COMMAND = 'comments.openDrawer'
 export const PIERRE_THEMES = { dark: 'pierre-dark', light: 'pierre-light' } as const
 export const HUNK_SEPARATORS = 'line-info'
 
+/** fetch / pull / push may wait on the network much longer than local git calls. */
+export const NETWORK_TIMEOUT_MS = 120_000
+
 /** Prefix of every git call (paths stay unquoted, unicode intact). */
 export const GIT_FLAGS = ['-c', 'core.quotepath=false'] as const
 /** Test hook switch: register a fake `editor.openDiff` recorder (PRAGMA_TEST only). */

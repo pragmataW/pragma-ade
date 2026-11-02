@@ -97,7 +97,11 @@ function nodesOf(draft: Draft, prefix: string, staged: boolean): TreeNode[] {
 
 /** Indented tree: directories first, then files, each in `localeCompare('en')` order; single-dir chains merged. */
 export const buildTree = (files: readonly ChangedFile[]): TreeNode[] =>
-  nodesOf(draftOf(files), '', files.some((f) => f.staged))
+  nodesOf(
+    draftOf(files),
+    '',
+    files.some((f) => f.staged),
+  )
 
 /** Flat list: one leaf per file, named by its full path, in the given order. */
 export const buildFlatList = (files: readonly ChangedFile[]): TreeNode[] => files.map((f) => fileNode(f, f.path))

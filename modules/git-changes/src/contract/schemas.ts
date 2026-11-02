@@ -30,6 +30,9 @@ export const RepoPathSchema = z
 export type RepoPath = z.infer<typeof RepoPathSchema>
 
 const count = z.number().int().nonnegative()
+const SHA_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/
+/** A full commit object id (SHA-1 or SHA-256): never an option, never a ref expression. */
+export const ShaSchema = z.string().regex(SHA_RE)
 
 export const ChangedFileSchema = z.object({
   path: RepoPathSchema,
@@ -109,6 +112,8 @@ export const GitChangesSettingsSchema = z.object({
   viewMode: z.enum(VIEW_MODES),
   diffStyle: z.enum(DIFF_STYLES),
   showFullFile: z.boolean(),
+  /** Pull and Sync rebase the local commits instead of merging (VS Code `git.rebaseWhenSync`). */
+  pullRebase: z.boolean(),
 })
 export type GitChangesSettings = z.infer<typeof GitChangesSettingsSchema>
 export const GIT_CHANGES_SETTINGS_DEFAULTS: GitChangesSettings = {
@@ -116,6 +121,7 @@ export const GIT_CHANGES_SETTINGS_DEFAULTS: GitChangesSettings = {
   viewMode: VIEW_MODES[0],
   diffStyle: DIFF_STYLES[0],
   showFullFile: false,
+  pullRebase: false,
 }
 
 export const GIT_CHANGES_ERROR_CODES = ['worktreeNotFound'] as const
