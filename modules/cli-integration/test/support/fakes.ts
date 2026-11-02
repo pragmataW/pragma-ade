@@ -89,7 +89,7 @@ export function fakeAgents(o: { profiles?: AgentProfile[]; sessions?: AgentSessi
     async startSession(input) {
       if (o.failStart) throw o.failStart
       state.started.push(input)
-      const s = aSession(`s${state.sessions.length + 1}`, state.sessions.length + 1, {
+      const s = aSession(`s${state.started.length}`, state.sessions.length + 1, {
         worktreeId: input.worktreeId,
         profileId: input.profileId ?? null,
       })
