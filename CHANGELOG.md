@@ -3,6 +3,35 @@
 All notable changes to Pragma ADE are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.9.2] - 2026-11-02
+
+### Added
+
+- **Source Control in Git Changes:** VS Code's flow in the panel. Staged and unstaged groups; stage, unstage and
+  discard per file, per hunk or all; commit with ⌘/Ctrl+Enter (smart commit, amend, signed-off, undo last commit);
+  stashes (push with or without untracked files or staged only, apply, pop, drop, clear, browse their files); fetch,
+  pull, push, Publish Branch and a "Sync Changes ↓ ↑" button. The changed-files list collapses fully.
+- **Local History:** whatever Git Changes discards, deletes, drops or undoes is saved first and can be restored per
+  entry or per file (a restore is itself undoable; dropped stashes and undone commits come back too). Kept 7 days and
+  up to 512 MB by default (Settings › Local History); each worktree shows its own entries.
+- **Find in diff:** Cmd/Ctrl+F searches the open file's diff (case-insensitive, Turkish letters included).
+- **Movable panels:** the right panel docks left, right, top or bottom and the sidebar can switch sides — from the
+  panel's menu, the command palette, or by dragging its grip onto an edge. Pane moves and collapses are animated.
+- **File icons:** Material icons in Git Changes, Local History and the editor's explorer.
+- **Settings › Beta:** switch agent chat mode off (and back on).
+
+### Changed
+
+- The editor uses the app's fonts (Inter for its chrome, JetBrains Mono for code and its terminal).
+
+### Fixed
+
+- **macOS:** double-clicking the empty title bar zooms the window again; fullscreen drops the traffic-light gutter.
+- **Linux, Windows:** no grey native title and menu bar; the window controls sit in the app's title bar, in the theme.
+- The editor (and browser) no longer stays hidden while Git Changes shows "Committed on branch".
+- A second launch focuses the running app instead of starting another instance on the same data.
+- The status bar and Git Changes follow pushes, new remotes and stash changes made outside the panel.
+
 ## [0.9.1] - 2026-11-02
 
 ### Fixed
@@ -52,5 +81,6 @@ First public release. Unsigned builds for macOS (arm64, x64), Linux x64 and Wind
   native modules; a Homebrew cask for macOS.
 - MIT license, app logo and icons.
 
+[0.9.2]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.2
 [0.9.1]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.1
 [0.9.0]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.0
