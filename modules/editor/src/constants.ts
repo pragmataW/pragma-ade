@@ -137,3 +137,5 @@ export const RENDERER_ICONS = { spinner: 'loader-circle', error: 'circle-alert',
 export const STATUS_ICON_PX = 16
 /** Error keys whose fix may be a fresh download (Re-download is offered). */
 export const REDOWNLOAD_ERROR_KEYS = ['editor:errors.checksumMismatch', 'editor:errors.invalidArchive'] as const
+/** ui-notes token the workbench views are painted with before their page paints. */
+export const VIEW_BACKGROUND_TOKEN = 'bg'

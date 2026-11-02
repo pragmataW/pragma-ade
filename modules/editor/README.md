@@ -30,6 +30,11 @@ so the active theme always gets its own palette; only Pragma-managed keys; appli
 read back until they hold), `serveWebviewsLocally`
 (serve `*.vscode-cdn.net/…/webview/browser/pre/*` from the local server), `reconnectionGraceSeconds` (300).
 
+The mode itself is not written per switch: `themeMap` becomes `workbench.preferredDark/LightColorTheme` with
+`window.autoDetectColorScheme`, and every view's `prefers-color-scheme` follows the app mode
+(`nativeTheme.themeSource`), so hidden, loading and reloading workbenches flip at once; views are painted in the app
+background (`bg`) before their page paints. `setTheme(mode)` overrides pin `colorTheme`.
+
 ## Server
 
 - `<userData>/editor/<version>` (marker `.pragma-installed.json`, written last after an atomic rename), `downloads/`,

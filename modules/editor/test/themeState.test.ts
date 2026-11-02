@@ -78,7 +78,29 @@ describe('ThemeState', () => {
 
   it('syncPalette false → no colors', () => {
     const { state } = setup({ mode: 'light', resolved: 'light', tokens: { bg: '#fff' } }, { syncPalette: false })
-    expect(state.message()).toEqual({ themeName: 'Light Modern', mode: 'light' })
+    expect(state.message()).toEqual({
+      themeName: 'Light Modern',
+      mode: 'light',
+      themeMap: { dark: 'Dark Modern', light: 'Light Modern' },
+      rev: 0,
+    })
+  })
+
+  it('carries the theme map, so the workbench follows the view colour scheme without a write per switch', () => {
+    const { state } = setup({ mode: 'dark', resolved: 'dark', tokens: {} }, { themeMap: { dark: 'D', light: 'L' } })
+    expect(state.message().themeMap).toEqual({ dark: 'D', light: 'L' })
+  })
+
+  it('rev grows with every change, so an extension can drop a stale hello reply', () => {
+    const t = setup({ mode: 'dark', resolved: 'dark', tokens: {} })
+    t.state.onChange(() => undefined)
+    expect(t.state.message().rev).toBe(0)
+    t.setTheme({ resolved: 'light', mode: 'light' })
+    expect(t.state.message().rev).toBe(1)
+    t.setSettings({ maxOpenViews: 2 })
+    expect(t.state.message().rev).toBe(1)
+    t.setTheme({ palette: 'amber' })
+    expect(t.state.message().rev).toBe(2)
   })
 
   it('onChange fires on theme change and on themeMap change, not on unrelated settings', () => {

@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { DEFAULT_THEME_MAP } from '@pragma/module-editor/contract'
 import { describe, expect, it } from 'vitest'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -24,4 +25,15 @@ describe('build:vsix', () => {
     expect(list).toContain('extension/icon-theme/icons/typescript.svg')
     expect(list).toContain('extension/icon-theme/LICENSE')
   }, 60_000)
+})
+
+describe('manifest', () => {
+  it('defaults a fresh workbench to follow the colour scheme with the default theme map (before activation)', () => {
+    const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+    expect(pkg.contributes.configurationDefaults).toEqual({
+      'window.autoDetectColorScheme': true,
+      'workbench.preferredDarkColorTheme': DEFAULT_THEME_MAP.dark,
+      'workbench.preferredLightColorTheme': DEFAULT_THEME_MAP.light,
+    })
+  })
 })

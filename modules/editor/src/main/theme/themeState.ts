@@ -18,6 +18,7 @@ export class ThemeState {
   readonly #theme: MainContext['theme']
   readonly #getSettings: () => EditorSettings
   readonly #onSettings: (cb: () => void) => Unsubscribe
+  #rev = 0
 
   constructor(o: {
     theme: MainContext['theme']
@@ -32,8 +33,13 @@ export class ThemeState {
   /**
    * Uses `resolved` (light/dark); `mode` can be `system` and is never used (§10.4). The palette of both modes goes
    * along, keyed by its colour theme, so the workbench never pairs one mode's theme with the other mode's palette.
+   * The theme map lets the workbench pick the mode itself from `prefers-color-scheme`, which follows the app.
    */
   message(): EditorSetThemeMsg {
+    return { ...this.#content(), rev: this.#rev }
+  }
+
+  #content(): EditorSetThemeMsg {
     const t = this.#theme.get()
     const s = this.#getSettings()
     const other = OTHER_MODE[t.resolved]
@@ -42,16 +48,22 @@ export class ThemeState {
       [s.themeMap[other]]: tokensOf(t.palette, other),
       [s.themeMap[t.resolved]]: { ...t.tokens },
     }
-    return { themeName: s.themeMap[t.resolved], mode: t.resolved, ...(s.syncPalette ? { colorsByTheme } : {}) }
+    return {
+      themeName: s.themeMap[t.resolved],
+      mode: t.resolved,
+      ...(s.syncPalette ? { colorsByTheme } : {}),
+      themeMap: { ...s.themeMap },
+    }
   }
 
-  /** Fires only when `message()` actually changed (theme change or themeMap/syncPalette setting). */
+  /** Fires only when the message actually changed (theme change or themeMap/syncPalette setting); bumps `rev`. */
   onChange(cb: () => void): Unsubscribe {
-    let last = JSON.stringify(this.message())
+    let last = JSON.stringify(this.#content())
     const check = (): void => {
-      const next = JSON.stringify(this.message())
+      const next = JSON.stringify(this.#content())
       if (next === last) return
       last = next
+      this.#rev++
       cb()
     }
     const theme = this.#theme.onChange(check)

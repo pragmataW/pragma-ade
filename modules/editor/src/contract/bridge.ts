@@ -22,6 +22,13 @@ export const EditorThemeSchema = z.object({
    * palette always matches the active colour theme and a mode switch is one `workbench.colorTheme` write.
    */
   colorsByTheme: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+  /**
+   * Colour theme per mode. When set, the workbench follows the view's `prefers-color-scheme` (the app drives
+   * `nativeTheme.themeSource`), so a mode switch writes no setting; without it `themeName` is pinned (an override).
+   */
+  themeMap: z.object({ dark: z.string(), light: z.string() }).optional(),
+  /** Grows with every app theme change; an extension drops a message older than one it already took. */
+  rev: z.number().int().min(0).optional(),
 })
 export const EditorHelloSchema = z.object({
   folderKey: z.string(),

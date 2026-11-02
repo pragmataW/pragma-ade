@@ -28,6 +28,10 @@ export const CONFIG = {
   terminal: 'terminal',
   terminalFontFamily: 'integrated.fontFamily',
   iconTheme: 'iconTheme',
+  window: 'window',
+  autoDetectColorScheme: 'autoDetectColorScheme',
+  preferredDarkColorTheme: 'preferredDarkColorTheme',
+  preferredLightColorTheme: 'preferredLightColorTheme',
 } as const
 export const STATE_KEYS = {
   /** Top-level colour ids written by versions before theme-scoped blocks (removed on the next apply). */
@@ -37,7 +41,11 @@ export const STATE_KEYS = {
   defaultsVersion: 'pragma.defaultsVersion',
 } as const
 /** A theme apply re-reads what it wrote; another workbench writing the same user settings can undo or reject it. */
-export const THEME_APPLY = { attempts: 5, retryDelayMs: 200 } as const
+export const THEME_APPLY = {
+  attempts: 5,
+  retryDelayMs: 200,
+  notApplied: 'Pragma theme not applied: another window keeps overwriting the user settings.',
+} as const
 export const THEME_SCOPE = { top: '', open: '[', close: ']' } as const
 export const DEFAULT_VALUES = {
   none: 'none',
