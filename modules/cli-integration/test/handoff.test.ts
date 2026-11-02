@@ -79,7 +79,7 @@ describe('runHandoff', () => {
     const result = await runHandoff(request(), t.deps)
     const update = t.board.state.calls.find((c) => c[0] === 'updateTask')
     expect(update?.[1]).toBe(9)
-    const body = (update?.[2] as { descriptionMd: string }).descriptionMd
+    const body = (update?.[2] as { descriptionMd: string } | undefined)?.descriptionMd ?? ''
     expect(body.startsWith('Old body\n\n---\n')).toBe(true)
     expect(body).toMatch(/Handed off to OpenCode \(session s1\) on branch `handoff\//)
     expect(body).toContain('2026-11-02T08:30:00.000Z')

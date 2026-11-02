@@ -2,6 +2,7 @@ import type {
   AgentProfile,
   AgentSession,
   AgentSessionsService,
+  LaunchDecorator,
   StartSessionInput,
 } from '@pragma/module-agents/contract'
 import { aProfile, aSession } from '@pragma/module-agents/testing'
@@ -80,8 +81,13 @@ export function fakeAgents(o: { profiles?: AgentProfile[]; sessions?: AgentSessi
     profiles: o.profiles ?? [aProfile({ id: 'claude', name: 'Claude' }), aProfile({ id: 'oc', name: 'OpenCode' })],
     sessions: o.sessions ?? [],
     started: [] as StartSessionInput[],
+    decorators: [] as LaunchDecorator[],
   }
   const service = asService<AgentSessionsService>({
+    registerLaunchDecorator(d) {
+      state.decorators.push(d)
+      return () => state.decorators.splice(state.decorators.indexOf(d), 1)
+    },
     listProfiles: async () => state.profiles,
     getProfile: async (id) => state.profiles.find((p) => p.id === id) ?? null,
     listSessions: async (worktreeId) => state.sessions.filter((s) => s.worktreeId === worktreeId),

@@ -5,7 +5,15 @@ import { createNotifier, type NotificationRequest } from '../src/main/notifier'
 const result: CliHandoffResult = {
   worktree: { id: 'w2', projectId: 'p1', branch: 'handoff/x', path: '/wt', isMain: false },
   createdWorktree: true,
-  session: { id: 's1', worktreeId: 'w2', profileId: 'oc', profileName: 'OpenCode', status: 'starting', title: null, createdAt: 1 },
+  session: {
+    id: 's1',
+    worktreeId: 'w2',
+    profileId: 'oc',
+    profileName: 'OpenCode',
+    status: 'starting',
+    title: null,
+    createdAt: 1,
+  },
   taskId: null,
   sourceTaskIds: [],
 }

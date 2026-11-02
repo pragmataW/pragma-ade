@@ -18,3 +18,7 @@ export const DEFAULT_POSIX_INSTALL_SUBDIR = ['.local', 'bin'] as const
 export const RESOURCE_PATHS = { bundle: 'packages/cli/dist/pragma.cjs', skills: 'skills' } as const
 export const BOARD_MODULE_ID = 'board'
 export const COMMENTS_MODULE_ID = 'comments'
+export const WIN32 = 'win32'
+export const PATH_KEY_RE = /^path$/i
+export const PATH_KEYS = { posix: 'PATH', win32: 'Path' } as const
+export const PATH_DELIMITERS = { posix: ':', win32: ';' } as const

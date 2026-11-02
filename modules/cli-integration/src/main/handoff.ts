@@ -1,4 +1,9 @@
-import { type AgentProfile, type AgentSession, type AgentSessionsService, SESSION_STATUS } from '@pragma/module-agents/contract'
+import {
+  type AgentProfile,
+  type AgentSession,
+  type AgentSessionsService,
+  SESSION_STATUS,
+} from '@pragma/module-agents/contract'
 import { type BoardService, IN_PROGRESS_COLUMN_NAME, type TaskDto } from '@pragma/module-board/contract'
 import type { ProjectsService, Worktree } from '@pragma/module-projects/contract'
 import { type Logger, slugify } from '@pragma/sdk'
@@ -37,7 +42,10 @@ export function deriveHandoffBranch(document: string, now: Date): string {
 }
 
 /** The target agent's first prompt (fixed English, §6). */
-export function buildHandoffPrompt(document: string, from: { profileName: string; branch: string | null } | null): string {
+export function buildHandoffPrompt(
+  document: string,
+  from: { profileName: string; branch: string | null } | null,
+): string {
   const onBranch = from?.branch ? ` on branch ${from.branch}` : ''
   const source = from ? ` (${from.profileName}${onBranch})` : ''
   return [
@@ -71,7 +79,10 @@ async function createTarget(deps: HandoffDeps, req: CliRequest<'handoff'>, sourc
   } catch (e) {
     const err = toCliError(e)
     const code = err.code === CLI_ERROR.internal ? CLI_ERROR.conflict : err.code
-    throw new CliError(code, `Could not create worktree '${branch}': ${err.message}. Pass --branch <name> to use another branch.`)
+    throw new CliError(
+      code,
+      `Could not create worktree '${branch}': ${err.message}. Pass --branch <name> to use another branch.`,
+    )
   }
 }
 
@@ -93,9 +104,13 @@ async function startTarget(
   }
   if (!created) throw new CliError(CLI_ERROR.internal, `Could not start ${deps.nameOf(profile)}: ${failure}`)
   const where = `'${target.branch ?? target.path}' (${target.id})`
-  throw new CliError(CLI_ERROR.internal, `Created worktree ${where} but could not start ${deps.nameOf(profile)}: ${failure}`, {
-    worktreeId: target.id,
-  })
+  throw new CliError(
+    CLI_ERROR.internal,
+    `Created worktree ${where} but could not start ${deps.nameOf(profile)}: ${failure}`,
+    {
+      worktreeId: target.id,
+    },
+  )
 }
 
 /** Steps 6–7: link + move the given card, note the source session's cards. Failures are logged, never fatal. */
