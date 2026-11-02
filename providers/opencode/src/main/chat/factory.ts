@@ -1,5 +1,6 @@
 import { type ChatCapability, EVENT_KIND } from '@pragma/module-chat/contract'
 import type { CapabilityContext } from '@pragma/sdk'
+import { OPENCODE_PLUGIN_RESOURCE } from '../status/constants'
 import { loadOpencodeHistory } from './history-loader'
 import { createConnectionPool } from './server/connection'
 import { OpencodeChatSession } from './session'
@@ -9,10 +10,11 @@ export type OpencodeChatCapability = ChatCapability & { dispose(): Promise<void>
 
 /** `chat` capability (factory form, §10.2): one connection pool; `dispose` closes live sessions and stops every server. */
 export function createOpencodeChat(
-  capCtx: Pick<CapabilityContext, 'log' | 'getShellEnv' | 'resolveCommand'>,
+  capCtx: Pick<CapabilityContext, 'log' | 'getShellEnv' | 'resolveCommand' | 'paths'>,
   o: { idleGraceMs?: number } = {},
 ): OpencodeChatCapability {
-  const pool = createConnectionPool({ log: capCtx.log, idleGraceMs: o.idleGraceMs })
+  const statusPluginDir = capCtx.paths.resource(OPENCODE_PLUGIN_RESOURCE)
+  const pool = createConnectionPool({ log: capCtx.log, idleGraceMs: o.idleGraceMs, statusPluginDir })
   const live = new Set<OpencodeChatSession>()
   return {
     checkSupport: (profile) => checkOpencodeSupport(profile, capCtx),

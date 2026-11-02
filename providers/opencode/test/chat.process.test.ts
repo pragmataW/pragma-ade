@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { PASSWORD_ENV, REASON, SERVE_ARGS } from '../src/main/chat/constants'
 import { classifyStartFailure, type StartFailure, startServer } from '../src/main/chat/server/process'
 import { parseReadyLine, parseVersion } from '../src/main/chat/server/ready'
-import { buildServeSpec, type ServeSpec, serverKey } from '../src/main/chat/server/spawn-spec'
+import { buildServeSpec, type ServeSpec, serverKey, withoutStatusPlugin } from '../src/main/chat/server/spawn-spec'
 import {
   cleanupFakes,
   type FakeMode,
@@ -57,6 +57,30 @@ describe('serve spawn spec', () => {
       cwd: '/w',
       password: 'pw',
     })
+  })
+
+  it.each([
+    ['only the plugin → variable dropped', { plugins: ['/res/hooks/plugin'] }, undefined],
+    [
+      'other plugins and keys kept',
+      { plugins: ['/mine', '/res/hooks/plugin'], model: 'x' },
+      { plugins: ['/mine'], model: 'x' },
+    ],
+    ['no status plugin → unchanged', { plugins: ['/mine'] }, { plugins: ['/mine'] }],
+  ])('status plugin stripped: %s', (_, config, expected) => {
+    const env = { PATH: '/bin', OPENCODE_CONFIG_CONTENT: JSON.stringify(config) }
+    const out = withoutStatusPlugin(env, '/res/hooks/plugin')
+    expect(out.OPENCODE_CONFIG_CONTENT === undefined ? undefined : JSON.parse(out.OPENCODE_CONFIG_CONTENT)).toEqual(
+      expected,
+    )
+    expect(
+      buildServeSpec({ ...specInput, env, statusPluginDir: '/res/hooks/plugin' }).env.OPENCODE_CONFIG_CONTENT,
+    ).toBe(out.OPENCODE_CONFIG_CONTENT)
+  })
+
+  it('invalid config content is left alone', () => {
+    const env = { OPENCODE_CONFIG_CONTENT: 'not json' }
+    expect(withoutStatusPlugin(env, '/res/hooks/plugin')).toBe(env)
   })
 
   it('empty command → emptyCommand', () => {

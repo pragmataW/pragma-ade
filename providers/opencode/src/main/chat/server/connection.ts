@@ -78,7 +78,12 @@ async function openConnection(
 }
 
 /** Servers keyed by worktree + profile + env; the `exit` safety net SIGKILLs live groups synchronously. */
-export function createConnectionPool(o: { log: Pick<Logger, 'info' | 'warn'>; idleGraceMs?: number }): ConnectionPool {
+export function createConnectionPool(o: {
+  log: Pick<Logger, 'info' | 'warn'>
+  idleGraceMs?: number
+  /** 04's status plugin directory, kept out of chat servers. */
+  statusPluginDir?: string
+}): ConnectionPool {
   const pool = new ResourcePool<OpencodeConnection>({ idleGraceMs: o.idleGraceMs ?? idleGraceMs() })
   const live = new Set<OpencodeConnection>()
   const onProcessExit = () => {
@@ -87,7 +92,7 @@ export function createConnectionPool(o: { log: Pick<Logger, 'info' | 'warn'>; id
   process.once(PROCESS_EXIT_EVENT, onProcessExit)
   return {
     async acquire(input) {
-      const spec = buildServeSpec(input)
+      const spec = buildServeSpec({ ...input, statusPluginDir: o.statusPluginDir })
       return pool.acquire(serverKey(spec, input.profile.id), async () => {
         const conn = await openConnection(spec, { startupTimeoutMs: input.startupTimeoutMs, log: o.log })
         live.add(conn)
