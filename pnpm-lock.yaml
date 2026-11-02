@@ -888,6 +888,9 @@ importers:
       '@pragma/module-chat':
         specifier: workspace:*
         version: link:../../modules/chat
+      '@pragma/module-chat-switch':
+        specifier: workspace:*
+        version: link:../../modules/chat-switch
       '@pragma/provider-claude-hooks':
         specifier: workspace:*
         version: link:packages/hooks
@@ -949,6 +952,9 @@ importers:
       '@pragma/module-chat':
         specifier: workspace:*
         version: link:../../modules/chat
+      '@pragma/module-chat-switch':
+        specifier: workspace:*
+        version: link:../../modules/chat-switch
       '@pragma/provider-opencode-hooks':
         specifier: workspace:*
         version: link:packages/hooks

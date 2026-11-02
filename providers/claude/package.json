@@ -18,6 +18,7 @@
     "@pragma/module-agents": "workspace:*",
     "@pragma/module-bridge": "workspace:*",
     "@pragma/module-chat": "workspace:*",
+    "@pragma/module-chat-switch": "workspace:*",
     "@pragma/provider-claude-hooks": "workspace:*",
     "@pragma/sdk": "workspace:*",
     "@pragma/ui": "workspace:*"

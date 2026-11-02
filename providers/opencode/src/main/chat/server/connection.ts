@@ -5,6 +5,7 @@ import { IDLE_GRACE_ENV, IDLE_GRACE_MS, PROCESS_EXIT_EVENT, REASON, SSE_RECONNEC
 import { listOf, type ModelInfo, modelInfoSchema } from '../schemas'
 import { createWireClient, type WireClient } from '../wire/client'
 import { EventHub } from '../wire/event-hub'
+import { rememberServerPassword } from './passwords'
 import { type Lease, ResourcePool } from './pool'
 import { type ServerHandle, startServer } from './process'
 import { buildServeSpec, type ServeSpec, serverKey } from './spawn-spec'
@@ -45,11 +46,14 @@ async function openConnection(
   o: { startupTimeoutMs: number; log: Pick<Logger, 'info' | 'warn'> },
 ): Promise<OpencodeConnection> {
   const server = await startServer(spec, { startTimeoutMs: o.startupTimeoutMs, log: o.log })
+  const forgetPassword = rememberServerPassword(server.url, spec.password)
+  server.onExit(forgetPassword)
   const client = createWireClient(server, spec.cwd)
   const hub = new EventHub(client, { reconnectMs: SSE_RECONNECT_MS, log: o.log })
   hub.start()
   const stop = async () => {
     hub.close()
+    forgetPassword()
     await server.stop()
   }
   const timeout = new Promise<never>((_, reject) =>
