@@ -5,7 +5,24 @@
   "commands": { "open": "Open task board" },
   "scope": { "all": "All projects", "label": "Board" },
   "empty": { "noProjects": "Add a project to start a board.", "noTasks": "No tasks" },
-  "error": { "generic": "Something went wrong: {{message}}", "dismiss": "Dismiss" },
+  "error": {
+    "unexpected": "Something went wrong. Try again.",
+    "sessionGone": "That agent session is no longer open.",
+    "worktreeGone": "That worktree no longer exists.",
+    "dismiss": "Dismiss",
+    "codes": {
+      "not_found": "That item no longer exists.",
+      "column_not_found": "That column no longer exists.",
+      "last_column": "A board needs at least one column.",
+      "duplicate_column_name": "A column with this name already exists.",
+      "invalid_target_column": "That column is not on this task's board.",
+      "invalid_branch": "Not a valid branch name.",
+      "branch_exists": "This branch already exists.",
+      "worktree_failed": "Could not create the worktree.",
+      "session_failed": "The agent did not start.",
+      "validation": "The board could not make that change."
+    }
+  },
   "newTask": "New task",
   "column": {
     "count": "{{count}} tasks",
@@ -101,14 +118,17 @@
     "none": "None",
     "goto": "Go to worktree",
     "link": "Link to existing worktree",
-    "detached": "detached"
+    "detached": "detached",
+    "removed": "Worktree removed"
   },
   "sessions": {
     "title": "Agent sessions",
     "untitled": "Untitled session",
     "goto": "Go to agent",
     "unlink": "Unlink",
-    "empty": "No agent sessions yet"
+    "empty": "No agent sessions yet",
+    "ended": "Ended",
+    "unavailable": { "ended": "Session ended", "worktreeRemoved": "Worktree removed" }
   },
   "settings": {
     "title": "Task Board",

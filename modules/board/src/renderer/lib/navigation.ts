@@ -5,6 +5,12 @@ import { BOARD_VIEW_ID } from '../../contract'
 import { boardCtx } from './runtime'
 import { viewHistory } from './view-history'
 
+/** Banner messages when a jump loses the race with the session ending or the worktree being removed. */
+export const GONE_NOTICE = {
+  sessionKey: 'board:error.sessionGone',
+  worktreeKey: 'board:error.worktreeGone',
+} as const
+
 /** Shows a center view and closes Settings (`core.activateView`). */
 export const showView = async (id: string): Promise<void> => {
   await boardCtx().commands.execute(CoreCommands.activateView, { id })

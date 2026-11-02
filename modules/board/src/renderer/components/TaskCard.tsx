@@ -1,3 +1,4 @@
+import type { Worktree } from '@pragma/module-projects/contract'
 import { ProviderIcon, Slot, useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Monogram } from '@pragma/ui/components/monogram'
@@ -11,6 +12,7 @@ import {
   BOARD_TESTIDS as T,
   type TaskDto,
 } from '../../contract'
+import { SESSION_AVAILABILITY, sessionAvailability, unavailableHintKey } from '../lib/availability'
 import { monogram, profileLabel } from '../lib/labels'
 import { useWorktrees } from '../lib/use-worktrees'
 import { LabelChip } from './LabelChip'
@@ -30,9 +32,9 @@ function StatusDot({ task }: { task: TaskDto }) {
 }
 
 /** ui-notes: linked worktree chip (status dot + branch) or "No worktree". */
-function WorktreeChip({ task }: { task: TaskDto }) {
+function WorktreeChip({ task, worktrees }: { task: TaskDto; worktrees: Map<string, Worktree> }) {
   const t = useT()
-  const worktree = useWorktrees().get(task.worktreeId ?? '')
+  const worktree = worktrees.get(task.worktreeId ?? '')
   return (
     <span className="flex min-w-0 items-center gap-1.5">
       <StatusDot task={task} />
@@ -53,12 +55,22 @@ function WorktreeChip({ task }: { task: TaskDto }) {
   )
 }
 
-/** The agent's official logo (SDK `ProviderIcon`, 20px on cards); a monogram when the provider is unknown. */
-function AgentMark({ session }: { session: LinkedSessionDto }) {
+/**
+ * The agent's official logo (SDK `ProviderIcon`, 20px on cards); a monogram when the provider is unknown. Muted once
+ * the session ended or its worktree is gone (the hint says which).
+ */
+function AgentMark({ session, worktrees }: { session: LinkedSessionDto; worktrees: Map<string, Worktree> }) {
   const t = useT()
   const label = profileLabel(t, session)
+  const availability = sessionAvailability(session, worktrees)
+  const hintKey = unavailableHintKey(availability)
   return (
-    <span data-testid={T.cardSession} {...{ [A.sessionId]: session.sessionId }} title={label} className="flex">
+    <span
+      data-testid={T.cardSession}
+      {...{ [A.sessionId]: session.sessionId, [A.availability]: availability }}
+      title={hintKey ? `${label} · ${t(hintKey)}` : label}
+      className={cn('flex', availability !== SESSION_AVAILABILITY.open && 'opacity-40 grayscale')}
+    >
       {session.providerId ? (
         <ProviderIcon providerId={session.providerId} size={AGENT_MARK_PX} />
       ) : (
@@ -78,6 +90,7 @@ export function TaskCard(props: {
 }) {
   const { task, section, selected } = props
   const labels = section?.labels.filter((l) => task.labelIds.includes(l.id)) ?? []
+  const worktrees = useWorktrees()
   return (
     <article
       data-testid={T.card}
@@ -114,10 +127,10 @@ export function TaskCard(props: {
         </div>
       )}
       <div className="flex items-center justify-between gap-2">
-        <WorktreeChip task={task} />
+        <WorktreeChip task={task} worktrees={worktrees} />
         <span className="flex shrink-0 items-center gap-1">
           {task.sessions.map((s) => (
-            <AgentMark key={s.sessionId} session={s} />
+            <AgentMark key={s.sessionId} session={s} worktrees={worktrees} />
           ))}
         </span>
       </div>

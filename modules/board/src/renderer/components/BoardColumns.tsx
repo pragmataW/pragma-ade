@@ -9,7 +9,6 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { useT } from '@pragma/sdk/renderer'
 import { useState } from 'react'
 import { DRAG_ACTIVATION_PX } from '../../constants'
 import { runAction } from '../lib/actions'
@@ -28,14 +27,13 @@ import { boardActions, setError, useBoardStore } from '../store'
 import { BoardColumn } from './BoardColumn'
 
 function useDropHandler(layout: Parameters<typeof cardDrop>[0]) {
-  const t = useT()
   const sections = useBoardStore((s) => s.snapshot?.sections) ?? []
   return (e: DragEndEvent) => {
     const card = cardDrop(layout, e)
     if (card?.drop.ok) return runAction(boardActions.moveTask(card.task.id, card.drop.column, card.drop.position))
     if (card) {
       const project = sections.find((s) => s.board.id === card.task.boardId)?.projectName
-      return setError(t('board:dnd.noSuchColumn', { project, column: card.target.name }))
+      return setError({ messageKey: 'board:dnd.noSuchColumn', values: { project, column: card.target.name } })
     }
     const column = columnDrop(layout.columns, e)
     if (column) runAction(boardActions.moveColumn(column.columnId, column.position))

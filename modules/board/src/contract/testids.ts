@@ -53,6 +53,8 @@ export const BOARD_TESTIDS = {
   drawerDeleteConfirm: 'task-drawer-delete-confirm',
   drawerClose: 'task-drawer-close',
   drawerSession: 'task-drawer-session',
+  /** Muted badge on a linked session that ended or whose worktree is gone. */
+  drawerSessionEnded: 'task-drawer-session-ended',
   drawerActivity: 'task-drawer-activity',
   gotoWorktree: 'task-goto-worktree',
   gotoSession: 'task-goto-session',
@@ -87,6 +89,8 @@ export const BOARD_TESTID_ATTRS = {
   worktreeId: 'data-worktree-id',
   sessionId: 'data-session-id',
   status: 'data-status',
+  /** A linked session's `open` / `ended` / `worktreeRemoved` (drawer rows and card agent marks). */
+  availability: 'data-availability',
   activityKind: 'data-activity-kind',
   value: 'data-value',
   scope: 'data-scope',

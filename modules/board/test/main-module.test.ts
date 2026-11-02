@@ -1,4 +1,6 @@
 import { agentSessionStatusChanged } from '@pragma/module-agent-status/contract'
+import { agentSessionUpdated } from '@pragma/module-agents/contract'
+import { aSession } from '@pragma/module-agents/testing'
 import { projectRemoved, worktreeRemoved } from '@pragma/module-projects/contract'
 import { describe, expect, it, vi } from 'vitest'
 import { boardIpc, boardIpcEvents, SCOPE_KIND } from '../src/contract'
@@ -59,6 +61,20 @@ describe('board main module', () => {
     expect(a.fake.publishedOn(boardIpcEvents.sessionStatusChanged)).toEqual([
       { sessionId: 's9', status: 'waiting', turnCompleted: false },
     ])
+  })
+
+  it('a linked session whose tab closed pushes a change; focus and other sessions do not', async () => {
+    const a = await activateBoard()
+    const t = await a.service.createTask({ projectId: 'p1', title: 'A' })
+    await a.service.linkSession(t.id, 's9')
+    await vi.waitFor(() => expect(changedPushes(a)).toHaveLength(1))
+    const closed = aSession('s9', 1, { status: 'exited', closedAt: 5 })
+    a.fake.emit(agentSessionUpdated, { session: closed, changed: ['lastFocusedAt'] })
+    a.fake.emit(agentSessionUpdated, { session: { ...closed, id: 'other' }, changed: ['closedAt'] })
+    await new Promise((r) => setTimeout(r, 100))
+    expect(changedPushes(a)).toHaveLength(1)
+    a.fake.emit(agentSessionUpdated, { session: closed, changed: ['closedAt'] })
+    await vi.waitFor(() => expect(changedPushes(a)).toHaveLength(2))
   })
 
   it('activates without agent-status', async () => {

@@ -67,6 +67,7 @@ export function aLinkedSession(sessionId: string, over: Partial<LinkedSessionDto
     profileDisplayNameKey: null,
     providerId: 'custom',
     startedAt: 0,
+    ended: false,
     ...over,
   }
 }
