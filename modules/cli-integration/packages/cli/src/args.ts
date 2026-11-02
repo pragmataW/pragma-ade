@@ -46,6 +46,8 @@ const COMMAND_TABLE: readonly (readonly [string, CliMethod])[] = [
     'handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
     CLI_METHOD.handoff,
   ],
+  ['session locate <id>', CLI_METHOD.sessionLocate],
+  ['session current', CLI_METHOD.sessionLocate],
 ]
 
 const OPTION_RE = /(?<optional>\[)?--(?<name>[a-z][a-z-]*)(?<value> [^\s\]]+)?\]?/g

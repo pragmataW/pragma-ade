@@ -5,6 +5,7 @@ import type { ProjectsService } from '@pragma/module-projects/contract'
 import type { Logger } from '@pragma/sdk'
 import type { CliRequest, CliResult } from '../../contract'
 import type { ProfileNamer } from '../resolve-profile'
+import type { TranscriptLocator } from '../session-transcripts'
 
 export interface CliHandlerDeps {
   projects: ProjectsService
@@ -14,4 +15,5 @@ export interface CliHandlerDeps {
   nameOf: ProfileNamer
   handoff: (req: CliRequest<'handoff'>) => Promise<CliResult<'handoff'>>
   log: Logger
+  transcripts: TranscriptLocator
 }

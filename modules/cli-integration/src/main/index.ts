@@ -20,6 +20,7 @@ import { createCliLaunchDecorator } from './launch-decorator'
 import { createNotifier, type NotificationRequest } from './notifier'
 import { type CliPaths, resolveCliPaths } from './paths'
 import { createCliIntegrationService, registerCliIntegrationIpc } from './service'
+import type { TranscriptLocator } from './session-transcripts'
 import { writeShims } from './shim'
 import { createSkillsPort } from './skills-port'
 import { runtimeState } from './state'
@@ -63,13 +64,30 @@ const showNotification =
     if (ctx.testMode) runtimeState.notifications.push(n)
   }
 
+const TRANSCRIPT_CAPABILITY = 'sessionTranscript'
+
+/** Providers' `sessionTranscript` capabilities, read per call (§5.2). */
+function transcriptLocator(ctx: Ctx): TranscriptLocator {
+  return {
+    providers: () =>
+      ctx.providers.providersWith(TRANSCRIPT_CAPABILITY).flatMap((d) => {
+        const transcript = ctx.providers.capability(d.id, TRANSCRIPT_CAPABILITY)
+        return transcript ? [{ id: d.id, transcript }] : []
+      }),
+    home: homedir(),
+    env: process.env,
+    log: ctx.log,
+  }
+}
+
 function registerBridge(ctx: Ctx): void {
   const projects = ctx.services.get(ProjectsServiceToken)
   const agents = ctx.services.get(AgentSessionsServiceToken)
   const board = ctx.services.tryGet(BoardServiceToken)
   const nameOf = profileNamer(ctx)
   const notifier = createNotifier({ show: showNotification(ctx) })
-  const handoffDeps = { projects, agents, board, notifier, now: () => new Date(), log: ctx.log, nameOf }
+  const transcripts = transcriptLocator(ctx)
+  const handoffDeps = { projects, agents, board, notifier, now: () => new Date(), log: ctx.log, nameOf, transcripts }
   const handlers = createCliHandlers({
     projects,
     agents,
@@ -77,6 +95,7 @@ function registerBridge(ctx: Ctx): void {
     comments: ctx.services.tryGet(CommentsServiceToken),
     nameOf,
     log: ctx.log,
+    transcripts,
     handoff: (req) => runHandoff(req, handoffDeps),
   })
   const ping = () => ({ ok: true, version: ctx.module.version })

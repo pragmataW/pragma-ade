@@ -20,7 +20,9 @@ import { BoardError } from '@pragma/module-board/contract'
 import type { Comment, CommentsService } from '@pragma/module-comments/contract'
 import type { CreateWorktreeInput, Project, ProjectsService, Worktree } from '@pragma/module-projects/contract'
 import type { Logger } from '@pragma/sdk'
+import type { SessionTranscriptLocation, SessionTranscriptQuery } from '../../src/contract'
 import type { CliHandlerDeps } from '../../src/main/handlers'
+import type { TranscriptLocator } from '../../src/main/session-transcripts'
 
 const NOW = 1_700_000_000_000
 
@@ -227,6 +229,38 @@ export function fakeBoard(tasks: TaskDto[] = []) {
 const noop = (): void => undefined
 export const silentLog = (): Logger => ({ debug: noop, info: noop, warn: noop, error: noop, child: () => silentLog() })
 
+export const aTranscript = (over: Partial<SessionTranscriptLocation> = {}): SessionTranscriptLocation => ({
+  path: '/home/.claude/projects/-repo/ext-1.jsonl',
+  format: 'Claude Code JSONL',
+  cwd: '/repo',
+  readCommand: null,
+  extraPaths: [],
+  ...over,
+})
+
+/** `{ providerId: { providerSessionId: location } }`; every query is recorded. */
+export function fakeTranscripts(
+  byProvider: Record<string, Record<string, SessionTranscriptLocation>> = {},
+): TranscriptLocator & { queries: [string, SessionTranscriptQuery][] } {
+  const queries: [string, SessionTranscriptQuery][] = []
+  return {
+    queries,
+    home: '/home',
+    env: {},
+    log: silentLog(),
+    providers: () =>
+      Object.entries(byProvider).map(([id, sessions]) => ({
+        id,
+        transcript: {
+          async locateTranscript(q) {
+            queries.push([id, q])
+            return sessions[q.sessionId] ?? null
+          },
+        },
+      })),
+  }
+}
+
 /** Handler deps over fakes; `over` replaces any of them. */
 export function makeDeps(over: Partial<CliHandlerDeps> = {}): CliHandlerDeps {
   return {
@@ -239,6 +273,7 @@ export function makeDeps(over: Partial<CliHandlerDeps> = {}): CliHandlerDeps {
       throw new Error('handoff not wired in this test')
     },
     log: silentLog(),
+    transcripts: fakeTranscripts(),
     ...over,
   }
 }

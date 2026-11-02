@@ -28,6 +28,12 @@ export const EMPTY_CELL = '-'
 export const DETACHED = '(detached)'
 export const YES_NO = { yes: 'yes', no: 'no' } as const
 export const NEWLINE = '\n'
+/** Printed after `pragma session locate` (human output only). */
+export const HANDOFF_HINT = [
+  'To continue in another agent, put the path in a prompt file and run:',
+  '  pragma agent spawn --profile <name> --prompt-file <file>',
+  '',
+].join(NEWLINE)
 export const JSON_INDENT = 2
 export const UTF8 = 'utf8'
 export const NOT_RUNNING_TEXT = 'Pragma ADE is not running. Start the app and try again.'

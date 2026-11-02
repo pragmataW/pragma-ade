@@ -33,6 +33,9 @@ const FILE_FIELDS: Record<string, string> = {
 /** Methods whose positional `<id>` is a task reference. */
 const TASK_REF_METHODS = new Set<CliMethod>([CLI_METHOD.taskUpdate, CLI_METHOD.taskMove])
 const TASK_REF_FIELD = 'taskId'
+/** Methods whose positional `<id>` is a session id (Pragma or provider). */
+const SESSION_REF_METHODS = new Set<CliMethod>([CLI_METHOD.sessionLocate])
+const SESSION_REF_FIELD = 'sessionId'
 const SAME_WORKTREE_FIELD = 'sameWorktree'
 const STDIN_LABEL = 'stdin'
 
@@ -78,6 +81,7 @@ export async function buildRequest(cmd: CallCommand, io: RequestIo): Promise<{ m
     payload[field] = fieldValue
   }
   if (TASK_REF_METHODS.has(cmd.method)) payload[TASK_REF_FIELD] = cmd.positionals[0]
+  if (SESSION_REF_METHODS.has(cmd.method) && cmd.positionals[0]) payload[SESSION_REF_FIELD] = cmd.positionals[0]
   if (cmd.method === CLI_METHOD.handoff) payload[SAME_WORKTREE_FIELD] = payload[SAME_WORKTREE_FIELD] === true
   return { method: cmd.method, payload }
 }

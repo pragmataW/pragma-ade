@@ -36,7 +36,10 @@ describe('skills', () => {
     expect(read('handoff').body).toContain(text)
   })
 
-  it.each(['worktree', 'agent', 'task', 'comments', 'handoff'])('pragma-cli mentions `pragma %s`', (cmd) => {
-    expect(read('pragma-cli').body).toContain(`pragma ${cmd}`)
-  })
+  it.each(['worktree', 'agent', 'task', 'comments', 'handoff', 'session locate', 'session current'])(
+    'pragma-cli mentions `pragma %s`',
+    (cmd) => {
+      expect(read('pragma-cli').body).toContain(`pragma ${cmd}`)
+    },
+  )
 })

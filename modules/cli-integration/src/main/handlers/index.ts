@@ -3,6 +3,7 @@ import type { CliHandler } from '../lib/define-cli-handler'
 import { agentHandlers } from './agent'
 import { commentsHandlers } from './comments'
 import { handoffHandlers } from './handoff'
+import { sessionHandlers } from './session'
 import { taskHandlers } from './task'
 import type { CliHandlerDeps } from './types'
 import { worktreeHandlers } from './worktree'
@@ -17,5 +18,6 @@ export function createCliHandlers(deps: CliHandlerDeps): Record<CliMethod, CliHa
     ...commentsHandlers(deps),
     ...taskHandlers(deps),
     ...handoffHandlers(deps),
+    ...sessionHandlers(deps),
   }
 }
