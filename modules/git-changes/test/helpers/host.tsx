@@ -99,7 +99,7 @@ function GitChangesTab() {
   const { registries } = useRendererHost()
   const tabs = useSyncExternalStore(registries.store.subscribe, () => registries.store.getState().tabs)
   const Tab = tabs.find((t) => t.id === 'git-changes')?.component
-  return Tab ? <Tab tabId="git-changes" /> : null
+  return Tab ? <Tab tabId="git-changes" visible /> : null
 }
 
 export interface PanelHarness extends RenderedWithHost {

@@ -11,6 +11,16 @@ import type { RendererProvidersApi } from '../runtime/shared/provider-registry'
 import type { ModuleServices } from '../runtime/shared/service-registry'
 
 /**
+ * Props of a right tab's component. Every registered tab stays mounted (hidden tabs keep their state);
+ * `visible` is true only while it is the active tab and the right panel is shown (not collapsed, settings closed).
+ * Start costly work (servers, downloads, native views) on the first `visible`, not on mount.
+ */
+export interface RightTabProps {
+  tabId: string
+  visible: boolean
+}
+
+/**
  * Right dock tab (§4.5); `icon` is a kebab-case lucide name drawn with `<Icon name>` (§10.4).
  * `default: true` makes it the initially active tab (else the first by `order`) until the user picks one.
  */
@@ -19,7 +29,7 @@ export interface RightTab {
   titleKey: string
   icon: string
   order: number
-  component: ComponentType<{ tabId: string }>
+  component: ComponentType<RightTabProps>
   default?: boolean
 }
 

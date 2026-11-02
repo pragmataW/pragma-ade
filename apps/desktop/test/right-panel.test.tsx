@@ -1,5 +1,7 @@
 import { CoreCommands, CoreIpc, ShellTestIds as T } from '@pragma/sdk'
+import type { RightTabProps } from '@pragma/sdk/renderer'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { useEffect } from 'react'
 import { expect, test, vi } from 'vitest'
 import { NativeSnapshots } from '../src/renderer/shell/NativeSnapshots'
 import { RightPanel } from '../src/renderer/shell/RightPanel'
@@ -10,6 +12,13 @@ class FakeResizeObserver {
   disconnect() {}
 }
 vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+
+/** Mount log of `Probe`, a tab body that prints its `visible` prop. */
+const mounts: string[] = []
+function Probe({ tabId, visible }: RightTabProps) {
+  useEffect(() => void mounts.push(tabId), [tabId])
+  return <p data-testid={`probe-${tabId}`}>{String(visible)}</p>
+}
 
 const setup = async () => {
   const r = await renderShell(
@@ -43,6 +52,28 @@ test('renders registered tabs sorted by order and switches content', async () =>
   fireEvent.click(screen.getByTestId(T.rightTab('b')))
   expect(screen.getByTestId(T.rightTabContent('b'))).toBeVisible()
   expect(screen.getByTestId(T.rightTabContent('a'))).not.toBeVisible()
+})
+test('tab components get `visible`: only the active tab of a shown panel; hidden tabs stay mounted', async () => {
+  const r = await setup()
+  mounts.length = 0
+  act(() => {
+    for (const [id, order] of [
+      ['a', 10],
+      ['b', 20],
+    ] as const)
+      r.host.registries.registerRightTab({ id, titleKey: `core:${id}`, icon: 'terminal', order, component: Probe })
+  })
+  const shown = () => ['a', 'b'].map((id) => screen.getByTestId(`probe-${id}`).textContent)
+  expect(shown()).toEqual(['true', 'false'])
+  fireEvent.click(screen.getByTestId(T.rightTab('b')))
+  expect(shown()).toEqual(['false', 'true'])
+  act(() => r.store.setState({ rightCollapsed: true }))
+  expect(shown()).toEqual(['false', 'false'])
+  act(() => r.store.setState({ rightCollapsed: false, settingsOpen: true }))
+  expect(shown()).toEqual(['false', 'false'])
+  act(() => r.store.setState({ settingsOpen: false }))
+  expect(shown()).toEqual(['false', 'true'])
+  expect(mounts).toEqual(['a', 'b'])
 })
 test('shows welcome when no tabs', async () => {
   await setup()
