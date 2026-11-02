@@ -1,7 +1,10 @@
-import { CoreIpc, type Occlusion } from '../../common/core-ipc'
+import type { OverlayGuardMode } from '@pragma/ui/constants/overlay'
+import { CoreIpc, type Occlusion, type OverlayCover } from '../../common/core-ipc'
 import { type Disposable, toDisposable } from '../../common/disposable'
 import type { IpcEventContract } from '../../common/ipc'
 import type { Inset, Rect } from '../../common/shell'
+import { SNAPSHOT_CLEAR_DELAY_MS, SNAPSHOT_PAINT_DELAY_MS } from '../../constants'
+import { captureFor, coverModeFor, sleep } from './occlusion'
 
 export class DuplicateViewError extends Error {}
 export class UnknownViewError extends Error {}
@@ -30,7 +33,12 @@ interface ViewEntry {
   inset: Inset
   shown: boolean
   frozen: boolean
-  occlusionSnapshot: boolean
+  /** Hidden because an overlay intersects it (its snapshot, if captured, is shown instead). */
+  covered: boolean
+  /** A snapshot image of this view is currently published to the renderer. */
+  snapshot: boolean
+  capturing: Promise<void> | null
+  clearTimer: ReturnType<typeof setTimeout> | null
   bounds: Rect | null
   visible: boolean | undefined
 }
@@ -52,14 +60,15 @@ function effectiveBounds(tab: Rect | null | undefined, inset: Inset): Rect | nul
 
 /**
  * Keeps WebContentsViews glued to their right-panel tab: one visible view per tab, insets, and overlay protection
- * (hide or snapshot while a `@pragma/ui` overlay is open; explicit freeze/unfreeze) (§7, §10.2).
+ * (only views an open `@pragma/ui` overlay intersects are swapped for a page snapshot; explicit freeze/unfreeze)
+ * (§7, §10.2).
  */
 export class NativeViewHost {
   readonly #views = new Map<string, ViewEntry>()
   readonly #tabBounds = new Map<string, Rect | null>()
   readonly #container: ViewContainer
   readonly #publish: PublishFn
-  #occlusion: Occlusion = { hide: false, snapshot: false }
+  #covers: OverlayCover[] = []
 
   constructor(container: ViewContainer, publish: PublishFn) {
     this.#container = container
@@ -75,7 +84,10 @@ export class NativeViewHost {
       inset: opts.inset ?? {},
       shown: true,
       frozen: false,
-      occlusionSnapshot: false,
+      covered: false,
+      snapshot: false,
+      capturing: null,
+      clearTimer: null,
       bounds: null,
       visible: undefined,
     }
@@ -90,7 +102,8 @@ export class NativeViewHost {
     if (!entry) return
     this.#views.delete(viewId)
     this.#container.remove(entry.view)
-    if (entry.frozen || entry.occlusionSnapshot) this.#publish(CoreIpc.nativeViewsSnapshotCleared, { viewId })
+    this.#cancelClear(entry)
+    if (entry.frozen || entry.snapshot) this.#publish(CoreIpc.nativeViewsSnapshotCleared, { viewId })
   }
 
   show(viewId: string): void {
@@ -111,9 +124,10 @@ export class NativeViewHost {
   async freeze(viewId: string): Promise<void> {
     const entry = this.#entry(viewId)
     if (entry.frozen) return
-    if (entry.visible && entry.bounds && !entry.occlusionSnapshot) await this.#snapshot(entry, entry.bounds)
+    this.#cancelClear(entry)
+    if (entry.visible && entry.bounds && !entry.snapshot) await this.#snapshot(entry, entry.bounds)
     entry.frozen = true
-    entry.occlusionSnapshot = false
+    entry.covered = false
     this.#apply(entry)
   }
 
@@ -121,20 +135,17 @@ export class NativeViewHost {
     const entry = this.#entry(viewId)
     if (!entry.frozen) return
     entry.frozen = false
+    entry.snapshot = false
     this.#publish(CoreIpc.nativeViewsSnapshotCleared, { viewId })
     this.#apply(entry)
   }
 
+  /** Swaps the views the open overlays intersect for snapshots; resolves once those are hidden. */
   async setOcclusion(o: Occlusion): Promise<void> {
-    if (o.snapshot) {
-      const targets = [...this.#views.values()].filter((e) => e.visible && e.bounds && !e.frozen)
-      for (const entry of targets) {
-        await this.#snapshot(entry, entry.bounds as Rect)
-        entry.occlusionSnapshot = true
-      }
-    } else this.#clearOcclusionSnapshots()
-    this.#occlusion = { ...o }
-    for (const entry of this.#views.values()) this.#apply(entry)
+    this.#covers = o.covers
+    const entries = [...this.#views.values()]
+    for (const entry of entries) this.#apply(entry)
+    await Promise.all(entries.filter((e) => this.#coverMode(e) !== null).map((e) => e.capturing))
   }
 
   state(viewId: string): { bounds: Rect | null; visible: boolean } | undefined {
@@ -171,25 +182,70 @@ export class NativeViewHost {
   }
 
   async #snapshot(entry: ViewEntry, bounds: Rect): Promise<void> {
-    const dataUrl = await entry.view.capture()
+    this.#showSnapshot(entry, bounds, await entry.view.capture())
+  }
+
+  #showSnapshot(entry: ViewEntry, bounds: Rect, dataUrl: string): void {
+    entry.snapshot = true
     this.#publish(CoreIpc.nativeViewsSnapshot, { viewId: entry.id, bounds, dataUrl })
   }
 
-  #clearOcclusionSnapshots(): void {
-    for (const entry of this.#views.values()) {
-      if (!entry.occlusionSnapshot) continue
-      entry.occlusionSnapshot = false
+  /** Which overlay mode covers the view right now, or null when it is not on screen or nothing intersects it. */
+  #coverMode(entry: ViewEntry): OverlayGuardMode | null {
+    if (!entry.shown || entry.frozen || !entry.bounds) return null
+    return coverModeFor(this.#covers, entry.bounds)
+  }
+
+  /**
+   * Captures once, publishes the snapshot, gives the renderer a frame or two to paint it, then hides the view. Bails
+   * out (and lets any snapshot go) when the overlay has moved off or closed by then.
+   */
+  #cover(entry: ViewEntry, mode: OverlayGuardMode): void {
+    if (entry.capturing) return
+    this.#cancelClear(entry)
+    const captured = captureFor(mode, entry.view.capture())
+    const stillCovered = () => this.#views.get(entry.id) === entry && this.#coverMode(entry) !== null
+    entry.capturing = (async () => {
+      const dataUrl = await captured
+      if (dataUrl && stillCovered() && entry.bounds) {
+        this.#showSnapshot(entry, entry.bounds, dataUrl)
+        await sleep(SNAPSHOT_PAINT_DELAY_MS)
+      }
+      entry.capturing = null
+      if (stillCovered()) {
+        entry.covered = true
+        this.#apply(entry)
+      } else this.#scheduleClear(entry)
+    })()
+  }
+
+  /** Drops the snapshot once the re-shown view has had time to paint over it. */
+  #scheduleClear(entry: ViewEntry): void {
+    this.#cancelClear(entry)
+    if (!entry.snapshot || entry.frozen || this.#views.get(entry.id) !== entry) return
+    entry.clearTimer = setTimeout(() => {
+      entry.clearTimer = null
+      entry.snapshot = false
       this.#publish(CoreIpc.nativeViewsSnapshotCleared, { viewId: entry.id })
-    }
+    }, SNAPSHOT_CLEAR_DELAY_MS)
+  }
+
+  #cancelClear(entry: ViewEntry): void {
+    if (entry.clearTimer) clearTimeout(entry.clearTimer)
+    entry.clearTimer = null
   }
 
   #apply(entry: ViewEntry): void {
     const bounds = effectiveBounds(this.#tabBounds.get(entry.tabId), entry.inset)
     if (bounds && !sameRect(bounds, entry.bounds)) entry.view.setBounds(bounds)
     entry.bounds = bounds
-    const occluded = this.#occlusion.hide || this.#occlusion.snapshot
-    const visible = entry.shown && bounds !== null && !entry.frozen && !occluded
+    const mode = this.#coverMode(entry)
+    const uncovering = mode === null && entry.covered
+    if (uncovering) entry.covered = false
+    const visible = entry.shown && bounds !== null && !entry.frozen && !entry.covered
     if (visible !== entry.visible) entry.view.setVisible(visible)
     entry.visible = visible
+    if (uncovering) this.#scheduleClear(entry)
+    else if (mode !== null && !entry.covered) this.#cover(entry, mode)
   }
 }

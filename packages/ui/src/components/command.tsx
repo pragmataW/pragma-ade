@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { withOverlayGuard } from '../lib/overlay-guard'
+import { MODAL_COVER, withOverlayGuard } from '../lib/overlay-guard'
 import { CommandDialog as VendorCommandDialog } from '../vendor/command'
 
 export {
@@ -13,7 +13,7 @@ export {
   CommandShortcut,
 } from '../vendor/command'
 
-const GuardedCommandDialog = withOverlayGuard(VendorCommandDialog, { showCloseButton: false })
+const GuardedCommandDialog = withOverlayGuard(VendorCommandDialog, { showCloseButton: false }, MODAL_COVER)
 
 /** Overlay-guarded command dialog; `title` and `description` are required (translated by the caller). */
 export function CommandDialog(
