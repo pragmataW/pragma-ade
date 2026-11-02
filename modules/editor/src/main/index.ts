@@ -26,6 +26,7 @@ import { type EditorRuntime, setEditorRuntime } from './runtime'
 import { locateBridgeVsix } from './server/bridgeVsix'
 import { createServerController } from './server/serverController'
 import { ThemeState } from './theme/themeState'
+import { ViewBackground } from './theme/viewBackground'
 import { createUpstream } from './upstream'
 import { configureEditorSession, hardenEditorWebContents } from './views/editorSession'
 import { WORKBENCH_FONT_FILES } from './views/fontAssets'
@@ -96,6 +97,14 @@ function activateEditor(typed: MainContext<EditorSettings>): void {
     serveWebviewsLocally: () => settings().serveWebviewsLocally,
     openExternal,
   })
+  const background = new ViewBackground({
+    theme: ctx.theme,
+    views: () =>
+      views.openViews().flatMap((v) => {
+        const view = views.view(v.worktreeId)
+        return view ? [view as WebContentsView] : []
+      }),
+  })
   const views = new ViewManager({
     nativeViews: ctx.nativeViews,
     createView: () =>
@@ -108,6 +117,7 @@ function activateEditor(typed: MainContext<EditorSettings>): void {
     },
     maxViews: () => settings().maxOpenViews,
     onViewCreated: (_id, view) => {
+      background.apply(view as WebContentsView)
       const wc = (view as WebContentsView).webContents
       hardenEditorWebContents(wc, { port, openExternal })
       applyWorkbenchFonts(wc, WORKBENCH_FONT_FILES, (m, e) => ctx.log.warn(m, e))
@@ -171,6 +181,7 @@ function activateEditor(typed: MainContext<EditorSettings>): void {
   const disposers: (() => void)[] = [
     bridge.register(),
     theme.onChange(() => bridge.pushTheme()),
+    background.start(),
     server.onStatus((s) => ctx.ipc.publish(EditorIpcEvents.statusChanged, s)),
     server.onServerEvent((e) => {
       if (e.type === EV.restarting) bridge.resetReady()

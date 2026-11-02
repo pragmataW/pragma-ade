@@ -67,12 +67,45 @@ async function writeOnce(api: VscodeApi, m: EditorSetThemeMsg): Promise<void> {
   await api.globalState.update(STATE_KEYS.managedColors, managed)
   if (api.globalState.get(STATE_KEYS.managedColorKeys) !== undefined)
     await api.globalState.update(STATE_KEYS.managedColorKeys, undefined)
-  if (api.getGlobalConfig<string>(CONFIG.workbench, CONFIG.colorTheme) !== m.themeName)
-    await api.updateGlobalConfig(CONFIG.workbench, CONFIG.colorTheme, m.themeName)
+  for (const s of themeSettings(m)) if (!holds(api, s)) await api.updateGlobalConfig(s.section, s.key, s.value)
+}
+
+type Setting = { section: string; key: string; value: unknown }
+
+/**
+ * With a theme map the workbench picks the mode itself from `prefers-color-scheme` (the view follows the app), so
+ * switching modes writes nothing and every workbench, hidden or still loading, flips at once. An override pins
+ * `colorTheme`. The switch goes last, so the workbench never shows a theme it is not meant to.
+ */
+function themeSettings(m: EditorSetThemeMsg): Setting[] {
+  const autoDetect = (value: boolean): Setting => ({ section: CONFIG.window, key: CONFIG.autoDetectColorScheme, value })
+  if (!m.themeMap) return [{ section: CONFIG.workbench, key: CONFIG.colorTheme, value: m.themeName }, autoDetect(false)]
+  return [
+    { section: CONFIG.workbench, key: CONFIG.preferredDarkColorTheme, value: m.themeMap.dark },
+    { section: CONFIG.workbench, key: CONFIG.preferredLightColorTheme, value: m.themeMap.light },
+    autoDetect(true),
+  ]
+}
+
+/** `false` is VS Code's default: an unset value already holds it. */
+function holds(api: VscodeApi, s: Setting): boolean {
+  const current = api.getGlobalConfig<unknown>(s.section, s.key)
+  return current === s.value || (current === undefined && s.value === false)
+}
+
+/** Drops theme messages older than one already taken (a hello reply can arrive after a newer broadcast). */
+export function newerThemesOnly(): (m: EditorSetThemeMsg) => boolean {
+  let newest = -1
+  return (m) => {
+    if (m.rev === undefined) return true
+    if (m.rev < newest) return false
+    newest = m.rev
+    return true
+  }
 }
 
 function isApplied(api: VscodeApi, m: EditorSetThemeMsg): boolean {
-  if (api.getGlobalConfig<string>(CONFIG.workbench, CONFIG.colorTheme) !== m.themeName) return false
+  if (!themeSettings(m).every((s) => holds(api, s))) return false
   const current = readCustomizations(api)
   return same(nextCustomizations(current, readManaged(api), m).next, current)
 }
@@ -94,5 +127,5 @@ export async function applyTheme(api: VscodeApi, m: EditorSetThemeMsg): Promise<
     }
     if (failure === undefined && isApplied(api, m)) return
   }
-  if (failure !== undefined) throw failure
+  throw failure ?? new Error(THEME_APPLY.notApplied)
 }

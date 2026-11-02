@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyTheme, nextCustomizations } from '../src/handlers/theme'
+import { applyTheme, newerThemesOnly, nextCustomizations } from '../src/handlers/theme'
 import { LatestQueue } from '../src/latestQueue'
 import { paletteToColorCustomizations } from '../src/palette'
 import { fakeApi } from './fakes/vscode'
@@ -111,10 +111,87 @@ describe('palette and theme', () => {
     expect(colorsOf(api)[DARK]?.[BG]).toBe('#1c1714')
   })
 
+  it('throws when another workbench keeps undoing the write (the failure is logged, not swallowed)', async () => {
+    const api = fakeApi()
+    const write = api.updateGlobalConfig
+    api.updateGlobalConfig = async (section, key, value) => {
+      await write(section, key, value)
+      if (key === 'colorTheme') await write(section, key, 'Light Modern')
+    }
+    await expect(applyTheme(api, dark({ bg: '#1c1714' }))).rejects.toThrow(/not applied/)
+  })
+
   it('keeps a user block Pragma wrote nothing into', () => {
     const { next, managed } = nextCustomizations({ [LIGHT]: { x: '#1' } }, { [LIGHT]: ['y'] }, dark({ bg: '#2' }))
     expect(next[LIGHT]).toEqual({ x: '#1' })
     expect(Object.keys(managed)).toEqual([DARK])
+  })
+})
+
+describe('following the app colour scheme', () => {
+  const AUTO = 'window.autoDetectColorScheme'
+  const PREF_DARK = 'workbench.preferredDarkColorTheme'
+  const PREF_LIGHT = 'workbench.preferredLightColorTheme'
+  const themeMap = { dark: 'Dark Modern', light: 'Light Modern' }
+  const both = { 'Dark Modern': { bg: '#1e1e1e' }, 'Light Modern': { bg: '#ffffff' } }
+  const follow = (mode: 'dark' | 'light') => ({
+    themeName: themeMap[mode],
+    mode,
+    themeMap,
+    colorsByTheme: both,
+  })
+
+  it('maps both modes to preferred themes and turns on autodetect last (the workbench follows the view)', async () => {
+    const api = fakeApi()
+    await applyTheme(api, follow('dark'))
+    expect(api.config.get(PREF_DARK)).toBe('Dark Modern')
+    expect(api.config.get(PREF_LIGHT)).toBe('Light Modern')
+    expect(api.config.get(AUTO)).toBe(true)
+    expect(api.configWrites.at(-1)).toBe(AUTO)
+    expect(api.configWrites).not.toContain(THEME)
+  })
+
+  it('a mode switch writes nothing: no settings race between workbenches, hidden or not', async () => {
+    const api = fakeApi()
+    await applyTheme(api, follow('dark'))
+    api.configWrites.length = 0
+    await applyTheme(api, follow('light'))
+    await applyTheme(api, follow('dark'))
+    expect(api.configWrites).toEqual([])
+  })
+
+  it('an override without a theme map pins colorTheme and turns autodetect off after it', async () => {
+    const api = fakeApi()
+    await applyTheme(api, follow('dark'))
+    api.configWrites.length = 0
+    await applyTheme(api, { themeName: 'Light Modern', mode: 'light' })
+    expect(api.config.get(THEME)).toBe('Light Modern')
+    expect(api.config.get(AUTO)).toBe(false)
+    expect(api.configWrites.slice(-2)).toEqual([THEME, AUTO])
+  })
+
+  it('an override leaves autodetect alone when it was never set (false is the default)', async () => {
+    const api = fakeApi()
+    await applyTheme(api, { themeName: 'Dark Modern', mode: 'dark' })
+    expect(api.configWrites).not.toContain(AUTO)
+  })
+})
+
+describe('newerThemesOnly', () => {
+  const m = (rev?: number) => ({ themeName: 'x', mode: 'dark' as const, ...(rev === undefined ? {} : { rev }) })
+
+  it('drops a theme older than one already accepted (a hello reply overtaken by a broadcast)', () => {
+    const accept = newerThemesOnly()
+    expect(accept(m(3))).toBe(true)
+    expect(accept(m(2))).toBe(false)
+    expect(accept(m(3))).toBe(true)
+    expect(accept(m(4))).toBe(true)
+  })
+
+  it('always accepts messages without a revision (overrides)', () => {
+    const accept = newerThemesOnly()
+    expect(accept(m(5))).toBe(true)
+    expect(accept(m())).toBe(true)
   })
 })
 

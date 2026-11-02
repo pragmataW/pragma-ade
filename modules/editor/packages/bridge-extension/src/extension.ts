@@ -6,7 +6,7 @@ import { CONNECTION, TEST_MODE } from './constants'
 import { applyFirstRunDefaults } from './defaults'
 import { handleOpenDiff } from './handlers/openDiff'
 import { handleOpenFile } from './handlers/openFile'
-import { applyTheme } from './handlers/theme'
+import { applyTheme, newerThemesOnly } from './handlers/theme'
 import { startLanguageStatusReporter } from './languageStatus'
 import { LatestQueue } from './latestQueue'
 import { answerTestRequest, createTestOps } from './testOps'
@@ -29,10 +29,13 @@ function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewControll
     },
     (e) => api.log(String(e)),
   )
+  const fresh = newerThemesOnly()
   return {
     openFile: (m) => handleOpenFile(api, folderPath(), m),
     openDiff: (m) => handleOpenDiff(api, folderPath(), m),
-    setTheme: (m) => themes.push(m),
+    setTheme: async (m) => {
+      if (fresh(m)) await themes.push(m)
+    },
     drafts: async (m) => review.showDrafts(m.comments),
     ready: () => review.refresh(),
     ...(api.env[TEST_MODE.env] === TEST_MODE.enabled ? { testRequest: (m) => answerTestRequest(ops, conn, m) } : {}),
