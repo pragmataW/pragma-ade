@@ -99,6 +99,16 @@ describe('claude pragma-hook bundle', () => {
     expect(lastEvent()).toEqual({ hook_event_name: 'SessionEnd' })
   })
 
+  it('forwards an absolute .jsonl transcript path whole (it is watched for the interrupt marker); others not', async () => {
+    const long = `/Users/u/.claude/projects/${'-deep'.repeat(60)}/cs1.jsonl`
+    await runHook(JSON.stringify({ hook_event_name: 'UserPromptSubmit', transcript_path: long }), [])
+    expect(lastEvent()).toEqual({ hook_event_name: 'UserPromptSubmit', transcript_path: long })
+    for (const bad of ['relative/cs1.jsonl', '/etc/passwd', `/${'x'.repeat(4100)}.jsonl`, 42]) {
+      await runHook(JSON.stringify({ hook_event_name: 'Stop', transcript_path: bad }), [])
+      expect(lastEvent()).toEqual({ hook_event_name: 'Stop' })
+    }
+  })
+
   it('truncates long fields', async () => {
     await runHook(JSON.stringify({ hook_event_name: 'Stop', reason: 'r'.repeat(500) }), [])
     expect(lastEvent().reason).toBe('r'.repeat(200))
