@@ -24,7 +24,7 @@ go to the agent as one message.
 It uses the agent CLIs already installed and signed in on your machine. There are no API keys, no accounts and no
 telemetry.
 
-![Reviewing an agent's changes and commenting on a diff](docs/phases/reports/FINAL/screens/git-diff-comment-dark.png)
+![Reviewing an agent's changes and commenting on a diff](assets/screenshots/git-diff-comment-dark.png)
 
 ## Features
 
@@ -46,12 +46,12 @@ telemetry.
 
 <table>
   <tr>
-    <td><img src="docs/phases/reports/FINAL/screens/chat-dark.png" alt="Chat view of a Claude Code session"></td>
-    <td><img src="docs/phases/reports/FINAL/screens/browser-element-comment-dark.png" alt="Commenting on a browser element"></td>
+    <td><img src="assets/screenshots/chat-dark.png" alt="Chat view of a Claude Code session"></td>
+    <td><img src="assets/screenshots/browser-element-comment-dark.png" alt="Commenting on a browser element"></td>
   </tr>
   <tr>
-    <td><img src="docs/phases/reports/FINAL/screens/board-drawer-dark.png" alt="Task board with a task drawer"></td>
-    <td><img src="docs/phases/reports/FINAL/screens/workspace-indigo-light.png" alt="Workspace in the light Indigo palette"></td>
+    <td><img src="assets/screenshots/board-drawer-dark.png" alt="Task board with a task drawer"></td>
+    <td><img src="assets/screenshots/workspace-indigo-light.png" alt="Workspace in the light Indigo palette"></td>
   </tr>
 </table>
 
@@ -138,8 +138,8 @@ pnpm package:win    # NSIS setup + zip for win32-x64
 pnpm package:all    # everything, with a native-module audit and a smoke test
 ```
 
-Outputs go to `dist/`. See [docs/build.md](docs/build.md) for prerequisites (Docker for Linux, Rosetta for the x64
-smoke test), caches and troubleshooting.
+Outputs go to `dist/`. Building the Linux packages needs Docker (to compile `node-pty`); the x64 macOS smoke test needs
+Rosetta.
 
 ## Development
 
@@ -149,19 +149,12 @@ smoke test), caches and troubleshooting.
 | `pnpm lint` | Biome, duplicate-code check, literal check and architecture tests |
 | `pnpm typecheck` | TypeScript for the main, preload and renderer code |
 | `pnpm test` | unit and component tests (Vitest) |
-| `pnpm e2e` | end-to-end tests against a fresh build (Playwright + Electron) |
 | `pnpm gen` | regenerate the module registry |
 | `pnpm icons` | regenerate the app icons from `assets/logo/*.svg` (needs `librsvg` and `imagemagick`) |
 
 Pragma ADE is a thin Electron shell plus modules (`modules/<id>`) and agent providers (`providers/<id>`) written against
-the `@pragma/sdk` package. Adding a feature means adding a folder. Start with:
-
-- [docs/modules.md](docs/modules.md) — how to write a module or provider.
-- [docs/phases/CONVENTIONS.md](docs/phases/CONVENTIONS.md) — the architecture contract.
-- [docs/design/ui-notes.md](docs/design/ui-notes.md) — UI tokens, layout and components.
-- [AGENTS.md](AGENTS.md) — rules for coding agents working on this repository.
-
-The design spec, phase plans and phase reports under `docs/` record how the app was built. Some of them are in Turkish.
+the `@pragma/sdk` package. Adding a feature means adding a folder; `modules/_template` is a reference module to copy.
+[AGENTS.md](AGENTS.md) lists the rules for coding agents working on this repository.
 
 ## License
 

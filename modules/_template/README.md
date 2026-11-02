@@ -1,6 +1,6 @@
 # _template — `@pragma/module-example`
 
-Reference module (id `example`). The leading `_` keeps it out of the generated registry, so it never ships; copy the folder to start a new module and follow [docs/modules.md](../../docs/modules.md).
+Reference module (id `example`). The leading `_` keeps it out of the generated registry, so it never ships; copy the folder to start a new module and follow the rules in [AGENTS.md](../../AGENTS.md).
 
 It shows, in the smallest form that still follows the code-quality rules (§9, §10):
 

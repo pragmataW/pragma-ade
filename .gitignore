@@ -25,3 +25,11 @@ Thumbs.db
 .env
 .env.*
 *.tgz
+
+# Design docs, plans, phase reports and end-to-end tests are kept locally, not published
+/docs/
+**/e2e/
+!packages/test-support/src/e2e/
+!test/e2e/
+test/e2e/*
+!test/e2e/packaging/
