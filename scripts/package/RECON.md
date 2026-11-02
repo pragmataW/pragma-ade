@@ -76,3 +76,12 @@ The plan's examples (`to: 'pty-daemon'`, `to: 'pragma-bridge.vsix'`) differ from
 
 - `docker pull` / `docker run` with the user's client config hung indefinitely (Docker Desktop credential helper `desktop`); with an anonymous config (`DOCKER_CONFIG` → `<cache>/docker-config/config.json` = `{"auths":{}}`) plus `DOCKER_HOST` from `docker context inspect`, `debian:bookworm-slim` pulled in seconds. The tool always runs Docker this way; the user's `~/.docker` is only read.
 - `docker.int.ts` `compiles node-pty for linux-x64`: passed (`node:22-bullseye`, linux/amd64); `pty.node` is ELF x86-64, max `GLIBC_2.x` ≤ 2.31.
+
+## Final run (Task 13)
+
+- `pnpm package:all` → exit 0: 8 artifacts, every audit ok, deep probe ok on darwin-arm64 (host), darwin-x64 (Rosetta), linux-x64 (Docker `debian:bookworm-slim`), smoke 8/8.
+- electron-builder 26.18.0 worked for every target (no fallback to 26.17.0); NSIS built without Wine.
+- electron-builder needs `homepage` for Linux packages → the staged package.json carries one.
+- The NSIS setup stub is a 32-bit PE for every arch.
+- One transient `unable to verify the first certificate` during an electron-builder download; a re-run passed (the tool now retries once).
+- Linux `node-pty` 1.1.0 compiled in Docker: max `GLIBC_2.28`.
