@@ -1,5 +1,5 @@
 import { type ParseArgsConfig, parseArgs } from 'node:util'
-import { CLI_PRIORITIES, type CliMethod } from '@pragma/module-cli-integration/contract'
+import { CLI_METHOD, CLI_PRIORITIES, type CliMethod } from '@pragma/module-cli-integration/contract'
 import { CLI_NAME, GLOBAL_HELP, HELP_FLAGS, LIST_SEPARATOR, VERSION_FLAG } from './constants'
 
 export type OptionValue = string | boolean | string[]
@@ -29,22 +29,22 @@ export class UsageError extends Error {
  * `[…]` is optional, a bare `<id>` after the subcommand is a required positional.
  */
 const COMMAND_TABLE: readonly (readonly [string, CliMethod])[] = [
-  ['worktree list [--project <id>]', 'worktreeList'],
-  ['worktree create --branch <name> [--base <branch>] [--project <id>] [--path <dir>]', 'worktreeCreate'],
-  ['agent list [--worktree <id>]', 'agentList'],
-  ['agent spawn --profile <id|name> [--worktree <id>] [--prompt-file <path>]', 'agentSpawn'],
-  ['agent profiles', 'profileList'],
-  ['task list [--project <id>] [--column <name>]', 'taskList'],
+  ['worktree list [--project <id>]', CLI_METHOD.worktreeList],
+  ['worktree create --branch <name> [--base <branch>] [--project <id>] [--path <dir>]', CLI_METHOD.worktreeCreate],
+  ['agent list [--worktree <id>]', CLI_METHOD.agentList],
+  ['agent spawn --profile <id|name> [--worktree <id>] [--prompt-file <path>]', CLI_METHOD.agentSpawn],
+  ['agent profiles', CLI_METHOD.profileList],
+  ['task list [--project <id>] [--column <name>]', CLI_METHOD.taskList],
   [
     'task create --title <t> [--description-file <path>] [--column <name>] [--priority <p>] [--labels a,b] [--project <id>]',
-    'taskCreate',
+    CLI_METHOD.taskCreate,
   ],
-  ['task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]', 'taskUpdate'],
-  ['task move <id> --column <name>', 'taskMove'],
-  ['comments list [--worktree <id>]', 'commentsList'],
+  ['task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]', CLI_METHOD.taskUpdate],
+  ['task move <id> --column <name>', CLI_METHOD.taskMove],
+  ['comments list [--worktree <id>]', CLI_METHOD.commentsList],
   [
     'handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
-    'handoff',
+    CLI_METHOD.handoff,
   ],
 ]
 

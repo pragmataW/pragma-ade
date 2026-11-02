@@ -22,7 +22,8 @@ export async function resolveBridgeEndpoint(
 ): Promise<BridgeEndpoint> {
   const file = env[BRIDGE_ENV.file]
   const hasEnvPair = Boolean(env[BRIDGE_ENV.url] && env[BRIDGE_ENV.token])
-  if (!hasEnvPair && file && !existsSync(file)) throw new NotRunningError(NO_BRIDGE_INFO, NOT_RUNNING_HINTS.missingFile(file))
+  if (!hasEnvPair && file && !existsSync(file))
+    throw new NotRunningError(NO_BRIDGE_INFO, NOT_RUNNING_HINTS.missingFile(file))
   try {
     const { url, token } = await readBridgeInfo({ env, home: opts.home, platform: opts.platform })
     return { url, token }

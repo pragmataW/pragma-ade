@@ -24,6 +24,7 @@
     ]
   },
   "dependencies": {
+    "@pragma/module-agents": "workspace:*",
     "@pragma/module-bridge": "workspace:*",
     "@pragma/module-cli-integration": "workspace:*",
     "@pragma/sdk": "workspace:*",

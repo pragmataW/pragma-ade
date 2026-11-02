@@ -17,6 +17,8 @@ export const CLI_METHODS = [
   'handoff',
 ] as const
 export type CliMethod = (typeof CLI_METHODS)[number]
+/** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
+export const CLI_METHOD = Object.fromEntries(CLI_METHODS.map((m) => [m, m])) as { readonly [K in CliMethod]: K }
 /** Liveness probe the CLI sends (short timeout) before the real request; not a user command. */
 export const CLI_PING_METHOD = 'ping'
 

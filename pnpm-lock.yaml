@@ -473,6 +473,9 @@ importers:
 
   modules/cli-integration/packages/cli:
     dependencies:
+      '@pragma/module-agents':
+        specifier: workspace:*
+        version: link:../../../agents
       '@pragma/module-bridge':
         specifier: workspace:*
         version: link:../../../bridge

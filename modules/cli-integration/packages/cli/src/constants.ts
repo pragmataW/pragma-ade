@@ -18,3 +18,24 @@ export const NOT_RUNNING_HINTS = {
   tokenRejected: 'The bridge token was rejected (stale bridge.json from an earlier run?).',
   unreachable: (url: string) => `Nothing answered at ${url} (stale bridge.json from an earlier run?).`,
 } as const
+export const CONNECT_TIMEOUT_MS = 3000
+/** handoff may create a worktree and start an agent. */
+export const RESPONSE_TIMEOUT_MS = 120_000
+export const COMMENT_PREVIEW_CHARS = 60
+export const COLUMN_GAP = '  '
+export const MAIN_MARK = ' *'
+export const EMPTY_CELL = '-'
+export const DETACHED = '(detached)'
+export const YES_NO = { yes: 'yes', no: 'no' } as const
+export const NEWLINE = '\n'
+export const JSON_INDENT = 2
+export const UTF8 = 'utf8'
+export const NOT_RUNNING_TEXT = 'Pragma ADE is not running. Start the app and try again.'
+export const TOKEN_REJECTED = 'Pragma ADE is not running (the bridge token was rejected).'
+export const UNREACHABLE = 'Pragma ADE is not running (nothing answered at the bridge address).'
+export const USAGE_FOOTER = "Run 'pragma --help' for usage."
+export const ERROR_PREFIX = 'Error: '
+export const VERSION_MISMATCH = 'Unexpected response from Pragma ADE (version mismatch?)'
+export const CLI_DISABLED = 'Pragma ADE is running but its command line module is disabled (Settings > Modules).'
+/** `node` and the script path. */
+export const ARGV_SKIP = 2
