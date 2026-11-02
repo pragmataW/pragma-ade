@@ -15,17 +15,19 @@ type Classified =
   | { kind: 'localRef'; branch: string }
   | { kind: 'remoteRef'; ref: string }
   | { kind: 'packedRefs' }
-  | { kind: 'config' }
+  | { kind: 'repoWide' }
   | { kind: 'other' }
 
 const ROOT_HEADS = new Set(ROOT_HEAD_FILES)
+/** One per repository, so every worktree's view may change: remotes/upstreams (config) and the stash list. */
+const REPO_WIDE = new Set<string>([GIT_DIR_PATHS.config, GIT_DIR_PATHS.stash])
 const KIND = {
   rootHead: 'rootHead',
   linked: 'linked',
   localRef: 'localRef',
   remoteRef: 'remoteRef',
   packedRefs: 'packedRefs',
-  config: 'config',
+  repoWide: 'repoWide',
   other: 'other',
 } as const
 const OTHER: Classified = { kind: KIND.other }
@@ -37,7 +39,7 @@ const remoteBranch = (ref: string): string => ref.slice(ref.indexOf(REMOTE_SEPAR
 function classify(path: string): Classified {
   if (ROOT_HEADS.has(path)) return { kind: KIND.rootHead }
   if (path === GIT_DIR_PATHS.packedRefs) return { kind: KIND.packedRefs }
-  if (path === GIT_DIR_PATHS.config) return { kind: KIND.config }
+  if (REPO_WIDE.has(path)) return { kind: KIND.repoWide }
   if (path.startsWith(GIT_DIR_PATHS.worktrees)) {
     const name = path.slice(GIT_DIR_PATHS.worktrees.length).split('/')[0] ?? ''
     return name ? { kind: KIND.linked, name } : OTHER
@@ -59,7 +61,7 @@ function matches(c: Classified, r: GitDirWorktreeRef): boolean {
     case KIND.remoteRef:
       return r.baseBranch === c.ref || remoteBranch(c.ref) === r.branch
     case KIND.packedRefs:
-    case KIND.config:
+    case KIND.repoWide:
       return true
     case KIND.other:
       return false
