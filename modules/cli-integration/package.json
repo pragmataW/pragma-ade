@@ -11,13 +11,26 @@
     "id": "cli-integration",
     "kind": "feature",
     "displayNameKey": "cli-integration:module.name",
-    "dependsOn": ["projects", "agents", "bridge"],
-    "optionalDependsOn": ["board", "comments"],
+    "dependsOn": [
+      "projects",
+      "agents",
+      "bridge"
+    ],
+    "optionalDependsOn": [
+      "board",
+      "comments"
+    ],
     "core": false,
     "package": {
       "extraResources": [
-        { "from": "packages/cli/dist/pragma.cjs", "to": "packages/cli/dist/pragma.cjs" },
-        { "from": "skills", "to": "skills" }
+        {
+          "from": "packages/cli/dist/pragma.cjs",
+          "to": "packages/cli/dist/pragma.cjs"
+        },
+        {
+          "from": "skills",
+          "to": "skills"
+        }
       ]
     }
   },

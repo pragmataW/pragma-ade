@@ -13,8 +13,9 @@ export const EXIT_CODES = { ok: 0, appError: 1, usage: 2, notRunning: 3 } as con
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES]
 
 const KIB = 1024
+const MAX_DOCUMENT_KIB = 256
 /** Upper bound for `--file`, `--prompt-file` and `--description-file` contents (UTF-8 bytes). */
-export const MAX_DOCUMENT_BYTES = 256 * KIB
+export const MAX_DOCUMENT_BYTES = MAX_DOCUMENT_KIB * KIB
 
 export const CLI_BIN_NAME = 'pragma'
 export const CLI_CMD_SHIM_NAME = 'pragma.cmd'

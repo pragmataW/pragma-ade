@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": { "pragma": "dist/pragma.cjs" },
+  "bin": {
+    "pragma": "dist/pragma.cjs"
+  },
   "scripts": {
     "build": "node build.mjs",
     "test": "vitest run --root ../../../.. modules/cli-integration/packages/cli/test",
@@ -11,8 +13,15 @@
   },
   "pragma": {
     "build": "build",
-    "buildInputs": ["src/**", "build.mjs", "package.json", "../../src/contract/**"],
-    "buildOutputs": ["dist"]
+    "buildInputs": [
+      "src/**",
+      "build.mjs",
+      "package.json",
+      "../../src/contract/**"
+    ],
+    "buildOutputs": [
+      "dist"
+    ]
   },
   "dependencies": {
     "@pragma/module-bridge": "workspace:*",
