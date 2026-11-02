@@ -4,6 +4,7 @@ import {
   CHANGE_LIST_STATE,
   CHANGE_MODE,
   type ChangedFile,
+  type ChangeMode,
   type GitChangesSettings,
   GitChangesTestIds as T,
   VIEW_MODES,
@@ -18,7 +19,7 @@ import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
 import { useGitChangesStore, useWorktreeView } from './store'
 import { type ChangeLists, Toolbar } from './Toolbar'
-import { buildFlatList, buildTree, leafOrder, type TreeNode } from './tree/build-tree'
+import { buildGroups, entryKey, leafOrder } from './tree/build-tree'
 import { ChangesTree } from './tree/ChangesTree'
 import { useChangeList } from './use-changes'
 
@@ -29,21 +30,21 @@ const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable=""], [conte
 const isEditable = (target: EventTarget): boolean =>
   target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null
 
-/** The files of the current list in display order (tree or flat). */
-function useDisplay(files: ChangedFile[], viewMode: GitChangesSettings['viewMode']) {
+/** The entries of the current list in display order (grouped in uncommitted mode, tree or flat). */
+function useDisplay(files: ChangedFile[], viewMode: GitChangesSettings['viewMode'], mode: ChangeMode) {
   return useMemo(() => {
-    const nodes: TreeNode[] = viewMode === TREE ? buildTree(files) : buildFlatList(files)
-    const byPath = new Map(files.map((f) => [f.path, f]))
-    const ordered = leafOrder(nodes).flatMap((p) => byPath.get(p) ?? [])
+    const nodes = buildGroups(files, { grouped: mode === CHANGE_MODE.uncommitted, flat: viewMode !== TREE })
+    const byKey = new Map(files.map((f) => [entryKey(f), f]))
+    const ordered = leafOrder(nodes).flatMap((k) => byKey.get(k) ?? [])
     return { nodes, ordered }
-  }, [files, viewMode])
+  }, [files, viewMode, mode])
 }
 
 /** j / k move the selection through the display order (`step` ±1), stopping at both ends. */
 function neighbour(ordered: ChangedFile[], selected: string | null, step: number): string | null {
-  const index = ordered.findIndex((f) => f.path === selected)
+  const index = ordered.findIndex((f) => entryKey(f) === selected)
   const next = ordered[Math.min(Math.max(index + step, 0), ordered.length - 1)]
-  return next?.path ?? null
+  return next ? entryKey(next) : null
 }
 
 function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
@@ -57,8 +58,8 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   const lists: ChangeLists = { uncommitted: uncommitted.data, branch: branch.data }
   const okList = current.data?.state === CHANGE_LIST_STATE.ok ? current.data : undefined
   const files = useMemo(() => okList?.files ?? [], [okList])
-  const { nodes, ordered } = useDisplay(files, settings.viewMode)
-  const selected = files.find((f) => f.path === view.selectedPath) ?? null
+  const { nodes, ordered } = useDisplay(files, settings.viewMode, view.mode)
+  const selected = files.find((f) => entryKey(f) === view.selectedPath) ?? null
   const diffRef = useRef<DiffViewHandle>(null)
   const review = useDiffReview(worktreeId, selected, view.composer)
   const openInEditor = editorOpener({ worktreeId, mode: view.mode, mergeBase: okList?.mergeBase ?? null })
@@ -105,7 +106,7 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
             <ChangesTree
               nodes={nodes}
               selectedPath={view.selectedPath}
-              onSelect={(path) => store.select(worktreeId, path)}
+              onSelect={(key) => store.select(worktreeId, key)}
               commentCounts={review.counts}
               onOpenInEditor={openPathInEditor}
             />

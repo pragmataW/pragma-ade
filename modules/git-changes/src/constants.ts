@@ -55,6 +55,10 @@ export const FAKE_EDITOR_ENV = 'PRAGMA_TEST_FAKE_EDITOR'
 /** Tree node ids: `d:<dir path>` / `f:<file path>`. */
 export const DIR_ID_PREFIX = 'd:'
 export const FILE_ID_PREFIX = 'f:'
+/** Group node ids (`g:staged` / `g:unstaged`). */
+export const GROUP_ID_PREFIX = 'g:'
+/** Entry key prefix of a staged entry: a repo path is never absolute, so it never collides with an unstaged key. */
+export const STAGED_KEY_PREFIX = '/staged/'
 /** Tree height until the container is measured (jsdom, first paint). */
 export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14

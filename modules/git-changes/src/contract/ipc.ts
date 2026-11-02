@@ -25,6 +25,8 @@ export const FileContentsInputSchema = z.object({
   path: RepoPathSchema,
   oldPath: RepoPathSchema.optional(),
   status: FileStatusSchema,
+  /** Uncommitted mode: the staged side (HEAD ↔ index) instead of the unstaged one (index ↔ worktree). */
+  staged: z.boolean().optional(),
 })
 export type FileContentsInput = z.infer<typeof FileContentsInputSchema>
 export const fileContentsIpc = defineIpc({

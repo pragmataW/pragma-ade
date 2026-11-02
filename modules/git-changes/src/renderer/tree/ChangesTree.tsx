@@ -20,13 +20,14 @@ import {
   TREE_ROW_HEIGHT_PX,
 } from '../../constants'
 import { FILE_STATUS, type FileStatus, GitChangesTestIds as T } from '../../contract'
-import { TREE_NODE_KINDS, type TreeNode } from './build-tree'
+import { entryKey, TREE_NODE_KINDS, type TreeNode } from './build-tree'
 import { RowMenu, type RowMenuAt } from './RowMenu'
 
 export interface ChangesTreeProps {
   nodes: TreeNode[]
+  /** The selected entry's key (`entryKey`). */
   selectedPath: string | null
-  onSelect(path: string): void
+  onSelect(key: string): void
   /** Draft diff comments per file path (marker next to the name). */
   commentCounts?: Record<string, number>
   treeRef?: RefObject<TreeApi<TreeNode> | null>
@@ -35,7 +36,7 @@ export interface ChangesTreeProps {
 }
 
 const RENAME_ARROW = ' → '
-const [, FILE_KIND] = TREE_NODE_KINDS
+const [, FILE_KIND, GROUP_KIND] = TREE_NODE_KINDS
 /** Deleted files are struck through (ui-notes); inline so it holds without the stylesheet. */
 const DELETED_NAME: CSSProperties = { textDecorationLine: 'line-through' }
 const NO_COUNTS: Record<string, number> = {}
@@ -72,6 +73,23 @@ function StatusLetter({ status }: { status: FileStatus }) {
   )
 }
 
+/** A group header ("Staged Changes" / "Changes"): section-label type, entry count. */
+function GroupLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
+  const t = useT()
+  const Chevron = node.isOpen ? ChevronDown : ChevronRight
+  return (
+    <>
+      <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1 truncate font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.06em]">
+        {t(`git-changes:groups.${node.data.group}`)}
+      </span>
+      <span className="shrink-0 rounded-full bg-[var(--hv)] px-1.5 text-[11px] text-muted-foreground">
+        {node.data.fileCount}
+      </span>
+    </>
+  )
+}
+
 function DirLabel({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
   const Chevron = node.isOpen ? ChevronDown : ChevronRight
   const FolderIcon = node.isOpen ? FolderOpen : Folder
@@ -104,6 +122,11 @@ function FileLabel({ data, comments }: { data: TreeNode; comments: number }) {
   )
 }
 
+function RowLabel({ node, comments }: { node: NodeRendererProps<TreeNode>['node']; comments: number }) {
+  if (node.data.kind === GROUP_KIND) return <GroupLabel node={node} />
+  return node.isInternal ? <DirLabel node={node} /> : <FileLabel data={node.data} comments={comments} />
+}
+
 const CommentCounts = createContext<Record<string, number>>(NO_COUNTS)
 type OpenRowMenu = (e: MouseEvent<HTMLDivElement>, path: string) => void
 const RowMenuOpener = createContext<OpenRowMenu | null>(null)
@@ -123,6 +146,7 @@ function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
       data-kind={data.kind}
       data-depth={node.level}
       data-status={data.file?.status}
+      data-staged={data.staged || undefined}
       data-selected={node.isSelected || undefined}
       title={titleOf(data)}
       className={cn(
@@ -130,7 +154,7 @@ function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
         node.isSelected ? 'bg-[var(--hv)] text-[var(--tx)]' : 'hover:bg-[var(--hv)]',
       )}
     >
-      {node.isInternal ? <DirLabel node={node} /> : <FileLabel data={data} comments={counts[data.path] ?? 0} />}
+      <RowLabel node={node} comments={counts[data.path] ?? 0} />
     </div>
   )
 }
@@ -169,7 +193,7 @@ export function ChangesTree(props: ChangesTreeProps) {
             aria-label={t('git-changes:tree.label')}
             onSelect={(selected) => {
               const n = selected[0]
-              if (n?.data.kind === FILE_KIND) onSelect(n.data.path)
+              if (n?.data.kind === FILE_KIND && n.data.file) onSelect(entryKey(n.data.file))
             }}
             onActivate={(n) => {
               if (n.isInternal) n.toggle()

@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { GIT_CHANGES_CHANNELS as C, REVEAL_COMMAND_ID, GitChangesTestIds as T } from '../src/contract'
+import { GIT_CHANGES_CHANNELS as C, type ChangedFile, REVEAL_COMMAND_ID, GitChangesTestIds as T } from '../src/contract'
 import { useGitChangesStore, viewOf } from '../src/renderer/store'
 import { mountPanel, type PanelHarness, WT_ID } from './helpers/host'
+import { EN } from './helpers/i18n'
 import { changed, listsAnswer } from './helpers/lists'
 
 let h: PanelHarness | undefined
@@ -55,7 +56,24 @@ describe('git-changes panel', () => {
   it('shows the tree and selects the first file in display order', async () => {
     h = await mountPanel({ answers })
     await waitFor(() => expect(selected()).toBe('a/x.ts'))
-    expect(screen.getAllByTestId(T.treeRow).map((r) => r.dataset.path)).toEqual(['a', 'a/x.ts', 'a/y.ts', 'b.ts'])
+    const rows = screen.getAllByTestId(T.treeRow)
+    expect(rows.map((r) => r.dataset.kind)).toEqual(['group', 'dir', 'file', 'file', 'file'])
+    expect(rows[0]).toHaveTextContent(EN.groups.unstaged)
+    expect(rows.slice(1).map((r) => r.dataset.path)).toEqual(['a', 'a/x.ts', 'a/y.ts', 'b.ts'])
+  })
+
+  it('uncommitted mode groups staged entries above the changes; a path can be in both', async () => {
+    const both = [{ ...changed(['b.ts'])[0], staged: true }, ...changed(['b.ts'])] as ChangedFile[]
+    h = await mountPanel({ answers: { ...answers, [C.list]: listsAnswer({ uncommitted: both, branch: [] }) } })
+    await waitFor(() => expect(screen.getAllByTestId(T.treeRow)).toHaveLength(4))
+    const rows = screen.getAllByTestId(T.treeRow)
+    expect(rows.map((r) => [r.dataset.kind, r.dataset.path, r.dataset.staged])).toEqual([
+      ['group', '', 'true'],
+      ['file', 'b.ts', 'true'],
+      ['group', '', undefined],
+      ['file', 'b.ts', undefined],
+    ])
+    expect(rows[0]).toHaveTextContent(EN.groups.staged)
   })
 
   it('j and k move the selection through the display order', async () => {

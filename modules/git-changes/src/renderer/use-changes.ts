@@ -10,6 +10,7 @@ import {
   listChangesIpc,
 } from '../contract'
 import { getRendererCtx } from './lib/sdk'
+import { entryKey } from './tree/build-tree'
 
 export interface Loaded<T> {
   /** The value for the current key only (never a previous worktree's or file's). */
@@ -57,15 +58,16 @@ export function useFileContents(
   mode: ChangeMode,
   file: ChangedFile | null,
 ): Loaded<FileDiffContents> {
-  const key = worktreeId === null || file === null ? null : `${worktreeId}:${mode}:${file.path}:${file.status}`
+  const key = worktreeId === null || file === null ? null : `${worktreeId}:${mode}:${entryKey(file)}:${file.status}`
   const loaded = useKeyedLatest(key, () => {
-    const { path, oldPath, status } = file as ChangedFile
+    const { path, oldPath, status, staged } = file as ChangedFile
     return getRendererCtx().ipc.invoke(fileContentsIpc, {
       worktreeId: worktreeId as string,
       mode,
       path,
       status,
       ...(oldPath ? { oldPath } : {}),
+      ...(staged ? { staged } : {}),
     })
   })
   useReloadOnChanges(worktreeId, loaded.reload)

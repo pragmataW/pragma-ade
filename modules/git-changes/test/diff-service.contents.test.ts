@@ -11,7 +11,7 @@ const service = new DiffService({ git, maxFileBytes: () => MAX })
 let fx: StandardFixture
 let small: StandardFixture
 
-type Req = { mode: ChangeMode; path: string; status: FileStatus; oldPath?: string }
+type Req = { mode: ChangeMode; path: string; status: FileStatus; oldPath?: string; staged?: boolean }
 const get = (r: Req, f: StandardFixture = fx) => service.getFileContents({ cwd: f.repo.path, baseBranch: 'main', ...r })
 const textOf = (v: FileVersion): string => (v.kind === 'text' ? v.contents : `<${v.kind}>`)
 
@@ -89,6 +89,38 @@ describe('DiffService.getFileContents', () => {
 
   it('rejects traversal', async () => {
     await expect(get({ mode: 'uncommitted', path: '../outside', status: 'M' })).rejects.toBeInstanceOf(InvalidPathError)
+  })
+
+  it('a staged entry diffs HEAD against the index; an unstaged one the index against the disk', async () => {
+    const f = await buildStandardFixture()
+    await f.write('src/app.ts', 'index\n')
+    f.repo.git('add', 'src/app.ts')
+    await f.write('src/app.ts', 'disk\n')
+    const staged = await get({ mode: 'uncommitted', path: 'src/app.ts', status: 'M', staged: true }, f)
+    const unstaged = await get({ mode: 'uncommitted', path: 'src/app.ts', status: 'M' }, f)
+    f.repo.cleanup()
+    expect(textOf(staged.old)).toMatch(/^app 1\n/)
+    expect(textOf(staged.new)).toBe('index\n')
+    expect(textOf(unstaged.old)).toBe('index\n')
+    expect(textOf(unstaged.new)).toBe('disk\n')
+  })
+
+  it.each([
+    ['staged added', { path: 'fresh.txt', status: 'A', staged: true }, ['absent', 'fresh\n']],
+    ['staged deleted', { path: 'long.ts', status: 'D', staged: true }, ['line 1 unchanged', 'absent']],
+    ['unstaged deleted', { path: 'remove-me.txt', status: 'D' }, ['this file gets removed\n', 'absent']],
+  ] as const)('%s file reads the right sides', async (_n, req, [oldText, newText]) => {
+    const f = await buildStandardFixture()
+    f.repo.git('checkout', '-q', 'main')
+    await f.write('fresh.txt', 'fresh\n')
+    f.repo.git('add', 'fresh.txt')
+    f.repo.git('rm', '-q', '--cached', 'long.ts')
+    await f.rm('remove-me.txt')
+    const c = await get({ mode: 'uncommitted', ...req }, f)
+    f.repo.cleanup()
+    const [o, n] = [textOf(c.old), textOf(c.new)]
+    expect(oldText === 'absent' ? c.old.kind : o.slice(0, oldText.length)).toBe(oldText)
+    expect(newText === 'absent' ? c.new.kind : n).toBe(newText)
   })
 
   it('branch mode without a base reads the old side as absent', async () => {

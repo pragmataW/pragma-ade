@@ -34,11 +34,14 @@ export interface ListChangesInput {
 export type FileContentsRequest = Omit<FileContentsInput, 'worktreeId'> & { cwd: string; baseBranch: string }
 
 const HEAD = 'HEAD'
+/** `<rev>:<path>` with an empty rev is `:<path>`, the index (stage 0) version. */
+const INDEX_REV = ''
 const COMMIT_PEEL = '^{commit}'
 const ALLOW = { allowFailure: true } as const
 const GIT_ARGS = {
   verify: ['rev-parse', '--verify', '-q'],
   diff: ['diff', '--no-color', '--no-ext-diff', '-M', '-z'],
+  cached: '--cached',
   nameStatus: '--name-status',
   numstat: '--numstat',
   untracked: ['ls-files', '--others', '--exclude-standard', '-z'],
@@ -79,8 +82,9 @@ export class DiffService {
   }
 
   /**
-   * Both sides of one file. Old: HEAD (or the empty tree) in uncommitted mode, the merge-base in branch mode, at
-   * `oldPath ?? path`. New: the disk file in uncommitted mode, `HEAD:path` in branch mode.
+   * Both sides of one file. Old: HEAD (or the empty tree) for a staged entry, the index for an unstaged one, the
+   * merge-base in branch mode, at `oldPath ?? path`. New: the index for a staged entry, the disk file for an unstaged
+   * one, `HEAD:path` in branch mode.
    */
   async getFileContents(input: FileContentsRequest): Promise<FileDiffContents> {
     resolveInside(input.cwd, input.path)
@@ -113,29 +117,33 @@ export class DiffService {
 
   private async readOld(input: FileContentsRequest, max: number): Promise<FileVersion> {
     if (NO_OLD_SIDE.has(input.status)) return ABSENT
-    const rev = await this.oldRev(input.cwd, input.mode, input.baseBranch)
-    return rev ? readRevSide(this.#git, input.cwd, rev, input.oldPath ?? input.path, max) : ABSENT
+    const rev = await this.oldRev(input)
+    return rev === null ? ABSENT : readRevSide(this.#git, input.cwd, rev, input.oldPath ?? input.path, max)
   }
 
   private readNew(input: FileContentsRequest, max: number): Promise<FileVersion> {
     if (input.status === FILE_STATUS.D) return Promise.resolve(ABSENT)
-    return input.mode === CHANGE_MODE.branch
-      ? readRevSide(this.#git, input.cwd, HEAD, input.path, max)
+    if (input.mode === CHANGE_MODE.branch) return readRevSide(this.#git, input.cwd, HEAD, input.path, max)
+    return input.staged
+      ? readRevSide(this.#git, input.cwd, INDEX_REV, input.path, max)
       : readDiskSide(this.#fs, input.cwd, input.path, max)
   }
 
-  private async oldRev(cwd: string, mode: ChangeMode, baseBranch: string): Promise<string | null> {
-    if (mode === CHANGE_MODE.uncommitted) return (await this.resolveRev(cwd, HEAD)) ?? EMPTY_TREE_SHA
+  private async oldRev({ cwd, mode, baseBranch, staged }: FileContentsRequest): Promise<string | null> {
+    if (mode === CHANGE_MODE.uncommitted) return staged ? ((await this.resolveRev(cwd, HEAD)) ?? EMPTY_TREE_SHA) : INDEX_REV
     const base = await this.branchBase(cwd, baseBranch)
     return base.found ? base.mergeBase : null
   }
 
+  /** "Staged Changes" (`diff --cached`, flagged `staged`) first, then "Changes" (`diff` + untracked), each by path. */
   private async listUncommitted(cwd: string, header: ListHeader, head: string | null): Promise<ChangeList> {
-    const [tracked, untracked] = await Promise.all([
-      this.diffFiles(cwd, [head ?? EMPTY_TREE_SHA]),
+    const [staged, unstaged, untracked] = await Promise.all([
+      this.diffFiles(cwd, [GIT_ARGS.cached, head ?? EMPTY_TREE_SHA]),
+      this.diffFiles(cwd, []),
       this.untrackedFiles(cwd),
     ])
-    const files = [...tracked, ...untracked].sort((a, b) => comparePaths(a.path, b.path))
+    const changes = [...unstaged, ...untracked].sort((a, b) => comparePaths(a.path, b.path))
+    const files = [...staged.map((f) => ({ ...f, staged: true })), ...changes]
     return okList(header, { mergeBase: null, headSha: head, commitCount: null, files })
   }
 

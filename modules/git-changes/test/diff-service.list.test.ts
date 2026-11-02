@@ -36,6 +36,46 @@ describe('DiffService.listChanges', () => {
     expect(ok(l)).toMatchObject({ mergeBase: null, commitCount: null, headSha: fx.repo.git('rev-parse', 'HEAD') })
   })
 
+  it('uncommitted mode splits staged (HEAD ↔ index) from unstaged (index ↔ worktree) entries', async () => {
+    const l = ok(await list('uncommitted'))
+    expect(l.files.filter((f) => f.staged).map((f) => f.path)).toEqual(['README.md'])
+    expect(byPath(l, 'README.md')).toMatchObject({ staged: true, status: 'M', additions: 2, deletions: 0 })
+    expect(byPath(l, 'src/app.ts')?.staged).toBeUndefined()
+  })
+
+  it('a partially staged file is listed in both groups, staged entries first', async () => {
+    const f = await buildStandardFixture()
+    extra.push(f)
+    await f.write('src/app.ts', 'staged\n')
+    f.repo.git('add', 'src/app.ts')
+    await f.write('src/app.ts', 'staged\nunstaged\n')
+    await f.write('fresh.txt', 'new\n')
+    f.repo.git('add', 'fresh.txt')
+    f.repo.git('rm', '-q', '--cached', 'long.ts')
+    const l = ok(await list('uncommitted', 'main', f))
+    expect(l.files.map((x) => [x.path, x.status, x.staged ?? false])).toEqual([
+      ['README.md', 'M', true],
+      ['fresh.txt', 'A', true],
+      ['long.ts', 'D', true],
+      ['src/app.ts', 'M', true],
+      ['assets/logo.png', 'M', false],
+      ['long.ts', 'U', false],
+      ['notes/todo.txt', 'U', false],
+      ['src/app.ts', 'M', false],
+    ])
+    expect(l.totals.files).toBe(l.files.length)
+  })
+
+  it('a staged file in a repository without commits is an added staged entry', async () => {
+    const f = buildEmptyFixture()
+    extra.push(f)
+    await f.write('first.txt', 'one\n')
+    f.repo.git('add', 'first.txt')
+    expect(ok(await list('uncommitted', 'main', f)).files).toEqual([
+      { path: 'first.txt', status: 'A', additions: 1, deletions: 0, binary: false, staged: true },
+    ])
+  })
+
   it.each([
     ['main', STANDARD_EXPECT.branchVsMain, 2],
     ['develop', STANDARD_EXPECT.branchVsDevelop, 1],

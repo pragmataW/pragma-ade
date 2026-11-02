@@ -41,6 +41,10 @@
     "noChanges": "No changes",
     "loading": "Loading changes…"
   },
+  "groups": {
+    "staged": "Staged Changes",
+    "unstaged": "Changes"
+  },
   "tree": {
     "label": "Changed files",
     "resize": "Resize file tree"

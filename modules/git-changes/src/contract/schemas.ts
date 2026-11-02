@@ -38,6 +38,8 @@ export const ChangedFileSchema = z.object({
   additions: count,
   deletions: count,
   binary: z.boolean(),
+  /** Uncommitted mode: true for a "Staged Changes" entry (HEAD ↔ index); absent for "Changes" (index ↔ worktree). */
+  staged: z.boolean().optional(),
 })
 export type ChangedFile = z.infer<typeof ChangedFileSchema>
 
