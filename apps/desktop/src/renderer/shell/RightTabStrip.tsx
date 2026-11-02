@@ -5,6 +5,7 @@ import { cn } from '@pragma/ui/lib/utils'
 import { useStore } from 'zustand'
 import { NAV_ICON_PX } from '../constants'
 import { useShell } from '../lib/shell-context'
+import { DockControls } from './DockControls'
 import { IconButton } from './IconButton'
 import { PlainButton } from './PlainButton'
 
@@ -53,7 +54,8 @@ export function RightTabStrip() {
           )
         })}
       </div>
-      <div className="flex items-center">
+      <div className="flex items-center gap-0.5">
+        <DockControls />
         <IconButton
           icon={maximized ? 'minimize-2' : 'maximize-2'}
           label={t('core:titlebar.maximizeRightPanel')}

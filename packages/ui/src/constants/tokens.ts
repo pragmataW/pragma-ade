@@ -264,7 +264,11 @@ export const LAYOUT = {
   rightPanel: 420,
   rightPanelWide: 780,
   rightPanelMin: 280,
+  /** The dock's height when it sits above or below the center. */
+  dockHeight: 320,
+  dockHeightMin: 160,
   centerMin: 380,
+  centerMinHeight: 200,
   tabStrip: 40,
   settingsNav: 220,
   treeRow: 22,
