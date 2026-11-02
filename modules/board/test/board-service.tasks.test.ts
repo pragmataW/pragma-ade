@@ -50,13 +50,13 @@ describe('createTask', () => {
     expect(await columnName(await create('A', { column: 'in progress' }))).toBe('In Progress')
   })
 
-  it('creates one label for bug/Bug and advances colours', async () => {
+  it('creates one label for bug/Bug and advances colours, skipping gray', async () => {
     const t = await create('A', { labels: ['bug', 'Bug'] })
     expect(t.labelIds).toHaveLength(1)
     await create('B', { labels: ['feature'] })
     expect((await h.service.getBoard('p1')).labels.map((l) => [l.name, l.color])).toEqual([
-      ['bug', 'gray'],
-      ['feature', 'red'],
+      ['bug', 'red'],
+      ['feature', 'orange'],
     ])
   })
 })

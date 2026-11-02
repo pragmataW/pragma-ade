@@ -2,6 +2,7 @@ import { useT } from '@pragma/sdk/renderer'
 import { useEffect, useRef } from 'react'
 import { BOARD_TESTID_ATTRS as A, BOARD_TESTIDS as T } from '../../contract'
 import { scopeKey } from '../../lib/scope'
+import { useEscapeLeavesBoard, useTrackViews } from '../lib/use-leave-board'
 import { useBoardStore, VIEW_MODE } from '../store'
 import { BoardColumns } from './BoardColumns'
 import { BoardHeader } from './BoardHeader'
@@ -25,6 +26,8 @@ function useFocusOnOpen() {
 export function BoardView() {
   const t = useT()
   const ref = useFocusOnOpen()
+  useTrackViews()
+  useEscapeLeavesBoard()
   const scope = useBoardStore((s) => s.scope)
   const mode = useBoardStore((s) => s.mode)
   const projects = useBoardStore((s) => s.projects)

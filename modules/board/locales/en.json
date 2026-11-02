@@ -1,6 +1,6 @@
 {
   "module": { "name": "Task Board" },
-  "view": { "title": "Task Board" },
+  "view": { "title": "Task Board", "back": "Back" },
   "sidebar": { "entry": "Task Board", "count": "{{count}} open tasks" },
   "commands": { "open": "Open task board" },
   "scope": { "all": "All projects", "label": "Board" },
@@ -40,6 +40,7 @@
     "edit": "Edit",
     "preview": "Preview",
     "emptyPreview": "No description",
+    "checklist": "Checklist {{done}}/{{total}}",
     "delete": "Delete task",
     "deleteConfirm": "Delete {{key}}? This cannot be undone.",
     "deleteConfirmButton": "Delete",

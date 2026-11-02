@@ -4,7 +4,23 @@ import { Markdown } from '@pragma/ui/components/markdown'
 import { useState } from 'react'
 import { DESCRIPTION_ROWS, SIZE, VARIANT } from '../../constants'
 import { BOARD_TESTIDS as T } from '../../contract'
+import { checklistProgress } from '../../lib/checklist'
 import { boardCtx } from '../lib/runtime'
+
+/** "Checklist 1/3" next to the Description title while the description has GFM task items. */
+function ChecklistCount({ markdown }: { markdown: string }) {
+  const t = useT()
+  const { done, total } = checklistProgress(markdown)
+  if (total === 0) return null
+  return (
+    <span
+      data-testid={T.drawerChecklist}
+      className="rounded-[var(--radius-chip)] border border-[var(--bd)] px-1.5 font-mono text-[10.5px] normal-case tracking-normal"
+    >
+      {t('board:drawer.checklist', { done, total })}
+    </span>
+  )
+}
 
 /** Markdown description: Textarea (saved on blur) with an Edit/Preview toggle; preview is `@pragma/ui` Markdown. */
 export function DescriptionField(props: { value: string; onSave(value: string): void }) {
@@ -21,8 +37,9 @@ export function DescriptionField(props: { value: string; onSave(value: string): 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-[var(--mu)] uppercase tracking-[0.06em]">
+        <span className="flex items-center gap-2 text-[11px] text-[var(--mu)] uppercase tracking-[0.06em]">
           {t('board:drawer.description')}
+          <ChecklistCount markdown={draft} />
         </span>
         <Button data-testid={T.drawerPreviewToggle} variant={VARIANT.ghost} size={SIZE.xs} onClick={toggle}>
           {t(preview ? 'board:drawer.edit' : 'board:drawer.preview')}

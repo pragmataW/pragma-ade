@@ -27,6 +27,14 @@ describe('createSessionInfo', () => {
     expect((await info.describe(['s1']))[0]?.status).toBe(status)
   })
 
+  it('an ended session (error: never launched) shows its 03 status over a stale agent-status one', async () => {
+    const own = fakeAgentSessions()
+    own.add(aSession('s2', 2, { status: 'error', error: { code: 'commandNotFound', message: 'x' } }))
+    const map = new Map([['s2', { status: 'working' as const, turnCompleted: false }]])
+    const info = createSessionInfo({ sessions: own.service, status: fakeStatus(map).service })
+    expect((await info.describe(['s2']))[0]?.status).toBe('error')
+  })
+
   it('fills profile name, provider, title and start time', async () => {
     const [s] = await createSessionInfo({ sessions: sessions.service }).describe(['s1'])
     expect(s).toMatchObject({

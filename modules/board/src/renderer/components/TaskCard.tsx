@@ -91,7 +91,10 @@ export function TaskCard(props: {
         <span className="font-mono text-[11px] text-[var(--fa)]">{task.key}</span>
         <PriorityBars priority={task.priority} />
         {props.showProject && section && (
-          <span data-testid={T.cardProject} className="ml-auto truncate text-[11px] text-[var(--mu)]">
+          <span
+            data-testid={T.cardProject}
+            className="ml-auto max-w-[50%] truncate rounded-[var(--radius-chip)] border border-[var(--bd)] bg-[var(--pn)] px-1.5 text-[11px] text-[var(--mu)] leading-4"
+          >
             {section.projectName}
           </span>
         )}

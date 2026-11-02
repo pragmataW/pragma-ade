@@ -88,6 +88,20 @@ describe('startInNewWorktree', () => {
     expect(await columnName(task.id)).toBe('Todo')
   })
 
+  it('an error session (launch failed in 03) is a session-stage failure: linked, the card stays', async () => {
+    const message = 'agents:errors.commandNotFound|{"command":"claude"}'
+    h.sessions.state.startAs = { status: 'error', error: { code: 'commandNotFound', message } }
+    expect(await startNew()).toEqual({
+      ok: false,
+      stage: 'session',
+      code: 'session_failed',
+      message,
+      worktreeId: 'wt-1',
+    })
+    expect(await h.service.getTask(task.id)).toMatchObject({ worktreeId: 'wt-1', sessionIds: ['s1'] })
+    expect(await columnName(task.id)).toBe('Todo')
+  })
+
   it('changes nothing when the worktree cannot be created', async () => {
     h.projects.state.failCreate = new Error('git failed')
     expect(await startNew()).toMatchObject({ ok: false, stage: 'worktree', code: 'worktree_failed' })

@@ -22,7 +22,8 @@ export function DeleteTaskButton({ task }: { task: TaskDto }) {
         data-testid={T.drawerDelete}
         variant={VARIANT.ghost}
         size={SIZE.sm}
-        className="self-start text-[var(--err)]"
+        // The ghost padding is pulled back so the label lines up with the drawer's other fields.
+        className="-ml-3 self-start text-[var(--err)]"
         onClick={() => setOpen(true)}
       >
         {t('board:drawer.delete')}
