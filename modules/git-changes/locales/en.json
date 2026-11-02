@@ -79,7 +79,6 @@
     "lines": "L{{start}}–{{end}}",
     "line": "L{{start}}",
     "pending": "Pending",
-    "sent": "Sent",
     "edit": "Edit"
   },
   "review": {

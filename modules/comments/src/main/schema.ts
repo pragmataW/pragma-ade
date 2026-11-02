@@ -1,5 +1,5 @@
 import { integer, sqliteTable, text } from '@pragma/sdk/db'
-import { COMMENT_SOURCES, COMMENT_STATUSES, DIFF_SIDES } from '../contract'
+import { COMMENT_SOURCES, DIFF_SIDES } from '../contract'
 
 export const COMMENTS_TABLE = 'comments_review_comments'
 const COLUMNS = {
@@ -14,15 +14,12 @@ const COLUMNS = {
   language: 'language',
   elementJson: 'element_json',
   body: 'body',
-  status: 'status',
-  targetSessionId: 'target_session_id',
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  sentAt: 'sent_at',
 } as const
 const C = COLUMNS
 
-/** Drizzle view of `migrations/0501_comments_review_comments.sql`. */
+/** Drizzle view of `migrations/0501_comments_review_comments.sql` after `0502_comments_drop_sent.sql`. */
 export const reviewComments = sqliteTable(COMMENTS_TABLE, {
   id: text(C.id).primaryKey(),
   worktreeId: text(C.worktreeId).notNull(),
@@ -35,10 +32,7 @@ export const reviewComments = sqliteTable(COMMENTS_TABLE, {
   language: text(C.language),
   elementJson: text(C.elementJson),
   body: text(C.body).notNull(),
-  status: text(C.status, { enum: COMMENT_STATUSES }).notNull(),
-  targetSessionId: text(C.targetSessionId),
   createdAt: integer(C.createdAt).notNull(),
   updatedAt: integer(C.updatedAt).notNull(),
-  sentAt: integer(C.sentAt),
 })
 export type CommentRow = typeof reviewComments.$inferSelect

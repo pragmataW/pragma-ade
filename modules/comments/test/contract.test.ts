@@ -24,7 +24,7 @@ describe('CommentInputSchema', () => {
   ])('rejects %s', (_n, o) => expect(() => CommentInputSchema.parse(makeInput(o))).toThrow())
 })
 
-test('settings default', () => expect(CommentsSettingsSchema.parse({})).toEqual({ submitAfterPaste: false }))
+test('settings default', () => expect(CommentsSettingsSchema.parse({})).toEqual({ submitAfterPaste: true }))
 
 const RESULTS: SendResult[] = [
   { status: 'sent', sessionId: 's1', commentIds: ['c1'], sentAt: 1 },

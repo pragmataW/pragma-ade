@@ -40,6 +40,7 @@ describe('buildDiffOptions', () => {
       onGutterUtilityClick: onRange,
       enableLineSelection: true,
       onLineSelectionEnd: expect.any(Function),
+      unsafeCSS: expect.stringContaining('[data-line-annotation][data-selected-line]'),
     })
   })
 

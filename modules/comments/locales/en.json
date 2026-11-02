@@ -5,31 +5,20 @@
   "commands": {
     "openDrawer": "Open comments"
   },
-  "titlebar": {
-    "open": "Comments",
-    "badge_one": "{{count}} draft comment",
-    "badge_other": "{{count}} draft comments"
-  },
   "toolbar": {
     "open": "Open comments"
   },
   "drawer": {
     "title": "Comments",
     "description": "Review comments for the agents in this worktree.",
-    "tabs": {
-      "drafts": "Drafts",
-      "sent": "Sent"
-    },
     "noWorktree": "Select a worktree to see its comments.",
     "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
-    "emptySent": "No comments sent yet.",
+    "selectAll": "Select all",
     "clearSelection": "Clear selection",
     "sendSelected_one": "Send {{count}} comment",
     "sendSelected_other": "Send {{count}} comments",
     "sendAll_one": "Send {{count}} comment",
-    "sendAll_other": "Send all {{count}} comments",
-    "sentTo": "Sent to {{target}} · {{time}}",
-    "closedSession": "a closed session"
+    "sendAll_other": "Send all {{count}} comments"
   },
   "row": {
     "edit": "Edit",
@@ -48,6 +37,7 @@
     "sendNow": "Send now",
     "save": "Save",
     "cancel": "Cancel",
+    "cancelHint": "Cancel (Esc)",
     "hint": "⌘/Ctrl+Enter to add · ⌘/Ctrl+Shift+Enter to send"
   },
   "target": {
@@ -67,11 +57,10 @@
   "settings": {
     "title": "Comments",
     "submitAfterPaste": "Press Enter after sending comments",
-    "submitAfterPasteHint": "When off, comments are pasted into the agent's input and you submit them yourself."
+    "submitAfterPasteHint": "Comments are submitted to the agent right after they are pasted. When off, they stay in the agent's input until you press Enter."
   },
   "errors": {
     "notFound": "Some comments no longer exist.",
-    "notDraft": "Some comments were already sent.",
     "mixedWorktrees": "Comments from different worktrees cannot be sent together.",
     "sessionNotRunning": "The selected agent session is no longer running.",
     "wrongWorktree": "The selected agent session belongs to another worktree.",

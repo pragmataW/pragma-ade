@@ -8,7 +8,6 @@ export const COMMENTS_CHANNELS = {
   update: 'comments.update',
   remove: 'comments.remove',
   listDrafts: 'comments.listDrafts',
-  listSent: 'comments.listSent',
   resolveTarget: 'comments.resolveTarget',
   send: 'comments.send',
   sendOnNextSession: 'comments.sendOnNextSession',
@@ -38,11 +37,6 @@ export const commentsIpc = {
   }),
   remove: defineIpc({ channel: COMMENTS_CHANNELS.remove, input: z.object({ id }), output: z.void() }),
   listDrafts: defineIpc({ channel: COMMENTS_CHANNELS.listDrafts, input: worktreeRef, output: comments }),
-  listSent: defineIpc({
-    channel: COMMENTS_CHANNELS.listSent,
-    input: worktreeRef.extend({ limit: z.number().int().min(1).optional() }),
-    output: comments,
-  }),
   resolveTarget: defineIpc({
     channel: COMMENTS_CHANNELS.resolveTarget,
     input: worktreeRef.extend({ preferredSessionId: z.string().optional() }),
@@ -86,11 +80,8 @@ export type CommentSentPayload = z.infer<typeof CommentSentPayloadSchema>
 export const commentCreated = defineEvent<CommentCreatedPayload>(COMMENTS_EVENTS.created)
 export const commentSent = defineEvent<CommentSentPayload>(COMMENTS_EVENTS.sent)
 
-export const DRAWER_TABS = ['drafts', 'sent'] as const
-export type DrawerTab = (typeof DRAWER_TABS)[number]
 export const OpenDrawerArgsSchema = z.object({
   worktreeId: z.string().optional(),
-  tab: z.enum(DRAWER_TABS).optional(),
   preferredSessionId: z.string().optional(),
 })
 export type OpenDrawerArgs = z.infer<typeof OpenDrawerArgsSchema>

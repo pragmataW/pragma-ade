@@ -4,21 +4,20 @@ The shared review-comment pipeline (phase 05): draft storage, batching, choosing
 
 - Manifest: id `comments`, `dependsOn: ["projects", "terminal", "agents"]`.
 - Entries: `./contract` (anywhere), `./renderer` (the module itself; other renderers use `CommentsUiServiceToken`), `./main` (loader only).
-- Table `comments_review_comments` (`migrations/0501_comments_review_comments.sql`). Comments of a removed worktree are deleted on `worktree.removed`.
+- Table `comments_review_comments` (`migrations/0501_comments_review_comments.sql`; `0502_comments_drop_sent.sql` deleted old sent rows and dropped `status` / `target_session_id` / `sent_at`). Every stored comment is a draft: **a successful send deletes the delivered comments**; `needsTarget`, `noSession` (incl. the pending launch) and `failed` keep them. Comments of a removed worktree are deleted on `worktree.removed`.
 
 ## Main service — `CommentsServiceToken` (`comments.service`)
 
 | Method | |
 |---|---|
 | `addDraft(input)` | Validates with `CommentInputSchema` (CRLF → LF, `\` → `/`, trimmed non-empty body), stores a draft, emits `comment.created`, publishes `comments.changed`. |
-| `update(id, patch)` / `remove(id)` | Drafts only; `CommentsError` `notFound` / `notDraft`. |
-| `listDrafts(worktreeId)` | Oldest first. |
-| `listSent(worktreeId, { limit? })` | Newest first, default `SENT_LIST_LIMIT` (100). |
+| `update(id, patch)` / `remove(id)` | `CommentsError` `notFound` (also for a comment already sent, since it was deleted). |
+| `listDrafts(worktreeId)` | Oldest first; all of the worktree's comments. There is no sent list. |
 | `resolveTarget(worktreeId, preferredSessionId?)` | `none` / `single` / `choose` over the running sessions; default = preferred, else last focused, else first. |
-| `send(ids, targetSessionId?, { promptUser? })` | Returns a `SendResult`: `sent`, `needsTarget`, `noSession` or `failed` (`errorKey` ∈ `SEND_ERROR_KEYS`, i18n via `sendErrorI18nKey`). Without a target it sends when exactly one session runs; otherwise, unless `promptUser === false`, it publishes `comments.sendRequested` and the drawer asks the user. Concurrent sends of the same ids are rejected with `alreadySending`. |
-| `sendOnNextSession(worktreeId, ids)` / `cancelPending(worktreeId)` | Deliver to the next session started in that worktree (once its output went quiet; entries expire after 10 min). |
+| `send(ids, targetSessionId?, { promptUser? })` | On `sent` the delivered comments are deleted (then `comment.sent` and `comments.changed`). Returns a `SendResult`: `sent`, `needsTarget`, `noSession` or `failed` (`errorKey` ∈ `SEND_ERROR_KEYS`, i18n via `sendErrorI18nKey`). Without a target it sends when exactly one session runs; otherwise, unless `promptUser === false`, it publishes `comments.sendRequested` and the drawer asks the user. Concurrent sends of the same ids are rejected with `alreadySending`. |
+| `sendOnNextSession(worktreeId, ids)` / `cancelPending(worktreeId)` | Deliver to the next session started in that worktree (once its output went quiet; entries expire after 10 min); delivered comments are deleted, as with `send`. |
 | `format(comments)` | The fixed English agent template (`Review comments:` + numbered items). |
-| `registerDeliveryTarget(mode, deliver)` | Delivery by session **mode**, never by provider. 05 registers `terminal` (bracketed paste via `PtyService.paste`, refused with `agentNotReady` while the program has not enabled mode 2004; optional Enter when the `submitAfterPaste` setting is on). Returns unregister; a duplicate mode throws. |
+| `registerDeliveryTarget(mode, deliver)` | Delivery by session **mode**, never by provider. 05 registers `terminal` (bracketed paste via `PtyService.paste`, refused with `agentNotReady` while the program has not enabled mode 2004; Enter after the paste while the `submitAfterPaste` setting is on (default)). Returns unregister; a duplicate mode throws. |
 
 11c registers `chat`:
 
@@ -44,15 +43,15 @@ const ui = ctx.services.get(CommentsUiServiceToken)
 ```
 
 - `ui.send(commentIds, { preferredSessionId? })` — the drawer's flow for comments a module created itself (07's "Send N comments to agent"): one agent → sent; several → target picker; none → "Start agent" suggestion. Resolves to the `SendResult`, or `undefined` while a dialog waits.
-- `ui.openDrawer({ worktreeId?, tab?, preferredSessionId? })`.
+- `ui.openDrawer({ worktreeId?, preferredSessionId? })` — the drawer has a single drafts list (no tabs).
 
 ## Events, command, slots, settings
 
 - Main bus: `comment.created` (`{ comment }`), `comment.sent` (`{ commentIds, sessionId, worktreeId, sentAt }`).
 - Renderer IPC events: `comments.changed`, `comments.sendRequested`, `comments.pendingDelivered`.
 - Command `comments.openDrawer` (renderer, palette), args `OpenDrawerArgsSchema`.
-- Slots used: `titlebar.right` (drafts button + drawer + dialogs), `agentSession.toolbar` (draft badge, prefers that session as target).
-- Settings › Comments (order 70): `submitAfterPaste` (default off).
+- Slots used: `agentSession.toolbar` (the **only** comments button: draft badge, prefers that session as target) and `titlebar.right` (`CommentsHost`: no visible UI, only keeps the drawer and both dialogs mounted). Without an agent session the drawer opens through the `comments.openDrawer` command or another module's `ui.openDrawer`.
+- Settings › Comments (order 70): `submitAfterPaste` (default on; Enter follows the paste after `SUBMIT_DELAY_MS`).
 
 ## Testing
 

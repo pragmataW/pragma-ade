@@ -1,6 +1,6 @@
 import { useRendererHost } from './context'
 
-/** The provider module's icon component (a monogram by default, §10.1.9). */
+/** The provider module's icon component (its official logo, or a monogram when it has none). */
 export function ProviderIcon({
   providerId,
   size,

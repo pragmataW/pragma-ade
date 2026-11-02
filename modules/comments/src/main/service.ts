@@ -1,7 +1,5 @@
 import type { MainContext } from '@pragma/sdk/main'
-import { SENT_LIST_LIMIT } from '../constants'
 import {
-  COMMENT_STATUS,
   type Comment,
   CommentInputSchema,
   CommentsError,
@@ -47,7 +45,6 @@ function validate(repo: CommentsRepository, ids: string[], inFlight: ReadonlySet
   if (!ids.length) return SEND_ERROR.empty
   const comments = repo.getMany(ids)
   if (comments.length !== ids.length) return SEND_ERROR.notFound
-  if (comments.some((c) => c.status !== COMMENT_STATUS.draft)) return SEND_ERROR.notDraft
   const worktrees = new Set(comments.map((c) => c.worktreeId))
   if (worktrees.size > 1) return SEND_ERROR.mixedWorktrees
   if (ids.some((id) => inFlight.has(id))) return SEND_ERROR.alreadySending
@@ -82,10 +79,9 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
   const inFlight = new Set<string>()
   const notifyChanged = (worktreeId: string) => upstream.publish(commentsIpcEvents.changed, { worktreeId })
 
-  const draftOrThrow = (id: string): Comment => {
+  const getOrThrow = (id: string): Comment => {
     const c = repo.get(id)
     if (!c) throw new CommentsError(SEND_ERROR.notFound)
-    if (c.status !== COMMENT_STATUS.draft) throw new CommentsError(SEND_ERROR.notDraft)
     return c
   }
 
@@ -110,7 +106,8 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
       return e instanceof CommentsError ? failed(e.key) : failed(SEND_ERROR.deliveryFailed, String(e))
     }
     const sentAt = now()
-    repo.markSent(batch.ids, sessionId, sentAt)
+    // Delivered comments are not kept; every non-`sent` result above leaves them as drafts.
+    repo.removeMany(batch.ids)
     events.emit(commentSent, { commentIds: batch.ids, sessionId, worktreeId: batch.worktreeId, sentAt })
     notifyChanged(batch.worktreeId)
     return { status: SEND_STATUS.sent, sessionId, commentIds: batch.ids, sentAt }
@@ -142,19 +139,18 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
       return comment
     },
     async update(id, patch) {
-      draftOrThrow(id)
+      getOrThrow(id)
       const updated = repo.update(id, patch, now())
-      if (!updated) throw new CommentsError(SEND_ERROR.notDraft)
+      if (!updated) throw new CommentsError(SEND_ERROR.notFound)
       notifyChanged(updated.worktreeId)
       return updated
     },
     async remove(id) {
-      const c = draftOrThrow(id)
+      const c = getOrThrow(id)
       repo.remove(id)
       notifyChanged(c.worktreeId)
     },
-    listDrafts: async (worktreeId) => repo.list(worktreeId, COMMENT_STATUS.draft),
-    listSent: async (worktreeId, opts) => repo.list(worktreeId, COMMENT_STATUS.sent, opts?.limit ?? SENT_LIST_LIMIT),
+    listDrafts: async (worktreeId) => repo.list(worktreeId),
     resolveTarget: (worktreeId, preferredSessionId) => resolveFor(upstream, worktreeId, preferredSessionId),
     async send(commentIds, targetSessionId, opts) {
       const ids = [...new Set(commentIds)]

@@ -4,7 +4,6 @@ import {
   type Comment,
   commentsIpc,
   commentsIpcEvents,
-  type DrawerTab,
   type OpenDrawerArgs,
   SEND_STATUS,
   type SendErrorKey,
@@ -13,14 +12,15 @@ import {
 } from '../contract'
 import { runtime } from './runtime'
 
-const DRAFTS_TAB: DrawerTab = 'drafts'
-
 export interface CommentsState {
   activeWorktreeId: string | null
+  /** The worktree's drafts (delivered comments are deleted, so these are all its comments). */
   drafts: Comment[]
-  sent: Comment[]
-  drawer: { open: boolean; tab: DrawerTab; preferredSessionId?: string }
+  drawer: { open: boolean; preferredSessionId?: string }
+  /** Draft ids ticked for sending; new drafts start ticked, a draft the user unticked stays unticked. */
   selection: ReadonlySet<string>
+  /** Draft ids already loaded once (so a reload only auto-selects drafts it has not seen). */
+  seenDraftIds: ReadonlySet<string>
   targetPicker: { commentIds: string[]; sessions: TargetSession[]; defaultSessionId: string } | null
   launchSuggestion: { worktreeId: string; commentIds: string[]; waiting: boolean } | null
   lastError: SendErrorKey | null
@@ -29,8 +29,8 @@ export interface CommentsState {
   reload(): Promise<void>
   openDrawer(args?: OpenDrawerArgs): void
   closeDrawer(): void
-  setTab(tab: DrawerTab): void
   toggleSelected(id: string): void
+  selectAll(): void
   clearSelection(): void
   closeTargetPicker(): void
   closeLaunchSuggestion(): void
@@ -49,9 +49,9 @@ const reloadFailed = warn('reload')
 export const useCommentsStore: UseBoundStore<StoreApi<CommentsState>> = create<CommentsState>()((set, get) => ({
   activeWorktreeId: null,
   drafts: [],
-  sent: [],
-  drawer: { open: false, tab: DRAFTS_TAB },
+  drawer: { open: false },
   selection: EMPTY,
+  seenDraftIds: EMPTY,
   targetPicker: null,
   launchSuggestion: null,
   lastError: null,
@@ -62,7 +62,7 @@ export const useCommentsStore: UseBoundStore<StoreApi<CommentsState>> = create<C
     const syncActive = () => {
       const id = projects.getActiveWorktree()?.id ?? null
       if (id === get().activeWorktreeId) return
-      set({ activeWorktreeId: id, selection: EMPTY, drafts: [], sent: [], lastError: null })
+      set({ activeWorktreeId: id, selection: EMPTY, seenDraftIds: EMPTY, drafts: [], lastError: null })
       get().reload().catch(reloadFailed)
     }
     const offProjects = projects.subscribe(syncActive)
@@ -90,28 +90,25 @@ export const useCommentsStore: UseBoundStore<StoreApi<CommentsState>> = create<C
     const worktreeId = get().activeWorktreeId
     if (!worktreeId) return
     const { ipc } = runtime()
-    const [drafts, sent] = await Promise.all([
-      ipc.invoke(commentsIpc.listDrafts, { worktreeId }),
-      ipc.invoke(commentsIpc.listSent, { worktreeId }),
-    ])
+    const drafts = await ipc.invoke(commentsIpc.listDrafts, { worktreeId })
     if (get().activeWorktreeId !== worktreeId) return
-    const ids = new Set(drafts.map((c) => c.id))
-    set((s) => ({ drafts, sent, selection: new Set([...s.selection].filter((id) => ids.has(id))) }))
+    set((s) => ({
+      drafts,
+      selection: new Set(drafts.flatMap((c) => (s.selection.has(c.id) || !s.seenDraftIds.has(c.id) ? [c.id] : []))),
+      seenDraftIds: new Set(drafts.map((c) => c.id)),
+    }))
   },
 
   openDrawer(args = {}) {
-    set({
-      drawer: { open: true, tab: args.tab ?? DRAFTS_TAB, preferredSessionId: args.preferredSessionId },
-      lastError: null,
-    })
+    set({ drawer: { open: true, preferredSessionId: args.preferredSessionId }, lastError: null })
   },
   closeDrawer: () => set((s) => ({ drawer: { ...s.drawer, open: false } })),
-  setTab: (tab) => set((s) => ({ drawer: { ...s.drawer, tab } })),
   toggleSelected(id) {
     const next = new Set(get().selection)
     if (!next.delete(id)) next.add(id)
     set({ selection: next })
   },
+  selectAll: () => set((s) => ({ selection: new Set(s.drafts.map((c) => c.id)) })),
   clearSelection: () => set({ selection: EMPTY }),
   closeTargetPicker: () => set({ targetPicker: null }),
   closeLaunchSuggestion: () => set({ launchSuggestion: null }),
@@ -125,9 +122,16 @@ export const useCommentsStore: UseBoundStore<StoreApi<CommentsState>> = create<C
 
   applyResult(worktreeId, commentIds, r) {
     switch (r.status) {
-      case SEND_STATUS.sent:
-        set({ lastError: null, targetPicker: null, launchSuggestion: null, selection: EMPTY })
+      case SEND_STATUS.sent: {
+        const sentIds = new Set(r.commentIds)
+        set((s) => ({
+          lastError: null,
+          targetPicker: null,
+          launchSuggestion: null,
+          selection: new Set([...s.selection].filter((id) => !sentIds.has(id))),
+        }))
         return
+      }
       case SEND_STATUS.needsTarget:
         set({
           lastError: null,

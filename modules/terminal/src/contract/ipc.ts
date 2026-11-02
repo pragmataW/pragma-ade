@@ -15,6 +15,7 @@ export const TerminalChannels = {
   tabActivate: 'terminal.tabActivate',
   tabSplit: 'terminal.tabSplit',
   paneClose: 'terminal.paneClose',
+  paneFocus: 'terminal.paneFocus',
   ptyData: 'terminal.ptyData',
   ptyExit: 'terminal.ptyExit',
   layoutChanged: 'terminal.layoutChanged',
@@ -25,6 +26,7 @@ const none = z.void()
 const ptyRef = z.object({ ptyId: z.string() })
 const worktreeRef = z.object({ worktreeId: z.string() })
 const tabRef = worktreeRef.extend({ tabId: z.string() })
+const paneRef = tabRef.extend({ paneId: z.string() })
 const layout = WorktreeTerminalLayoutSchema
 
 export const PtyAttachResultSchema = z.discriminatedUnion('found', [
@@ -61,16 +63,15 @@ export const terminalIpc = {
     output: layout,
   }),
   tabActivate: defineIpc({ channel: TerminalChannels.tabActivate, input: tabRef, output: layout }),
+  /** Splits the tab's focused pane. */
   tabSplit: defineIpc({
     channel: TerminalChannels.tabSplit,
     input: tabRef.extend({ direction: z.enum(SPLIT_ACTIONS) }),
     output: layout,
   }),
-  paneClose: defineIpc({
-    channel: TerminalChannels.paneClose,
-    input: tabRef.extend({ paneId: z.string() }),
-    output: layout,
-  }),
+  paneClose: defineIpc({ channel: TerminalChannels.paneClose, input: paneRef, output: layout }),
+  /** Makes the pane the tab's focused one (the target of the next split). */
+  paneFocus: defineIpc({ channel: TerminalChannels.paneFocus, input: paneRef, output: layout }),
 } as const
 
 export const terminalIpcEvents = {

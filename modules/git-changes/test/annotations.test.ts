@@ -12,11 +12,8 @@ const comment = (id: string, over: Partial<Comment>): Comment => ({
   lineEnd: 2,
   diffSide: 'new',
   body: 'b',
-  status: 'draft',
-  targetSessionId: null,
   createdAt: 0,
   updatedAt: 0,
-  sentAt: null,
   ...over,
 })
 
@@ -52,14 +49,9 @@ describe('diff annotations', () => {
     expect(toAnnotationSide(diffSide)).toBe(side)
   })
 
-  it('an unknown side reads as additions; draft counts skip sent comments', () => {
+  it('an unknown side reads as additions; draft counts per file', () => {
     expect(toAnnotationSide(undefined)).toBe('additions')
-    const list = [
-      comment('1', {}),
-      comment('2', {}),
-      comment('3', { status: 'sent' }),
-      comment('4', { filePath: 'b.ts' }),
-    ]
+    const list = [comment('1', {}), comment('2', {}), comment('4', { filePath: 'b.ts' })]
     expect(draftCounts(list)).toEqual({ 'a.ts': 2, 'b.ts': 1 })
   })
 })

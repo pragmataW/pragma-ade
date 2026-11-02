@@ -17,7 +17,7 @@ const SESSIONS = [
 ]
 const SENT_OK: SendResult = { status: 'sent', sessionId: 'a', commentIds: [], sentAt: 1 }
 
-async function open(opts: { drafts?: Comment[]; sent?: Comment[]; activeWorktreeId?: string | null } = {}) {
+async function open(opts: { drafts?: Comment[]; activeWorktreeId?: string | null } = {}) {
   r = mountRenderer(opts)
   r.fakeIpc.respond(commentsIpc.send, () => SENT_OK)
   r.fakeIpc.respond(commentsIpc.resolveTarget, () => ({ kind: 'choose', sessions: SESSIONS, defaultSessionId: 'a' }))
@@ -49,19 +49,48 @@ describe('CommentsDrawer', () => {
     expect(within(rows()[1] as HTMLElement).getByRole('img', { name: en.row.source.editor })).toBeInTheDocument()
   })
 
+  const rowOf = (id: string) => rows().find((el) => el.dataset.commentId === id) as HTMLElement
   it.each([
-    ['no selection → all ids', [] as string[], ['a1', 'b1', 'c1'], 'Send all 3 comments'],
-    ['two selected → those ids', ['a1', 'c1'], ['a1', 'c1'], 'Send 2 comments'],
-  ])('selection controls the footer label and the sent ids: %s', async (_n, select, ids, label) => {
+    ['default → every draft', [] as string[], ['a1', 'b1', 'c1'], 'Send all 3 comments'],
+    ['b1 unticked → the rest', ['b1'], ['a1', 'c1'], 'Send 2 comments'],
+  ])('drafts start selected; the footer sends exactly the selection: %s', async (_n, untick, ids, label) => {
     await open({ drafts: [draftA(), draftB(), makeComment({ id: 'c1' })] })
-    for (const id of select) {
-      const row = rows().find((el) => el.dataset.commentId === id) as HTMLElement
-      fireEvent.click(within(row).getByTestId(T.rowSelect))
-    }
+    for (const box of screen.getAllByTestId(T.rowSelect)) expect(box).toBeChecked()
+    for (const id of untick) fireEvent.click(within(rowOf(id)).getByTestId(T.rowSelect))
     const send = screen.getByTestId(T.sendButton)
     expect(send).toHaveTextContent(label)
     fireEvent.click(send)
     await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ commentIds: ids }]))
+  })
+
+  test('Clear selection disables Send; Select all brings every draft back', async () => {
+    await open({ drafts: [draftA(), draftB()] })
+    const toggle = screen.getByTestId(T.selectionToggle)
+    expect(toggle).toHaveTextContent(en.drawer.clearSelection)
+    fireEvent.click(toggle)
+    expect(screen.getByTestId(T.sendButton)).toBeDisabled()
+    expect(toggle).toHaveTextContent(en.drawer.selectAll)
+    fireEvent.click(toggle)
+    expect(screen.getByTestId(T.sendButton)).toHaveTextContent('Send all 2 comments')
+  })
+
+  test('a reload keeps an unticked draft unticked and ticks a new one', async () => {
+    await open({ drafts: [draftA()] })
+    fireEvent.click(within(rowOf('a1')).getByTestId(T.rowSelect))
+    r.data.drafts = [draftA(), draftB()]
+    await act(() => r.store.getState().reload())
+    expect(within(rowOf('a1')).getByTestId(T.rowSelect)).not.toBeChecked()
+    expect(within(rowOf('b1')).getByTestId(T.rowSelect)).toBeChecked()
+    expect(screen.getByTestId(T.sendButton)).toHaveTextContent('Send 1 comment')
+  })
+
+  test('Edit and Delete are labelled, always rendered buttons on every draft row', async () => {
+    await open({ drafts: [draftA(), draftB()] })
+    for (const row of rows()) {
+      const scope = within(row)
+      expect(scope.getByRole('button', { name: en.row.edit })).toHaveAttribute('title', en.row.edit)
+      expect(scope.getByRole('button', { name: en.row.delete })).toHaveAttribute('title', en.row.delete)
+    }
   })
 
   test('delete calls comments.remove', async () => {
@@ -77,16 +106,15 @@ describe('CommentsDrawer', () => {
     expect(screen.getByTestId(T.composerSave)).toBeInTheDocument()
   })
 
-  test('sent tab lists newest first with the session title', async () => {
-    const sent = [
-      makeComment({ id: 'n', status: 'sent', sentAt: 20, targetSessionId: 'b', body: 'Newer' }),
-      makeComment({ id: 'o', status: 'sent', sentAt: 10, targetSessionId: 'gone', body: 'Older' }),
-    ]
-    await open({ sent })
-    act(() => r.store.getState().setTab('sent'))
-    await waitFor(() => expect(screen.getByText(/Sent to Agent B/)).toBeInTheDocument())
-    expect(rows().map((el) => el.dataset.commentId)).toEqual(['n', 'o'])
-    expect(screen.getByText(/Sent to a closed session/)).toBeInTheDocument()
+  test('a single drafts list, no tabs; a delivered draft disappears on reload (it was deleted)', async () => {
+    await open({ drafts: [draftA(), draftB()] })
+    expect(screen.queryAllByRole('tab')).toEqual([])
+    fireEvent.click(screen.getByTestId(T.sendButton))
+    await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toHaveLength(1))
+    r.data.drafts = []
+    await act(() => r.store.getState().reload())
+    expect(rows()).toEqual([])
+    expect(screen.getByText(en.drawer.emptyDrafts)).toBeInTheDocument()
   })
 
   test('target picker preselects the default and sends to the chosen session', async () => {

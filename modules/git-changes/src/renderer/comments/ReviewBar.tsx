@@ -4,7 +4,7 @@ import { Button } from '@pragma/ui/components/button'
 import { useState } from 'react'
 import { ROLE_ALERT, SIZE_SM, VARIANT_GHOST } from '../../constants'
 import { GitChangesTestIds as T } from '../../contract'
-import { discardDiffDrafts, isDraft, sendDiffDrafts } from '../lib/comments'
+import { discardDiffDrafts, sendDiffDrafts } from '../lib/comments'
 
 const report = (what: string) => (e: unknown) => console.warn(`git-changes: ${what} failed`, e)
 
@@ -13,7 +13,7 @@ export function ReviewBar({ comments, fileName }: { comments: readonly Comment[]
   const t = useT()
   const [confirming, setConfirming] = useState(false)
   const [errorKey, setErrorKey] = useState<string | null>(null)
-  const ids = comments.filter(isDraft).map((c) => c.id)
+  const ids = comments.map((c) => c.id)
   if (ids.length === 0) return null
   const count = ids.length
   const discard = () => {

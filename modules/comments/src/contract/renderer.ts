@@ -11,6 +11,10 @@ export type ComposerResult =
   | { kind: 'saved'; comment: Comment }
   | { kind: 'cancelled' }
 
+/** `CommentComposerProps.surface`: `card` (default) = own bordered box; `plain` = no box, for hosts that are one. */
+export const COMPOSER_SURFACE = { card: 'card', plain: 'plain' } as const
+export type ComposerSurface = (typeof COMPOSER_SURFACE)[keyof typeof COMPOSER_SURFACE]
+
 export interface CommentComposerProps {
   worktreeId: string
   /** Where the comment points; the user types the body. */
@@ -22,7 +26,10 @@ export interface CommentComposerProps {
   autoFocus?: boolean
   /** Default true. */
   showSendNow?: boolean
+  /** Called with every outcome, `cancelled` included (Cancel button or Esc in any mode); close the composer on it. */
   onDone?: (r: ComposerResult) => void
+  /** Default `card`. */
+  surface?: ComposerSurface
   className?: string
 }
 

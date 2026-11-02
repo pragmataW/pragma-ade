@@ -55,6 +55,7 @@ export function registerIpcHandlers(ipc: MainIpcApi, deps: IpcDeps): Disposable 
     ipc.handle(terminalIpc.tabActivate, ({ worktreeId, tabId }) => layouts.activateTab(worktreeId, tabId)),
     ipc.handle(terminalIpc.tabSplit, ({ worktreeId, tabId, direction }) => layouts.split(worktreeId, tabId, direction)),
     ipc.handle(terminalIpc.paneClose, ({ worktreeId, tabId, paneId }) => layouts.closePane(worktreeId, tabId, paneId)),
+    ipc.handle(terminalIpc.paneFocus, ({ worktreeId, tabId, paneId }) => layouts.focusPane(worktreeId, tabId, paneId)),
   ]
   const offData = pty.onAnyData((e) => ipc.publish(terminalIpcEvents.ptyData, e))
   const offExit = pty.onAnyExit((exit) => {

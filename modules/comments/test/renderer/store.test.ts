@@ -45,6 +45,28 @@ describe('store', () => {
     expect(m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).at(-1)).toEqual({ worktreeId: OTHER_WT })
   })
 
+  test('loaded drafts start selected; an unticked one stays unticked across reloads', async () => {
+    const m = mount({ drafts: [makeComment({ id: 'a' }), makeComment({ id: 'b' })] })
+    m.init()
+    await vi.waitFor(() => expect([...state().selection]).toEqual(['a', 'b']))
+    state().toggleSelected('a')
+    m.data.drafts = [makeComment({ id: 'a' }), makeComment({ id: 'c' })]
+    await state().reload()
+    expect([...state().selection]).toEqual(['c'])
+    state().selectAll()
+    expect([...state().selection]).toEqual(['a', 'c'])
+    state().clearSelection()
+    await state().reload()
+    expect(state().selection.size).toBe(0)
+  })
+
+  test('a sent result unticks only the sent ids', () => {
+    mount()
+    for (const id of ['a', 'b']) state().toggleSelected(id)
+    state().applyResult(WT, ['a'], { status: 'sent', sessionId: 's', commentIds: ['a'], sentAt: 1 })
+    expect([...state().selection]).toEqual(['b'])
+  })
+
   const SESSIONS = [{ id: 'a', title: 'A', mode: 'terminal', status: 'idle' }]
   it.each<[string, SendResult, (s: ReturnType<typeof state>) => unknown, unknown]>([
     ['sent', { status: 'sent', sessionId: 'a', commentIds: ['c'], sentAt: 1 }, (s) => s.selection.size, 0],
