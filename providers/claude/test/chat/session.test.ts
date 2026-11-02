@@ -69,14 +69,23 @@ describe('ClaudeChatSession', () => {
     await expect(s.session.setOption('model', 'not-a-model')).rejects.toThrow()
   })
 
-  it('permissionMode option omitted when profile has --dangerously-skip-permissions', async () => {
+  it('permissionMode is always offered; the profile flag only picks the start mode; a saved choice wins', async () => {
+    const mode = (s: Awaited<ReturnType<typeof startSession>>) =>
+      s.session.describeOptions().find((o) => o.key === 'permissionMode')
     const plain = await startSession('basic')
-    expect(plain.session.describeOptions().find((o) => o.key === 'permissionMode')).toMatchObject({
+    expect(mode(plain)).toMatchObject({
       current: 'default',
       values: expect.arrayContaining([expect.objectContaining({ value: 'bypassPermissions', dangerous: true })]),
     })
     const skip = await startSession('basic', { args: ['--dangerously-skip-permissions'] })
-    expect(skip.session.describeOptions().map((o) => o.key)).not.toContain('permissionMode')
+    expect(mode(skip)?.current).toBe('bypassPermissions')
+    await skip.session.setOption('permissionMode', 'plan')
+    expect(mode(skip)?.current).toBe('plan')
+    const saved = await startSession('basic', {
+      args: ['--dangerously-skip-permissions'],
+      ctx: { initialOptions: { permissionMode: 'acceptEdits' } },
+    })
+    expect(mode(saved)?.current).toBe('acceptEdits')
   })
 
   it.each([
