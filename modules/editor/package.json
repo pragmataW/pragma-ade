@@ -1,0 +1,56 @@
+{
+  "name": "@pragma/module-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --root ../.. modules/editor/test modules/editor/packages/bridge-extension/test",
+    "e2e": "playwright test --config ../../playwright.config.ts modules/editor/e2e",
+    "build:vsix": "pnpm --dir packages/bridge-extension run build:vsix"
+  },
+  "pragma": {
+    "id": "editor",
+    "kind": "feature",
+    "displayNameKey": "editor:module.name",
+    "dependsOn": [
+      "projects",
+      "bridge",
+      "comments"
+    ],
+    "optionalDependsOn": [],
+    "core": false,
+    "package": {
+      "extraResources": [
+        {
+          "from": "packages/bridge-extension/dist",
+          "to": "packages/bridge-extension/dist"
+        }
+      ]
+    }
+  },
+  "exports": {
+    "./contract": "./src/contract/index.ts",
+    "./main": "./src/main/index.ts",
+    "./renderer": "./src/renderer/index.tsx"
+  },
+  "dependencies": {
+    "@pragma/module-bridge": "workspace:*",
+    "@pragma/module-comments": "workspace:*",
+    "@pragma/module-projects": "workspace:*",
+    "@pragma/sdk": "workspace:*",
+    "@pragma/ui": "workspace:*",
+    "tar": "7.5.22",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@pragma/module-agents": "workspace:*",
+    "@pragma/test-support": "workspace:*",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  }
+}

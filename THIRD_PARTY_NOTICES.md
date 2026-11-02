@@ -50,3 +50,10 @@ The provider marks are the vendors' own logos, used unmodified (shapes and colou
 
 - **Claude** — `providers/claude/src/renderer/icon.tsx` holds the path of [`icons/claude.svg`](https://github.com/simple-icons/simple-icons/blob/7a6199a2ac7d20b529f863b6aceb20d2c6529207/icons/claude.svg) from simple-icons (16.36.0; data entry `{"title":"Claude","hex":"D97757","source":"https://claude.ai"}`), drawn in the brand orange `#D97757`. simple-icons is released under CC0-1.0, but its [DISCLAIMER](https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md) notes that this does not cover the brands themselves: Claude and the Claude mark are trademarks of Anthropic, PBC, and their use follows Anthropic's brand guidelines (no alteration, no implied endorsement).
 - **OpenCode** — `providers/opencode/src/renderer/icon.tsx` redraws [`packages/identity/mark.svg`](https://github.com/anomalyco/opencode/blob/3f5bb21f163a95f5fe8f354875b1157d7f66137d/packages/identity/mark.svg) (dark: tile `#131010`, inner `#5A5858`, frame white) and [`mark-light.svg`](https://github.com/anomalyco/opencode/blob/3f5bb21f163a95f5fe8f354875b1157d7f66137d/packages/identity/mark-light.svg) (light: tile `#FDFCFC`, inner `#E6E5E6`, frame `#17181C`) from the official repository (formerly sst/opencode; brand assets also at https://opencode.ai). The repository is MIT-licensed (Copyright (c) 2025 opencode); the OpenCode name and mark remain trademarks of their owner.
+
+## Phase 06 — editor (no code copied)
+
+- VSCodium `reh-web` 1.143.17232 (MIT) — downloaded at first use into `<userData>/editor/<version>`, not bundled — https://github.com/VSCodium/vscodium
+- node-tar 7.5.22 (BlueOak-1.0.0) — npm dependency of `modules/editor` (archive extraction)
+- yazl 3.3.1 (MIT) — dev dependency of `modules/editor/packages/bridge-extension` (packs `pragma-bridge.vsix`)
+- `modules/editor/e2e/support/bracketed-paste.plugin.mjs` is a copy of phase 08's own test plugin (same repository, no external license)

@@ -1,0 +1,112 @@
+import type { CommentControllerSpec, DiagnosticInfo, TabInfo, ThreadLike, VscodeApi } from '../../src/vscodeApi'
+
+/** A recording fake of the `VscodeApi` port. */
+export interface FakeApi extends VscodeApi {
+  logs: string[]
+  infos: string[]
+  warnings: string[]
+  opened: { path: string; line?: number; column?: number }[]
+  config: Map<string, unknown>
+  state: Map<string, unknown>
+  configWrites: string[]
+  controllers: CommentControllerSpec[]
+  commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
+  documents: Map<string, { lines: string[]; languageId: string }>
+  diags: Map<string, DiagnosticInfo[]>
+  tabList: TabInfo[]
+  executed: { id: string; args: unknown[] }[]
+  current: { doc?: { languageId: string; path: string }; editor: { path: string; line: number; column: number } | null }
+  /** Fires the active-editor and diagnostics listeners. */
+  fireChange(): void
+}
+
+/** A recording comment thread. */
+export function fakeThread(fsPath: string, startLine: number, endLine: number, scheme = 'file') {
+  const added: { body: string; label: string }[] = []
+  let disposed = false
+  const thread: ThreadLike = {
+    uri: { scheme, fsPath },
+    range: { startLine, endLine },
+    addComment: (body, label) => void added.push({ body, label }),
+    dispose: () => {
+      disposed = true
+    },
+  }
+  return { thread, added, isDisposed: () => disposed }
+}
+
+const cfgKey = (section: string, key: string): string => `${section}.${key}`
+
+export function fakeApi(o: { folder?: string; env?: Record<string, string | undefined> } = {}): FakeApi {
+  const logs: string[] = []
+  const infos: string[] = []
+  const warnings: string[] = []
+  const opened: FakeApi['opened'] = []
+  const config = new Map<string, unknown>()
+  const state = new Map<string, unknown>()
+  const configWrites: string[] = []
+  const controllers: CommentControllerSpec[] = []
+  const commands: FakeApi['commands'] = new Map()
+  const documents: FakeApi['documents'] = new Map()
+  const disposable = { dispose: () => undefined }
+  const diags: FakeApi['diags'] = new Map()
+  const tabList: TabInfo[] = []
+  const executed: FakeApi['executed'] = []
+  const current: FakeApi['current'] = { editor: null }
+  const listeners = new Set<() => void>()
+  const listen = (cb: () => void) => {
+    listeners.add(cb)
+    return { dispose: () => void listeners.delete(cb) }
+  }
+  return {
+    env: o.env ?? {},
+    workspaceFolderPath: () => o.folder,
+    log: (m) => logs.push(m),
+    showInfo: (m) => infos.push(m),
+    showWarning: (m) => warnings.push(m),
+    openAndReveal: async (path, line, column) => void opened.push({ path, line, column }),
+    getGlobalConfig: <T>(section: string, key: string) => config.get(cfgKey(section, key)) as T | undefined,
+    updateGlobalConfig: async (section, key, value) => {
+      configWrites.push(cfgKey(section, key))
+      config.set(cfgKey(section, key), value)
+    },
+    globalState: {
+      get: <T>(k: string) => state.get(k) as T | undefined,
+      update: async (k, v) => void state.set(k, v),
+    },
+    createCommentController: (spec) => {
+      controllers.push(spec)
+      return disposable
+    },
+    registerReplyCommand: (id, handler) => {
+      commands.set(id, handler)
+      return disposable
+    },
+    readDocument: async (uri) => documents.get(uri.fsPath) ?? { lines: [], languageId: 'plaintext' },
+    diagnostics: (path) => diags.get(path) ?? [],
+    executeCommand: async (id, args) => void executed.push({ id, args }),
+    tabs: () => tabList,
+    extensionActive: (id) => id === 'pragma.pragma-bridge',
+    activeEditor: () => current.editor,
+    activeDocument: () => current.doc,
+    onDidChangeActiveEditor: listen,
+    onDidChangeDiagnostics: listen,
+    fireChange: () => {
+      for (const cb of listeners) cb()
+    },
+    diags,
+    tabList,
+    executed,
+    current,
+    controllers,
+    commands,
+    documents,
+    logs,
+    infos,
+    warnings,
+    opened,
+    config,
+    state,
+    configWrites,
+  }
+}
