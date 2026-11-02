@@ -1,6 +1,13 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { EditorIpc, EditorIpcEvents, type EditorStatus, FILES_TAB_ORDER, EDITOR_TEST_IDS as T } from '../../src/contract'
+import {
+  EDITOR_SETTINGS_ICON,
+  EditorIpc,
+  EditorIpcEvents,
+  type EditorStatus,
+  FILES_TAB_ORDER,
+  EDITOR_TEST_IDS as T,
+} from '../../src/contract'
 import { FilesTab } from '../../src/renderer/FilesTab'
 import editorRenderer from '../../src/renderer/index'
 import { renderEditor, text } from '../support/renderer'
@@ -58,7 +65,7 @@ describe('FilesTab', () => {
     expect(screen.queryByTestId(T.status)).toBeNull()
   })
 
-  it('revealRequested activates the files tab', () => {
+  it('registers the Files tab and an iconed settings page; revealRequested activates the tab', () => {
     const listeners = new Map<string, () => void>()
     const ctx = {
       panels: { registerRightTab: vi.fn(), activateRightTab: vi.fn() },
@@ -69,6 +76,12 @@ describe('FilesTab', () => {
     editorRenderer.activate(ctx as never)
     listeners.get(EditorIpcEvents.revealRequested.channel)?.()
     expect(ctx.panels.activateRightTab).toHaveBeenCalledWith('files')
-    expect(ctx.panels.registerRightTab).toHaveBeenCalledWith(expect.objectContaining({ id: 'files', order: FILES_TAB_ORDER }))
+    expect(ctx.panels.registerRightTab).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'files', order: FILES_TAB_ORDER }),
+    )
+    expect(ctx.panels.registerRightTab.mock.calls[0]?.[0]).not.toHaveProperty('default')
+    expect(ctx.settingsPages.register).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'editor', icon: EDITOR_SETTINGS_ICON }),
+    )
   })
 })

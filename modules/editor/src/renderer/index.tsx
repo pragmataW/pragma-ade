@@ -2,6 +2,7 @@ import { ShellSlots } from '@pragma/sdk'
 import { defineRendererModule } from '@pragma/sdk/renderer'
 import {
   EDITOR_MODULE_ID,
+  EDITOR_SETTINGS_ICON,
   EDITOR_SETTINGS_ORDER,
   EDITOR_STATUSBAR_ENTRY_ID,
   EDITOR_STATUSBAR_ORDER,
@@ -30,6 +31,7 @@ export default defineRendererModule<EditorSettings>({
       id: EDITOR_MODULE_ID,
       titleKey: 'editor:settings.title',
       order: EDITOR_SETTINGS_ORDER,
+      icon: EDITOR_SETTINGS_ICON,
       component: EditorSettingsPage,
     })
     ctx.slots.register(ShellSlots.statusbarRight, {
