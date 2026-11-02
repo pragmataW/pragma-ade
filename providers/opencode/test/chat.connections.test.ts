@@ -49,12 +49,12 @@ describe('Settings › OpenCode connections (settingsCall)', () => {
 
   it('connects by API key; a rejected key surfaces the server error; credentials can be removed', async () => {
     const s = setup()
-    await expect(s.call({ op: 'connectKey', integrationID: 'anthropic', key: 'sk-test' })).resolves.toEqual({
+    await expect(s.call({ op: 'keyConnect', integrationID: 'anthropic', key: 'sk-test' })).resolves.toEqual({
       ok: true,
     })
     const anthropic = (await s.list()).find((p) => p.id === 'anthropic')
     expect(anthropic?.credentials).toHaveLength(1)
-    await expect(s.call({ op: 'connectKey', integrationID: 'hiddenprov', key: 'bad-key' })).rejects.toThrow()
+    await expect(s.call({ op: 'keyConnect', integrationID: 'hiddenprov', key: 'bad-key' })).rejects.toThrow()
     await s.call({ op: 'remove', credentialID: anthropic?.credentials[0]?.id })
     expect((await s.list()).find((p) => p.id === 'anthropic')?.credentials).toEqual([])
     expect(requestsOf(s.h.log, /\/connect\/key$/).map((r) => r.body)).toEqual([{ key: 'sk-test' }, { key: 'bad-key' }])

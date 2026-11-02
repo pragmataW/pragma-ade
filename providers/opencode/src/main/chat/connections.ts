@@ -127,7 +127,7 @@ export function createConnections(o: {
       switch (r.op) {
         case OP.list:
           return withServer(list)
-        case OP.connectKey:
+        case OP.keyConnect:
           await withServer((c) => c.client.integration.connect.key({ integrationID: r.integrationID, key: r.key }))
           return ok
         case OP.oauthStart:

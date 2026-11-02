@@ -17,7 +17,7 @@ export const OPENCODE_CHAT_TESTIDS = {
   providers: 'opencode-providers',
   providerRow: (id: string) => `opencode-provider-${id}`,
   providerConnect: (id: string) => `opencode-provider-connect-${id}`,
-  providerKey: 'opencode-provider-key',
+  providerKeyInput: 'opencode-provider-key',
   providerKeySave: 'opencode-provider-key-save',
   providerRemove: (id: string) => `opencode-provider-remove-${id}`,
   providerSearch: 'opencode-provider-search',

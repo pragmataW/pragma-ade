@@ -6,7 +6,7 @@ import { z } from '@pragma/sdk'
 
 export const CONNECTION_OPS = {
   list: 'list',
-  connectKey: 'connectKey',
+  keyConnect: 'keyConnect',
   oauthStart: 'oauthStart',
   oauthStatus: 'oauthStatus',
   oauthComplete: 'oauthComplete',
@@ -21,7 +21,7 @@ const attempt = { ...integration, attemptID: z.string().min(1) }
 
 export const connectionRequestSchema = z.discriminatedUnion(OP_KEY, [
   z.object({ op: z.literal(CONNECTION_OPS.list) }),
-  z.object({ op: z.literal(CONNECTION_OPS.connectKey), ...integration, key: z.string().min(1) }),
+  z.object({ op: z.literal(CONNECTION_OPS.keyConnect), ...integration, key: z.string().min(1) }),
   z.object({ op: z.literal(CONNECTION_OPS.oauthStart), ...integration, methodID: z.string().min(1) }),
   z.object({ op: z.literal(CONNECTION_OPS.oauthStatus), ...attempt }),
   z.object({ op: z.literal(CONNECTION_OPS.oauthComplete), ...attempt, code: z.string().optional() }),

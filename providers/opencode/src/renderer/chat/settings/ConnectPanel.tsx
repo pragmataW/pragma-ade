@@ -86,7 +86,7 @@ export function ConnectPanel({
   useOauthPoll(call, provider.id, attempt, done)
   const saveKey = () =>
     run(async () => {
-      await call({ op: OP.connectKey, integrationID: provider.id, key: key.trim() })
+      await call({ op: OP.keyConnect, integrationID: provider.id, key: key.trim() })
       setKey('')
       onConnected()
     })
@@ -114,7 +114,7 @@ export function ConnectPanel({
           <KeyRound size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="shrink-0 text-mu" />
           <Input
             type={INPUT_PASSWORD}
-            data-testid={IDS.providerKey}
+            data-testid={IDS.providerKeyInput}
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder={t(C.keyPlaceholder, { name: provider.name })}

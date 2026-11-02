@@ -182,7 +182,7 @@ describe.skipIf(!REAL)('@real-agent opencode chat', () => {
       try {
         const list = async () => connectionListSchema.parse(await temp.settingsCall?.({ op: 'list' })).providers
         const before = await list()
-        await temp.settingsCall?.({ op: 'connectKey', integrationID: 'anthropic', key: 'sk-ant-fake-key' })
+        await temp.settingsCall?.({ op: 'keyConnect', integrationID: 'anthropic', key: 'sk-ant-fake-key' })
         const anthropic = (await list()).find((p) => p.id === 'anthropic')
         report.connect = {
           providers: before.length,
