@@ -26,7 +26,7 @@ export function ModuleRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{name}</span>
-          <code className="font-[var(--font-code)] text-[var(--mu)] text-xs">{status.id}</code>
+          <code className="font-mono text-[var(--mu)] text-xs">{status.id}</code>
           <span className="text-[var(--fa)] text-xs">{status.version}</span>
           <Badge variant={OUTLINE_VARIANT}>{t(`settings-general:modules.kind.${status.kind}`)}</Badge>
           {status.core && <Badge variant="secondary">{t('settings-general:modules.core')}</Badge>}

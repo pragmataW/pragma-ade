@@ -11,7 +11,7 @@ interface Row {
   value: string
 }
 
-const MONO_INPUT = '[font-family:var(--font-code)] text-[12px]'
+const MONO_INPUT = 'font-mono text-[12px]'
 const toRows = (env: ProfileEnv): Row[] => Object.entries(env).map(([name, value]) => ({ name, value }))
 const isBlank = (r: Row) => r.name.trim() === '' && r.value === ''
 

@@ -9,7 +9,7 @@ import { ActionButton, QuietButton } from '../lib/buttons'
 import { ErrorLine } from '../lib/ErrorLine'
 import { useProfileAction } from './profile-action'
 
-const MONO_INPUT = '[font-family:var(--font-code)] text-[12px]'
+const MONO_INPUT = 'font-mono text-[12px]'
 const FIELD_LABEL = 'text-[12px] font-medium text-mu'
 const SUBMIT = 'submit'
 const BUTTON = 'button'
