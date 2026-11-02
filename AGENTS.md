@@ -1,6 +1,7 @@
 # Pragma ADE — agent guide
 
 ## Read first
+`docs/` and the `e2e/` suites are kept in the maintainer's local checkout and are not published; when they exist, read:
 - `docs/phases/CONVENTIONS.md` — the binding architecture contract. §10 wins over earlier sections.
 - `docs/phases/README.md` — workflow, Definition of Done, test rules, allowed licenses.
 - `docs/modules.md` — how to write a module or provider with `@pragma/sdk`.
@@ -51,6 +52,6 @@
 - Tag real agent runs `@real-agent` (excluded from `pnpm e2e`); network tests `@network`.
 
 ## Git
-- One branch per phase: `phase/NN-<name>`, merged into `main` when done. No remote, no push.
+- One branch per phase: `phase/NN-<name>`, merged into `main` when done. Remote: `git@github.com:pragmataW/pragma-ade.git` (only `main` and release tags are published).
 - One commit per task, Conventional Commits.
 - Commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
