@@ -9,7 +9,7 @@ import { chatTestI18n, installJsdomLayout, type StubChatHost, stubChatHost } fro
 afterEach(cleanup)
 
 installJsdomLayout()
-beforeEach(() => useChatStore.setState({ sessions: {}, appends: {}, activeSessionId: null }))
+beforeEach(() => useChatStore.setState({ sessions: {}, inboxVersions: {}, activeSessionId: null }))
 
 const i18n = await chatTestI18n(['claude'])
 

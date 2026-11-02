@@ -3,14 +3,11 @@ import { CopyButton } from '@pragma/ui/components/copy-button'
 import type { ReactNode } from 'react'
 import { JSON_INDENT, READ_PREVIEW_LINES, SHELL_OUTPUT_MAX_H_PX } from '../../../constants'
 import { type ChatToolKind, TOOL_KIND, TOOL_STATUS, type ToolCallItem } from '../../../contract'
+import { inputField as field } from './lib/input-field'
 import { MonoPre } from './lib/MonoPre'
 
 type Body = (props: { item: ToolCallItem }) => ReactNode
 const LINE_RE = /\r?\n/
-const field = (input: unknown, key: string): string | undefined => {
-  const v = input && typeof input === 'object' ? (input as Record<string, unknown>)[key] : undefined
-  return typeof v === 'string' ? v : undefined
-}
 const lines = (text: string | undefined): string[] => (text ? text.split(LINE_RE) : [])
 
 function Output({ item, maxHeight }: { item: ToolCallItem; maxHeight?: number }) {

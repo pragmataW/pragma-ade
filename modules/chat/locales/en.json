@@ -52,7 +52,9 @@
   },
   "copy": {
     "label": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "message": "Copy message",
+    "code": "Copy code"
   },
   "thinking": {
     "label": "Thinking"
@@ -96,6 +98,21 @@
     "removeQueued": "Remove from queue",
     "attachImage": "Attach image",
     "removeImage": "Remove image",
-    "imageTooLarge": "Image is larger than 5 MB"
+    "imageTooLarge": "Image is larger than 5 MB",
+    "commentsChip_one": "{{count}} review comment",
+    "commentsChip_other": "{{count}} review comments",
+    "removeChip": "Remove review comments"
+  },
+  "fileLink": {
+    "open": "Open {{path}} in editor",
+    "revealInGit": "Show in Git Changes"
+  },
+  "search": {
+    "placeholder": "Find in chat",
+    "count": "{{current}} of {{total}}",
+    "none": "No results",
+    "next": "Next match",
+    "previous": "Previous match",
+    "close": "Close search"
   }
 }

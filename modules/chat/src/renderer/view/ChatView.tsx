@@ -1,12 +1,15 @@
 import type { AgentSessionViewProps } from '@pragma/module-agents/contract'
-import { type KeyboardEvent, useEffect } from 'react'
+import { type KeyboardEvent, useEffect, useRef } from 'react'
 import { CHAT_TESTIDS, type ChatSessionApi, type ChatSlotComponent, type ChatUiDefinition } from '../../contract'
+import { useChatSearch } from '../hooks/use-chat-search'
+import { useSearchHighlights } from '../hooks/use-search-highlights'
 import { useChatHost } from '../host-adapter'
+import { ChatSearchBar } from '../kit/ChatSearchBar'
 import { Composer } from '../kit/composer/Composer'
 import { isBusy } from '../kit/controls/StopButton'
 import { defaultChatUi } from '../kit/default-ui'
 import { AssistantTurnHeader } from '../kit/parts/AssistantTurnHeader'
-import { MessageList } from '../kit/parts/MessageList'
+import { MessageList, type MessageListHandle } from '../kit/parts/MessageList'
 import { WorkingLine } from '../kit/parts/WorkingLine'
 import { ChatSessionProvider } from '../session/ChatSessionContext'
 import { useChatStore } from '../session/store'
@@ -35,21 +38,38 @@ function onEscape(e: KeyboardEvent, api: ChatSessionApi): void {
 
 function ChatLayout({ api, definition }: { api: ChatSessionApi; definition: ChatUiDefinition }) {
   const turnHeader = definition.turnHeader === undefined ? AssistantTurnHeader : definition.turnHeader
+  const groupToolCalls = definition.groupToolCalls ?? true
+  const list = useRef<MessageListHandle>(null)
+  const listArea = useRef<HTMLDivElement>(null)
+  const search = useChatSearch({
+    items: api.transcript.items,
+    parts: definition.parts,
+    groupToolCalls,
+    turnHeader: Boolean(turnHeader),
+    list,
+  })
+  useSearchHighlights(list, listArea, search.open ? search.query : '', search.matches[search.current])
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: Esc anywhere in the chat interrupts (menus stop it first)
-    <div className="flex h-full min-h-0 flex-col bg-bg" onKeyDown={(e) => onEscape(e, api)}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: Esc interrupts (menus stop it first); Mod+F opens the find bar
+    <div
+      className="flex h-full min-h-0 flex-col bg-bg"
+      onKeyDown={(e) => onEscape(e, api)}
+      onKeyDownCapture={search.onViewKeyDown}
+    >
       {definition.header?.length ? (
         <div className="flex h-8 shrink-0 items-center justify-end gap-3 border-b border-bd bg-pn px-3">
           <SlotRow slots={definition.header} session={api} />
         </div>
       ) : null}
-      <div className="flex min-h-0 flex-1">
+      <div ref={listArea} className="relative flex min-h-0 flex-1">
+        <ChatSearchBar search={search} />
         <MessageList
           items={api.transcript.items}
           parts={definition.parts}
-          groupToolCalls={definition.groupToolCalls ?? true}
+          groupToolCalls={groupToolCalls}
           turnHeader={turnHeader}
           session={api}
+          handle={list}
         />
         {definition.sidePanels?.length ? (
           <div className="flex w-72 shrink-0 flex-col gap-2 border-l border-bd bg-pn p-2">

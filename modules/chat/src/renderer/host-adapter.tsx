@@ -1,7 +1,7 @@
 /** The ONLY renderer file touching SDK / 03 / 04 open shapes: builds the kit's `ChatHost` from the module context. */
 import { AGENT_STATUS_MODULE_ID } from '@pragma/module-agent-status/contract'
 import { StatusIcon } from '@pragma/module-agent-status/renderer'
-import { MODULE_STATE } from '@pragma/sdk'
+import { CoreIpc, MODULE_STATE } from '@pragma/sdk'
 import { ProviderIcon, type RendererContext, useRendererContext, useRendererHost } from '@pragma/sdk/renderer'
 import { type ComponentType, createContext, type ReactNode, useContext, useMemo } from 'react'
 import { type ChatHost, type ChatSettings, chatIpc, chatIpcEvents, FILE_SEARCH_LIMIT } from '../contract'
@@ -15,7 +15,8 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
   return {
     open: (sessionId) => ipc.invoke(chatIpc.open, { sessionId }),
     onEvent: (cb) => ipc.subscribe(chatIpcEvents.event, cb),
-    onComposerAppend: (cb) => ipc.subscribe(chatIpcEvents.composerAppend, cb),
+    onComposerInboxChanged: (cb) => ipc.subscribe(chatIpcEvents.composerInboxChanged, cb),
+    takeComposerInbox: async (sessionId) => (await ipc.invoke(chatIpc.takeComposerInbox, { sessionId })).entries,
     send: (sessionId, input) => ipc.invoke(chatIpc.send, { sessionId, ...input }),
     interrupt: (sessionId) => ipc.invoke(chatIpc.interrupt, { sessionId }),
     cancelQueued: (sessionId, queuedId) => ipc.invoke(chatIpc.cancelQueued, { sessionId, queuedId }),
@@ -33,6 +34,19 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
     ProviderMark,
     StatusIcon: opts.agentStatusActive ? StatusIcon : null,
     openExternal: (url) => void ctx.shell.openExternal(url),
+    commands: {
+      has: (id) => ctx.commands.has(id),
+      execute: (id, args) => ctx.commands.execute(id, args),
+      // 00's registry does not notify when main's command list changes (`core.commands.changed`): listen to both
+      onChange: (cb) => {
+        const subs = [ctx.commands.onChange(cb), ctx.ipc.subscribe(CoreIpc.commandsChanged, () => cb())]
+        return {
+          dispose: () => {
+            for (const x of subs) x.dispose()
+          },
+        }
+      },
+    },
     theme: {
       get: () => ctx.theme.get().resolved,
       subscribe: (cb) => ctx.theme.onChange(() => cb()),

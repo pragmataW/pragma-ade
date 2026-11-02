@@ -8,6 +8,7 @@ import {
   CUSTOM_EVENT_TYPE_RE,
   FILE_CHANGES,
   EVENT_KIND as K,
+  KIND_KEY,
   MESSAGE_ORIGINS,
   RESPONSE_OUTCOMES,
   SESSION_EXIT_REASONS,
@@ -70,7 +71,7 @@ const usageEventSchema = z.object({
 })
 
 /** The extensible, provider-neutral chat event model (§5.4); `custom` carries provider-specific events. */
-export const chatEventSchema = z.discriminatedUnion('kind', [
+export const chatEventSchema = z.discriminatedUnion(KIND_KEY, [
   z.object({
     kind: z.literal(K.sessionInfo),
     externalSessionId: z.string().optional(),

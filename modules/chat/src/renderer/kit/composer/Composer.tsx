@@ -10,6 +10,7 @@ import {
   type ComposerApi,
   type ComposerExtension,
 } from '../../../contract'
+import { ComposerChips } from './ComposerChips'
 import { QueueChips } from './QueueChips'
 import { useComposer } from './use-composer'
 
@@ -65,6 +66,7 @@ export function Composer({
         </div>
       ) : null}
       <ExtensionAreas extensions={extensions} api={c.api} area="aboveInput" />
+      <ComposerChips chips={c.chips.list} onRemove={c.chips.remove} />
       <QueueChips session={session} />
       <textarea
         ref={c.ref}

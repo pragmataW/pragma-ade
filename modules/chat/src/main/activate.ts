@@ -5,7 +5,7 @@ import type { ChatAgentsApi } from './agents-adapter'
 import { createFileSearch } from './file-search'
 import { registerChatIpc } from './ipc-handlers'
 import { ChatSessionRegistry } from './registry'
-import { createChatService } from './service'
+import { ComposerInbox, createChatService, StartGuards } from './service'
 import { createStatusReporter } from './status-reporter'
 import { SupportCache } from './support-cache'
 import { checkChatSupport } from './support-check'
@@ -28,6 +28,8 @@ export interface ChatMain {
 /** Wires the registry, the `chat` mode handler, IPC and `ChatServiceToken` (03 stores `mode:'chat'` itself). */
 export function activateChat(d: ChatMainDeps): ChatMain {
   const supportCache = new SupportCache()
+  const inbox = new ComposerInbox()
+  const guards = new StartGuards()
   const resolveCapability = (p: { providerId: string }) => d.capability(p.providerId)
   const registry = new ChatSessionRegistry({
     agents: d.agents,
@@ -36,6 +38,7 @@ export function activateChat(d: ChatMainDeps): ChatMain {
     publish: (env) => d.ipc.publish(chatIpcEvents.event, env),
     supportCache,
     statusReporter: createStatusReporter(d.agents),
+    startGuard: (s) => guards.check(s),
     log: d.log,
   })
   const disposeMode = d.agents.registerModeHandler(CHAT_MODE, {
@@ -51,10 +54,13 @@ export function activateChat(d: ChatMainDeps): ChatMain {
     agents: d.agents,
     search: (path, query, limit) => fileSearch.search(path, query, limit),
     checkSupport: (profileId) => checkChatSupport({ agents: d.agents, resolveCapability, supportCache }, profileId),
+    takeInbox: (sessionId) => inbox.take(sessionId),
   })
   const service = createChatService({
     registry,
-    publishAppend: (sessionId, text) => d.ipc.publish(chatIpcEvents.composerAppend, { sessionId, text }),
+    inbox,
+    guards,
+    publishInboxChanged: (sessionId) => d.ipc.publish(chatIpcEvents.composerInboxChanged, { sessionId }),
   })
   d.provideService(service)
   return {

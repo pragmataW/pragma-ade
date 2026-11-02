@@ -27,6 +27,11 @@ export interface ClaudeProcessSpawn {
   exited(): Promise<ExitInfo | null>
   /** SIGTERM, then SIGKILL after `KILL_GRACE_MS`; `force` sends SIGKILL now. */
   kill(force?: boolean): void
+  /**
+   * 11c: after a graceful close (the SDK's abort sends SIGTERM): SIGKILL once `killGraceMs` passed without an exit,
+   * and resolve only when the child really exited.
+   */
+  stop(): Promise<ExitInfo | null>
 }
 
 export interface SpawnDeps {
@@ -35,6 +40,7 @@ export interface SpawnDeps {
 }
 
 const STDIO = ['pipe', 'pipe', 'pipe'] as const
+const GRACE_OVER = Symbol('grace-over')
 
 function definedEnv(env: Record<string, string | undefined>): Record<string, string> {
   const out: Record<string, string> = {}
@@ -70,6 +76,10 @@ export function createClaudeProcessSpawn(
       if (!exit) c.kill(SIGKILL)
     }, deps.killGraceMs).unref()
   }
+  const exited = (): Promise<ExitInfo | null> =>
+    exit || !child || (error && child.pid === undefined)
+      ? Promise.resolve(exit)
+      : new Promise((resolve) => waiters.push(resolve))
   return {
     spawn(o) {
       const c = deps.spawn(o.command, withPrefixArgs(launch, o.args), {
@@ -95,10 +105,19 @@ export function createClaudeProcessSpawn(
     stderrTail: () => tail.trim(),
     exitInfo: () => exit,
     spawnError: () => error,
-    exited: () =>
-      exit || !child || (error && child.pid === undefined)
-        ? Promise.resolve(exit)
-        : new Promise((resolve) => waiters.push(resolve)),
+    exited,
     kill,
+    async stop() {
+      const done = exited()
+      let timer: NodeJS.Timeout | undefined
+      const graceOver = new Promise<typeof GRACE_OVER>((r) => {
+        timer = setTimeout(() => r(GRACE_OVER), deps.killGraceMs)
+      })
+      const first = await Promise.race([done, graceOver])
+      clearTimeout(timer)
+      if (first !== GRACE_OVER) return first
+      kill(true)
+      return done
+    },
   }
 }

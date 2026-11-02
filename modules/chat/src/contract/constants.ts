@@ -118,9 +118,14 @@ export const CHAT_IPC = {
   setOption: 'chat.setOption',
   searchFiles: 'chat.searchFiles',
   checkSupport: 'chat.checkSupport',
+  takeComposerInbox: 'chat.takeComposerInbox',
   testSnapshot: 'chat.test.snapshot',
 } as const
-export const CHAT_IPC_EVENTS = { event: 'chat.event', composerAppend: 'chat.composerAppend' } as const
+export const CHAT_IPC_EVENTS = { event: 'chat.event', composerInboxChanged: 'chat.composerInboxChanged' } as const
+/** The discriminator of chat events and composer entries. */
+export const KIND_KEY = 'kind'
+export const COMPOSER_ENTRY_KINDS = ['text', 'chip'] as const
+export const COMPOSER_ENTRY_KIND = keyedEnum(COMPOSER_ENTRY_KINDS)
 
 /** Reason keys (`chat:unsupported.*`) shared with adapters. */
 export const UNSUPPORTED_REASON = {

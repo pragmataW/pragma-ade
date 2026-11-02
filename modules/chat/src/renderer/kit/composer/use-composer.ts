@@ -1,11 +1,20 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NOTICE_MS } from '../../../constants'
-import type { ChatImage, ChatSessionApi, ComposerApi, ComposerExtension } from '../../../contract'
+import { KEY_ENTER, NOTICE_MS } from '../../../constants'
+import {
+  type ChatImage,
+  type ChatSessionApi,
+  COMPOSER_ENTRY_KIND,
+  type ComposerApi,
+  type ComposerChipEntry,
+  type ComposerEntry,
+  type ComposerExtension,
+} from '../../../contract'
+import { useChatHost } from '../../host-adapter'
+import { appendDraft, composeOutgoing } from '../../lib/compose-outgoing'
 import { useChatStore } from '../../session/store'
 import { findTrigger, type OpenMenu } from './triggers'
 
-const KEY = { enter: 'Enter', tab: 'Tab', escape: 'Escape', up: 'ArrowUp', down: 'ArrowDown' } as const
-const APPEND_SEPARATOR = '\n'
+const KEY = { enter: KEY_ENTER, tab: 'Tab', escape: 'Escape', up: 'ArrowUp', down: 'ArrowDown' } as const
 
 /** Composer state: text, images, the open trigger menu, sending, and appended texts (never auto-sent). */
 export function useComposer(session: ChatSessionApi, extensions: readonly ComposerExtension[]) {
@@ -26,12 +35,7 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
     },
     [extensions],
   )
-  const appended = useChatStore((s) => s.appends[session.sessionId]?.length ?? 0)
-  useEffect(() => {
-    if (appended === 0) return
-    const add = useChatStore.getState().consumeComposerAppend(session.sessionId).join(APPEND_SEPARATOR)
-    setTextState((t) => (t ? `${t}${APPEND_SEPARATOR}${add}` : add))
-  }, [appended, session.sessionId])
+  const chips = useComposerInbox(session.sessionId, setTextState)
   useEffect(() => {
     if (!notice) return
     const timer = setTimeout(() => setNotice(null), NOTICE_MS)
@@ -63,10 +67,12 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
   )
 
   const send = async () => {
-    if (!text.trim() && images.length === 0) return
-    const input = { text, images }
+    const outgoing = composeOutgoing(chips.list, text)
+    if (!outgoing.trim() && images.length === 0) return
+    const input = { text: outgoing, images }
     setTextState('')
     setImages([])
+    chips.clear()
     setMenu(null)
     await session.send(input)
   }
@@ -116,5 +122,44 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
     onKeyDown,
     sync,
     notice,
+    chips,
+  }
+}
+
+const isChip = (e: ComposerEntry): e is ComposerChipEntry => e.kind === COMPOSER_ENTRY_KIND.chip
+
+/**
+ * 11c: takes the session's main-side inbox on mount and on every `chat.composerInboxChanged`; text entries go into
+ * the draft (blank line between), chip entries become removable chips. Nothing is ever sent from here.
+ */
+function useComposerInbox(sessionId: string, setText: (update: (t: string) => string) => void) {
+  const host = useChatHost()
+  const version = useChatStore((s) => s.inboxVersions[sessionId] ?? 0)
+  const [list, setList] = useState<ComposerChipEntry[]>([])
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+  useEffect(() => {
+    void version
+    host
+      .takeComposerInbox(sessionId)
+      .then((entries) => {
+        // a take is never discarded on re-run: its entries are gone from main once returned
+        if (!alive.current) return
+        const add = entries.filter((e) => !isChip(e)).map((e) => e.text)
+        if (add.length > 0) setText((t) => add.reduce(appendDraft, t))
+        const more = entries.filter(isChip)
+        if (more.length > 0) setList((l) => [...l, ...more])
+      })
+      .catch((e: unknown) => console.warn(`chat: composer inbox of ${sessionId} failed`, e))
+  }, [host, sessionId, version, setText])
+  return {
+    list,
+    remove: (id: string) => setList((l) => l.filter((c) => c.id !== id)),
+    clear: () => setList([]),
   }
 }

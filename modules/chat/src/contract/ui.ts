@@ -3,7 +3,7 @@ import type { ThemeMode } from '@pragma/sdk'
 import type { ClipboardEvent, ComponentType, DragEvent } from 'react'
 import type { ChatImage, ChatPermissionDecision, ChatSupport, ChatUserInput } from './capability'
 import type { ChatEventEnvelope, ChatEventKind } from './events'
-import type { ComposerAppend } from './ipc'
+import type { ChatWorktree, ComposerEntry, ComposerInboxChanged } from './ipc'
 import type { ChatOptionValue } from './options'
 import type { ChatSettings } from './settings'
 import type { ChatSessionStatus } from './status'
@@ -23,6 +23,8 @@ export interface ChatSessionApi {
   respond(eventId: string, payload: unknown): Promise<void>
   setOption(key: string, value: ChatOptionValue): Promise<void>
   searchFiles(query: string): Promise<string[]>
+  /** 11c: the session's worktree, when known (file links). */
+  worktree?: ChatWorktree
 }
 
 export interface ChatPartProps<I extends ChatItem = ChatItem> {
@@ -109,9 +111,16 @@ export interface ChatSubscription {
  * never touch SDK or 03 shapes directly.
  */
 export interface ChatHost {
-  open(sessionId: string): Promise<{ providerId: string; transcript: ChatTranscript; status: ChatSessionStatus }>
+  open(sessionId: string): Promise<{
+    providerId: string
+    transcript: ChatTranscript
+    status: ChatSessionStatus
+    worktree?: ChatWorktree
+  }>
   onEvent(cb: (env: ChatEventEnvelope) => void): ChatSubscription
-  onComposerAppend(cb: (p: ComposerAppend) => void): ChatSubscription
+  onComposerInboxChanged(cb: (p: ComposerInboxChanged) => void): ChatSubscription
+  /** Returns and clears the session's pending composer entries (11c). */
+  takeComposerInbox(sessionId: string): Promise<ComposerEntry[]>
   send(sessionId: string, input: ChatUserInput): Promise<{ queued: boolean }>
   interrupt(sessionId: string): Promise<void>
   cancelQueued(sessionId: string, queuedId: string): Promise<void>
@@ -126,6 +135,13 @@ export interface ChatHost {
   /** 04's `StatusIcon` when agent-status is active, else null (the kit draws a fallback). */
   StatusIcon: ComponentType<{ status: ChatSessionStatus; turnCompleted: boolean; size?: 'sm' | 'md' }> | null
   openExternal(url: string): void
+  /** 11c: shell commands (file links run `editor.openFile` / `gitChanges.reveal` only when registered). */
+  commands: {
+    has(id: string): boolean
+    execute(id: string, args: unknown): Promise<unknown>
+    /** The registered commands changed (another module activated or announced its commands). */
+    onChange(cb: () => void): ChatSubscription
+  }
   /** The resolved light/dark mode (diff themes). */
   theme: { get(): ThemeMode; subscribe(cb: () => void): ChatSubscription }
   settings: {

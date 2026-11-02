@@ -76,9 +76,7 @@ export const ChatView = withChatHost(ChatSessionView)
 
 export default defineRendererModule<ChatSettings>({
   activate(ctx) {
-    ctx.ipc.subscribe(chatIpcEvents.composerAppend, (p) =>
-      useChatStore.getState().pushComposerAppend(p.sessionId, p.text),
-    )
+    ctx.ipc.subscribe(chatIpcEvents.composerInboxChanged, (p) => useChatStore.getState().bumpInbox(p.sessionId))
     ctx.slots.register<AgentSessionViewProps>(AGENT_SLOTS.view, {
       id: CHAT_SLOT_ENTRY_ID,
       order: CHAT_VIEW_ORDER,

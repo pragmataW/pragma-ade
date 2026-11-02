@@ -4,6 +4,7 @@ import {
   type ChatSessionStatus,
   type ChatSnapshotDto,
   type ChatTranscript,
+  type ChatWorktree,
   nextStatus,
   reduceTranscript,
 } from '../../contract'
@@ -12,25 +13,25 @@ export interface ChatSessionEntry {
   providerId: string
   transcript: ChatTranscript
   status: ChatSessionStatus
+  worktree?: ChatWorktree
 }
 
 export interface ChatStoreState {
   sessions: Record<string, ChatSessionEntry>
-  /** Texts appended to a session's composer (`ChatService.appendToComposer`), not yet taken by the composer. */
-  appends: Record<string, string[]>
+  /** Bumped on `chat.composerInboxChanged`: the session's composer then takes its main-side inbox. */
+  inboxVersions: Record<string, number>
   /** The chat session whose view is active (status bar context %). */
   activeSessionId: string | null
   hydrate(sessionId: string, snapshot: ChatSnapshotDto): void
   /** Drops envelopes at or below the session's `lastSeq` (and for sessions not hydrated). */
   apply(env: ChatEventEnvelope): void
-  pushComposerAppend(sessionId: string, text: string): void
-  consumeComposerAppend(sessionId: string): string[]
+  bumpInbox(sessionId: string): void
   setActive(sessionId: string | null): void
 }
 
 export const useChatStore = create<ChatStoreState>((set, get) => ({
   sessions: {},
-  appends: {},
+  inboxVersions: {},
   activeSessionId: null,
   hydrate: (sessionId, snapshot) => set((s) => ({ sessions: { ...s.sessions, [sessionId]: { ...snapshot } } })),
   apply(env) {
@@ -40,12 +41,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     const status = nextStatus(entry.status, env.event, { pendingInteractions: transcript.pendingInteractions })
     set((s) => ({ sessions: { ...s.sessions, [env.sessionId]: { ...entry, transcript, status } } }))
   },
-  pushComposerAppend: (sessionId, text) =>
-    set((s) => ({ appends: { ...s.appends, [sessionId]: [...(s.appends[sessionId] ?? []), text] } })),
-  consumeComposerAppend(sessionId) {
-    const taken = get().appends[sessionId] ?? []
-    if (taken.length > 0) set((s) => ({ appends: { ...s.appends, [sessionId]: [] } }))
-    return taken
-  },
+  bumpInbox: (sessionId) =>
+    set((s) => ({ inboxVersions: { ...s.inboxVersions, [sessionId]: (s.inboxVersions[sessionId] ?? 0) + 1 } })),
   setActive: (activeSessionId) => set({ activeSessionId }),
 }))

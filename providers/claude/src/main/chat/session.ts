@@ -32,7 +32,6 @@ import type { Logger } from '@pragma/sdk'
 import {
   ABORT_EVENT,
   BEHAVIOR,
-  CLOSE_WAIT_MS,
   DENY_MESSAGE,
   ENOENT,
   PERMISSION_CANCELLED_MESSAGE,
@@ -289,9 +288,9 @@ export class ClaudeChatSession implements ChatSessionHandle {
     this.#cancelPending()
     this.#queue.end()
     this.#q.close()
-    await Promise.race([this.#spawner.exited(), sleep(CLOSE_WAIT_MS)])
-    if (!this.#spawner.exitInfo()) this.#spawner.kill(true)
-    this.#emitExit(SESSION_EXIT_REASON.closed, this.#spawner.exitInfo()?.code ?? null)
+    // 11c: the exit is reported only once the child is really gone (a switch must never overlap two processes)
+    const exit = await this.#spawner.stop()
+    this.#emitExit(SESSION_EXIT_REASON.closed, exit?.code ?? null)
   }
 
   kill(): void {

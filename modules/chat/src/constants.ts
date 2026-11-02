@@ -47,7 +47,11 @@ export const PIERRE_THEMES = { dark: 'pierre-dark', light: 'pierre-light' } as c
 export const DIFF_UNIFIED = 'unified'
 export const ICON_STROKE = 1.5
 export const BUTTON_TYPE = 'button'
+export const NEWLINE = '\n'
+/** A whole message that is an i18n key (`<namespace>:<path>`), e.g. 11c's start-guard reasons. */
+export const I18N_KEY_RE = /^[a-z][a-z0-9-]*:[A-Za-z0-9_.]+$/
 export const ALIGN_END = 'end'
+export const ALIGN_CENTER = 'center'
 export const SIZE_SM = 'sm'
 export const VARIANT_OUTLINE = 'outline'
 export const SECONDS_PAD = 2
@@ -57,3 +61,34 @@ export const AT = '@'
 export const VARIANT_GHOST = 'ghost'
 export const SIZE_ICON_XS = 'icon-xs'
 export const COMPOSER_ROWS = 2
+
+// 11c file references (`parseFileRef`)
+export const BACKSLASH_RE = /\\/g
+export const PARENT_SEGMENT = '..'
+export const DOT_SLASH_RE = /^(?:\.\/)+/
+export const DRIVE_PATH_RE = /^[A-Za-z]:\//
+export const URL_SCHEME_RE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\//
+export const FILE_REF_ANCHOR_RE = /#L(?<line>\d+)$/
+export const FILE_REF_LINE_COL_RE = /:(?<line>\d+)(?::(?<col>\d+))?$/
+/** The last segment must have an extension (`README`, `Makefile` stay plain text). */
+export const FILE_EXTENSION_RE = /^[^.].*\.[A-Za-z0-9]+$/
+export const EDITOR_OPEN_FILE_COMMAND = 'editor.openFile'
+export const GIT_CHANGES_REVEAL_COMMAND = 'gitChanges.reveal'
+export const KEY_ENTER = 'Enter'
+export const LINK_ROLE = 'link'
+/** Tool-call inputs that name the file the call targets (header link). */
+export const TOOL_TARGET_FIELDS = ['file_path', 'path'] as const
+/** Marks an inline code span decorated as a file link (delegated clicks in `AssistantText`). */
+export const FILE_REF_ATTR = 'data-chat-file-ref'
+// 11c in-chat search
+export const MARKDOWN_LINK_RE = /!?\[([^\]]*)\]\([^)]*\)/g
+export const MARKDOWN_SYNTAX_RE = /[`*_~]|^#{1,6}\s+|^>\s?/gm
+/** `data-chat-row={index}` on message-list rows (search highlights). */
+export const CHAT_ROW_ATTR = 'data-chat-row'
+export const SEARCH_HIGHLIGHT = 'chat-search'
+export const SEARCH_HIGHLIGHT_CURRENT = 'chat-search-current'
+export const SEARCH_SHORTCUT_KEY = 'f'
+export const KEY_ESCAPE = 'Escape'
+export const FENCE_OPEN_RE = /^ {0,3}(?<fence>`{3,}|~{3,})(?<info>[^`]*)$/
+export const FENCE_CLOSE_RE = /^ {0,3}(?<fence>`{3,}|~{3,})\s*$/
+export const CODE_SEGMENT = 'code'

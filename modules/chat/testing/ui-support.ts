@@ -11,7 +11,8 @@ import {
   type ChatSessionStatus,
   type ChatSettings,
   type ChatSnapshotDto,
-  type ComposerAppend,
+  type ComposerEntry,
+  type ComposerInboxChanged,
   chatSettingsDefaults,
 } from '../src/contract'
 import { makeTranscript, TEST_SESSION_ID } from './support'
@@ -54,7 +55,8 @@ const NoMark = (): null => null
 export interface StubChatHost extends ChatHost {
   calls: Call[]
   emitEvent(env: ChatEventEnvelope): void
-  emitAppend(p: ComposerAppend): void
+  /** Queues an entry in the stub's composer inbox and notifies `onComposerInboxChanged` listeners. */
+  pushInbox(sessionId: string, entry: ComposerEntry): void
   snapshots: Map<string, ChatSnapshotDto>
   currentSettings: ChatSettings
 }
@@ -62,7 +64,8 @@ export interface StubChatHost extends ChatHost {
 /** A `ChatHost` that records every action and lets tests push events. */
 export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}): StubChatHost {
   const eventCbs = new Set<(env: ChatEventEnvelope) => void>()
-  const appendCbs = new Set<(p: ComposerAppend) => void>()
+  const inboxCbs = new Set<(p: ComposerInboxChanged) => void>()
+  const inbox = new Map<string, ComposerEntry[]>()
   const settingsCbs = new Set<() => void>()
   const calls: Call[] = []
   const record =
@@ -86,7 +89,12 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
       return host.snapshots.get(sessionId) ?? { providerId: 'fake', transcript: makeTranscript([]), status: 'idle' }
     },
     onEvent: subscribe(eventCbs),
-    onComposerAppend: subscribe(appendCbs),
+    onComposerInboxChanged: subscribe(inboxCbs),
+    async takeComposerInbox(sessionId) {
+      const taken = inbox.get(sessionId) ?? []
+      inbox.delete(sessionId)
+      return taken
+    },
     send: record('send', { queued: false }),
     interrupt: record('interrupt', undefined),
     cancelQueued: record('cancelQueued', undefined),
@@ -103,6 +111,11 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
     ProviderMark: NoMark,
     StatusIcon: null,
     openExternal: (url) => void calls.push({ method: 'openExternal', args: [url] }),
+    commands: {
+      has: () => false,
+      execute: record('executeCommand', undefined),
+      onChange: () => ({ dispose: () => undefined }),
+    },
     theme: { get: () => 'dark', subscribe: () => ({ dispose: () => undefined }) },
     settings: {
       get: () => host.currentSettings,
@@ -116,8 +129,9 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
     emitEvent: (env) => {
       for (const cb of eventCbs) cb(env)
     },
-    emitAppend: (p) => {
-      for (const cb of appendCbs) cb(p)
+    pushInbox: (sessionId, entry) => {
+      inbox.set(sessionId, [...(inbox.get(sessionId) ?? []), entry])
+      for (const cb of inboxCbs) cb({ sessionId })
     },
     ...over,
   }

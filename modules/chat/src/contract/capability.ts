@@ -70,6 +70,21 @@ export interface ChatCapability {
   loadHistory?(ctx: ChatHistoryContext): Promise<ChatEvent[]>
   /** §10.2: closes every live handle on app quit. */
   dispose?(): Promise<void> | void
+  /**
+   * 11c: when a live server for worktree + profile hosts `externalSessionId`, keep it running for a terminal that
+   * joins it (`url`) until `release`; undefined when there is none (the TUI then runs its own server).
+   */
+  retainServer?(q: RetainServerQuery): Promise<RetainedServer | undefined>
+}
+
+export interface RetainServerQuery {
+  worktreePath: string
+  profile: AgentProfile
+  externalSessionId: string
+}
+export interface RetainedServer {
+  url: string
+  release(): Promise<void>
 }
 
 const STARTUP_ERROR_NAME = 'ChatStartupError'

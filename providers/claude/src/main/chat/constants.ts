@@ -25,7 +25,6 @@ export const CLAUDE_CUSTOM_EVENTS = { compactBoundary: 'claude.compact-boundary'
 
 export const STDERR_TAIL_BYTES = 8192
 export const KILL_GRACE_MS = 3000
-export const CLOSE_WAIT_MS = 3000
 /** Env stamps of a parent Claude Code session; a nested CLI must not inherit them. */
 export const STRIPPED_ENV = [
   'CLAUDECODE',
