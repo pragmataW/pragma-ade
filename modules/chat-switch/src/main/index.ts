@@ -1,5 +1,6 @@
 import { AgentSessionsServiceToken } from '@pragma/module-agents/contract'
 import { ChatServiceToken } from '@pragma/module-chat/contract'
+import { CommentsServiceToken } from '@pragma/module-comments/contract'
 import { ProjectsServiceToken } from '@pragma/module-projects/contract'
 import { defineMainModule } from '@pragma/sdk/main'
 import { ChatSwitchServiceToken, ExternalSessionGuardToken } from '../contract'
@@ -14,6 +15,7 @@ export default defineMainModule({
     main = activateChatSwitch({
       agents: ctx.services.get(AgentSessionsServiceToken),
       chat: ctx.services.get(ChatServiceToken),
+      comments: ctx.services.get(CommentsServiceToken),
       providers: ctx.providers,
       events: ctx.events,
       ipc: ctx.ipc,

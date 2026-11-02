@@ -7,6 +7,7 @@ import {
   isRunningStatus,
 } from '@pragma/module-agents/contract'
 import type { ChatService, ChatStartGuardResult } from '@pragma/module-chat/contract'
+import type { CommentsService } from '@pragma/module-comments/contract'
 import type { Disposable, Logger } from '@pragma/sdk'
 import type { MainContext, MainIpcApi } from '@pragma/sdk/main'
 import { SWITCH_REASON, switchReasonKey } from '../constants'
@@ -18,13 +19,15 @@ import {
   SWITCH_PHASE,
   SWITCH_TARGET,
 } from '../contract'
+import { createChatDelivery } from './chat-delivery'
 import { createExternalSessionGuard } from './external-session-guard'
 import { createResumeDecorator } from './resume-decorator'
 import { createChatSwitchService } from './switch-service'
 
 export interface ChatSwitchMainDeps {
   agents: Pick<AgentSessionsService, 'getSession' | 'getProfile' | 'relaunchSession' | 'registerLaunchDecorator'>
-  chat: Pick<ChatService, 'registerStartGuard'>
+  chat: Pick<ChatService, 'registerStartGuard' | 'appendToComposer'>
+  comments: Pick<CommentsService, 'registerDeliveryTarget'>
   providers: Pick<MainContext['providers'], 'capability'>
   events: Pick<MainContext['events'], 'on'>
   ipc: Pick<MainIpcApi, 'handle' | 'publish'>
@@ -93,6 +96,7 @@ export function activateChatSwitch(d: ChatSwitchMainDeps): ChatSwitchMain {
       publishChanged(sessionId)
     }),
     d.events.on(agentSessionUpdated, ({ session }) => onUpdated(session)),
+    d.comments.registerDeliveryTarget(SWITCH_TARGET.chat, createChatDelivery(d.chat)),
     d.ipc.handle(chatSwitchIpc.eligibility, ({ sessionId }) => service.eligibility(sessionId)),
     d.ipc.handle(chatSwitchIpc.switch, ({ sessionId, target }) => service.switchTo(sessionId, target)),
   ]

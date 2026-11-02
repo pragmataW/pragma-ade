@@ -10,6 +10,7 @@ import {
   EXTERNAL_ID,
   fakeAgents,
   fakeChat,
+  fakeComments,
   fakeEvents,
   fakeIpc,
   fakeProviders,
@@ -30,6 +31,7 @@ function setup() {
   const main = activateChatSwitch({
     agents,
     chat,
+    comments: fakeComments(),
     providers: fakeProviders({ resume: { [CLAUDE]: claudeResume() }, chat: { [CLAUDE]: chatOk() } }),
     events,
     ipc,
