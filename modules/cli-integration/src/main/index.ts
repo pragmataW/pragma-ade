@@ -17,7 +17,7 @@ import {
 import { createCliHandlers } from './handlers'
 import { runHandoff } from './handoff'
 import { createCliLaunchDecorator } from './launch-decorator'
-import { createNotifier } from './notifier'
+import { createNotifier, type NotificationRequest } from './notifier'
 import { type CliPaths, resolveCliPaths } from './paths'
 import { createCliIntegrationService, registerCliIntegrationIpc } from './service'
 import { writeShims } from './shim'
@@ -55,15 +55,20 @@ async function installShimAndDecorator(ctx: Ctx, paths: CliPaths): Promise<void>
   ctx.log.info('cli-integration: launch decorator registered')
 }
 
+/** `ctx.notifications.show`, also recorded for the test hooks in test mode. */
+const showNotification =
+  (ctx: Ctx) =>
+  (n: NotificationRequest): void => {
+    ctx.notifications.show(n)
+    if (ctx.testMode) runtimeState.notifications.push(n)
+  }
+
 function registerBridge(ctx: Ctx): void {
   const projects = ctx.services.get(ProjectsServiceToken)
   const agents = ctx.services.get(AgentSessionsServiceToken)
   const board = ctx.services.tryGet(BoardServiceToken)
   const nameOf = profileNamer(ctx)
-  const record = ctx.testMode
-    ? (n: (typeof runtimeState.notifications)[number]) => runtimeState.notifications.push(n)
-    : undefined
-  const notifier = createNotifier({ show: (n) => ctx.notifications.show(n), record })
+  const notifier = createNotifier({ show: showNotification(ctx) })
   const handoffDeps = { projects, agents, board, notifier, now: () => new Date(), log: ctx.log, nameOf }
   const handlers = createCliHandlers({
     projects,
@@ -87,7 +92,7 @@ export default defineMainModule<CliIntegrationSettings>({
     runtimeState.paths = paths
     await installShimAndDecorator(ctx, paths)
     registerBridge(ctx)
-    const skills = createSkillsPort(ctx, paths)
+    const skills = createSkillsPort(ctx, paths, showNotification(ctx))
     registerCliIntegrationIpc(ctx, createCliIntegrationService(ctx, paths, skills))
     skills
       .checkForUpdates(homedir())

@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import type { NotificationInput } from '@pragma/sdk'
 import type { MainContext } from '@pragma/sdk/main'
 import { REGISTRY_FILE, SETTINGS_PAGE_ID } from '../constants'
 import type { CliIntegrationSettings, SkillTargetStatus } from '../contract'
@@ -29,6 +30,7 @@ function skillProviders(ctx: Ctx): SkillProvider[] {
 export function createSkillsPort(
   ctx: Ctx,
   paths: CliPaths,
+  notify: (n: NotificationInput) => void,
 ): SkillsPort & { checkForUpdates(home: string): Promise<void> } {
   const registryPath = join(ctx.module.paths.data, REGISTRY_FILE)
   const plan = async (home: string) => {
@@ -54,7 +56,7 @@ export function createSkillsPort(
         sources,
         promptedHash: ctx.settings.get().skillUpdatePromptedHash,
         settingsPageId: SETTINGS_PAGE_ID,
-        notify: (n) => ctx.notifications.show(n),
+        notify,
         savePromptedHash: (hash) => ctx.settings.update({ skillUpdatePromptedHash: hash }),
       })
     },
