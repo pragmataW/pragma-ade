@@ -61,8 +61,9 @@ export function taskHandlers(deps: CliHandlerDeps): Record<TaskMethod, CliHandle
       return { projectId, tasks: tasks.map((t) => toCliTask(t, section)) }
     }),
     taskCreate: defineCliHandler(CLI_METHOD.taskCreate, async (req) => {
-      const { b, projectId, section, column } = await projectScope(req)
-      return toCliTask(await b.createTask({ projectId, title: req.title, ...boardFields(req), ...column }), section)
+      const { b, projectId, column } = await projectScope(req)
+      // Re-read the board after the create: it may have added labels the pre-create section does not know.
+      return mapped(b, await b.createTask({ projectId, title: req.title, ...boardFields(req), ...column }))
     }),
     taskUpdate: defineCliHandler(CLI_METHOD.taskUpdate, async (req) => {
       const b = board()

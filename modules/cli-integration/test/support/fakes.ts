@@ -11,6 +11,7 @@ import type {
   BoardService,
   ColumnRef,
   CreateTaskInput,
+  LabelDto,
   TaskDto,
   TaskFilter,
   UpdateTaskPatch,
@@ -153,7 +154,7 @@ export function fakeBoard(tasks: TaskDto[] = []) {
     calls: [] as [string, ...unknown[]][],
     failUpdate: false,
   }
-  const section: BoardSection = {
+  let section: BoardSection = {
     board: { id: 1, projectId: 'p1', name: 'p1', keyPrefix: 'P1' },
     projectName: 'p1',
     columns: COLUMNS.map((name, i) => ({ id: i + 1, boardId: 1, name, sortKey: String(i) })),
@@ -168,6 +169,14 @@ export function fakeBoard(tasks: TaskDto[] = []) {
     const t = state.tasks.find((x) => x.id === id)
     if (!t) throw new BoardError('not_found', `task ${id} not found`)
     return t
+  }
+  /** Like the real board: unknown label names are created, and getBoard returns a new section afterwards. */
+  const labelId = (ref: string | number): number => {
+    const found = section.labels.find((l) => l.id === ref || l.name === ref)
+    if (found) return found.id
+    const created: LabelDto = { id: section.labels.length + 1, boardId: 1, name: String(ref), color: 'gray' }
+    section = { ...section, labels: [...section.labels, created] }
+    return created.id
   }
   const service = asService<BoardService>({
     getBoard: async () => section,
@@ -188,6 +197,7 @@ export function fakeBoard(tasks: TaskDto[] = []) {
         descriptionMd: input.descriptionMd ?? '',
         priority: input.priority ?? 'none',
         columnId: input.column === undefined ? 1 : columnId(input.column),
+        labelIds: (input.labels ?? []).map(labelId),
       })
       state.tasks.push(t)
       return t

@@ -38,6 +38,14 @@ describe('task handlers', () => {
     expect(res).toMatchObject({ ok: true, result: { id: expect.any(Number), title: 'From CLI', column: 'Backlog' } })
   })
 
+  it('taskCreate answers names for labels the create itself added', async () => {
+    const { h } = setup()
+    expect(await h.taskCreate({ context: ctx, title: 'Labelled', labels: ['ui', 'fresh'] })).toMatchObject({
+      ok: true,
+      result: { labels: ['ui', 'fresh'] },
+    })
+  })
+
   it('taskUpdate only sends provided fields (description → descriptionMd)', async () => {
     const { board, h } = setup()
     await h.taskUpdate({ context: ctx, taskId: '42', description: 'New' })
