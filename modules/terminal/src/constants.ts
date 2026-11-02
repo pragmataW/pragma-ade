@@ -31,6 +31,9 @@ export const DAEMON_UNAVAILABLE = 'pty-daemon is not available'
 export const COLORTERM_VALUE = 'truecolor'
 export const TERM_PROGRAM_NAME = 'PragmaADE'
 export const PATH_SEPARATOR_RE = /[\\/]/
+/** `COLORFGBG` (`fg;bg` ANSI indexes) lets CLIs pick light or dark colours; set from the app theme at spawn. */
+export const COLORFGBG_ENV = 'COLORFGBG'
+export const COLORFGBG_BY_MODE = { light: '0;15', dark: '15;0' } as const
 
 /** Shift+Enter sends ESC CR (meta+Enter), which Claude Code, opencode and readline treat as a newline, not submit. */
 export const SHIFT_ENTER_SEQUENCE = '\x1b\r'

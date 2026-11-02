@@ -56,6 +56,17 @@ test('env merge: shellEnv < opts.env < TERM overrides', async () => {
   expect(text()).not.toContain('ELECTRON_RUN_AS_NODE')
 })
 
+test.each([
+  ['light', '0;15'],
+  ['dark', '15;0'],
+] as const)('COLORFGBG tells CLIs the app theme at spawn (%s), over the shell env', async (mode, value) => {
+  const { pty } = await testPtyService({ themeMode: mode, shellEnv: { COLORFGBG: '7;0' } })
+  const id = await pty.spawn({ cwd: tempDir(), command: '/usr/bin/env', ...SIZE })
+  const text = output(pty, id)
+  await new Promise<PtyExit>((resolve) => pty.onExit(id, resolve))
+  expect(text()).toContain(`COLORFGBG=${value}`)
+})
+
 test('command goes through the injected resolveCommand (ctx.env.resolveCommand)', async () => {
   const { pty } = await testPtyService({ resolveCommand: async (c) => (c === 'pr' ? '/usr/bin/printf' : null) })
   const id = await pty.spawn({ cwd: tempDir(), command: 'pr', args: ['ok'], ...SIZE })
@@ -219,6 +230,7 @@ test('an exit arriving with the spawn reply is not lost', async () => {
     shellEnv: async () => ({}),
     resolveCommand: async (c) => c,
     settings: () => TERMINAL_SETTINGS_DEFAULTS,
+    themeMode: () => 'dark',
     platform: process.platform,
     exists: () => true,
     log: memoryLogger(),

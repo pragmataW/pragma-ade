@@ -26,6 +26,7 @@ function activate(ctx: MainContext<TerminalSettings>): void {
     shellEnv: () => ctx.env.getShellEnv(),
     resolveCommand: (cmd) => ctx.env.resolveCommand(cmd),
     settings: () => ctx.settings.get(),
+    themeMode: () => ctx.theme.get().resolved,
     platform: process.platform,
     exists: existsSync,
     log,

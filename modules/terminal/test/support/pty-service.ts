@@ -1,6 +1,7 @@
 import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { ThemeMode } from '@pragma/sdk'
 import { TERMINAL_SETTINGS_DEFAULTS, type TerminalSettings } from '../../src/contract'
 import { PtyServiceImpl } from '../../src/main/pty-service'
 import { stopHosts, testHost } from './host'
@@ -17,16 +18,22 @@ export function tempDir(): string {
 
 /** A `PtyServiceImpl` on a real `DaemonHost`; the shell env carries `MARK=from-shell-env`. */
 export async function testPtyService(
-  opts: { settings?: Partial<TerminalSettings>; resolveCommand?: (cmd: string) => Promise<string | null> } = {},
+  opts: {
+    settings?: Partial<TerminalSettings>
+    resolveCommand?: (cmd: string) => Promise<string | null>
+    themeMode?: ThemeMode
+    shellEnv?: Record<string, string>
+  } = {},
 ) {
   const { host, log } = await testHost({ restartDelaysMs: [20] })
   await host.start()
   const settings = { ...TERMINAL_SETTINGS_DEFAULTS, shell: '/bin/sh', ...opts.settings }
   const pty = new PtyServiceImpl({
     host,
-    shellEnv: async () => ({ PATH: process.env.PATH ?? '', HOME: tmpdir(), MARK: SHELL_ENV_MARK }),
+    shellEnv: async () => ({ PATH: process.env.PATH ?? '', HOME: tmpdir(), MARK: SHELL_ENV_MARK, ...opts.shellEnv }),
     resolveCommand: opts.resolveCommand ?? (async (c) => (c.startsWith('/') && existsSync(c) ? c : null)),
     settings: () => settings,
+    themeMode: () => opts.themeMode ?? 'dark',
     platform: process.platform,
     exists: existsSync,
     log,
