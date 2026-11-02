@@ -25,6 +25,7 @@ import {
   changeRunStarts,
   type DiffAnnotationMeta,
   firstChangedLine,
+  headerName,
   nextChangeTop,
   placeholderFor,
   toFileContents,
@@ -55,7 +56,6 @@ export interface DiffViewProps {
 const DIFFS_CONTAINER = 'diffs-container'
 const LINE_TYPE_SELECTOR = '[data-line-type]'
 const LINE_TYPE_ATTR = 'data-line-type'
-const RENAME_ARROW = ' → '
 const [NEXT, PREV] = CHANGE_DIRECTIONS
 const NO_ANNOTATIONS: DiffLineAnnotation<DiffAnnotationMeta>[] = []
 
@@ -117,14 +117,20 @@ function OpenInEditor(props: { open(): void }) {
 function DiffHeader(props: { file: ChangedFile; onJump(d: ChangeDirection): void; children: ReactNode }) {
   const t = useT()
   const { file } = props
-  const name = file.status === FILE_STATUS.R && file.oldPath ? `${file.oldPath}${RENAME_ARROW}${file.path}` : file.path
+  const { head, base } = headerName(file.path, file.status === FILE_STATUS.R ? file.oldPath : undefined)
   return (
     <div
       data-testid={T.diffHeader}
       className="flex h-9 shrink-0 items-center gap-2 border-[var(--bd)] border-b bg-[var(--pn)] px-2"
     >
-      <span className="min-w-0 flex-1 truncate font-mono text-xs" title={name}>
-        {name}
+      <span className="flex min-w-0 flex-1 overflow-hidden font-mono text-xs" title={`${head}${base}`}>
+        {/* The directories are cut from the start (rtl box, ltr text: "…cs/"); the file name stays whole. */}
+        {head ? (
+          <span dir="rtl" className="min-w-[1ch] truncate">
+            <bdi>{head}</bdi>
+          </span>
+        ) : null}
+        <span className="max-w-full shrink-0 truncate">{base}</span>
       </span>
       <span className="shrink-0 font-mono text-xs">
         <span className="text-[var(--add-tx)]">{`+${file.additions}`}</span>{' '}
