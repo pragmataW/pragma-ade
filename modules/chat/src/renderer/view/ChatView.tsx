@@ -78,6 +78,11 @@ function ChatLayout({ api, definition }: { api: ChatSessionApi; definition: Chat
         ) : null}
       </div>
       <div className="mx-auto flex w-full max-w-[740px] flex-col gap-1 px-4 pb-3">
+        {definition.banners?.length ? (
+          <div className="flex flex-col gap-1">
+            <SlotRow slots={definition.banners} session={api} />
+          </div>
+        ) : null}
         <WorkingLine session={api} />
         <Composer session={api} extensions={definition.composerExtensions} toolbar={definition.composerToolbar} />
       </div>

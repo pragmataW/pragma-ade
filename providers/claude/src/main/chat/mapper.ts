@@ -1,10 +1,13 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import {
+  ATTACHMENT_KIND,
+  type ChatAttachmentRef,
   type ChatEvent,
   ERROR_CODE,
   EVENT_KIND as K,
   MAX_TOOL_OUTPUT_CHARS,
   MESSAGE_ORIGIN,
+  PDF_MEDIA_TYPE,
   TEXT_MODE,
   TOOL_STATUS,
   TRUNCATION_MARKER,
@@ -17,21 +20,26 @@ import {
   CLAUDE_CUSTOM_EVENTS,
   CLAUDE_TOOLS,
   DELTA,
+  DOCUMENT_NAME,
   FRAME,
   IMAGE_NAME,
   JOIN_NEWLINE,
+  NEXT_TURN_SUFFIX,
   PART_ID_SEPARATOR,
   RESULT_SUBTYPE,
   STREAM_EVENT,
   SYSTEM_SUBTYPE,
 } from './constants'
+import { list, num, type Obj, obj, str } from './frame-fields'
+import { mcpStatusEvent, rateLimitEvent, SYSTEM_NOTICES } from './notices'
+import { PROMPT_TOOLS } from './prompts'
+import { createTaskMapper } from './tasks'
 import { fileEditFor, todoFor, toolKindFor, toolTitleFor } from './tool-kinds'
 
-type Obj = Record<string, unknown>
-const obj = (v: unknown): Obj => (v && typeof v === 'object' ? (v as Obj) : {})
-const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined)
-const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
-const list = (v: unknown): Obj[] => (Array.isArray(v) ? v.map(obj) : [])
+/** Kinds that carry `parentId` (subagent output nests under the spawning tool call). */
+const NESTABLE = new Set<ChatEvent['kind']>([K.textDelta, K.thinking, K.toolCall, K.fileEdit, K.todo, K.error])
+const nest = (events: ChatEvent[], parentId: string | undefined): ChatEvent[] =>
+  parentId ? events.map((e) => (NESTABLE.has(e.kind) ? ({ ...e, parentId } as ChatEvent) : e)) : events
 
 /** An SDK message or a history `SessionMessage` (same `type`/`message` shape). */
 export type MapperFrame = SDKMessage | { type: string; uuid?: string; message?: unknown }
@@ -79,6 +87,15 @@ const assistantErrorCode = (e: string) => {
   return e === ASSISTANT_ERROR.rateLimit ? ERROR_CODE.rate_limit : ERROR_CODE.unknown
 }
 
+/** The attachment chip of an image or document block of a user turn. */
+function attachmentOf(b: Obj): ChatAttachmentRef[] {
+  const mediaType = str(obj(b.source).media_type) ?? ''
+  if (b.type === BLOCK.image) return [{ kind: ATTACHMENT_KIND.image, name: IMAGE_NAME, mediaType }]
+  if (b.type !== BLOCK.document) return []
+  const kind = mediaType === PDF_MEDIA_TYPE ? ATTACHMENT_KIND.pdf : ATTACHMENT_KIND.text
+  return [{ kind, name: str(b.title) ?? DOCUMENT_NAME, mediaType }]
+}
+
 /** Stateful SDK → chat event mapping (part ids `<message.id>:<block index>`, RF5 truncation). */
 export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkMessageMapper {
   const max = opts.maxOutputChars ?? MAX_TOOL_OUTPUT_CHARS
@@ -89,6 +106,12 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
   const streamBlocks = new Map<string, string>()
   const tools = new Map<string, { name: string; input: unknown }>()
   const openTools = new Set<string>()
+  const tasks = createTaskMapper()
+  /** Live: question / plan tool calls render as their cards only (history keeps the tool row, it has no card). */
+  const cardTools = new Set<string>()
+  const isCardTool = (name: string) => !history && PROMPT_TOOLS.has(name)
+  /** Stream path: the open message id per parent (a subagent streams beside the main loop). */
+  const streamMessageIds = new Map<string, string>()
   let streamMessageId = ''
   let lastUsage: Obj = {}
   let interruptRequested = false
@@ -96,11 +119,12 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
 
   const partId = (messageId: string, k: number) => `${messageId}${PART_ID_SEPARATOR}${k}`
 
-  function streamEvent(event: Obj): ChatEvent[] {
+  function streamEvent(event: Obj, parent: string): ChatEvent[] {
     if (event.type === STREAM_EVENT.messageStart) {
-      streamMessageId = str(obj(event.message).id) ?? ''
+      streamMessageIds.set(parent, str(obj(event.message).id) ?? '')
       return []
     }
+    streamMessageId = streamMessageIds.get(parent) ?? ''
     const id = partId(streamMessageId, num(event.index))
     if (event.type === STREAM_EVENT.blockStart) return blockStart(id, obj(event.content_block))
     return event.type === STREAM_EVENT.blockDelta ? blockDelta(id, obj(event.delta)) : []
@@ -120,12 +144,17 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
     if (type !== BLOCK.toolUse) return []
     const name = str(block.name) ?? ''
     const toolCallId = str(block.id) ?? id
+    if (isCardTool(name)) return []
     return [{ kind: K.toolCall, toolCallId, name, toolKind: toolKindFor(name), input: {}, status: TOOL_STATUS.pending }]
   }
 
   function toolUse(block: Obj): ChatEvent[] {
     const name = str(block.name) ?? ''
     const toolCallId = str(block.id) ?? ''
+    if (isCardTool(name)) {
+      cardTools.add(toolCallId)
+      return []
+    }
     tools.set(toolCallId, { name, input: block.input })
     openTools.add(toolCallId)
     const call: ChatEvent = {
@@ -183,26 +212,40 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
   }
 
   function userText(frame: Obj, content: unknown): ChatEvent[] {
-    if (!history || frame.isSynthetic === true) return []
+    // a subagent's prompt arrives as a user frame with a parent: its tool call already shows it
+    if (!history || frame.isSynthetic === true || str(frame.parent_tool_use_id)) return []
     const blocks = typeof content === 'string' ? [{ type: BLOCK.text, text: content }] : list(content)
     const text = blocks
       .map((b) => (b.type === BLOCK.text ? str(b.text) : undefined))
       .filter((t): t is string => t !== undefined)
       .join(JOIN_NEWLINE)
-    const attachments = blocks
-      .filter((b) => b.type === BLOCK.image)
-      .map((b) => ({ kind: BLOCK.image, name: IMAGE_NAME, mediaType: str(obj(b.source).media_type) ?? '' }))
+    const attachments = blocks.flatMap(attachmentOf)
     if (!text && attachments.length === 0) return []
     const messageId = str(frame.uuid) ?? `${FRAME.user}${PART_ID_SEPARATOR}${++userMessages}`
     return [{ kind: K.message, messageId, role: USER_ROLE, text, attachments, origin: MESSAGE_ORIGIN.history }]
   }
 
   function user(frame: Obj): ChatEvent[] {
+    // `--replay-user-messages`: the CLI took in this user message (its uuid is the core's message id)
+    if (frame.isReplay === true) return history ? [] : replayAck(frame)
     const content = obj(frame.message).content
     const results = list(content).filter((b) => b.type === BLOCK.toolResult)
     if (results.length === 0) return userText(frame, content)
-    return results.flatMap((b) => toolResult(b, frame.tool_use_result))
+    return results
+      .filter((b) => !cardTools.has(str(b.tool_use_id) ?? ''))
+      .flatMap((b) => toolResult(b, frame.tool_use_result))
   }
+
+  function replayAck(frame: Obj): ChatEvent[] {
+    const messageId = str(frame.uuid)
+    return messageId && !str(frame.parent_tool_use_id) ? [{ kind: K.messageAck, messageId }] : []
+  }
+
+  /** More sends wait in the CLI's queue: their turn starts right after this result. */
+  const nextTurn = (frame: Obj): ChatEvent[] =>
+    num(frame.queued_turn_count) > 0
+      ? [{ kind: K.turnStart, turnId: `${str(frame.uuid) ?? ''}${NEXT_TURN_SUFFIX}` }]
+      : []
 
   function turnEnd(frame: Obj): ChatEvent[] {
     const subtype = str(frame.subtype)
@@ -236,14 +279,19 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
       ...(contextWindow > 0 ? { contextWindow } : {}),
       ...(contextTokens > 0 ? { contextTokens } : {}),
     }
-    return [usageEvent, ...turnEnd(frame)]
+    return [usageEvent, ...turnEnd(frame), ...nextTurn(frame)]
+  }
+
+  function init(frame: Obj): ChatEvent[] {
+    const id = str(frame.session_id)
+    const info: ChatEvent = id ? { kind: K.sessionInfo, externalSessionId: id } : { kind: K.sessionInfo }
+    return Array.isArray(frame.mcp_servers) ? [info, mcpStatusEvent(frame.mcp_servers)] : [info]
   }
 
   function system(frame: Obj): ChatEvent[] {
-    if (frame.subtype === SYSTEM_SUBTYPE.init) {
-      const id = str(frame.session_id)
-      return [id ? { kind: K.sessionInfo, externalSessionId: id } : { kind: K.sessionInfo }]
-    }
+    if (frame.subtype === SYSTEM_SUBTYPE.init) return init(frame)
+    const mapped = tasks.map(frame) ?? SYSTEM_NOTICES[str(frame.subtype) ?? '']?.(frame)
+    if (mapped) return mapped
     if (frame.subtype !== SYSTEM_SUBTYPE.compactBoundary) return []
     const meta = obj(frame.compact_metadata)
     return [
@@ -255,12 +303,18 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
     ]
   }
 
+  const nested =
+    (handler: (f: Obj) => ChatEvent[]) =>
+    (f: Obj): ChatEvent[] =>
+      nest(handler(f), str(f.parent_tool_use_id))
+
   const HANDLERS: Record<string, (frame: Obj) => ChatEvent[]> = {
-    [FRAME.streamEvent]: (f) => streamEvent(obj(f.event)),
-    [FRAME.assistant]: assistant,
-    [FRAME.user]: user,
+    [FRAME.streamEvent]: nested((f) => streamEvent(obj(f.event), str(f.parent_tool_use_id) ?? '')),
+    [FRAME.assistant]: nested(assistant),
+    [FRAME.user]: nested(user),
     [FRAME.result]: result,
     [FRAME.system]: system,
+    [FRAME.rateLimit]: rateLimitEvent,
   }
 
   return {

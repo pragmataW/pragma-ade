@@ -1,0 +1,162 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitText": {
+          "messageId": "msg_sub_0",
+          "text": "I will ask a subagent to look around.",
+          "chunks": 2
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_spawn_a1b2c3d4e5f6",
+          "id": "toolu_agent_1",
+          "name": "Agent",
+          "input": {
+            "description": "List the files",
+            "prompt": "List the files"
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "a1b2c3d4e5f6",
+          "tool_use_id": "toolu_agent_1",
+          "task_type": "local_agent",
+          "is_backgrounded": false,
+          "spawn_depth": 1,
+          "subagent_type": "Explore",
+          "description": "List the files",
+          "uuid": "task_started-a1b2c3d4e5f6",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_sub_1",
+          "text": "Listing the repository root.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_agent_1"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_sub_1",
+          "id": "toolu_sub_ls",
+          "name": "Bash",
+          "input": {
+            "command": "ls"
+          },
+          "parentToolUseId": "toolu_agent_1"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_sub_ls",
+          "content": "README.md\nsrc",
+          "parentToolUseId": "toolu_agent_1"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_progress",
+          "task_id": "a1b2c3d4e5f6",
+          "tool_use_id": "toolu_agent_1",
+          "description": "Running ls",
+          "summary": "Reading the repository root",
+          "usage": {
+            "total_tokens": 9800,
+            "tool_uses": 1,
+            "duration_ms": 4200
+          },
+          "last_tool_name": "Bash",
+          "uuid": "task_progress-a1b2c3d4e5f6",
+          "session_id": "fake"
+        }
+      },
+      {
+        "delayMs": 400
+      },
+      {
+        "emitText": {
+          "messageId": "msg_sub_2",
+          "text": "The repository has a README.md and a src/ folder.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_agent_1"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_notification",
+          "task_id": "a1b2c3d4e5f6",
+          "tool_use_id": "toolu_agent_1",
+          "status": "completed",
+          "output_file": "/tmp/fake-task.output",
+          "summary": "The repository has a README.md and a src/ folder.",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 3,
+            "duration_ms": 4200
+          },
+          "uuid": "task_notification-a1b2c3d4e5f6",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_agent_1",
+          "content": "The repository has a README.md and a src/ folder."
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_sub_3",
+          "text": "The subagent found a README.md and a src/ folder.",
+          "chunks": 4
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ]
+}

@@ -2,45 +2,44 @@ import { CHAT_OPTION_KEYS, CUSTOM_PART_PREFIX } from '@pragma/module-chat/contra
 import { Gauge } from '@pragma/ui/icons'
 import { CLAUDE_CUSTOM_EVENTS } from '../../main/chat/constants'
 import { CompactBoundaryNotice } from './CompactBoundaryNotice'
+import { FastModeToggle } from './FastModeToggle'
 import {
-  AssistantText,
   type ChatUiDefinition,
   ContextMeter,
   createOptionPicker,
-  defaultComposerExtensions,
-  ErrorRow,
-  FileEditDiff,
+  defaultChatUi,
+  documentAttachmentsExtension,
+  fileMentionExtension,
+  imageAttachmentsExtension,
+  McpStatus,
   ModelPicker,
-  PermissionCard,
-  SessionExitNotice,
+  PermissionModePicker,
+  RateLimitBanner,
+  RetryBanner,
   StopButton,
-  ThinkingBlock,
-  TodoList,
-  ToolCallCard,
-  TurnEndNotice,
+  slashCommandsExtension,
   UsageMeter,
-  UserMessage,
 } from './kit'
 
 export const EffortPicker = createOptionPicker({ key: CHAT_OPTION_KEYS.effort, variant: 'icon', icon: Gauge })
-export const PermissionModePicker = createOptionPicker({ key: CHAT_OPTION_KEYS.permissionMode })
 
-/** Claude's chat UI: each line is one feature (remove a line to drop it). */
+/**
+ * Claude's chat UI: every kit part (text, thinking, tools, diffs, todos, permissions, subagent / workflow task
+ * cards, question and plan approval cards) plus the compact-boundary notice; each other line is one feature.
+ */
 export const claudeChatUi: ChatUiDefinition = {
   parts: {
-    message: UserMessage,
-    'text-delta': AssistantText,
-    thinking: ThinkingBlock,
-    'tool-call': ToolCallCard,
-    'file-edit': FileEditDiff,
-    todo: TodoList,
-    'permission-request': PermissionCard,
-    error: ErrorRow,
-    'turn-end': TurnEndNotice,
-    'session-exit': SessionExitNotice,
+    ...defaultChatUi.parts,
     [`${CUSTOM_PART_PREFIX}${CLAUDE_CUSTOM_EVENTS.compactBoundary}`]: CompactBoundaryNotice,
   },
-  header: [UsageMeter],
-  composerToolbar: [ModelPicker, EffortPicker, PermissionModePicker, ContextMeter, StopButton],
-  composerExtensions: defaultComposerExtensions,
+  banners: [RateLimitBanner, RetryBanner],
+  header: [McpStatus, UsageMeter],
+  composerToolbar: [PermissionModePicker, ModelPicker, EffortPicker, FastModeToggle, ContextMeter, StopButton],
+  // documents before images: the image extension leaves PDFs and text files to it
+  composerExtensions: [
+    slashCommandsExtension,
+    fileMentionExtension,
+    documentAttachmentsExtension,
+    imageAttachmentsExtension,
+  ],
 }

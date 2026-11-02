@@ -37,7 +37,7 @@ export function ToolCallCard({ item, session }: ChatPartProps<ToolCallItem>) {
         </span>
       }
     >
-      <Body item={item} />
+      <Body item={item} session={session} />
     </CollapsibleCard>
   )
 }

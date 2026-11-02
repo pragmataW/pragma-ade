@@ -1,23 +1,21 @@
 /** The single import point of the chat kit (`@pragma/module-chat/renderer`, §5.4) for this provider. */
 
-export type { ChatPartProps, ChatUiDefinition } from '@pragma/module-chat/renderer'
+export type { ChatPartProps, ChatSlotProps, ChatUiDefinition } from '@pragma/module-chat/renderer'
 export {
-  AssistantText,
   ChatHostProvider,
   ChatSessionView,
   ContextMeter,
   createOptionPicker,
-  defaultComposerExtensions,
-  ErrorRow,
-  FileEditDiff,
+  defaultChatUi,
+  documentAttachmentsExtension,
+  fileMentionExtension,
+  imageAttachmentsExtension,
+  McpStatus,
   ModelPicker,
-  PermissionCard,
-  SessionExitNotice,
+  PermissionModePicker,
+  RateLimitBanner,
+  RetryBanner,
   StopButton,
-  ThinkingBlock,
-  TodoList,
-  ToolCallCard,
-  TurnEndNotice,
+  slashCommandsExtension,
   UsageMeter,
-  UserMessage,
 } from '@pragma/module-chat/renderer'

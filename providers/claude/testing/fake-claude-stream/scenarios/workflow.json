@@ -1,0 +1,161 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitToolUse": {
+          "messageId": "msg_wf_0",
+          "id": "toolu_workflow_1",
+          "name": "Workflow",
+          "input": {
+            "name": "spec"
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "wf_spec_1",
+          "tool_use_id": "toolu_workflow_1",
+          "task_type": "local_workflow",
+          "workflow_name": "spec",
+          "description": "Write a spec for the feature",
+          "uuid": "task_started-wf_spec_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_spawn_wf_child_1",
+          "id": "toolu_wf_agent_1",
+          "name": "Agent",
+          "input": {
+            "description": "Draft the spec",
+            "prompt": "List the files"
+          },
+          "parentToolUseId": "toolu_workflow_1"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "wf_child_1",
+          "tool_use_id": "toolu_wf_agent_1",
+          "task_type": "local_agent",
+          "is_backgrounded": false,
+          "spawn_depth": 2,
+          "subagent_type": "Plan",
+          "description": "Draft the spec",
+          "parent_task_id": "wf_spec_1",
+          "uuid": "task_started-wf_child_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_wf_1",
+          "text": "Drafting the spec outline.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_wf_agent_1"
+        }
+      },
+      {
+        "delayMs": 400
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_notification",
+          "task_id": "wf_child_1",
+          "tool_use_id": "toolu_wf_agent_1",
+          "status": "completed",
+          "output_file": "/tmp/fake-task.output",
+          "summary": "Spec outline drafted.",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 3,
+            "duration_ms": 4200
+          },
+          "uuid": "task_notification-wf_child_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_wf_agent_1",
+          "content": "Spec outline drafted.",
+          "parentToolUseId": "toolu_workflow_1"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_notification",
+          "task_id": "wf_spec_1",
+          "tool_use_id": "toolu_workflow_1",
+          "status": "completed",
+          "output_file": "/tmp/fake-task.output",
+          "summary": "The spec is ready in docs/spec.md.",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 3,
+            "duration_ms": 4200
+          },
+          "uuid": "task_notification-wf_spec_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_workflow_1",
+          "content": "The spec is ready in docs/spec.md."
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_wf_2",
+          "text": "The spec workflow finished.",
+          "chunks": 4
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ]
+}

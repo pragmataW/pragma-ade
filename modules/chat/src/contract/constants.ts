@@ -33,6 +33,13 @@ export const CHAT_EVENT_KINDS = [
   'queue',
   'custom',
   'response-resolved',
+  'task',
+  'question',
+  'plan-proposal',
+  'mcp-status',
+  'rate-limit',
+  'retry',
+  'message-ack',
 ] as const
 export const EVENT_KIND = {
   sessionInfo: 'session-info',
@@ -54,6 +61,13 @@ export const EVENT_KIND = {
   queue: 'queue',
   custom: 'custom',
   responseResolved: 'response-resolved',
+  task: 'task',
+  question: 'question',
+  planProposal: 'plan-proposal',
+  mcpStatus: 'mcp-status',
+  rateLimit: 'rate-limit',
+  retry: 'retry',
+  messageAck: 'message-ack',
 } as const satisfies Record<string, (typeof CHAT_EVENT_KINDS)[number]>
 
 export const CHAT_PERMISSION_OPTIONS = ['allow_once', 'allow_always', 'deny'] as const
@@ -90,7 +104,27 @@ export const RESPONSE_OUTCOMES = ['answered', 'cancelled'] as const
 export const RESPONSE_OUTCOME = keyedEnum(RESPONSE_OUTCOMES)
 export const OPTION_TYPES = ['enum', 'boolean', 'number'] as const
 export const OPTION_TYPE = keyedEnum(OPTION_TYPES)
-export const ATTACHMENT_KINDS = ['image'] as const
+export const ATTACHMENT_KINDS = ['image', 'pdf', 'text'] as const
+export const ATTACHMENT_KIND = keyedEnum(ATTACHMENT_KINDS)
+
+/** Subagents (`subagent`), workflow runs (`workflow`) and detached jobs (`background`) shown as task cards. */
+export const CHAT_TASK_KINDS = ['subagent', 'workflow', 'background'] as const
+export const TASK_KIND = keyedEnum(CHAT_TASK_KINDS)
+export const CHAT_TASK_STATUSES = ['pending', 'running', 'completed', 'failed', 'killed', 'paused'] as const
+export const TASK_STATUS = keyedEnum(CHAT_TASK_STATUSES)
+export const MCP_SERVER_STATUSES = ['connected', 'pending', 'failed', 'needs-auth', 'disabled'] as const
+export const MCP_STATUS = keyedEnum(MCP_SERVER_STATUSES)
+/** `cleared` drops the banner. */
+export const RATE_LIMIT_STATUSES = ['warning', 'rejected', 'cleared'] as const
+export const RATE_LIMIT_STATUS = keyedEnum(RATE_LIMIT_STATUSES)
+/** Colour of an option choice (mode badges): the kit maps each to ui-notes tokens. */
+export const CHAT_TONES = ['neutral', 'info', 'ok', 'warn', 'err', 'accent'] as const
+export const CHAT_TONE = keyedEnum(CHAT_TONES)
+/** Optional session actions (`chat.action`); a live session lists the ones its handle implements. */
+export const CHAT_SESSION_ACTIONS = ['toggleMcp', 'reconnectMcp', 'refreshMcp', 'rewind', 'stopTask', 'fork'] as const
+export const SESSION_ACTION = keyedEnum(CHAT_SESSION_ACTIONS)
+/** The discriminator of session actions. */
+export const ACTION_KEY = 'action'
 
 /** Limits applied by adapters and the kit (RF5). */
 export const MAX_TOOL_OUTPUT_CHARS = 32_768
@@ -98,6 +132,17 @@ export const MAX_DIFF_CHARS = 400_000
 /** 5 MB */
 export const MAX_IMAGE_BYTES = 5_242_880
 export const IMAGE_MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
+export const PDF_MEDIA_TYPE = 'application/pdf'
+/** Documents a provider may accept (`ChatCapability.attachmentKinds` includes `pdf` / `text`). */
+export const DOCUMENT_MEDIA_TYPES = [
+  PDF_MEDIA_TYPE,
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+  'application/json',
+] as const
+/** 10 MB */
+export const MAX_DOCUMENT_BYTES = 10_485_760
 export const TRUNCATION_MARKER = '\n… [output truncated]'
 /** `<provider-id>.<name>` */
 export const CUSTOM_EVENT_TYPE_RE = /^[a-z0-9-]+\.[a-z0-9_.-]+$/
@@ -115,6 +160,7 @@ export const CHAT_IPC = {
   interrupt: 'chat.interrupt',
   respondPermission: 'chat.respondPermission',
   respond: 'chat.respond',
+  action: 'chat.action',
   setOption: 'chat.setOption',
   searchFiles: 'chat.searchFiles',
   checkSupport: 'chat.checkSupport',
@@ -145,3 +191,4 @@ export const RESUME_REASON = {
   failed: 'chat:resume.failed',
 } as const
 export const RESPOND_UNSUPPORTED_KEY = 'chat:errors.respondUnsupported'
+export const ACTION_UNSUPPORTED_KEY = 'chat:errors.actionUnsupported'

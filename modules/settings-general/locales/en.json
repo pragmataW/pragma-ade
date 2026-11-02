@@ -1,11 +1,12 @@
 {
-  "module": { "name": "General settings" },
+  "module": {
+    "name": "General settings"
+  },
   "pages": {
     "general": "General",
     "appearance": "Appearance",
     "shortcuts": "Keyboard shortcuts",
-    "modules": "Modules",
-    "beta": "Beta"
+    "modules": "Modules"
   },
   "general": {
     "language": "Language",
@@ -13,21 +14,43 @@
   },
   "appearance": {
     "mode": "Mode",
-    "modes": { "dark": "Dark", "light": "Light", "system": "System" },
+    "modes": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System"
+    },
     "palette": "Palette",
-    "palettes": { "vscode": "VS Code", "dark-brown": "Dark Brown", "amber": "Amber", "indigo": "Indigo" },
+    "palettes": {
+      "vscode": "VS Code",
+      "dark-brown": "Dark Brown",
+      "amber": "Amber",
+      "indigo": "Indigo"
+    },
     "selected": "Selected",
     "density": "Density",
-    "densities": { "compact": "Compact", "comfortable": "Comfortable" }
+    "densities": {
+      "compact": "Compact",
+      "comfortable": "Comfortable"
+    }
   },
   "shortcuts": {
     "empty": "No shortcuts registered",
-    "scope": { "app": "App", "global": "Global" }
+    "scope": {
+      "app": "App",
+      "global": "Global"
+    }
   },
   "modules": {
-    "kind": { "feature": "Module", "provider": "Provider" },
+    "kind": {
+      "feature": "Module",
+      "provider": "Provider"
+    },
     "core": "Core",
-    "state": { "active": "Active", "disabled": "Disabled", "failed": "Failed" },
+    "state": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "failed": "Failed"
+    },
     "reason": {
       "user": "Disabled by you",
       "missing-dependency": "Missing dependency",
@@ -42,16 +65,8 @@
     "affected": "Affected: {{list}}",
     "restart": "Restart"
   },
-  "quickTheme": { "toDark": "Switch to dark theme", "toLight": "Switch to light theme" },
-  "beta": {
-    "intro": "Features that are still being built. Switch one off and it is gone everywhere after a restart; switch it back on any time.",
-    "badge": "Beta",
-    "empty": "No beta features right now.",
-    "features": {
-      "chatMode": {
-        "title": "Agent chat mode",
-        "description": "Run agents in a chat view as well as the terminal, and move a session between the two. Turned off: the Chat option disappears from New agent, along with the chat view and its settings; agents run in the terminal."
-      }
-    }
+  "quickTheme": {
+    "toDark": "Switch to dark theme",
+    "toLight": "Switch to light theme"
   }
 }

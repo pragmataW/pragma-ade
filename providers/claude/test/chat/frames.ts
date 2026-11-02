@@ -1,5 +1,12 @@
 /** SDK frames shaped exactly like `fake-claude`'s output (stream events, one block per assistant frame). */
+import { createSdkMessageMapper, type MapperFrame } from '../../src/main/chat/mapper'
 import { FAKE_EDIT_INPUT, FAKE_EDIT_TOOL_ID } from '../../testing/fake-claude-stream/scenario'
+
+/** Every event one fresh mapper yields for `frames`. */
+export const mapAll = (frames: unknown[], opts?: Parameters<typeof createSdkMessageMapper>[0]) => {
+  const m = createSdkMessageMapper(opts)
+  return frames.flatMap((f) => m.map(f as MapperFrame))
+}
 
 const SESSION = 'sess-1'
 const meta = (uuid: string) => ({ parent_tool_use_id: null, uuid, session_id: SESSION })
@@ -69,4 +76,50 @@ export const compactBoundary = () => ({
   subtype: 'compact_boundary',
   compact_metadata: { trigger: 'auto', pre_tokens: 48_000 },
   ...meta('c'),
+})
+
+/** A subagent's frames carry the spawning tool call id. */
+export const inSubagent = <T extends Record<string, unknown>>(frame: T, parent = 'toolu_agent_1') => ({
+  ...frame,
+  parent_tool_use_id: parent,
+})
+export const system = (subtype: string, fields: Record<string, unknown> = {}) => ({
+  type: 'system',
+  subtype,
+  ...meta(`sys-${subtype}`),
+  ...fields,
+})
+export const taskStarted = (fields: Record<string, unknown> = {}) =>
+  system('task_started', {
+    task_id: 'task-1',
+    tool_use_id: 'toolu_agent_1',
+    description: 'List files',
+    subagent_type: 'general-purpose',
+    task_type: 'local_agent',
+    is_backgrounded: false,
+    spawn_depth: 1,
+    ...fields,
+  })
+export const taskProgress = (fields: Record<string, unknown> = {}) =>
+  system('task_progress', {
+    task_id: 'task-1',
+    description: 'Running ls',
+    usage: { total_tokens: 1200, tool_uses: 2, duration_ms: 900 },
+    last_tool_name: 'Bash',
+    ...fields,
+  })
+export const taskUpdated = (patch: Record<string, unknown>, taskId = 'task-1') =>
+  system('task_updated', { task_id: taskId, patch })
+export const taskNotification = (fields: Record<string, unknown> = {}) =>
+  system('task_notification', {
+    task_id: 'task-1',
+    status: 'completed',
+    output_file: '/tmp/o',
+    summary: 'Two',
+    ...fields,
+  })
+export const rateLimit = (info: Record<string, unknown>) => ({
+  type: 'rate_limit_event',
+  rate_limit_info: info,
+  ...meta('rl'),
 })

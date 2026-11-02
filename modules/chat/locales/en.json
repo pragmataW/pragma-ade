@@ -25,7 +25,85 @@
   },
   "errors": {
     "unsupported": "Chat mode not supported: {{reason}}",
-    "respondUnsupported": "This agent cannot answer this kind of request"
+    "respondUnsupported": "This agent cannot answer this kind of request",
+    "actionUnsupported": "This agent does not support this action"
+  },
+  "permissionMode": {
+    "hint": "Permission mode (Shift+Tab to cycle)",
+    "cycleHint": "Shift+Tab in the message box cycles modes",
+    "confirmTitle": "Switch to {{mode}}?",
+    "confirmMessage": "In {{mode}} the agent can run tools and change files without asking. Only use it in a worktree you trust.",
+    "confirm": "Switch mode"
+  },
+  "task": {
+    "status": {
+      "pending": "Queued",
+      "running": "Running",
+      "completed": "Done",
+      "failed": "Failed",
+      "killed": "Stopped",
+      "paused": "Paused"
+    },
+    "kind": {
+      "workflow": "Workflow"
+    },
+    "stop": "Stop {{name}}",
+    "lastTool": "Last: {{tool}}",
+    "tokens": "{{tokens}} tokens",
+    "empty": "No output yet",
+    "tree": "Tasks"
+  },
+  "question": {
+    "title": "The agent has a question",
+    "titleMany": "The agent has {{count}} questions",
+    "multi": "Select all that apply",
+    "other": "Other",
+    "otherPlaceholder": "Other answer…",
+    "submit": "Submit answers"
+  },
+  "plan": {
+    "title": "Plan ready for review",
+    "approve": "Approve plan",
+    "continueIn": "Continue in",
+    "keepPlanning": "Keep planning",
+    "feedbackLabel": "Feedback for the agent",
+    "feedbackPlaceholder": "What should change in the plan?",
+    "sendFeedback": "Send feedback",
+    "cancel": "Cancel"
+  },
+  "prompt": {
+    "outcome": {
+      "answered": "Answered",
+      "cancelled": "Cancelled"
+    }
+  },
+  "mcp": {
+    "title": "MCP servers",
+    "label_one": "{{count}} MCP server",
+    "label_other": "{{count}} MCP servers",
+    "tools_one": "{{count}} tool",
+    "tools_other": "{{count}} tools",
+    "status": {
+      "connected": "Connected",
+      "pending": "Connecting…",
+      "failed": "Failed",
+      "needs-auth": "Needs sign-in",
+      "disabled": "Disabled"
+    },
+    "toggle": "Enable {{name}}",
+    "reconnect": "Reconnect {{name}}",
+    "refresh": "Refresh",
+    "empty": "No MCP servers configured"
+  },
+  "rateLimit": {
+    "warning": "Approaching the usage limit ({{percent}}%)",
+    "rejected": "Usage limit reached",
+    "resets": "resets at {{time}}"
+  },
+  "retry": {
+    "attempt": "Retrying (attempt {{attempt}})",
+    "attemptOf": "Retrying ({{attempt}}/{{max}})",
+    "in": "next try in {{seconds}}s"
   },
   "settings": {
     "title": "Chat",
@@ -48,6 +126,8 @@
       "error": "Failed"
     },
     "truncated": "Output truncated",
+    "showInput": "Show input",
+    "hideInput": "Hide input",
     "results": "{{count}} results"
   },
   "copy": {
@@ -99,6 +179,9 @@
     "attachImage": "Attach image",
     "removeImage": "Remove image",
     "imageTooLarge": "Image is larger than 5 MB",
+    "attachFile": "Attach PDF or text file",
+    "removeFile": "Remove {{name}}",
+    "documentTooLarge": "Only PDF and text files up to 10 MB can be attached",
     "commentsChip_one": "{{count}} review comment",
     "commentsChip_other": "{{count}} review comments",
     "removeChip": "Remove review comments"
@@ -118,5 +201,8 @@
   "resume": {
     "notFound": "Could not continue the previous conversation: the agent has no record of it",
     "failed": "Could not continue the previous conversation"
+  },
+  "message": {
+    "midTurn": "Sent while working · the agent reads it next"
   }
 }

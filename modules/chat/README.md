@@ -39,6 +39,16 @@ Core kinds (§5.4) `message`, `text-delta`, `thinking`, `tool-call`, `tool-resul
 (interactive ones are answered through `ChatSessionHandle.respond`). Core parts ignore unknown custom types. The pure
 reducer (`transcript.ts`) is idempotent by `seq` (snapshot + live tail = full replay).
 
+Agent features (all optional, 2026-11): `parentId` on transcript events nests subagent output under the spawning tool
+call id or a task id (`transcript.children`, `childItems`); `task` (subagent / workflow / background, upserted by
+`taskId`); `question` and `plan-proposal` (interactions answered with `respond(eventId, ChatQuestionResponse |
+ChatPlanResponse)`, closed by `response-resolved{summary?}`); `mcp-status` (`transcript.mcpServers`); `rate-limit`
+and `retry` (`transcript.rateLimit` / `retry`, shown by the banners). Optional handle methods `listMcp`, `toggleMcp`,
+`reconnectMcp`, `rewind`, `stopTask`, `fork` are reached through `chat.action` (`ChatSessionApi.action`); the core
+lists the implemented ones in `transcript.info.actions` so the kit shows a control only when it works. Option choices
+may carry `tone`, `description(Key)`, `dangerous`, `requiresConfirm` and `cycle: false` (permission modes).
+`ChatCapability.attachmentKinds` (default `['image']`) admits `pdf` / `text` documents (`ChatUserInput.files`).
+
 ## Implementing a provider (11b)
 
 1. `providers/<id>/src/main/chat.capability.ts`:
@@ -68,7 +78,10 @@ Kit (named exports of `@pragma/module-chat/renderer`): `MessageList`, `UserMessa
 `TurnEndNotice`, `SessionExitNotice`, `WorkingLine`, `AssistantTurnHeader`, `Composer`, `ComposerAttachments`,
 `SlashCommandMenu`, `FileMention`, `QueueChips`, the three extensions + `defaultComposerExtensions`, `OptionPicker`,
 `createOptionPicker`, `ModelPicker`, `StopButton`, `UsageMeter`, `ContextMeter`, `useCustomResponse`,
-`ChatHostProvider`, `ChatSessionView`, `defaultChatUi`. Parts never touch the SDK: they use the `ChatHost` interface
+`ChatHostProvider`, `ChatSessionView`, `defaultChatUi`; agent features: `TaskCard` (part `task`), `TaskTree`
+(slot), `QuestionCard` (part `question`), `PlanApprovalCard` (part `plan-proposal`), `PermissionModePicker`
+(toolbar; Shift+Tab in the composer cycles modes), `McpStatus` (header), `RateLimitBanner` / `RetryBanner`
+(`banners`), `documentAttachmentsExtension` (list it before the image extension), `ChildTranscript`. Parts never touch the SDK: they use the `ChatHost` interface
 (`src/contract/ui.ts`), built by `src/renderer/host-adapter.tsx` (the only renderer file touching SDK/03/04 shapes)
 and stubbed in tests (`@pragma/module-chat/testing`: `stubChatHost`, `stubSessionApi`, `chatTestI18n`,
 `installJsdomLayout`, `createFakeChatCapability`).

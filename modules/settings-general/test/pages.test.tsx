@@ -43,14 +43,13 @@ async function renderPage(id: string) {
 const stored = () => r?.main.host.settings.get<GeneralSettings>(SETTINGS_GENERAL_ID)
 
 describe('settings-general pages', () => {
-  it('registers five pages in the fixed order, Beta last', async () => {
+  it('registers four pages in the fixed order (no Beta page: chat is out of beta)', async () => {
     const { host } = await renderPage(SETTINGS_GENERAL_PAGES.general)
     expect(host.registries.store.getState().settingsPages.map((p) => [p.id, p.order])).toEqual([
       ['general', 10],
       ['appearance', 20],
       ['modules', 30],
       ['shortcuts', 40],
-      ['beta', 9000],
     ])
     expect(screen.getByTestId(TEST_IDS.languageSelect)).toHaveTextContent('English')
   })
@@ -109,12 +108,5 @@ describe('settings-general pages', () => {
     expect(await screen.findByTestId(TEST_IDS.restart)).toBeInTheDocument()
     expect(claude).toHaveAttribute('aria-checked', 'false')
     expect(r?.main.host.settings.get<{ modules: { disabled: string[] } }>('core').modules.disabled).toEqual(['claude'])
-  })
-
-  it('the Beta page lists only features whose module is installed', async () => {
-    await renderPage(SETTINGS_GENERAL_PAGES.beta)
-    // This host has no chat module, so agent chat mode is not offered.
-    expect(await screen.findByTestId(TEST_IDS.betaEmpty)).toBeInTheDocument()
-    expect(screen.queryByTestId(TEST_IDS.betaFeature('chatMode'))).toBeNull()
   })
 })

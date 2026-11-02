@@ -4,6 +4,8 @@ import {
   type ChatPartKey,
   CUSTOM_PART_PREFIX,
   EVENT_KIND,
+  parentOf,
+  TOOL_KIND,
   type ToolCallItem,
 } from '../../../contract'
 
@@ -29,8 +31,32 @@ export function buildRows(
   opts: { groupToolCalls: boolean; turnHeader: boolean },
 ): ChatRow[] {
   const b = new RowBuilder(opts)
-  for (const item of items) if (parts[partKeyOf(item)]) b.add(item)
+  const nested = nesting(items, Boolean(parts[EVENT_KIND.task]))
+  for (const item of items) if (parts[partKeyOf(item)] && !nested(item)) b.add(item)
   return b.rows
+}
+
+/**
+ * Which items render inside a task card instead of this list: items whose parent (a task or a `task`-kind tool
+ * call) is in `items`, and the tool call a rendered task card replaces. Orphans stay in the list.
+ */
+function nesting(items: readonly ChatItem[], taskCards: boolean): (item: ChatItem) => boolean {
+  const owners = new Set<string>()
+  const replaced = new Set<string>()
+  for (const i of items) {
+    if (i.kind === EVENT_KIND.toolCall && i.toolKind === TOOL_KIND.task) owners.add(i.id)
+    if (i.kind !== EVENT_KIND.task || !taskCards) continue
+    owners.add(i.id)
+    if (i.toolCallId) {
+      owners.add(i.toolCallId)
+      replaced.add(i.toolCallId)
+    }
+  }
+  return (item) => {
+    const parent = parentOf(item)
+    if (parent && owners.has(parent)) return true
+    return item.kind === EVENT_KIND.toolCall && replaced.has(item.id)
+  }
 }
 
 class RowBuilder {

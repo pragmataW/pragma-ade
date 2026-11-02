@@ -1,14 +1,32 @@
 {
   "chat": {
     "option": {
-      "defaultModel": "Default"
+      "defaultModel": "Default",
+      "fastMode": "Fast mode",
+      "fastModeHint": "Faster output on this model, at a higher usage cost"
+    },
+    "effort": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Max"
     },
     "permissionMode": {
-      "default": "Ask",
+      "default": "Ask permissions",
       "acceptEdits": "Accept edits",
-      "plan": "Plan",
+      "plan": "Plan mode",
       "auto": "Auto",
-      "bypassPermissions": "Skip permissions"
+      "dontAsk": "Don't ask",
+      "bypassPermissions": "Bypass permissions"
+    },
+    "permissionModeHint": {
+      "default": "Ask before editing files or running commands",
+      "acceptEdits": "Edit files without asking; ask before commands",
+      "plan": "Read and plan only; nothing is changed until you approve",
+      "auto": "A safety check approves routine actions and asks about risky ones",
+      "dontAsk": "Never ask; anything not already allowed is denied",
+      "bypassPermissions": "Run every tool without asking. Use only in an isolated environment"
     }
   }
 }

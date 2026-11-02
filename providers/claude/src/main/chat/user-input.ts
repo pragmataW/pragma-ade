@@ -2,8 +2,8 @@
 // Derived from orca src/main/claude/claude-agent-sdk-user-message-queue.ts.
 // Modified for Pragma ADE: simplified (no per-frame write confirmation or dispatch hooks); `push` is fire-and-forget.
 import type { SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
-import type { ChatUserInput } from '@pragma/module-chat/contract'
-import { BLOCK, FRAME } from './constants'
+import { type ChatFile, type ChatUserInput, PDF_MEDIA_TYPE } from '@pragma/module-chat/contract'
+import { BLOCK, FRAME, TEXT_PLAIN } from './constants'
 
 export interface UserInputQueue {
   /** The SDK's streaming-input prompt; stays open until `end`/`fail`. */
@@ -56,18 +56,30 @@ export function createUserInputQueue(): UserInputQueue {
 }
 
 const BASE64 = 'base64'
+const UTF8 = 'utf8'
 
-/** A user turn: one text block plus one base64 image block per image. */
-export function toSdkUserMessage(input: ChatUserInput, sessionId: string): SDKUserMessage {
+/** A PDF as a base64 document; any text kind as a plain-text document (the API's text source). */
+function documentBlock(f: ChatFile) {
+  const source =
+    f.mediaType === PDF_MEDIA_TYPE
+      ? { type: BASE64, media_type: f.mediaType, data: f.dataBase64 }
+      : { type: BLOCK.text, media_type: TEXT_PLAIN, data: Buffer.from(f.dataBase64, BASE64).toString(UTF8) }
+  return { type: BLOCK.document, source, title: f.name }
+}
+
+/** A user turn: one text block, one base64 image block per image, one document block per file. */
+export function toSdkUserMessage(input: ChatUserInput, sessionId: string, uuid?: string): SDKUserMessage {
   const images = input.images.map((i) => ({
     type: BLOCK.image,
     source: { type: BASE64, media_type: i.mediaType, data: i.dataBase64 },
   }))
-  const content = [...(input.text ? [{ type: BLOCK.text, text: input.text }] : []), ...images]
+  const documents = (input.files ?? []).map(documentBlock)
+  const content = [...(input.text ? [{ type: BLOCK.text, text: input.text }] : []), ...images, ...documents]
   return {
     type: FRAME.user,
     message: { role: FRAME.user, content },
     parent_tool_use_id: null,
     session_id: sessionId,
+    ...(uuid ? { uuid } : {}),
   } as SDKUserMessage
 }

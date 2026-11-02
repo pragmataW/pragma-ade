@@ -1,6 +1,7 @@
 import { agentSessionStatuses } from '@pragma/module-agents/contract'
 import { defineIpc, defineIpcEvent, z } from '@pragma/sdk'
-import { chatImageSchema } from './capability'
+import { chatSessionActionSchema } from './actions'
+import { chatFileSchema, chatImageSchema } from './capability'
 import { CHAT_IPC as C, COMPOSER_ENTRY_KIND, CHAT_IPC_EVENTS as E, FILE_SEARCH_LIMIT, KIND_KEY } from './constants'
 import { chatEventEnvelopeSchema, chatPermissionOptionSchema } from './events'
 import { chatOptionValueSchema } from './options'
@@ -47,7 +48,12 @@ export const chatIpc = {
   open: defineIpc({ channel: C.open, input: sessionRef, output: chatSnapshotSchema }),
   send: defineIpc({
     channel: C.send,
-    input: z.object({ ...session, text: z.string(), images: z.array(chatImageSchema) }),
+    input: z.object({
+      ...session,
+      text: z.string(),
+      images: z.array(chatImageSchema),
+      files: z.array(chatFileSchema).optional(),
+    }),
     output: z.object({ queued: z.boolean() }),
   }),
   cancelQueued: defineIpc({
@@ -64,6 +70,12 @@ export const chatIpc = {
   respond: defineIpc({
     channel: C.respond,
     input: z.object({ ...session, eventId: z.string(), payload: z.unknown() }),
+    output: none,
+  }),
+  /** An optional session action; rejects when the live handle does not implement it. */
+  action: defineIpc({
+    channel: C.action,
+    input: z.object({ ...session, action: chatSessionActionSchema }),
     output: none,
   }),
   setOption: defineIpc({

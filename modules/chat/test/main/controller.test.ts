@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { type ChatEvent, ChatStartupError, emptyTranscript, reduceTranscript } from '../../src/contract'
 import { ChatSessionController } from '../../src/main/controller'
-import { FAKE_OPTIONS } from '../../testing'
+import { FAKE_OPTIONS, makeTranscript } from '../../testing'
 import { flush, harness } from './harness'
 
 const input = (text: string) => ({ text, images: [] })
@@ -21,9 +21,31 @@ describe('ChatSessionController', () => {
     const c = await h.attached()
     expect(await c.send(input('hi'))).toEqual({ queued: false })
     expect(h.kinds().slice(-2)).toEqual(['message', 'turn-start'])
-    expect(h.fake.lastSession().sent).toEqual([input('hi')])
+    expect(h.fake.lastSession().sent).toMatchObject([input('hi')])
     h.fake.lastSession().finishTurn()
     expect(h.statuses()).toEqual(['idle', 'working', 'idle'])
+  })
+
+  it('midTurnInput: a send during a turn goes straight to the provider, marked midTurn, without a new turn', async () => {
+    const h = harness({ midTurnInput: true })
+    const c = await h.attached()
+    await c.send(input('one'))
+    expect(await c.send(input('two'))).toEqual({ queued: false })
+    expect(h.fake.lastSession().sent.map((s) => s.text)).toEqual(['one', 'two'])
+    expect(h.kinds().filter((k) => k === 'turn-start')).toHaveLength(1)
+    const [first, second] = c.snapshot().transcript.items.filter((i) => i.kind === 'message')
+    expect(first).not.toHaveProperty('midTurn')
+    expect(second).toMatchObject({ text: 'two', midTurn: true })
+    expect(h.fake.lastSession().sent[1]?.messageId).toBe(second?.id)
+    expect(c.snapshot().transcript.queue).toEqual([])
+  })
+
+  it('message-ack clears the mid-turn marker', () => {
+    const t = makeTranscript([
+      { kind: 'message', messageId: 'm', role: 'user', text: 'x', attachments: [], origin: 'live', midTurn: true },
+      { kind: 'message-ack', messageId: 'm' },
+    ])
+    expect(t.items[0]).not.toHaveProperty('midTurn')
   })
 
   it('sends during a turn queue FIFO and dispatch after each turn-end', async () => {
@@ -228,13 +250,13 @@ describe('ChatSessionController', () => {
     ])
     await c.attach(h.request({ resume: { externalSessionId: 'fake-ext-1' } }))
     expect(h.fake.lastSession().createdWith.resumeExternalSessionId).toBe('fake-ext-1')
-    expect(h.fake.lastSession().sent).toEqual([input('again')])
+    expect(h.fake.lastSession().sent).toMatchObject([input('again')])
   })
 
   it('initial prompt is dispatched after the handshake', async () => {
     const h = harness()
     await h.attached({ initialPrompt: 'start here' })
-    expect(h.fake.lastSession().sent).toEqual([input('start here')])
+    expect(h.fake.lastSession().sent).toMatchObject([input('start here')])
   })
 
   it('close: handle closed, queue cleared, status exited', async () => {

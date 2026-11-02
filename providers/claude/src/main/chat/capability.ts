@@ -1,4 +1,4 @@
-import { type ChatCapability, EVENT_KIND } from '@pragma/module-chat/contract'
+import { ATTACHMENT_KINDS, type ChatCapability, EVENT_KIND } from '@pragma/module-chat/contract'
 import type { CapabilityContext } from '@pragma/sdk'
 import { loadClaudeHistory } from './history'
 import { ClaudeChatSession, type ClaudeSessionDeps } from './session'
@@ -11,6 +11,10 @@ export function createClaudeChatCapability(
 ): ChatCapability {
   const live = new Set<ClaudeChatSession>()
   return {
+    // images, PDFs and text files become image / document blocks of the user turn
+    attachmentKinds: ATTACHMENT_KINDS,
+    // messages sent mid-turn go straight to the CLI, which folds them into the running turn itself
+    midTurnInput: true,
     checkSupport: (profile) => checkClaudeSupport(profile, (cmd) => capCtx.resolveCommand(cmd)),
     async createSession(ctx) {
       let session: ClaudeChatSession | undefined

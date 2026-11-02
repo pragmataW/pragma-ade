@@ -19,6 +19,7 @@ const KINDS: Record<string, ChatToolKind> = {
   [T.webSearch]: TOOL_KIND.web,
   [T.task]: TOOL_KIND.task,
   [T.agent]: TOOL_KIND.task,
+  [T.workflow]: TOOL_KIND.task,
   [T.todoWrite]: TOOL_KIND.todo,
 }
 

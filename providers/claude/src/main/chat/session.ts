@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   type CanUseTool,
+  type PermissionMode,
   type PermissionResult,
   type PermissionUpdate,
   type Query,
@@ -10,6 +11,7 @@ import {
 import {
   CHAT_OPTION_KEYS,
   type ChatEvent,
+  type ChatMcpServer,
   type ChatOptionDescriptor,
   type ChatOptionValue,
   type ChatPermissionDecision,
@@ -22,6 +24,7 @@ import {
   EVENT_KIND as K,
   PERMISSION_OPTION,
   PERMISSION_OUTCOME,
+  RESPONSE_OUTCOME,
   RESUME_REASON,
   SESSION_EXIT_REASON,
   type SESSION_EXIT_REASONS,
@@ -33,14 +36,26 @@ import type { Logger } from '@pragma/sdk'
 import {
   ABORT_EVENT,
   BEHAVIOR,
+  CLAUDE_TOOLS,
   DENY_MESSAGE,
   ENOENT,
+  FAST_MODE_OPTION,
   NO_CONVERSATION_RE,
   PERMISSION_CANCELLED_MESSAGE,
+  REWIND_FAILED,
   SDK_SETTING_EFFORT,
+  SDK_SETTING_FAST_MODE,
 } from './constants'
 import { createSdkMessageMapper, type SdkMessageMapper } from './mapper'
-import { buildQueryOptions, type ClaudeOptionState, describeClaudeOptions, initialOptionState } from './options'
+import { toMcpServer } from './notices'
+import {
+  buildQueryOptions,
+  type ClaudeOptionState,
+  describeClaudeOptions,
+  initialOptionState,
+  planModes,
+} from './options'
+import { answerPlan, answerQuestion, PROMPT_TOOLS, type PromptOutcome, promptEvent } from './prompts'
 import { type ClaudeProcessSpawn, createClaudeProcessSpawn, type SpawnDeps } from './spawn'
 import { toolKindFor, toolTitleFor } from './tool-kinds'
 import { createUserInputQueue, toSdkUserMessage, type UserInputQueue } from './user-input'
@@ -59,11 +74,20 @@ interface PendingPermission {
   suggestions?: PermissionUpdate[]
 }
 
+/** An `AskUserQuestion` / `ExitPlanMode` call waiting for its card's `respond`. */
+interface PendingPrompt {
+  resolve(result: PermissionResult): void
+  answer(payload: unknown): PromptOutcome
+}
+
+export class UnknownPromptError extends Error {}
+
 type ExitReason = (typeof SESSION_EXIT_REASONS)[number]
 const TIMEOUT = Symbol('timeout')
 /** After a rejected handshake, how long to wait for the exit status before classifying the failure. */
 const EXIT_SETTLE_MS = 500
 
+const asText = (v: ChatOptionValue): string | null => (typeof v === 'string' ? v : null)
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms).unref())
 const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
@@ -100,10 +124,12 @@ export class ClaudeChatSession implements ChatSessionHandle {
   readonly #abort = new AbortController()
   readonly #mapper: SdkMessageMapper = createSdkMessageMapper()
   readonly #pending = new Map<string, PendingPermission>()
+  readonly #prompts = new Map<string, PendingPrompt>()
   readonly #q: Query
   #state: ClaudeOptionState
   #init: Pick<SDKControlInitializeResponse, 'models' | 'commands'> = { models: [], commands: [] }
   #turnActive = false
+  #mcpShown = false
   #closing = false
   #ended = false
 
@@ -175,6 +201,8 @@ export class ClaudeChatSession implements ChatSessionHandle {
     }))
     this.#ctx.emit({ kind: K.sessionInfo, externalSessionId: this.externalSessionId, commands })
     this.#emitOptions()
+    if (this.#state.fastMode) void this.#flags({ [SDK_SETTING_FAST_MODE]: true }).catch(() => undefined)
+    void this.#refreshMcp()
     void this.#pump()
   }
 
@@ -189,7 +217,10 @@ export class ClaudeChatSession implements ChatSessionHandle {
 
   #emit(e: ChatEvent): void {
     if (e.kind === K.turnEnd) this.#turnActive = false
+    if (e.kind === K.turnStart) this.#turnActive = true
     this.#ctx.emit(e)
+    // `system/init` lists names and states only: follow it with the detailed list
+    if (e.kind === K.mcpStatus) void this.#refreshMcp()
   }
 
   async #crash(error: unknown): Promise<void> {
@@ -225,6 +256,7 @@ export class ClaudeChatSession implements ChatSessionHandle {
   readonly #canUseTool: CanUseTool = (toolName, input, o) =>
     new Promise((resolve) => {
       const requestId = o.requestId ?? o.toolUseID
+      if (PROMPT_TOOLS.has(toolName)) return this.#prompt(toolName, requestId, input, o.signal, resolve)
       this.#pending.set(requestId, { resolve, input, suggestions: o.suggestions })
       o.signal.addEventListener(ABORT_EVENT, () => this.#resolvePending(requestId, PERMISSION_OUTCOME.cancelled), {
         once: true,
@@ -256,6 +288,47 @@ export class ClaudeChatSession implements ChatSessionHandle {
 
   #cancelPending(): void {
     for (const id of [...this.#pending.keys()]) this.#resolvePending(id, PERMISSION_OUTCOME.cancelled)
+    for (const id of [...this.#prompts.keys()]) this.#cancelPrompt(id)
+  }
+
+  /** A question or plan card; its `respond` resolves the tool call (cancelled on abort, interrupt and close). */
+  #prompt(
+    toolName: string,
+    eventId: string,
+    input: Record<string, unknown>,
+    signal: AbortSignal,
+    resolve: (r: PermissionResult) => void,
+  ): void {
+    const answer = toolName === CLAUDE_TOOLS.askUserQuestion ? answerQuestion : answerPlan
+    this.#prompts.set(eventId, { resolve, answer: (payload) => answer(input, payload) })
+    signal.addEventListener(ABORT_EVENT, () => this.#cancelPrompt(eventId), { once: true })
+    this.#ctx.emit(promptEvent(toolName, eventId, input, planModes(this.describeOptions())))
+  }
+
+  #cancelPrompt(eventId: string): void {
+    const p = this.#prompts.get(eventId)
+    if (!p) return
+    this.#prompts.delete(eventId)
+    p.resolve({ behavior: BEHAVIOR.deny, message: PERMISSION_CANCELLED_MESSAGE })
+    this.#ctx.emit({ kind: K.responseResolved, eventId, outcome: RESPONSE_OUTCOME.cancelled })
+  }
+
+  /** Answers a question / plan card; rejects on an unknown id or an invalid payload (the card stays open). */
+  async respond(eventId: string, payload: unknown): Promise<void> {
+    const p = this.#prompts.get(eventId)
+    if (!p) throw new UnknownPromptError(`no pending prompt ${eventId}`)
+    const outcome = p.answer(payload)
+    this.#prompts.delete(eventId)
+    p.resolve(outcome.result)
+    const summary = outcome.summary ? { summary: outcome.summary } : {}
+    this.#ctx.emit({ kind: K.responseResolved, eventId, outcome: RESPONSE_OUTCOME.answered, ...summary })
+    if (outcome.mode) await this.#applyPermissionMode(outcome.mode)
+  }
+
+  async #applyPermissionMode(mode: PermissionMode): Promise<void> {
+    await this.#q.setPermissionMode(mode)
+    this.#state = { ...this.#state, permissionMode: mode }
+    this.#emitOptions()
   }
 
   describeOptions(): ChatOptionDescriptor[] {
@@ -265,19 +338,60 @@ export class ClaudeChatSession implements ChatSessionHandle {
   async setOption(key: string, value: ChatOptionValue): Promise<void> {
     const d = this.describeOptions().find((o) => o.key === key)
     if (!d || !validateOptionValue(d, value)) throw new InvalidOptionError(`invalid option ${key}=${String(value)}`)
-    const v = typeof value === 'string' ? value : null
-    if (key === CHAT_OPTION_KEYS.model) await this.#q.setModel(v ?? undefined)
-    else if (key === CHAT_OPTION_KEYS.effort)
-      await this.#q.applyFlagSettings({ [SDK_SETTING_EFFORT]: v } as Parameters<Query['applyFlagSettings']>[0])
-    else if (key === CHAT_OPTION_KEYS.permissionMode)
-      await this.#q.setPermissionMode(v as Parameters<Query['setPermissionMode']>[0])
-    this.#state = { ...this.#state, [key]: v }
+    await this.#appliers[key]?.(value)
+    this.#state = { ...this.#state, [key]: key === FAST_MODE_OPTION ? value === true : asText(value) }
     this.#emitOptions()
+  }
+
+  /** How each option reaches the CLI. */
+  readonly #appliers: Record<string, (value: ChatOptionValue) => Promise<void>> = {
+    [CHAT_OPTION_KEYS.model]: (v) => this.#q.setModel(asText(v) ?? undefined),
+    [CHAT_OPTION_KEYS.effort]: (v) => this.#flags({ [SDK_SETTING_EFFORT]: asText(v) }),
+    [CHAT_OPTION_KEYS.permissionMode]: (v) => this.#q.setPermissionMode(asText(v) as PermissionMode),
+    [FAST_MODE_OPTION]: (v) => this.#flags({ [SDK_SETTING_FAST_MODE]: v === true }),
+  }
+
+  #flags(settings: Record<string, unknown>): Promise<void> {
+    return this.#q.applyFlagSettings(settings as Parameters<Query['applyFlagSettings']>[0])
   }
 
   async send(input: ChatUserInput): Promise<void> {
     this.#turnActive = true
-    this.#queue.push(toSdkUserMessage(input, this.externalSessionId))
+    // the core's message id doubles as the SDK uuid: replays ack it and `rewind` finds it
+    const { messageId, ...content } = input
+    this.#queue.push(toSdkUserMessage(content, this.externalSessionId, messageId ?? randomUUID()))
+  }
+
+  // ── MCP ──────────────────────────────────────────────────────────────────────────────────────────────────
+  async listMcp(): Promise<ChatMcpServer[]> {
+    return ((await this.#q.mcpServerStatus()) ?? []).map((s) => toMcpServer(s))
+  }
+
+  async toggleMcp(name: string, enabled: boolean): Promise<void> {
+    await this.#q.toggleMcpServer(name, enabled)
+    await this.#refreshMcp()
+  }
+
+  async reconnectMcp(name: string): Promise<void> {
+    await this.#q.reconnectMcpServer(name)
+    await this.#refreshMcp()
+  }
+
+  /** Emits the detailed server list (tool counts, errors); an empty list only replaces an earlier one. */
+  async #refreshMcp(): Promise<void> {
+    const servers = await this.listMcp().catch((e: unknown) => {
+      this.#log?.warn(`claude chat ${this.#ctx.sessionId}: mcp status failed (${errorMessage(e)})`)
+      return undefined
+    })
+    if (!servers || (servers.length === 0 && !this.#mcpShown)) return
+    this.#mcpShown = true
+    this.#ctx.emit({ kind: K.mcpStatus, servers })
+  }
+
+  /** Restores the files to before the user message `messageId` (an SDK message uuid; file checkpointing is on). */
+  async rewind(messageId: string): Promise<void> {
+    const r = await this.#q.rewindFiles(messageId)
+    if (!r.canRewind) throw new Error(r.error ?? REWIND_FAILED)
   }
 
   async interrupt(): Promise<void> {
@@ -285,6 +399,11 @@ export class ClaudeChatSession implements ChatSessionHandle {
     if (!this.#turnActive || this.#ended) return
     this.#mapper.markInterruptRequested()
     await this.#q.interrupt()
+  }
+
+  /** Stops a subagent, workflow or background job (`task_notification` stopped follows). */
+  async stopTask(taskId: string): Promise<void> {
+    await this.#q.stopTask(taskId)
   }
 
   async respondPermission(requestId: string, decision: ChatPermissionDecision): Promise<void> {

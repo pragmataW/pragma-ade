@@ -100,7 +100,9 @@ export function stubChatHost(over: Partial<ChatHost> & { files?: string[] } = {}
     cancelQueued: record('cancelQueued', undefined),
     respondPermission: record('respondPermission', undefined),
     respond: record('respond', undefined),
+    action: record('action', undefined),
     setOption: record('setOption', undefined),
+    confirm: record('confirm', true),
     async searchFiles(sessionId, query) {
       calls.push({ method: 'searchFiles', args: [sessionId, query] })
       return (over.files ?? []).filter((f) => f.includes(query))
@@ -163,6 +165,7 @@ export function stubSessionApi(
     respondPermission: rec('respondPermission', undefined),
     respond: rec('respond', undefined),
     setOption: rec('setOption', undefined),
+    action: rec('action', undefined),
     async searchFiles(query) {
       calls.push({ method: 'searchFiles', args: [query] })
       return (over.files ?? []).filter((f) => f.includes(query))

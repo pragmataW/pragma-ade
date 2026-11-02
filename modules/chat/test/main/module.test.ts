@@ -55,7 +55,7 @@ describe('chat main module', () => {
     const s = setup()
     await s.start()
     expect(await s.ipc.invoke(chatIpc.send, { sessionId: 's1', text: 'hi', images: [] })).toEqual({ queued: false })
-    expect(s.fake.lastSession().sent).toEqual([{ text: 'hi', images: [] }])
+    expect(s.fake.lastSession().sent).toMatchObject([{ text: 'hi', images: [] }])
   })
 
   it('chat.respond routes to controller', async () => {

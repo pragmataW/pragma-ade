@@ -1,0 +1,77 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitText": {
+          "messageId": "msg_basic_1",
+          "text": "Hello from fake Claude! Streaming works.",
+          "chunks": 6,
+          "chunkDelayMs": 250
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ],
+  "mcpServers": [
+    {
+      "name": "github",
+      "status": "connected",
+      "scope": "user",
+      "tools": [
+        {
+          "name": "search"
+        },
+        {
+          "name": "issue"
+        }
+      ]
+    },
+    {
+      "name": "linear",
+      "status": "needs-auth",
+      "scope": "project"
+    },
+    {
+      "name": "postgres",
+      "status": "failed",
+      "scope": "local",
+      "error": "spawn pg-mcp ENOENT"
+    }
+  ]
+}

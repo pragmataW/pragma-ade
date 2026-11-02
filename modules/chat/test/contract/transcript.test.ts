@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   type ChatEvent,
   type ChatTranscript,
+  childItems,
   emptyTranscript,
+  itemKey,
   reduceEvents,
   reduceTranscript,
   type ToolCallItem,
+  taskOfToolCall,
 } from '../../src/contract'
 import { makeEnvelope, makeEnvelopes, makeTranscript } from '../../testing'
 import { EVENT_SAMPLES as E } from './samples'
@@ -151,5 +154,115 @@ describe('reduceTranscript', () => {
 
   it('reduceEvents replays history with seq 1..n', () => {
     expect(reduceEvents([E.message, text('x', 'snapshot')]).lastSeq).toBe(2)
+  })
+})
+
+const part = (partId: string, t: string, mode: 'delta' | 'snapshot', parentId?: string): ChatEvent => ({
+  kind: 'text-delta',
+  messageId: 'a1',
+  partId,
+  text: t,
+  mode,
+  ...(parentId ? { parentId } : {}),
+})
+const nested = (parentId: string, partId: string): ChatEvent => part(partId, 'sub', 'snapshot', parentId)
+const task = (patch: Partial<Extract<ChatEvent, { kind: 'task' }>> = {}): ChatEvent =>
+  ({ ...E.task, ...patch }) as ChatEvent
+
+describe('reduceTranscript: subagent tree', () => {
+  it('indexes items by parentId in arrival order; childItems merges a task id and its tool call id', () => {
+    const t = makeTranscript([
+      tool('running', { title: 'Task' }),
+      task(),
+      nested('tc1', 'p1'),
+      nested('task1', 'p2'),
+      nested('tc1', 'p3'),
+      text('top'),
+    ])
+    expect(t.children.tc1).toHaveLength(2)
+    expect(childItems(t, ['task1', 'tc1']).map((i) => i.id)).toEqual(['p1', 'p2', 'p3'])
+    expect(childItems(t, ['nope', undefined])).toEqual([])
+  })
+
+  it('an update keeps parentId and the item stays indexed once', () => {
+    const t = makeTranscript([nested('tc1', 'p1'), part('p1', 'more', 'delta')])
+    expect(only(t)).toMatchObject({ parentId: 'tc1', text: 'submore' })
+    expect(t.children.tc1).toEqual([itemKey('text-delta', 'p1')])
+  })
+
+  it('task events upsert by taskId and keep omitted optional fields', () => {
+    const t = makeTranscript([
+      task(),
+      task({ status: 'completed', summary: 'Found it', lastTool: undefined, usage: { tokens: 3000 } }),
+    ])
+    expect(only(t)).toMatchObject({
+      kind: 'task',
+      id: 'task1',
+      toolCallId: 'tc1',
+      taskKind: 'subagent',
+      status: 'completed',
+      summary: 'Found it',
+      lastTool: 'Grep',
+      usage: { tokens: 3000 },
+    })
+    expect(taskOfToolCall(t, 'tc1')?.id).toBe('task1')
+    expect(taskOfToolCall(t, 'other')).toBeUndefined()
+  })
+
+  it('a nested task is a child of its parent task', () => {
+    const t = makeTranscript([task(), task({ taskId: 'task2', toolCallId: 'tc2', parentId: 'tc1', depth: 2 })])
+    expect(childItems(t, ['task1', 'tc1']).map((i) => i.id)).toEqual(['task2'])
+  })
+})
+
+describe('reduceTranscript: questions, plans and session state', () => {
+  it.each([
+    ['question', E.question, 'q1'],
+    ['plan-proposal', E['plan-proposal'], 'p1'],
+  ] as const)(
+    '%s opens an interaction; a re-sent event does not count twice; response-resolved closes it',
+    (kind, event, id) => {
+      const open = makeTranscript([event, event])
+      expect(open.pendingInteractions).toBe(1)
+      expect(only(open)).toMatchObject({ kind, id })
+      const done = makeTranscript([
+        event,
+        { kind: 'response-resolved', eventId: id, outcome: 'answered', summary: 'Postgres' },
+      ])
+      expect(only(done)).toMatchObject({ resolved: 'answered', summary: 'Postgres' })
+      expect(done.pendingInteractions).toBe(0)
+    },
+  )
+
+  it('mcp-status replaces the server list', () => {
+    const t = makeTranscript([E['mcp-status'], { kind: 'mcp-status', servers: [] }])
+    expect(makeTranscript([E['mcp-status']]).mcpServers.map((s) => s.name)).toEqual(['github', 'db'])
+    expect(t.mcpServers).toEqual([])
+  })
+
+  it('rate-limit is kept until cleared', () => {
+    expect(makeTranscript([E['rate-limit']]).rateLimit).toMatchObject({ status: 'warning', utilization: 0.9 })
+    expect(makeTranscript([E['rate-limit'], { kind: 'rate-limit', status: 'cleared' }]).rateLimit).toBeNull()
+  })
+
+  it.each([
+    ['text', text('a')],
+    ['a tool call', tool('running')],
+    ['turn end', E['turn-end']],
+    ['session exit', E['session-exit']],
+  ])('retry is cleared by %s', (_name, event) => {
+    expect(makeTranscript([E.retry]).retry).toMatchObject({ attempt: 2, maxAttempts: 5 })
+    expect(makeTranscript([E.retry, event]).retry).toBeNull()
+  })
+
+  it('session-info sets the live actions; session exit clears them', () => {
+    const live = makeTranscript([{ kind: 'session-info', actions: ['stopTask', 'toggleMcp'] }])
+    expect(live.info.actions).toEqual(['stopTask', 'toggleMcp'])
+    expect(makeTranscript([{ kind: 'session-info', actions: ['stopTask'] }, E['session-info']]).info.actions).toEqual([
+      'stopTask',
+    ])
+    expect(makeTranscript([{ kind: 'session-info', actions: ['stopTask'] }, E['session-exit']]).info.actions).toEqual(
+      [],
+    )
   })
 })

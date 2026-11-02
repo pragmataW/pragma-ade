@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type ChatOptionDescriptor, validateOptionValue } from '../../src/contract'
+import { type ChatOptionDescriptor, nextCycleChoice, validateOptionValue } from '../../src/contract'
 
 const base = { key: 'k', labelKey: 'chat:option.model', default: null, current: null }
 const enumOpt: ChatOptionDescriptor = { ...base, type: 'enum', values: [{ value: 'a' }, { value: null }] }
@@ -19,5 +19,25 @@ describe('validateOptionValue', () => {
     [boolOpt, 'true', false],
   ])('%o accepts %o: %s', (d, v, ok) => {
     expect(validateOptionValue(d, v)).toBe(ok)
+  })
+})
+
+describe('nextCycleChoice', () => {
+  const modes = (current: string): ChatOptionDescriptor => ({
+    ...base,
+    type: 'enum',
+    current,
+    values: [{ value: 'default' }, { value: 'acceptEdits' }, { value: 'plan' }, { value: 'bypass', cycle: false }],
+  })
+  it.each([
+    ['default', 'acceptEdits'],
+    ['plan', 'default'],
+    ['bypass', 'default'],
+  ])('%s → %s (cycle:false skipped, wraps)', (current, next) => {
+    expect(nextCycleChoice(modes(current))?.value).toBe(next)
+  })
+
+  it('nothing to cycle to', () => {
+    expect(nextCycleChoice({ ...base, type: 'enum', current: 'a', values: [{ value: 'a' }] })).toBeUndefined()
   })
 })
