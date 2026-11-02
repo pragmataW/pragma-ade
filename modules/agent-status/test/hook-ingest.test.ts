@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import type { StatusCapability } from '../src/contract'
+import { describe, expect, it, vi } from 'vitest'
+import type { StatusCapability, StatusMonitorContext } from '../src/contract'
 import { createHookEventHandler } from '../src/main/hook-ingest'
 import { fakeStatusCapability, storeHarness } from './support/fakes'
 
@@ -49,6 +49,38 @@ describe('hook ingest', () => {
     h.store.track({ sessionId: 's1', worktreeId: 'w1', source: 'pending-hooks' })
     expect(await send('noise')).toEqual({ accepted: true })
     expect(h.store.info('s1')).toMatchObject({ status: 'starting', source: 'pending-hooks' })
+  })
+
+  it('creates the provider monitor once, shows it every payload (also unparsed ones) after applying it', async () => {
+    let report: StatusMonitorContext['report'] = () => undefined
+    const seen: [unknown, unknown, string | undefined][] = []
+    const created = vi.fn()
+    const { cap } = fakeStatusCapability({
+      monitorSession(ctx) {
+        created()
+        report = ctx.report
+        return { onHookEvent: (raw, parsed) => void seen.push([raw, parsed, h.store.info('s1')?.status]), dispose() {} }
+      },
+    })
+    const { h, send } = ingest(cap)
+    h.store.track({ sessionId: 's1', worktreeId: 'w1', source: 'pending-hooks' })
+    await send({ kind: 'promptSubmitted' })
+    await send('noise')
+    expect(created).toHaveBeenCalledTimes(1)
+    expect(seen).toEqual([
+      [{ kind: 'promptSubmitted' }, { kind: 'promptSubmitted' }, 'working'],
+      ['noise', null, 'working'],
+    ])
+
+    report({ kind: 'bogus' } as never)
+    expect(h.log.messages('warn')).toHaveLength(1)
+    expect(h.store.info('s1')?.status).toBe('working')
+    report({ kind: 'turnInterrupted' })
+    expect(h.store.info('s1')).toMatchObject({ status: 'idle', turnCompleted: false })
+
+    h.store.exited('s1')
+    report({ kind: 'promptSubmitted' })
+    expect(h.store.info('s1')?.status).toBe('exited')
   })
 
   it('invalid capability result → accepted false + warning', async () => {
