@@ -3,6 +3,8 @@ export const BOARD_TESTIDS = {
   sidebarEntry: 'board-sidebar-entry',
   sidebarCount: 'board-sidebar-count',
   view: 'board-view',
+  /** Top-left Back: leaves the board for the agents view (Esc does the same). */
+  back: 'board-back',
   scopePicker: 'board-scope-picker',
   search: 'board-search',
   filterLabels: 'board-filter-labels',

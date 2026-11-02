@@ -26,6 +26,8 @@ export const LAST_SCOPE_STORAGE_KEY = 'pragma.board.lastScope'
 export const SIDEBAR_ENTRY_ID = 'board.sidebar'
 export const SIDEBAR_ENTRY_ORDER = 100
 export const VIEW_ICON = 'kanban'
+/** The board's Back button, like the Settings view's. */
+export const BACK_ICON = 'arrow-left'
 export const SETTINGS_ICON = 'kanban'
 export const ICON_PX = { row: 14, small: 12 } as const
 export const VARIANT = {
@@ -46,6 +48,7 @@ export const MONOGRAM_LETTERS = 2
 /** ui-notes mark sizes: 20px on cards. */
 export const AGENT_MARK_PX = 20
 export const ESCAPE_KEY = 'Escape'
+export const KEYDOWN_EVENT = 'keydown'
 export const ENTER_KEY = 'Enter'
 /** Pointer travel before a drag starts (clicks stay clicks). */
 export const DRAG_ACTIVATION_PX = 5

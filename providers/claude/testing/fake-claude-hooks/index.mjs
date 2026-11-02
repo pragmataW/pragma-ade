@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fake Claude Code for status tests: runs the command hooks of `--settings <file>` like Claude does.
-// stdin lines: `hook <Event> [notification_type] [tool_name]`, `session <id>` (like /clear), `say <text>`, `exit`.
+// stdin lines: `hook <Event> [notification_type] [tool_name] [field=value…]`, `session <id>` (like /clear), `say <text>`, `exit`.
 // The session id comes from $FAKE_CLAUDE_SESSION_ID (default "fake-claude-session"). Logs argv to $FAKE_AGENT_LOG.
 import { spawn } from 'node:child_process'
 import { appendFileSync, readFileSync } from 'node:fs'
@@ -45,8 +45,13 @@ const enqueue = (fn) => {
 async function onLine(line) {
   const [cmd, ...rest] = line.trim().split(' ')
   if (cmd === 'hook') {
-    const [event, notification_type, tool_name] = rest
-    await runHooks(event, { ...(notification_type ? { notification_type } : {}), ...(tool_name ? { tool_name } : {}) })
+    const fields = Object.fromEntries(rest.filter((r) => r.includes('=')).map((r) => r.split('=', 2)))
+    const [event, notification_type, tool_name] = rest.filter((r) => !r.includes('='))
+    await runHooks(event, {
+      ...(notification_type ? { notification_type } : {}),
+      ...(tool_name ? { tool_name } : {}),
+      ...fields,
+    })
     process.stdout.write(`hooked ${event}\r\n`)
   } else if (cmd === 'session') sessionId = rest[0]
   else if (cmd === 'say') process.stdout.write(`${rest.join(' ')}\r\n`)

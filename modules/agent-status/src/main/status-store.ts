@@ -31,6 +31,13 @@ interface Meta {
 const statusKeyChanged = (a: TrackedState, b: TrackedState): boolean =>
   a.status !== b.status || a.externalSessionId !== b.externalSessionId
 
+/**
+ * The status written to the agents row. 03's `error` is an ENDED status ("could not be started": no terminal, not
+ * running), but a tracked `error` is a failed turn (e.g. Claude's `StopFailure` on an API error) of an agent that
+ * is still running and waiting for input, so the row gets `idle`; the failure itself stays in this store.
+ */
+const rowStatus = (status: AgentStatus): AgentStatus => (status === SESSION_STATUS.error ? SESSION_STATUS.idle : status)
+
 /** Every tracked session of this app run: trackers, unread flags, persistence and announcements. */
 export class StatusStore {
   readonly #deps: StatusStoreDeps
@@ -147,6 +154,8 @@ export class StatusStore {
     meta.updatedAt = this.#deps.clock.now()
     const selected = this.#deps.activeWorktreeId() === t.worktreeId
     if (shouldMarkUnread(prev.status, next.status, selected)) meta.unread = true
+    if (next.status === SESSION_STATUS.error && prev.status !== SESSION_STATUS.error)
+      this.#deps.log.warn(`session ${t.sessionId}: the agent turn failed${next.detail ? ` (${next.detail})` : ''}`)
     if (statusKeyChanged(prev, next)) {
       this.#persist(t, next)
       const { status, externalSessionId } = next
@@ -166,7 +175,7 @@ export class StatusStore {
   #persist(t: SessionTracker, next: TrackedState): void {
     if (t.source === STATUS_SOURCE.external || next.status === SESSION_STATUS.exited) return
     const patch = {
-      status: next.status,
+      status: rowStatus(next.status),
       ...(next.externalSessionId ? { externalSessionId: next.externalSessionId } : {}),
     }
     const prev = this.#writes.get(t.sessionId) ?? Promise.resolve()
