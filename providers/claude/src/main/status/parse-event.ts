@@ -1,6 +1,7 @@
 import {
   type AgentStatusEvent,
   EVENT_KIND as K,
+  truncateEventField,
   WAIT_REASON,
   withExternalSessionId,
 } from '@pragma/module-agent-status/contract'
@@ -30,12 +31,15 @@ const SIMPLE: Partial<Record<string, EventBody>> = {
   [H.PostToolUseFailure]: { kind: K.toolFinished },
   [H.PermissionRequest]: { kind: K.waitingForUser, reason: WAIT_REASON.permission },
   [H.Stop]: { kind: K.turnCompleted },
-  [H.StopFailure]: { kind: K.turnFailed },
   [H.SessionEnd]: { kind: K.sessionEnded },
 }
 
+const stopFailure = (p: ClaudeHookPayload): EventBody =>
+  p.error ? { kind: K.turnFailed, message: truncateEventField(p.error) } : { kind: K.turnFailed }
+
 function bodyFor(p: ClaudeHookPayload): EventBody | null {
   if (p.hook_event_name === H.PreToolUse) return preToolUse(p)
+  if (p.hook_event_name === H.StopFailure) return stopFailure(p)
   if (p.hook_event_name === H.Notification) return notification(p)
   return (p.hook_event_name && SIMPLE[p.hook_event_name]) || null
 }

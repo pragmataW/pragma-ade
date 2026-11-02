@@ -95,6 +95,23 @@ describe('StatusStore', () => {
     expect(again.state.status).toBe('starting')
   })
 
+  it('a failed turn is written as idle: the agent still runs, its row must not read "failed to start"', async () => {
+    const { h, t } = tracked()
+    t.applyEvent(event('promptSubmitted'))
+    t.applyEvent(event('turnFailed', { message: 'rate_limit' }))
+    await h.store.flush()
+    expect(h.agents.updates.map(([, p]) => p.status)).toEqual(['working', 'idle'])
+    expect(h.emitted.at(-1)).toEqual({ sessionId: 's1', status: 'error' })
+    expect(h.store.info('s1')).toMatchObject({ status: 'error', detail: 'rate_limit' })
+  })
+
+  it('a failed turn is logged with its detail', () => {
+    const { h, t } = tracked()
+    t.applyEvent(event('turnFailed', { message: 'authentication_failed' }))
+    t.applyEvent(event('turnFailed', { message: 'authentication_failed' }))
+    expect(h.log.messages('warn')).toEqual(['session s1: the agent turn failed (authentication_failed)'])
+  })
+
   it('forget drops a closed session', () => {
     const { h } = tracked()
     h.store.forget('s1')

@@ -6,6 +6,8 @@ export interface ClaudeHookPayload {
   tool_name?: string
   source?: string
   reason?: string
+  /** `StopFailure`: the error kind that ended the turn. */
+  error?: string
 }
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined)
@@ -21,5 +23,6 @@ export function readClaudeHookPayload(raw: unknown): ClaudeHookPayload | null {
     tool_name: str(r.tool_name),
     source: str(r.source),
     reason: str(r.reason),
+    error: str(r.error),
   }
 }
