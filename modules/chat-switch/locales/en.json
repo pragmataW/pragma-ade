@@ -19,5 +19,23 @@
   },
   "conflict": {
     "toast": "This conversation is already running in another session."
+  },
+  "toggle": {
+    "label": "Session view",
+    "chat": "Chat",
+    "terminal": "Terminal",
+    "switching": "Switching…"
+  },
+  "confirm": {
+    "toChat": {
+      "title": "Continue in chat?",
+      "body": "The terminal process will be stopped and this conversation will reopen in chat.",
+      "action": "Continue in chat"
+    },
+    "toTerminal": {
+      "title": "Continue in terminal?",
+      "body": "A turn is in progress. Switching will interrupt it.",
+      "action": "Continue in terminal"
+    }
   }
 }
