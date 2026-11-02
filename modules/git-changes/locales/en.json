@@ -120,6 +120,7 @@
     },
     "sync": {
       "counts": "{{behind}}↓ {{ahead}}↑",
+      "changes": "Sync Changes",
       "title": "Synchronize changes with {{upstream}}: pull {{behind}}, push {{ahead}}",
       "publish": "Publish Branch",
       "publishTitle": "Publish {{branch}} to the remote"
@@ -155,11 +156,24 @@
       "apply": "Apply Stash",
       "pop": "Pop Stash",
       "drop": "Drop Stash",
-      "placeholder": {
-        "tracked": "Stash message (optional) · Enter to stash, Esc to cancel",
-        "untracked": "Stash message, including untracked files (optional) · Enter to stash",
-        "staged": "Stash message for the staged changes (optional) · Enter to stash"
-      }
+      "dialogTitle": "Stash changes",
+      "dialogHint": "Set changes aside and get a clean working tree. Apply or pop the stash later from Stashes.",
+      "kind": {
+        "tracked": "Tracked changes",
+        "untracked": "Tracked and untracked files",
+        "staged": "Staged changes only"
+      },
+      "fileCount_one": "{{count}} file",
+      "fileCount_other": "{{count}} files",
+      "messagePlaceholder": "Message (optional)",
+      "cancel": "Cancel",
+      "submit_one": "Stash {{count}} file",
+      "submit_other": "Stash {{count}} files",
+      "viewing": "Stash: {{message}}",
+      "close": "Back to changes",
+      "short": { "apply": "Apply", "pop": "Pop", "drop": "Drop" },
+      "files_one": "{{count}} file",
+      "files_other": "{{count}} files"
     },
     "row": {
       "stage": "Stage Changes",
@@ -180,10 +194,10 @@
       "discardAction": "Discard File",
       "discardHunk": "Are you sure you want to discard this change in {{file}}?",
       "discardMany": "Are you sure you want to discard ALL changes in {{count}} files?",
-      "discardManyUntracked": "Are you sure you want to discard ALL changes in {{count}} files? {{untracked}} untracked files will be DELETED; this is IRREVERSIBLE.",
+      "discardManyUntracked": "Are you sure you want to discard ALL changes in {{count}} files? {{untracked}} untracked files will be deleted. Copies are kept in Local History.",
       "discardManyAction": "Discard All Files",
       "deleteTitle": "Delete file",
-      "deleteFile": "Are you sure you want to DELETE {{file}}? This is IRREVERSIBLE! This file will be FOREVER LOST if you proceed.",
+      "deleteFile": "Are you sure you want to delete {{file}}? A copy is kept in Local History.",
       "deleteAction": "Delete File",
       "smartCommitTitle": "No staged changes",
       "smartCommit": "There are no staged changes to commit. Would you like to stage all your changes and commit them directly?",
@@ -191,7 +205,7 @@
       "dropTitle": "Drop stash",
       "dropStash": "Are you sure you want to drop the stash: {{stash}}?",
       "dropAction": "Drop",
-      "dropAll": "Are you sure you want to drop ALL {{count}} stashes? They MAY BE IMPOSSIBLE TO RECOVER.",
+      "dropAll": "Are you sure you want to drop ALL {{count}} stashes? They can be brought back from Local History for a while.",
       "dropAllAction": "Drop All"
     }
   }

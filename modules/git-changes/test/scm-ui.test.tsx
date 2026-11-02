@@ -83,20 +83,49 @@ describe('commit box', () => {
   })
 })
 
+/** `feature` tracking `origin/feature`, two commits behind and one ahead. */
+const BEHIND_2_AHEAD_1 = {
+  branch: 'feature',
+  upstream: 'origin/feature',
+  ahead: 1,
+  behind: 2,
+  hasHead: true,
+  hasRemote: true,
+}
+
 describe('sync and the … menu', () => {
   it('Sync shows behind/ahead and syncs; without an upstream it publishes', async () => {
-    await mount([], {
-      [S.state]: () => ({ branch: 'feature', upstream: 'origin/feature', ahead: 1, behind: 2, hasHead: true }),
-    })
-    const sync = await screen.findByTestId(T.syncButton)
+    await mount([], { [S.state]: () => BEHIND_2_AHEAD_1 })
+    const sync = await screen.findByTestId(T.syncPrimary)
     expect(sync).toHaveTextContent('2↓ 1↑')
     await userEvent.click(sync)
     await waitFor(() => expect(h?.callsOn(S.remote)).toEqual([{ worktreeId: WT_ID, action: 'sync' }]))
   })
 
+  it("with nothing to commit, a pending sync takes the Commit button's place (Sync Changes)", async () => {
+    await mount([], { [S.state]: () => BEHIND_2_AHEAD_1 })
+    const primary = await screen.findByTestId(T.syncPrimary)
+    expect(primary).toHaveTextContent('Sync Changes 2↓ 1↑')
+    expect(screen.queryByTestId(T.commitButton)).toBeNull()
+    expect(screen.queryByTestId(T.syncButton)).toBeNull()
+    await userEvent.type(screen.getByTestId(T.commitMessage), 'x')
+    expect(await screen.findByTestId(T.commitButton)).toBeInTheDocument()
+    expect(screen.getByTestId(T.syncButton)).toHaveAttribute('data-pending', 'true')
+  })
+
+  it('without a remote there is nothing to publish', async () => {
+    await mount([], {
+      [S.state]: () => ({ branch: 'feature', upstream: null, ahead: 0, behind: 0, hasHead: true, hasRemote: false }),
+    })
+    expect(await screen.findByTestId(T.commitButton)).toBeInTheDocument()
+    expect(screen.queryByTestId(T.syncButton)).toBeNull()
+  })
+
   it('Publish Branch pushes', async () => {
-    await mount([], { [S.state]: () => ({ branch: 'feature', upstream: null, ahead: 0, behind: 0, hasHead: true }) })
-    const publish = await screen.findByTestId(T.syncButton)
+    await mount([], {
+      [S.state]: () => ({ branch: 'feature', upstream: null, ahead: 0, behind: 0, hasHead: true, hasRemote: true }),
+    })
+    const publish = await screen.findByTestId(T.syncPrimary)
     expect(publish).toHaveTextContent(EN.scm.sync.publish)
     await userEvent.click(publish)
     await waitFor(() => expect(h?.callsOn(S.remote)).toEqual([{ worktreeId: WT_ID, action: 'push' }]))
@@ -113,19 +142,24 @@ describe('sync and the … menu', () => {
     await waitFor(() => expect(h?.callsOn(S.stage)).toEqual([{ worktreeId: WT_ID }]))
   })
 
-  it('Stash asks for a message (Enter stashes)', async () => {
-    await mount(changed(['a.ts']))
+  it('Stash opens one dialog: kind (with file counts) and message, apart from the commit box', async () => {
+    await mount([stagedEntry('s.ts'), ...changed(['a.ts'])])
     await userEvent.click(screen.getByTestId(T.scmMenu))
     await userEvent.click(await screen.findByTestId(T.scmMenuItem('stashGroup')))
     await userEvent.click(await screen.findByTestId(T.scmMenuItem('stashUntracked')))
-    const prompt = await screen.findByTestId(T.stashPrompt)
-    await userEvent.type(prompt, 'wip{Enter}')
+    const dialog = await screen.findByTestId(T.stashDialog)
+    expect(within(dialog).getByTestId(T.stashKind('untracked'))).toHaveAttribute('data-state', 'checked')
+    expect(within(dialog).getByTestId(T.stashSubmit)).toHaveTextContent('Stash 2 files')
+    await userEvent.click(within(dialog).getByTestId(T.stashKind('staged')))
+    expect(within(dialog).getByTestId(T.stashSubmit)).toHaveTextContent('Stash 1 file')
+    await userEvent.type(within(dialog).getByTestId(T.stashPrompt), 'wip{Enter}')
     await waitFor(() =>
       expect(h?.callsOn(S.stashPush)).toEqual([
-        { worktreeId: WT_ID, message: 'wip', includeUntracked: true, staged: false },
+        { worktreeId: WT_ID, message: 'wip', includeUntracked: false, staged: true },
       ]),
     )
-    expect(screen.queryByTestId(T.stashPrompt)).toBeNull()
+    expect(screen.queryByTestId(T.stashDialog)).toBeNull()
+    expect(screen.getByTestId(T.commitMessage)).toHaveValue('')
   })
 })
 
@@ -201,8 +235,9 @@ describe('stashes', () => {
       }),
     })
     const section = await screen.findByTestId(T.stashes)
-    expect(section).toHaveTextContent('On feature: wip')
-    await userEvent.click(within(section).getByRole('button', { name: /On feature: wip/ }))
+    expect(section).toHaveTextContent('wip')
+    expect(section).not.toHaveTextContent('On feature:')
+    await userEvent.click(within(section).getByRole('button', { name: /^wip/ }))
     await userEvent.click(await screen.findByTestId(T.stashFile))
     expect(await screen.findByTestId(T.diff)).toHaveAttribute('data-stash', SHA)
     expect(h?.callsOn(C.fileContents).at(-1)).toMatchObject({ path: 'src/x.ts', stash: SHA })

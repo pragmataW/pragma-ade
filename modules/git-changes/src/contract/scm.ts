@@ -54,6 +54,8 @@ export const ScmStateSchema = z.object({
   ahead: count,
   behind: count,
   hasHead: z.boolean(),
+  /** A remote exists (without one there is nothing to publish to). */
+  hasRemote: z.boolean(),
 })
 export type ScmState = z.infer<typeof ScmStateSchema>
 

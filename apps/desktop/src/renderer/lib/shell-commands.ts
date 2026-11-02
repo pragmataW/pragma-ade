@@ -1,5 +1,6 @@
 import { CoreCommands, type Disposable, z } from '@pragma/sdk'
 import type { RendererHost } from '@pragma/sdk/runtime/renderer'
+import { animateLayout } from './animate-layout'
 import { DEFAULT_DOCK_LAYOUT, type DockLayout, type DockPosition, swapSides, writeDockLayout } from './dock-layout'
 import type { ShellStore } from './shell-store'
 
@@ -16,7 +17,7 @@ export const MOVE_DOCK_COMMANDS: Record<DockPosition, { id: string; titleKey: st
 
 /** Applies a dock layout: shows the dock, persists the choice in `core.layout`. */
 export function setDockLayout(host: Pick<RendererHost, 'layout'>, store: ShellStore, next: DockLayout): void {
-  store.setState({ ...next, rightCollapsed: false })
+  animateLayout(() => store.setState({ ...next, rightCollapsed: false }))
   writeDockLayout(host.layout, next)
 }
 
@@ -63,17 +64,25 @@ export function registerShellCommands(
       titleKey: 'core:commands.commandPalette',
       palette: false,
     }),
-    commands.register(CoreCommands.toggleSidebar, () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })), {
-      titleKey: 'core:commands.toggleSidebar',
-      palette: true,
-    }),
-    commands.register(CoreCommands.toggleRightPanel, () => set((s) => ({ rightCollapsed: !s.rightCollapsed })), {
-      titleKey: 'core:commands.toggleRightPanel',
-      palette: true,
-    }),
+    commands.register(
+      CoreCommands.toggleSidebar,
+      () => animateLayout(() => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed }))),
+      {
+        titleKey: 'core:commands.toggleSidebar',
+        palette: true,
+      },
+    ),
+    commands.register(
+      CoreCommands.toggleRightPanel,
+      () => animateLayout(() => set((s) => ({ rightCollapsed: !s.rightCollapsed }))),
+      {
+        titleKey: 'core:commands.toggleRightPanel',
+        palette: true,
+      },
+    ),
     commands.register(
       CoreCommands.maximizeRightPanel,
-      () => set((s) => ({ rightMaximized: !s.rightMaximized, rightCollapsed: false })),
+      () => animateLayout(() => set((s) => ({ rightMaximized: !s.rightMaximized, rightCollapsed: false }))),
       {
         titleKey: 'core:commands.maximizeRightPanel',
         palette: true,

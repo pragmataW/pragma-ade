@@ -8,20 +8,20 @@ import {
   DropdownMenuTrigger,
 } from '@pragma/ui/components/dropdown-menu'
 import { Check, ChevronDown } from '@pragma/ui/icons'
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { type KeyboardEvent, useState } from 'react'
 import { COMMIT_BOX_MAX_ROWS, DIFF_ICON_PX, SIZE_SM } from '../../constants'
 import { type ChangedFile, type StashEntry, GitChangesTestIds as T } from '../../contract'
 import type { CommitOptions, ScmActions, StashKind } from './actions'
 import { ErrorBanner } from './ErrorBanner'
 import { commitEntries, scmMenuModel } from './menu-model'
 import { ScmMenu } from './ScmMenu'
-import { SyncButton } from './SyncButton'
+import { StashDialog } from './StashDialog'
+import { hasPendingSync, SyncButton } from './SyncButton'
 import { useScmFeedback, useScmStore } from './scm-store'
 import { useScmState } from './use-scm'
 
 const PLAIN: CommitOptions = { amend: false, signoff: false }
 const ENTER = 'Enter'
-const ESCAPE = 'Escape'
 const ALIGN_END = 'end'
 const NEWLINE = '\n'
 const rowsOf = (text: string): number => Math.min(COMMIT_BOX_MAX_ROWS, text.split(NEWLINE).length)
@@ -77,38 +77,6 @@ function CommitButton(props: {
   )
 }
 
-/** The optional stash message (Enter stashes, Escape cancels), shown after a Stash command. */
-function StashPrompt(props: { kind: StashKind; actions: ScmActions; onDone(): void }) {
-  const t = useT()
-  const [message, setMessage] = useState('')
-  const input = useRef<HTMLInputElement>(null)
-  // After the menu that opened it has closed and handed focus back to its trigger.
-  useEffect(() => {
-    const timer = setTimeout(() => input.current?.focus())
-    return () => clearTimeout(timer)
-  }, [])
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === ESCAPE) props.onDone()
-    if (e.key !== ENTER) return
-    e.preventDefault()
-    void props.actions.stashPush(props.kind, message)
-    props.onDone()
-  }
-  return (
-    <input
-      ref={input}
-      data-testid={T.stashPrompt}
-      data-kind={props.kind}
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-      onKeyDown={onKeyDown}
-      placeholder={t(`git-changes:scm.stash.placeholder.${props.kind}`)}
-      aria-label={t(`git-changes:scm.stash.placeholder.${props.kind}`)}
-      className="h-7 rounded-md border border-[var(--bd2)] bg-[var(--bg)] px-2 text-xs outline-none focus:border-[var(--ac)]"
-    />
-  )
-}
-
 /**
  * VS Code's Source Control header: the commit message box (⌘/Ctrl+Enter commits), the split Commit button, the
  * Sync button and the "…" menu, then the last error. `files`: the uncommitted list (staged and unstaged entries).
@@ -144,6 +112,8 @@ export function ScmBar(props: {
     e.preventDefault()
     if (hasMessage && !busy) void commit(PLAIN)
   }
+  // Nothing to commit but something to sync: VS Code's big "Sync Changes" button takes Commit's place.
+  const syncFirst = files.length === 0 && !hasMessage && hasPendingSync(state)
   const placeholder = t('git-changes:scm.commit.placeholder', { branch: state?.branch ?? '' })
   return (
     <>
@@ -158,19 +128,27 @@ export function ScmBar(props: {
           aria-label={placeholder}
           className="min-h-7 resize-none rounded-md border border-[var(--bd2)] bg-[var(--bg)] px-2 py-1 text-[13px] outline-none focus:border-[var(--ac)]"
         />
-        {stashKind ? <StashPrompt kind={stashKind} actions={actions} onDone={() => setStashKind(null)} /> : null}
         <div className="flex items-center gap-1">
-          <CommitButton
-            busy={busy}
-            canCommit={hasMessage}
-            onCommit={() => void commit(PLAIN)}
-            entries={commitEntries(menu)}
-          />
-          <SyncButton state={state} busy={busy} actions={actions} />
+          {syncFirst ? (
+            <SyncButton state={state} busy={busy} actions={actions} primary />
+          ) : (
+            <>
+              <CommitButton
+                busy={busy}
+                canCommit={hasMessage}
+                onCommit={() => void commit(PLAIN)}
+                entries={commitEntries(menu)}
+              />
+              <SyncButton state={state} busy={busy} actions={actions} />
+            </>
+          )}
           <ScmMenu {...scmMenuModel(menu)} />
         </div>
       </div>
       <ErrorBanner worktreeId={worktreeId} />
+      {stashKind ? (
+        <StashDialog initialKind={stashKind} files={files} actions={actions} onClose={() => setStashKind(null)} />
+      ) : null}
     </>
   )
 }

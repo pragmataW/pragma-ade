@@ -126,7 +126,7 @@ export const POSIX_SEP = '/'
 export const WINDOWS_SEP_RE = /\\/g
 /** Git-dir files whose change means "the main checkout's HEAD/index moved". */
 export const ROOT_HEAD_FILES = ['HEAD', 'index', 'ORIG_HEAD', 'MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD']
-export const GIT_DIR_PATHS = { worktrees: 'worktrees/', packedRefs: 'packed-refs' } as const
+export const GIT_DIR_PATHS = { worktrees: 'worktrees/', packedRefs: 'packed-refs', config: 'config' } as const
 export const PARENT_PREFIX = '..'
 
 /** Watcher keys (one subscription per worktree and per repository git dir). */

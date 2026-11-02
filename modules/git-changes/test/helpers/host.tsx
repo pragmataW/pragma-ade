@@ -66,7 +66,14 @@ const OWN_CONTRACTS: IpcContract<unknown, unknown>[] = [
 /** Source Control answers when a test gives none: a clean branch with an upstream, no stashes, no hunks, ok. */
 const OK = { ok: true }
 const SCM_DEFAULTS: Answers = {
-  [scmStateIpc.channel]: () => ({ branch: 'feature', upstream: 'origin/feature', ahead: 0, behind: 0, hasHead: true }),
+  [scmStateIpc.channel]: () => ({
+    branch: 'feature',
+    upstream: 'origin/feature',
+    ahead: 0,
+    behind: 0,
+    hasHead: true,
+    hasRemote: true,
+  }),
   [scmStashListIpc.channel]: () => ({ stashes: [] }),
   [scmHunksIpc.channel]: () => ({ hunks: [] }),
   [scmStashFilesIpc.channel]: () => ({ files: [] }),

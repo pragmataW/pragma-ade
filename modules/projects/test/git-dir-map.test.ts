@@ -21,9 +21,14 @@ describe('mapGitDirPaths', () => {
     ['refs/heads/feat', ['feat']],
     ['refs/heads/main', ['main']],
     ['refs/remotes/origin/main', ['main']],
+    // The branch's own upstream moved (push, fetch, publish): its ahead/behind changed.
+    ['refs/remotes/origin/feat', ['feat']],
+    ['refs/remotes/upstream/feat', ['feat']],
+    ['refs/remotes/origin/other', []],
     ['packed-refs', ['main', 'feat']],
     ['FETCH_HEAD', []],
-    ['config', []],
+    // Remotes and upstreams live in config (`git remote add`, `push -u`): every worktree's sync state may change.
+    ['config', ['main', 'feat']],
   ])('%s → %j', (path, ids) => expect(mapGitDirPaths([path], refs)).toEqual(ids))
 
   it('returns unique ids for a batch', () => {
