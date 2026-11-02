@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { BridgeRequestContext } from '@pragma/module-bridge/contract'
-import { COMMENT_SOURCE, SEND_STATUS, type SendResult } from '@pragma/module-comments/contract'
+import { COMMENT_SOURCE, type Comment, SEND_STATUS, type SendResult } from '@pragma/module-comments/contract'
 import {
   BRIDGE_ERRORS,
   CLIENT_EVENT,
@@ -13,6 +13,8 @@ import {
   COMMENT_REPLY,
   type EditorComment,
   type EditorCommentReply,
+  type EditorDraft,
+  type EditorDrafts,
   type EditorHello,
   type EditorHelloReply,
   type EditorLanguageStatus,
@@ -50,7 +52,7 @@ function replyForSend(commentId: string, r: SendResult): EditorCommentReply {
     case SEND_STATUS.noSession:
       return { status: COMMENT_REPLY.needsUserAction, commentId }
     case SEND_STATUS.failed:
-      return { status: COMMENT_REPLY.failed, message: r.message ?? r.errorKey }
+      return { status: COMMENT_REPLY.failed, message: r.message ?? r.errorKey, commentId }
     default: {
       const never: never = r
       return never
@@ -59,6 +61,22 @@ function replyForSend(commentId: string, r: SendResult): EditorCommentReply {
 }
 
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e))
+
+/** The editor drafts the workbench shows (diff and browser comments stay in their own panels). */
+function toEditorDrafts(comments: readonly Comment[]): EditorDrafts {
+  const drafts: EditorDraft[] = []
+  for (const c of comments) {
+    if (c.source !== COMMENT_SOURCE.editor || !c.filePath || c.lineStart === undefined) continue
+    drafts.push({
+      id: c.id,
+      filePath: c.filePath,
+      lineStart: c.lineStart,
+      lineEnd: c.lineEnd ?? c.lineStart,
+      body: c.body,
+    })
+  }
+  return { comments: drafts }
+}
 
 /** Main side of the `editor` namespace: client registry (folder → client), openFile/openDiff/theme/test requests, comments. */
 export class EditorBridge {
@@ -69,6 +87,7 @@ export class EditorBridge {
   readonly #waiters = new Map<string, Set<() => void>>()
   readonly #pendingTests = new Map<string, Pending>()
   readonly #languageOf = new Map<string, string>()
+  readonly #worktreeOfClient = new Map<string, string>()
 
   constructor(up: EditorUpstream, o: EditorBridgeOptions) {
     this.#up = up
@@ -81,11 +100,17 @@ export class EditorBridge {
       comment: (p, ctx) => this.#comment(p, ctx),
       testResponse: (p) => this.#testResponse(p),
       languageStatus: (p, ctx) => this.#languageStatus(p, ctx),
+      drafts: (_p, ctx) => this.#draftsOf(this.#worktreeOfClient.get(ctx.clientId)),
     })
     const offClient = this.#up.bridge.onClient(CLIENT_EVENT.disconnected, (c) => this.#forget(c.clientId))
+    // A failed push is dropped: the next change or the extension's next hello resyncs.
+    const offComments = this.#up.onCommentsChanged(
+      (worktreeId) => void this.#pushDrafts(worktreeId).catch(() => undefined),
+    )
     return () => {
       unregister()
       offClient()
+      offComments()
     }
   }
 
@@ -165,6 +190,8 @@ export class EditorBridge {
     this.#clientOfFolder.set(p.folderKey, ctx.clientId)
     for (const done of [...(this.#waiters.get(p.folderKey) ?? [])]) done()
     const worktreeId = await this.#worktreeFor(p.folderKey)
+    if (worktreeId) this.#worktreeOfClient.set(ctx.clientId, worktreeId)
+    else this.#worktreeOfClient.delete(ctx.clientId)
     return { known: worktreeId !== null, worktreeId, theme: this.#o.theme() }
   }
 
@@ -191,6 +218,18 @@ export class EditorBridge {
     return replyForSend(commentId, await this.#up.send([commentId]))
   }
 
+  async #draftsOf(worktreeId: string | undefined): Promise<EditorDrafts> {
+    return worktreeId ? toEditorDrafts(await this.#up.listDrafts(worktreeId)) : { comments: [] }
+  }
+
+  /** Every client showing `worktreeId` gets its drafts; a client that went away in between is skipped. */
+  async #pushDrafts(worktreeId: string): Promise<void> {
+    const clients = [...this.#worktreeOfClient].filter(([, w]) => w === worktreeId).map(([clientId]) => clientId)
+    if (clients.length === 0) return
+    const payload = await this.#draftsOf(worktreeId)
+    for (const clientId of clients) this.#up.bridge.send(clientId, { type: EVENT('drafts'), payload })
+  }
+
   #testResponse(p: EditorTestResponse): null {
     const pending = this.#pendingTests.get(p.requestId)
     if (!pending) return null
@@ -212,6 +251,7 @@ export class EditorBridge {
   #forget(clientId: string): void {
     const folderKey = this.#folderOfClient.get(clientId)
     this.#folderOfClient.delete(clientId)
+    this.#worktreeOfClient.delete(clientId)
     if (folderKey !== undefined && this.#clientOfFolder.get(folderKey) === clientId)
       this.#clientOfFolder.delete(folderKey)
     const worktreeId = this.#languageOf.get(clientId)

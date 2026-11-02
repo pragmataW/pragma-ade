@@ -1,16 +1,20 @@
+import { join } from 'node:path'
 import {
   COMMENT_ACTION,
   COMMENT_REPLY,
   type CommentAction,
   type EditorCommentReply,
+  type EditorDraft,
 } from '@pragma/module-editor/contract'
 import type { BridgeConnection } from '../bridgeConnection'
-import { COMMANDS, CONTROLLER, FILE_SCHEME, COMMENT_MESSAGES as M } from '../constants'
+import { COMMANDS, CONTROLLER, DRAFTS_MESSAGE, FILE_SCHEME, COMMENT_MESSAGES as M } from '../constants'
 import { isInsideFolder } from '../handlers/openFile'
-import type { Disposable, DocumentInfo, ThreadLike, VscodeApi } from '../vscodeApi'
+import type { CommentControllerHandle, Disposable, DocumentInfo, ThreadLike, VscodeApi } from '../vscodeApi'
 import { buildCommentPayload } from './payload'
 
 export type ReplyLike = { thread: ThreadLike; text: string }
+/** A drawn draft thread (`draftThreads` test op): worktree-relative path, 0-based lines. */
+export type DraftThreadInfo = { id: string; path: string; startLine: number; endLine: number; body: string }
 export type CommentConnection = Pick<BridgeConnection, 'folderPath' | 'request'>
 
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e))
@@ -33,11 +37,28 @@ function successMessage(reply: EditorCommentReply): string | null {
   }
 }
 
-/** The `pragma-review` comment controller: every line of worktree files, Send to Agent / Add to Review / Cancel. */
+const toInfo = (d: EditorDraft): DraftThreadInfo => ({
+  id: d.id,
+  path: d.filePath,
+  startLine: d.lineStart - 1,
+  endLine: d.lineEnd - 1,
+  body: d.body,
+})
+const sameDraft = (a: DraftThreadInfo, b: DraftThreadInfo): boolean =>
+  a.path === b.path && a.startLine === b.startLine && a.endLine === b.endLine && a.body === b.body
+
+/**
+ * The `pragma-review` comment controller: every line of worktree files, Send to Agent / Add to Review / Cancel, and
+ * the worktree's stored drafts as read-only Pending threads (gone once sent or deleted, like Git Changes' cards).
+ */
 export class ReviewController {
   readonly #api: VscodeApi
   readonly #conn: CommentConnection
   #disposables: Disposable[] = []
+  #controller: CommentControllerHandle | undefined
+  /** The latest draft list; drawn once the controller exists. */
+  #wanted: DraftThreadInfo[] = []
+  readonly #drawn = new Map<string, { info: DraftThreadInfo; thread: Disposable }>()
 
   constructor(api: VscodeApi, conn: CommentConnection) {
     this.#api = api
@@ -53,16 +74,64 @@ export class ReviewController {
 
   register(): void {
     const api = this.#api
+    this.#controller = api.createCommentController({ ...CONTROLLER, ranges: (doc) => this.ranges(doc) })
     this.#disposables.push(
-      api.createCommentController({ ...CONTROLLER, ranges: (doc) => this.ranges(doc) }),
+      this.#controller,
       api.registerReplyCommand(COMMANDS.sendToAgent, (r) => this.handle(r, COMMENT_ACTION.send)),
       api.registerReplyCommand(COMMANDS.addToReview, (r) => this.handle(r, COMMENT_ACTION.draft)),
       api.registerReplyCommand(COMMANDS.cancel, (r) => r.thread.dispose()),
     )
+    this.#draw()
   }
 
   dispose(): void {
+    this.#wanted = []
+    this.#draw()
+    this.#controller = undefined
     for (const d of this.#disposables.splice(0)) d.dispose()
+  }
+
+  /** Replaces the shown drafts: removed ones disappear, edited ones are redrawn, unchanged ones stay. */
+  showDrafts(drafts: readonly EditorDraft[]): void {
+    this.#wanted = drafts.map(toInfo)
+    this.#draw()
+  }
+
+  /** Pulls the worktree's drafts from the app (after every hello); a failure keeps what is shown. */
+  async refresh(): Promise<void> {
+    try {
+      this.showDrafts((await this.#conn.request(DRAFTS_MESSAGE, {})).comments)
+    } catch (error) {
+      this.#api.log(errorText(error))
+    }
+  }
+
+  drafts(): DraftThreadInfo[] {
+    return [...this.#drawn.values()].map((d) => d.info)
+  }
+
+  #draw(): void {
+    const controller = this.#controller
+    if (!controller) return
+    const wanted = new Map(this.#wanted.map((d) => [d.id, d]))
+    for (const [id, drawn] of this.#drawn) {
+      const next = wanted.get(id)
+      if (next && sameDraft(next, drawn.info)) continue
+      drawn.thread.dispose()
+      this.#drawn.delete(id)
+    }
+    const folder = this.#conn.folderPath ?? this.#api.workspaceFolderPath() ?? ''
+    for (const info of wanted.values()) {
+      if (this.#drawn.has(info.id)) continue
+      const thread = controller.createThread({
+        path: join(folder, info.path),
+        startLine: info.startLine,
+        endLine: info.endLine,
+        body: info.body,
+        label: M.pendingLabel,
+      })
+      this.#drawn.set(info.id, { info, thread })
+    }
   }
 
   async handle(reply: ReplyLike, action: CommentAction): Promise<void> {
@@ -97,7 +166,14 @@ export class ReviewController {
       thread.dispose()
       return
     }
-    if (result.status === COMMENT_REPLY.failed) this.#api.showWarning(result.message)
+    if (result.status === COMMENT_REPLY.failed) {
+      this.#api.showWarning(result.message)
+      // The draft was stored: its Pending thread shows the comment, so the composer goes.
+      if (result.commentId) {
+        thread.dispose()
+        return
+      }
+    }
     thread.addComment(text, M.notSentLabel)
   }
 }

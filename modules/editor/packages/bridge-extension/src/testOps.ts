@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { type CommentAction, type EditorTestRequest, TEST_OP, type TestOp } from '@pragma/module-editor/contract'
 import type { BridgeConnection } from './bridgeConnection'
-import type { ReplyLike } from './comments/controller'
+import type { DraftThreadInfo, ReplyLike } from './comments/controller'
 import { TEST_ARG as A, FILE_SCHEME, TEST_RESPONSE } from './constants'
 import type { VscodeApi } from './vscodeApi'
 
@@ -14,7 +14,11 @@ const num = (a: Args, k: string): number => Number(a[k])
 /** Test-mode operations the E2E drives through `editor.testRequest` (only wired when `PRAGMA_TEST=1`). */
 export function createTestOps(
   api: VscodeApi,
-  o: { folderPath: () => string; handleComment(reply: ReplyLike, action: CommentAction): Promise<void> },
+  o: {
+    folderPath: () => string
+    handleComment(reply: ReplyLike, action: CommentAction): Promise<void>
+    drafts(): DraftThreadInfo[]
+  },
 ): Record<TestOp, Op> {
   const abs = (p: string): string => resolve(o.folderPath(), p)
   return {
@@ -34,6 +38,7 @@ export function createTestOps(
       await o.handleComment({ thread, text: str(a, A.body) }, a.action as CommentAction)
       return { notSent: added }
     },
+    [TEST_OP.draftThreads]: () => o.drafts(),
   }
 }
 

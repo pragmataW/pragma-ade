@@ -2,6 +2,7 @@ import { SCM_CHANGE, type ScmChangeResult } from '../../src/constants'
 import type {
   CommentControllerSpec,
   DiagnosticInfo,
+  DraftThreadSpec,
   RevisionSide,
   TabInfo,
   ThreadLike,
@@ -18,6 +19,8 @@ export interface FakeApi extends VscodeApi {
   state: Map<string, unknown>
   configWrites: string[]
   controllers: CommentControllerSpec[]
+  /** Threads created through a controller, with their disposed flag. */
+  threads: (DraftThreadSpec & { disposed: boolean })[]
   commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
   documents: Map<string, { lines: string[]; languageId: string }>
   diags: Map<string, DiagnosticInfo[]>
@@ -59,6 +62,7 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
   const state = new Map<string, unknown>()
   const configWrites: string[] = []
   const controllers: CommentControllerSpec[] = []
+  const threads: FakeApi['threads'] = []
   const commands: FakeApi['commands'] = new Map()
   const documents: FakeApi['documents'] = new Map()
   const disposable = { dispose: () => undefined }
@@ -102,7 +106,18 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     },
     createCommentController: (spec) => {
       controllers.push(spec)
-      return disposable
+      return {
+        dispose: () => undefined,
+        createThread: (t) => {
+          const rec = { ...t, disposed: false }
+          threads.push(rec)
+          return {
+            dispose: () => {
+              rec.disposed = true
+            },
+          }
+        },
+      }
     },
     registerReplyCommand: (id, handler) => {
       commands.set(id, handler)
@@ -129,6 +144,7 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     executed,
     current,
     controllers,
+    threads,
     commands,
     documents,
     logs,

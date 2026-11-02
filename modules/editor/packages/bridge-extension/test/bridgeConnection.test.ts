@@ -48,11 +48,13 @@ describe('BridgeConnection', () => {
     })
     expect(c.events).toEqual([{ name: 'setTheme', payload: THEME }])
     expect(c.conn.hello?.worktreeId).toBe('wt1')
+    expect(c.readies()).toBe(1)
   })
 
   it.each([
     ['openFile', { path: 'src/a.ts', line: 3 }],
     ['openDiff', { path: 'src/a.ts', refs: { old: 'abc', new: 'HEAD' }, line: 3 }],
+    ['drafts', { comments: [{ id: 'c1', filePath: 'src/a.ts', lineStart: 2, lineEnd: 2, body: 'note' }] }],
   ])('dispatches %s sent to this client', async (name, payload) => {
     const c = await connected()
     const clientId = c.hellos[0]?.clientId as string

@@ -22,6 +22,7 @@ export const TEST_OPS = [
   'addComment',
   'extensionActive',
   'activeEditor',
+  'draftThreads',
 ] as const
 export type TestOp = (typeof TEST_OPS)[number]
 export const TEST_OP = Object.fromEntries(TEST_OPS.map((o) => [o, o])) as { readonly [K in TestOp]: K }

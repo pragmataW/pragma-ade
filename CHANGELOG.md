@@ -10,6 +10,10 @@ All notable changes to Pragma ADE are listed here. The format follows
 - **Linux:** the editor stayed on "Starting editor…" and no terminal opened when the login shell's rc file starts
   another interactive shell (for example a `.bashrc` that runs `zsh`). Reading the shell environment now gives the
   shell an empty stdin and, on timeout, kills the whole process group and falls back to the app environment.
+- **Editor comments:** a comment added to the review from the editor vanished from the file. Editor drafts now stay on
+  their lines in the workbench as read-only "Pending" threads, like the cards in Git Changes, and disappear once they
+  are sent or deleted; an edit in the Comments drawer shows up in the editor too. When a send fails after the comment
+  was saved, only the Pending thread remains.
 
 ## [0.9.0] - 2026-11-02
 

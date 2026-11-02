@@ -1,5 +1,13 @@
 import type * as vscode from 'vscode'
-import { COMMENT_MESSAGES, LOG_CHANNEL, SEVERITIES, type Severity, TAB_KINDS, type TabKind } from './constants'
+import {
+  COMMENT_MESSAGES,
+  DRAFT_THREAD_CONTEXT,
+  LOG_CHANNEL,
+  SEVERITIES,
+  type Severity,
+  TAB_KINDS,
+  type TabKind,
+} from './constants'
 import { createGitPort, type GitPort } from './git'
 
 export type { RevisionSide } from './git'
@@ -21,6 +29,21 @@ export interface ThreadLike {
   /** Appends a read-only comment (used for "Not sent"). */
   addComment(body: string, label: string): void
   dispose(): void
+}
+
+/** A read-only thread showing a stored draft. */
+export interface DraftThreadSpec {
+  /** Absolute file path. */
+  path: string
+  /** 0-based inclusive lines. */
+  startLine: number
+  endLine: number
+  body: string
+  label: string
+}
+
+export interface CommentControllerHandle extends Disposable {
+  createThread(t: DraftThreadSpec): Disposable
 }
 
 export interface DocumentInfo {
@@ -69,7 +92,7 @@ export interface VscodeApi extends GitPort {
   /** `ConfigurationTarget.Global`. */
   updateGlobalConfig(section: string, key: string, value: unknown): Promise<void>
   globalState: GlobalStateLike
-  createCommentController(spec: CommentControllerSpec): Disposable
+  createCommentController(spec: CommentControllerSpec): CommentControllerHandle
   /** The handler gets the command argument converted to `{ thread, text }` when it is a comment reply. */
   registerReplyCommand(id: string, handler: (reply: { thread: ThreadLike; text: string }) => unknown): Disposable
   /** Full text lines and language of a document. */
@@ -155,7 +178,24 @@ export function createVscodeApi(vs: typeof vscode, ctx: vscode.ExtensionContext)
             .ranges({ scheme: doc.uri.scheme, fsPath: doc.uri.fsPath, lineCount: doc.lineCount })
             .map(([a, b]) => new vs.Range(a, 0, b, 0)),
       }
-      return c
+      return {
+        dispose: () => c.dispose(),
+        createThread(t) {
+          const comment: vscode.Comment = {
+            body: t.body,
+            label: t.label,
+            mode: vs.CommentMode.Preview,
+            author: { name: COMMENT_MESSAGES.author },
+          }
+          const thread = c.createCommentThread(vs.Uri.file(t.path), new vs.Range(t.startLine, 0, t.endLine, 0), [
+            comment,
+          ])
+          thread.canReply = false
+          thread.contextValue = DRAFT_THREAD_CONTEXT
+          thread.collapsibleState = vs.CommentThreadCollapsibleState.Expanded
+          return thread
+        },
+      }
     },
     registerReplyCommand: (id, handler) =>
       vs.commands.registerCommand(id, (reply: vscode.CommentReply) =>

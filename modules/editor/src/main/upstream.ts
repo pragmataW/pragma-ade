@@ -3,6 +3,7 @@ import {
   type Comment,
   type CommentInput,
   CommentsServiceToken,
+  commentsChanged,
   type SendResult,
 } from '@pragma/module-comments/contract'
 import {
@@ -29,6 +30,9 @@ export interface EditorUpstream {
   addDraft(i: CommentInput): Promise<Comment>
   /** No target: the comments module asks the user when needed. */
   send(commentIds: string[]): Promise<SendResult>
+  listDrafts(worktreeId: string): Promise<Comment[]>
+  /** A worktree's drafts were added, edited, deleted or delivered. */
+  onCommentsChanged(cb: (worktreeId: string) => void): () => void
 }
 
 const ref = (w: { id: string; path: string; archivedAt?: number | null } | null): WorktreeRef | null =>
@@ -59,5 +63,10 @@ export function createUpstream(ctx: MainContext): EditorUpstream {
     bridge,
     addDraft: (i) => comments.addDraft(i),
     send: (ids) => comments.send(ids),
+    listDrafts: (worktreeId) => comments.listDrafts(worktreeId),
+    onCommentsChanged(cb) {
+      const d = ctx.events.on(commentsChanged, (p) => cb(p.worktreeId))
+      return () => d.dispose()
+    },
   }
 }

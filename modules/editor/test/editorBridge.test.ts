@@ -1,4 +1,5 @@
 import type { TestBridgeServer } from '@pragma/module-bridge/testing'
+import type { Comment } from '@pragma/module-comments/contract'
 import { afterEach, describe, expect, it } from 'vitest'
 import { type EditorLanguageStatus, editorBridge, normalizeFolderKey } from '../src/contract'
 import { EditorBridge } from '../src/main/bridge/editorBridge'
@@ -41,6 +42,20 @@ const comment = (action: 'send' | 'draft') => ({
   lineEnd: 1,
   snippet: 'x',
   body: 'Fix the type',
+})
+
+/** A stored draft: an editor comment on `src/bad.ts:1` of w1 unless overridden. */
+const stored = (o: Partial<Comment>): Comment => ({
+  id: 'c',
+  worktreeId: 'w1',
+  source: 'editor',
+  filePath: 'src/bad.ts',
+  lineStart: 1,
+  snippet: 'x',
+  body: 'Pending note',
+  createdAt: 1,
+  updatedAt: 1,
+  ...o,
 })
 
 describe('EditorBridge', () => {
@@ -126,7 +141,7 @@ describe('EditorBridge', () => {
     [{ status: 'noSession' }, { status: 'needsUserAction', commentId: 'c1' }],
     [
       { status: 'failed', errorKey: 'deliveryFailed' },
-      { status: 'failed', message: 'deliveryFailed' },
+      { status: 'failed', message: 'deliveryFailed', commentId: 'c1' },
     ],
   ] as const)('comment send → %o maps to %o and the draft is kept', async (result, reply) => {
     const { up, ext } = await setup()
@@ -145,6 +160,49 @@ describe('EditorBridge', () => {
       status: 'failed',
       message: 'This folder is not a Pragma worktree',
     })
+  })
+
+  it("drafts answers the client worktree's editor drafts with lines, nothing for an unknown folder", async () => {
+    const { up, ext } = await setup()
+    up.stored = [
+      stored({ id: 'e1', lineStart: 2, lineEnd: 3 }),
+      stored({ id: 'e2', lineStart: 4 }),
+      stored({ id: 'd1', source: 'diff' }),
+      stored({ id: 'f1', lineStart: undefined }),
+      stored({ id: 'o1', worktreeId: 'w2' }),
+    ]
+    const one = await ext('/work/one')
+    await one.hello()
+    expect(await one.client.request(editorBridge, 'drafts', {})).toEqual({
+      comments: [
+        { id: 'e1', filePath: 'src/bad.ts', lineStart: 2, lineEnd: 3, body: 'Pending note' },
+        { id: 'e2', filePath: 'src/bad.ts', lineStart: 4, lineEnd: 4, body: 'Pending note' },
+      ],
+    })
+    const stranger = await ext('/elsewhere')
+    await stranger.hello()
+    expect(await stranger.client.request(editorBridge, 'drafts', {})).toEqual({ comments: [] })
+  })
+
+  it("a comments change pushes the worktree's drafts only to that worktree's clients", async () => {
+    const { up, ext } = await setup()
+    const [one, two] = [await ext('/work/one'), await ext('/work/two')]
+    await one.hello()
+    await two.hello()
+    up.stored = [stored({ id: 'e1' })]
+    up.emitCommentsChanged('w1')
+    await until(() => one.received.length === 1)
+    expect(one.received).toEqual([
+      {
+        name: 'drafts',
+        payload: { comments: [{ id: 'e1', filePath: 'src/bad.ts', lineStart: 1, lineEnd: 1, body: 'Pending note' }] },
+      },
+    ])
+    up.stored = []
+    up.emitCommentsChanged('w1')
+    await until(() => one.received.length === 2)
+    expect(one.received[1]).toEqual({ name: 'drafts', payload: { comments: [] } })
+    expect(two.received).toEqual([])
   })
 
   it('testRequest resolves on matching testResponse, ignores other requestIds', async () => {

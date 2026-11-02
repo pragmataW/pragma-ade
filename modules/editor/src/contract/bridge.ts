@@ -48,8 +48,19 @@ export const EditorCommentReplySchema = z.discriminatedUnion('status', [
   commentId.extend({ status: z.literal(COMMENT_REPLY.sent) }),
   /** The comments module shows its target picker / start-agent flow. */
   commentId.extend({ status: z.literal(COMMENT_REPLY.needsUserAction) }),
-  z.object({ status: z.literal(COMMENT_REPLY.failed), message: z.string() }),
+  /** `commentId` when the draft was stored before the send failed (it stays as a Pending draft). */
+  z.object({ status: z.literal(COMMENT_REPLY.failed), message: z.string(), commentId: z.string().optional() }),
 ])
+/** A stored editor draft as the extension draws it: a read-only thread on its lines until sent or deleted. */
+export const EditorDraftSchema = z.object({
+  id: z.string(),
+  filePath: z.string(),
+  lineStart: line(),
+  lineEnd: line(),
+  body: z.string(),
+})
+/** Every editor draft of the client's worktree (oldest first); the extension replaces what it shows with it. */
+export const EditorDraftsSchema = z.object({ comments: z.array(EditorDraftSchema) })
 export const EditorOpenFileMsgSchema = z.object({
   path: z.string(),
   line: line().optional(),
@@ -83,6 +94,8 @@ export type EditorHello = z.infer<typeof EditorHelloSchema>
 export type EditorHelloReply = z.infer<typeof EditorHelloReplySchema>
 export type EditorComment = z.infer<typeof EditorCommentSchema>
 export type EditorCommentReply = z.infer<typeof EditorCommentReplySchema>
+export type EditorDraft = z.infer<typeof EditorDraftSchema>
+export type EditorDrafts = z.infer<typeof EditorDraftsSchema>
 export type EditorOpenFileMsg = z.infer<typeof EditorOpenFileMsgSchema>
 export type DiffRefs = z.infer<typeof DiffRefsSchema>
 export type EditorOpenDiffMsg = z.infer<typeof EditorOpenDiffMsgSchema>
@@ -99,6 +112,8 @@ export const editorBridge = defineBridgeNamespace({
     comment: { input: EditorCommentSchema, output: EditorCommentReplySchema },
     testResponse: { input: EditorTestResponseSchema, output: z.null() },
     languageStatus: { input: EditorLanguageStatusSchema, output: z.null() },
+    /** Asked after every hello: the drafts to show. */
+    drafts: { input: z.object({}), output: EditorDraftsSchema },
   },
   events: {
     /** Sent to one client (`BridgeServer.send(clientId)`). */
@@ -109,6 +124,8 @@ export const editorBridge = defineBridgeNamespace({
     setTheme: EditorSetThemeMsgSchema,
     /** Sent to one client, test mode only. */
     testRequest: EditorTestRequestSchema,
+    /** Sent to every client of a worktree whose comments changed. */
+    drafts: EditorDraftsSchema,
   },
 })
 export type EditorBridgeEvent = keyof typeof editorBridge.events

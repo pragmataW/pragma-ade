@@ -15,6 +15,7 @@ function setup() {
       handled.push({ reply, action })
       reply.thread.addComment(reply.text, 'Not sent')
     },
+    drafts: () => [{ id: 'c1', path: 'src/bad.ts', startLine: 0, endLine: 0, body: 'note' }],
   })
   return { api, ops, handled }
 }
@@ -33,6 +34,11 @@ describe('test ops', () => {
     expect(handled[0]?.reply.thread.uri.fsPath).toBe('/work/repo/src/bad.ts')
     expect(handled[0]?.reply.thread.range).toEqual({ startLine: 0, endLine: 1 })
     expect(r).toEqual({ notSent: ['Fix'] })
+  })
+
+  it('draftThreads lists the Pending threads the review controller shows', () => {
+    const { ops } = setup()
+    expect(ops.draftThreads({})).toEqual([{ id: 'c1', path: 'src/bad.ts', startLine: 0, endLine: 0, body: 'note' }])
   })
 
   it('diagnostics resolve the path against the folder', () => {

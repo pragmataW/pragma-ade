@@ -9,6 +9,7 @@ import { BRIDGE_CLIENT_STATE, BRIDGE_UNAVAILABLE } from '@pragma/module-bridge/c
 import {
   EDITOR_CLIENT_KIND,
   EDITOR_CLIENT_NAME,
+  type EditorDrafts,
   type EditorHelloReply,
   type EditorOpenDiffMsg,
   type EditorOpenFileMsg,
@@ -19,7 +20,7 @@ import {
 } from '@pragma/module-editor/contract'
 import type { z } from '@pragma/sdk'
 import WebSocket from 'ws'
-import { CONNECTION, MESSAGES, RECONNECT } from './constants'
+import { CONNECTION, DRAFTS_MESSAGE, MESSAGES, RECONNECT } from './constants'
 import type { VscodeApi } from './vscodeApi'
 
 export type EditorEventHandlers = {
@@ -27,6 +28,9 @@ export type EditorEventHandlers = {
   openDiff(m: EditorOpenDiffMsg): Promise<void>
   setTheme(m: EditorSetThemeMsg): Promise<void>
   testRequest?(m: EditorTestRequest): Promise<void>
+  drafts(m: EditorDrafts): Promise<void>
+  /** After every hello (first connect and each reconnect). */
+  ready(): Promise<void>
 }
 
 type Requests = typeof editorBridge.requests
@@ -121,6 +125,7 @@ export class BridgeConnection {
       client.on(editorBridge, 'openFile', (m) => run(h.openFile(m))),
       client.on(editorBridge, 'openDiff', (m) => run(h.openDiff(m))),
       client.on(editorBridge, 'setTheme', (m) => run(h.setTheme(m))),
+      client.on(editorBridge, DRAFTS_MESSAGE, (m) => run(h.drafts(m))),
       client.on(editorBridge, 'testRequest', (m) => {
         if (h.testRequest) run(h.testRequest(m))
       }),
@@ -144,5 +149,6 @@ export class BridgeConnection {
     })
     this.#hello = reply
     await this.#handlers?.setTheme(reply.theme)
+    await this.#handlers?.ready()
   }
 }

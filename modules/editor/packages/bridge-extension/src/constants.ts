@@ -133,8 +133,11 @@ export const COMMENT_MESSAGES = {
   sent: 'Sent to agent',
   needsUserAction: 'Choose an agent in Pragma',
   notSentLabel: 'Not sent',
+  pendingLabel: 'Pending',
   author: 'You',
 } as const
+/** `CommentThread.contextValue` of a stored draft's read-only thread. */
+export const DRAFT_THREAD_CONTEXT = 'pragma-draft'
 export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const
 /** Index = `vscode.DiagnosticSeverity` (Error 0, Warning 1, Information 2, Hint 3). */
 export const SEVERITIES = ['error', 'warning', 'info', 'hint'] as const
@@ -152,3 +155,5 @@ export const TEST_ARG = {
   body: 'body',
 } as const
 export const TEST_RESPONSE = 'testResponse'
+/** The `editor` bridge request and event carrying the worktree's drafts. */
+export const DRAFTS_MESSAGE = 'drafts'

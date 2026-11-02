@@ -16,7 +16,11 @@ let connection: BridgeConnection | undefined
 
 function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewController): EditorEventHandlers {
   const folderPath = (): string => conn.folderPath ?? ''
-  const ops = createTestOps(api, { folderPath, handleComment: (r, a) => review.handle(r, a) })
+  const ops = createTestOps(api, {
+    folderPath,
+    handleComment: (r, a) => review.handle(r, a),
+    drafts: () => review.drafts(),
+  })
   // One apply at a time, only the newest waiting theme (hello reply and broadcasts share the queue).
   const themes = new LatestQueue<EditorSetThemeMsg>(
     async (m) => {
@@ -29,6 +33,8 @@ function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewControll
     openFile: (m) => handleOpenFile(api, folderPath(), m),
     openDiff: (m) => handleOpenDiff(api, folderPath(), m),
     setTheme: (m) => themes.push(m),
+    drafts: async (m) => review.showDrafts(m.comments),
+    ready: () => review.refresh(),
     ...(api.env[TEST_MODE.env] === TEST_MODE.enabled ? { testRequest: (m) => answerTestRequest(ops, conn, m) } : {}),
   }
 }

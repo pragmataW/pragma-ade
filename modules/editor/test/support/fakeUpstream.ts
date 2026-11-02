@@ -11,14 +11,18 @@ export interface FakeUpstream extends EditorUpstream {
   sendResult: SendResult
   worktrees: WorktreeRef[]
   active: string | null
+  /** What `listDrafts` answers (filtered by worktree). */
+  stored: Comment[]
   emitSelected(id: string | null): void
   emitRemoved(id: string): void
+  emitCommentsChanged(worktreeId: string): void
 }
 
 /** Projects/comments fakes around a real (or no) bridge server. */
 export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[] = []): FakeUpstream {
   const selectedCbs = new Set<(id: string | null) => void>()
   const removedCbs = new Set<(id: string) => void>()
+  const commentsCbs = new Set<(id: string) => void>()
   const up: FakeUpstream = {
     drafts: [],
     sends: [],
@@ -26,6 +30,7 @@ export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[]
     sendResult: { status: 'sent', sessionId: 's1', commentIds: [], sentAt: 1 },
     worktrees,
     active: worktrees[0]?.id ?? null,
+    stored: [],
     getActiveWorktreeId: () => up.active,
     getWorktree: async (id) => up.worktrees.find((w) => w.id === id) ?? null,
     findWorktreeByFolderKey: async (key) => up.worktrees.find((w) => normalizeFolderKey(w.path) === key) ?? null,
@@ -51,11 +56,19 @@ export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[]
       up.sends.push(ids)
       return up.sendResult
     },
+    listDrafts: async (worktreeId) => up.stored.filter((c) => c.worktreeId === worktreeId),
+    onCommentsChanged: (cb) => {
+      commentsCbs.add(cb)
+      return () => commentsCbs.delete(cb)
+    },
     emitSelected: (id) => {
       for (const cb of selectedCbs) cb(id)
     },
     emitRemoved: (id) => {
       for (const cb of removedCbs) cb(id)
+    },
+    emitCommentsChanged: (id) => {
+      for (const cb of commentsCbs) cb(id)
     },
   }
   return up
