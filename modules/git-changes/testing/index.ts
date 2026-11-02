@@ -2,27 +2,42 @@
 import { execFile } from 'node:child_process'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import type { GitService } from '@pragma/module-projects/contract'
 import { createFixtureRepo, type FixtureRepo, isolatedGitEnv } from '@pragma/test-support'
-import type { GitPort } from '../src/main/diff-service'
+import { parseBranchHeaders } from './status'
 
 export * from './fake-main-ctx'
 
 const GIT_MAX_BUFFER = 64 * 1024 * 1024
 
-/** A `GitPort` over the `git` CLI with the projects semantics: untrimmed stdout, throws unless `allowFailure`. */
-export function execGitPort(): GitPort {
-  const env = isolatedGitEnv()
-  const run: GitPort['run'] = (cwd, args, opts = {}) =>
+/** The `GitService` slice git-changes uses (diff and scm ports). */
+export type ExecGitPort = Pick<GitService, 'run' | 'mergeBase' | 'show' | 'countCommits' | 'status'>
+
+/**
+ * A git port over the `git` CLI with the projects semantics: untrimmed stdout, throws unless `allowFailure`, `input`
+ * on stdin, `env` over the isolated env. `status` only fills the branch headers (entries stay empty).
+ */
+export function execGitPort(): ExecGitPort {
+  const base = isolatedGitEnv()
+  const run: ExecGitPort['run'] = (cwd, args, opts = {}) =>
     new Promise((resolve, reject) => {
-      execFile('git', args, { cwd, env, encoding: 'utf8', maxBuffer: GIT_MAX_BUFFER }, (error, stdout, stderr) => {
-        const exitCode = error ? Number(error.code ?? 1) : 0
-        if (exitCode !== 0 && !opts.allowFailure) reject(new Error(`git ${args.join(' ')}: ${stderr}`))
-        else resolve({ stdout, stderr, exitCode })
-      })
+      const env = { ...base, ...opts.env }
+      const child = execFile(
+        'git',
+        args,
+        { cwd, env, encoding: 'utf8', maxBuffer: GIT_MAX_BUFFER },
+        (error, stdout, stderr) => {
+          const exitCode = error ? Number(error.code ?? 1) : 0
+          if (exitCode !== 0 && !opts.allowFailure) reject(new Error(`git ${args.join(' ')}: ${stderr}`))
+          else resolve({ stdout, stderr, exitCode })
+        },
+      )
+      child.stdin?.end(opts.input ?? '')
     })
   const allow = { allowFailure: true }
   return {
     run,
+    status: async (cwd) => parseBranchHeaders((await run(cwd, ['status', '--porcelain=v2', '-z', '--branch'])).stdout),
     async mergeBase(cwd, a, b) {
       const r = await run(cwd, ['merge-base', a, b], allow)
       return r.exitCode === 0 ? r.stdout.trim() : null

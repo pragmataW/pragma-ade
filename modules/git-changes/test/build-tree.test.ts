@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangedFile } from '../src/contract'
-import { buildFlatList, buildTree, leafOrder, type TreeNode } from '../src/renderer/tree/build-tree'
+import {
+  buildFlatList,
+  buildGroups,
+  buildTree,
+  entryKey,
+  leafOrder,
+  type TreeNode,
+} from '../src/renderer/tree/build-tree'
 
 const file = (path: string, status: ChangedFile['status'] = 'M'): ChangedFile => ({
   path,
@@ -51,5 +58,34 @@ describe('buildTree', () => {
       'src/b.ts',
       'README.md',
     ])
+  })
+})
+
+describe('buildGroups', () => {
+  const staged = (path: string): ChangedFile => ({ ...file(path), staged: true })
+
+  it('uncommitted: "Staged Changes" then "Changes", each grouping its own files; empty groups are left out', () => {
+    const groups = buildGroups([staged('src/a.ts'), file('src/a.ts'), file('b.ts')], { grouped: true, flat: false })
+    expect(groups.map((g) => [g.id, g.kind, g.fileCount])).toEqual([
+      ['g:staged', 'group', 1],
+      ['g:unstaged', 'group', 2],
+    ])
+    const [stagedDir] = groups[0]?.children ?? []
+    expect(stagedDir).toMatchObject({ kind: 'dir', path: 'src', staged: true })
+    expect(stagedDir?.children?.[0]).toMatchObject({ id: `f:${entryKey(staged('src/a.ts'))}`, path: 'src/a.ts' })
+    expect(buildGroups([file('b.ts')], { grouped: true, flat: false }).map((g) => g.id)).toEqual(['g:unstaged'])
+  })
+
+  it('flat groups list full paths; branch mode has no groups', () => {
+    const [group] = buildGroups([staged('a/b.ts')], { grouped: true, flat: true })
+    expect(group?.children?.map((n) => n.name)).toEqual(['a/b.ts'])
+    expect(buildGroups([file('a/b.ts')], { grouped: false, flat: false })[0]).toMatchObject({ kind: 'dir' })
+  })
+
+  it('entry keys tell a staged entry from the unstaged one of the same path; leafOrder lists keys', () => {
+    expect(entryKey(file('a.ts'))).toBe('a.ts')
+    expect(entryKey(staged('a.ts'))).not.toBe('a.ts')
+    const nodes = buildGroups([staged('a.ts'), file('a.ts')], { grouped: true, flat: false })
+    expect(leafOrder(nodes)).toEqual([entryKey(staged('a.ts')), 'a.ts'])
   })
 })

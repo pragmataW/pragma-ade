@@ -45,9 +45,7 @@ export function WorktreeRow({ worktree }: { worktree: Worktree }) {
       >
         <span className="flex w-full items-center gap-1.5">
           <Slot id={S.worktreeRowLeading} props={props} />
-          <span className="truncate [font-family:var(--font-code)] text-[12px]">
-            {worktree.branch ?? t('projects:sidebar.detached')}
-          </span>
+          <span className="truncate font-mono text-[12px]">{worktree.branch ?? t('projects:sidebar.detached')}</span>
           <span className="flex-1" />
           <Slot id={S.worktreeRowBadges} props={props} />
         </span>

@@ -45,6 +45,7 @@ describe('git-changes contract', () => {
       viewMode: 'tree',
       diffStyle: 'unified',
       showFullFile: false,
+      pullRebase: false,
     })
   })
 

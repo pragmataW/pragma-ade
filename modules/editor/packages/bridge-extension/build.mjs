@@ -1,8 +1,9 @@
 // Bundles the extension (esbuild) and packs dist/pragma-bridge.vsix (a zip: vsixmanifest + extension/…) and
 // dist/manifest.json { version, sha256 }. The zip has fixed timestamps, so the sha changes only with the content.
 import { createHash } from 'node:crypto'
-import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { createWriteStream, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { build } from 'esbuild'
 import yazl from 'yazl'
 
@@ -12,6 +13,9 @@ const vsix = join(dist, 'pragma-bridge.vsix')
 const bundle = join(root, 'out', 'extension.js')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const MTIME = new Date('2026-01-01T00:00:00Z')
+// The explorer icon theme (`contributes.iconThemes`): Material Icon Theme's manifest and SVGs, as published (MIT).
+const iconTheme = dirname(createRequire(import.meta.url).resolve('material-icon-theme/package.json'))
+const ICON_THEME_DIR = 'extension/icon-theme'
 const MANIFEST_KEYS = [
   'name',
   'displayName',
@@ -70,7 +74,7 @@ const vsixManifest = `<?xml version="1.0" encoding="utf-8"?>
 </PackageManifest>
 `
 const contentTypes = `<?xml version="1.0" encoding="utf-8"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension=".json" ContentType="application/json"/><Default Extension=".js" ContentType="application/javascript"/><Default Extension=".md" ContentType="text/markdown"/><Default Extension=".txt" ContentType="text/plain"/><Default Extension=".vsixmanifest" ContentType="text/xml"/></Types>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension=".json" ContentType="application/json"/><Default Extension=".js" ContentType="application/javascript"/><Default Extension=".md" ContentType="text/markdown"/><Default Extension=".txt" ContentType="text/plain"/><Default Extension=".vsixmanifest" ContentType="text/xml"/><Default Extension=".svg" ContentType="image/svg+xml"/></Types>
 `
 
 mkdirSync(dist, { recursive: true })
@@ -82,6 +86,11 @@ add('extension/package.json', `${JSON.stringify(extensionManifest, null, 2)}\n`)
 add('extension/readme.md', readFileSync(join(root, 'README.md')))
 add('extension/LICENSE.txt', readFileSync(join(root, 'LICENSE')))
 add('extension/out/extension.js', readFileSync(bundle))
+add(`${ICON_THEME_DIR}/LICENSE`, readFileSync(join(iconTheme, 'LICENSE')))
+add(`${ICON_THEME_DIR}/dist/material-icons.json`, readFileSync(join(iconTheme, 'dist', 'material-icons.json')))
+for (const file of readdirSync(join(iconTheme, 'icons')).sort()) {
+  add(`${ICON_THEME_DIR}/icons/${file}`, readFileSync(join(iconTheme, 'icons', file)))
+}
 zip.end()
 await new Promise((resolve, reject) =>
   zip.outputStream.pipe(createWriteStream(vsix)).on('close', resolve).on('error', reject),

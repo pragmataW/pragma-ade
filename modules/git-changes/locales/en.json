@@ -6,7 +6,8 @@
     "title": "Git Changes"
   },
   "commands": {
-    "reveal": "Git Changes: Reveal file"
+    "reveal": "Git Changes: Reveal file",
+    "toggleFileList": "Git Changes: Toggle file list"
   },
   "mode": {
     "label": "Changes to show",
@@ -29,7 +30,9 @@
     "style": "Diff style",
     "unified": "Unified",
     "split": "Split",
-    "fullFile": "Full file"
+    "fullFile": "Full file",
+    "hideFileList": "Hide file list",
+    "showFileList": "Show file list"
   },
   "errors": {
     "baseNotFound": "Base branch {{base}} was not found",
@@ -40,6 +43,10 @@
     "noWorktree": "Select a worktree to see its changes",
     "noChanges": "No changes",
     "loading": "Loading changes…"
+  },
+  "groups": {
+    "staged": "Staged Changes",
+    "unstaged": "Changes"
   },
   "tree": {
     "label": "Changed files",
@@ -88,5 +95,104 @@
     "confirmDiscard": "Discard {{count}}? Click again",
     "send_one": "Send {{count}} comment to agent",
     "send_other": "Send {{count}} comments to agent"
+  },
+  "scm": {
+    "dismiss": "Dismiss",
+    "errors": {
+      "gitFailed": "Git failed",
+      "authFailed": "Git could not authenticate with the remote. Set up a credential helper or SSH key and try again.",
+      "conflict": "There are merge conflicts. Resolve them, then stage the files.",
+      "localChanges": "Your local changes would be overwritten. Commit or stash them first.",
+      "nonFastForward": "The remote has commits you do not have. Pull first, then push.",
+      "noUpstream": "This branch has no upstream branch to pull from.",
+      "noRemote": "This repository has no remote to push to.",
+      "detachedHead": "HEAD is detached: check out a branch to push.",
+      "nothingToCommit": "There are no changes to commit.",
+      "nothingToStash": "There are no changes to stash.",
+      "emptyMessage": "Enter a commit message.",
+      "hunkStale": "This change moved since it was shown. Try again.",
+      "stashNotFound": "That stash no longer exists."
+    },
+    "commit": {
+      "placeholder": "Message (⌘/Ctrl+Enter to commit on \"{{branch}}\")",
+      "action": "Commit",
+      "more": "More commit actions"
+    },
+    "sync": {
+      "counts": "{{behind}}↓ {{ahead}}↑",
+      "title": "Synchronize changes with {{upstream}}: pull {{behind}}, push {{ahead}}",
+      "publish": "Publish Branch",
+      "publishTitle": "Publish {{branch}} to the remote"
+    },
+    "menu": {
+      "more": "More actions",
+      "pull": "Pull",
+      "push": "Push",
+      "fetch": "Fetch",
+      "commitGroup": "Commit",
+      "commit": "Commit",
+      "commitAmend": "Commit (Amend)",
+      "commitSignoff": "Commit (Signed Off)",
+      "undoCommit": "Undo Last Commit",
+      "changesGroup": "Changes",
+      "stageAll": "Stage All Changes",
+      "unstageAll": "Unstage All Changes",
+      "discardAll": "Discard All Changes",
+      "remoteGroup": "Pull, Push",
+      "sync": "Sync",
+      "pullRebase": "Pull (Rebase)",
+      "fetchPrune": "Fetch (Prune)",
+      "stashGroup": "Stash",
+      "stash": "Stash",
+      "stashUntracked": "Stash (Include Untracked)",
+      "stashStaged": "Stash Staged",
+      "applyLatest": "Apply Latest Stash",
+      "popLatest": "Pop Latest Stash",
+      "dropAll": "Drop All Stashes…"
+    },
+    "stash": {
+      "title": "Stashes",
+      "apply": "Apply Stash",
+      "pop": "Pop Stash",
+      "drop": "Drop Stash",
+      "placeholder": {
+        "tracked": "Stash message (optional) · Enter to stash, Esc to cancel",
+        "untracked": "Stash message, including untracked files (optional) · Enter to stash",
+        "staged": "Stash message for the staged changes (optional) · Enter to stash"
+      }
+    },
+    "row": {
+      "stage": "Stage Changes",
+      "unstage": "Unstage Changes",
+      "discard": "Discard Changes",
+      "stageAll": "Stage All Changes",
+      "unstageAll": "Unstage All Changes",
+      "discardAll": "Discard All Changes"
+    },
+    "hunk": {
+      "stage": "Stage",
+      "unstage": "Unstage",
+      "discard": "Discard"
+    },
+    "confirm": {
+      "discardTitle": "Discard changes",
+      "discardFile": "Are you sure you want to discard the changes in {{file}}?",
+      "discardAction": "Discard File",
+      "discardHunk": "Are you sure you want to discard this change in {{file}}?",
+      "discardMany": "Are you sure you want to discard ALL changes in {{count}} files?",
+      "discardManyUntracked": "Are you sure you want to discard ALL changes in {{count}} files? {{untracked}} untracked files will be DELETED; this is IRREVERSIBLE.",
+      "discardManyAction": "Discard All Files",
+      "deleteTitle": "Delete file",
+      "deleteFile": "Are you sure you want to DELETE {{file}}? This is IRREVERSIBLE! This file will be FOREVER LOST if you proceed.",
+      "deleteAction": "Delete File",
+      "smartCommitTitle": "No staged changes",
+      "smartCommit": "There are no staged changes to commit. Would you like to stage all your changes and commit them directly?",
+      "smartCommitAction": "Stage All and Commit",
+      "dropTitle": "Drop stash",
+      "dropStash": "Are you sure you want to drop the stash: {{stash}}?",
+      "dropAction": "Drop",
+      "dropAll": "Are you sure you want to drop ALL {{count}} stashes? They MAY BE IMPOSSIBLE TO RECOVER.",
+      "dropAllAction": "Drop All"
+    }
   }
 }

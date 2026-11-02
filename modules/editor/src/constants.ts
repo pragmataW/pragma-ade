@@ -103,7 +103,19 @@ export const MIME_BY_EXT: Record<string, string> = {
   '.svg': 'image/svg+xml',
 }
 export const MIME_DEFAULT = 'application/octet-stream'
-export const WC_EVENTS = { willNavigate: 'will-navigate' } as const
+export const WC_EVENTS = { willNavigate: 'will-navigate', domReady: 'dom-ready' } as const
+/** Where the workbench sets `--monaco-font` / `--monaco-monospace-font`: its container and the platform classes. */
+export const WORKBENCH_FONT_SELECTORS = ['.monaco-workbench', '.mac', '.windows', '.linux'] as const
+/** fontsource (Google Fonts) subset ranges; latin-ext has Turkish (ğ ş İ). */
+export const FONT_UNICODE_RANGE = {
+  latin:
+    'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD',
+  latinExt:
+    'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF',
+} as const
+/** The variable fonts' `wght` axes. */
+export const FONT_WEIGHT_RANGE = { sans: '100 900', mono: '100 800' } as const
+export const DATA_URL_BASE64_MARKER = ';base64,'
 export const WINDOW_OPEN = { openExternal: 'openExternal', deny: 'deny' } as const
 export const OPEN_FILE_READY_TIMEOUT_MS = 30_000
 export const TEST_REQUEST_TIMEOUT_MS = 30_000

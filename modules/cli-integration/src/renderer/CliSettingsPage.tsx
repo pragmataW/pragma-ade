@@ -17,7 +17,7 @@ import { type CliIntegrationState, useCliIntegrationStatus } from './use-status'
 const SMALL = 'sm'
 const OUTLINE = 'outline'
 const SECONDARY = 'secondary'
-const MONO = '[font-family:var(--font-code)] text-[12px]'
+const MONO = 'font-mono text-[12px]'
 const NOTE = 'text-[12px] text-mu'
 const WARNING = 'text-[12px] text-warn'
 

@@ -41,7 +41,7 @@ export function StatusBarBranch() {
         className="flex items-center gap-1"
       >
         <Icon name={ICONS.branch} size={ICON_PX.small} />
-        <span className="[font-family:var(--font-code)]">{branch}</span>
+        <span className="font-mono">{branch}</span>
       </span>
       {sync && <AheadBehind sync={sync} />}
     </>

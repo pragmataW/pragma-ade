@@ -13,7 +13,7 @@ export function Breadcrumb() {
   return (
     <span data-testid={T.breadcrumb} className="truncate text-mu text-[12px]">
       {`${project.name} ${t('projects:breadcrumb.separator')} `}
-      <span className="[font-family:var(--font-code)]">{branch}</span>
+      <span className="font-mono">{branch}</span>
     </span>
   )
 }

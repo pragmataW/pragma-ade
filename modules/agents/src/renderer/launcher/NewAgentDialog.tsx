@@ -117,7 +117,7 @@ function RunInField(props: {
             data-testid={AGENTS_TESTIDS.launcherBranch}
             value={props.branch}
             onChange={(e) => props.setBranch(e.target.value)}
-            className="[font-family:var(--font-code)] text-[12px]"
+            className="font-mono text-[12px]"
           />
         </div>
       ) : null}

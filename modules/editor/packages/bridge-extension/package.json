@@ -18,6 +18,13 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "iconThemes": [
+      {
+        "id": "pragma-material-icons",
+        "label": "Material Icons (Pragma)",
+        "path": "./icon-theme/dist/material-icons.json"
+      }
+    ],
     "commands": [
       {
         "command": "pragma.comment.sendToAgent",
@@ -95,6 +102,7 @@
     "@types/ws": "8.18.2",
     "@types/yazl": "3.3.1",
     "esbuild": "0.28.2",
+    "material-icon-theme": "5.40.0",
     "vitest": "5.0.5",
     "ws": "8.22.0",
     "yazl": "3.3.1"

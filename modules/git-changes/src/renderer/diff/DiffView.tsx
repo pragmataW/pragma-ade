@@ -51,6 +51,10 @@ export interface DiffViewProps {
   onRange?(range: SelectedLineRange, contents: FileDiffContents): void
   /** "Open in editor" (the file's git diff in the Files tab); absent without the editor module. */
   onOpenInEditor?: EditorOpener | null
+  /** A file of this stash (its base ↔ the stash) instead of an entry of the change list. */
+  stash?: string
+  /** Shown between the header and the diff (the hunk actions of an uncommitted entry). */
+  hunkBar?: ReactNode
 }
 
 const DIFFS_CONTAINER = 'diffs-container'
@@ -217,8 +221,8 @@ function DiffBody(props: DiffViewProps & { contents: FileDiffContents }) {
 /** Header (path, +/−, change navigation, Open in editor) and the full-file diff or a placeholder. */
 export function DiffView(props: DiffViewProps) {
   const t = useT()
-  const { worktreeId, mode, file, ref, onOpenInEditor } = props
-  const loaded = useFileContents(worktreeId, mode, file)
+  const { worktreeId, mode, file, ref, onOpenInEditor, stash } = props
+  const loaded = useFileContents(worktreeId, mode, file, stash)
   const scroller = useRef<HTMLDivElement>(null)
   useImperativeHandle(ref, () => ({
     nextChange: () => jump(scroller.current, NEXT),
@@ -230,12 +234,19 @@ export function DiffView(props: DiffViewProps) {
     return <div className="p-4 text-muted-foreground text-sm">{t(key)}</div>
   })()
   return (
-    <div data-testid={T.diff} data-path={file.path} className="flex min-h-0 flex-1 flex-col">
+    <div
+      data-testid={T.diff}
+      data-path={file.path}
+      data-staged={file.staged || undefined}
+      data-stash={stash}
+      className="flex min-h-0 flex-1 flex-col"
+    >
       <DiffHeader file={file} onJump={(d) => jump(scroller.current, d)}>
         {onOpenInEditor ? (
           <OpenInEditor open={() => onOpenInEditor(file, editorLine(loaded.data, props.composer))} />
         ) : null}
       </DiffHeader>
+      {props.hunkBar}
       <div ref={scroller} className="flex min-h-0 flex-1 flex-col overflow-auto">
         {body}
       </div>

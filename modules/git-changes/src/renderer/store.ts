@@ -1,43 +1,66 @@
 import type { CommentContext } from '@pragma/module-comments/contract'
 import { create } from 'zustand'
 import { CHANGE_MODE, type ChangedFile, type ChangeMode } from '../contract'
+import { entryKey } from './tree/build-tree'
 
 /** What the panel shows for one worktree. */
 export interface WorktreeView {
   mode: ChangeMode
+  /** The selected entry's key (`entryKey`: its path, prefixed for a staged entry). */
   selectedPath: string | null
-  /** Display order of the last reconciled list (to keep the selection's index when its file disappears). */
+  /** Entry keys of the last reconciled list in display order (to keep the selection's index when it disappears). */
   order: string[]
   composer: CommentContext | null
+  /** A file of a stash shown in the diff pane instead of the selected entry. */
+  stashFile: StashFile | null
 }
 
-const INITIAL_VIEW: WorktreeView = { mode: CHANGE_MODE.uncommitted, selectedPath: null, order: [], composer: null }
+/** A stash (by commit sha) and one of its files (`scm.stashFiles`). */
+export interface StashFile {
+  sha: string
+  file: ChangedFile
+}
+
+const INITIAL_VIEW: WorktreeView = {
+  mode: CHANGE_MODE.uncommitted,
+  selectedPath: null,
+  order: [],
+  composer: null,
+  stashFile: null,
+}
 
 /**
  * Keeps `prev` while it is listed; otherwise the file now at its old index, else the last file, else null. Without a
  * previous selection (or one the old order did not know) the first file.
  */
 export function reconcileSelection(prev: string | null, prevOrder: readonly string[], files: readonly ChangedFile[]) {
-  const paths = files.map((f) => f.path)
+  const paths = files.map(entryKey)
   if (prev !== null && paths.includes(prev)) return prev
   const index = prev === null ? -1 : prevOrder.indexOf(prev)
   if (index < 0) return paths[0] ?? null
   return paths[index] ?? paths.at(-1) ?? null
 }
 
-/** `uncommitted` when the path has uncommitted changes, else `branch`; `current` while that list is unknown. */
-export function revealMode(path: string, uncommittedPaths: readonly string[] | null, current: ChangeMode): ChangeMode {
-  if (uncommittedPaths === null) return current
-  return uncommittedPaths.includes(path) ? CHANGE_MODE.uncommitted : CHANGE_MODE.branch
+/** `uncommitted` when the entry key has uncommitted changes, else `branch`; `current` while that list is unknown. */
+export function revealMode(key: string, uncommittedKeys: readonly string[] | null, current: ChangeMode): ChangeMode {
+  if (uncommittedKeys === null) return current
+  return uncommittedKeys.includes(key) ? CHANGE_MODE.uncommitted : CHANGE_MODE.branch
 }
 
 export interface GitChangesState {
   views: Record<string, WorktreeView>
+  /** The changed-files list is collapsed (all worktrees); null until read from the saved layout. */
+  treeCollapsed: boolean | null
+  setTreeCollapsed(collapsed: boolean): void
+  toggleTree(): void
   setMode(worktreeId: string, mode: ChangeMode): void
   select(worktreeId: string, path: string | null): void
   /** `files` in display order. */
   reconcile(worktreeId: string, files: readonly ChangedFile[]): void
-  reveal(worktreeId: string, path: string, uncommittedPaths: readonly string[] | null): void
+  /** `key`: the entry to select (`entryKey`); `uncommittedKeys`: the uncommitted list's keys, null when unknown. */
+  reveal(worktreeId: string, key: string, uncommittedKeys: readonly string[] | null): void
+  /** Shows a stash's file in the diff pane (null: back to the selected entry). */
+  showStashFile(worktreeId: string, stashFile: StashFile | null): void
   openComposer(worktreeId: string, context: CommentContext): void
   closeComposer(worktreeId: string): void
 }
@@ -53,18 +76,25 @@ export const useGitChangesStore = create<GitChangesState>()((set) => {
     })
   return {
     views: {},
+    treeCollapsed: null,
+    setTreeCollapsed: (collapsed) => set((s) => (s.treeCollapsed === collapsed ? {} : { treeCollapsed: collapsed })),
+    toggleTree: () => set((s) => ({ treeCollapsed: !s.treeCollapsed })),
     setMode: (id, mode) => patch(id, (v) => (v.mode === mode ? {} : { mode, order: [], composer: null })),
-    select: (id, path) => patch(id, (v) => (v.selectedPath === path ? {} : { selectedPath: path, composer: null })),
+    select: (id, path) =>
+      patch(id, (v) =>
+        v.selectedPath === path && v.stashFile === null ? {} : { selectedPath: path, composer: null, stashFile: null },
+      ),
+    showStashFile: (id, stashFile) => patch(id, () => ({ stashFile, composer: null })),
     reconcile: (id, files) =>
       patch(id, (v) => {
         const selectedPath = reconcileSelection(v.selectedPath, v.order, files)
-        const order = files.map((f) => f.path)
+        const order = files.map(entryKey)
         return { selectedPath, order, composer: selectedPath === v.selectedPath ? v.composer : null }
       }),
-    reveal: (id, path, uncommittedPaths) =>
+    reveal: (id, key, uncommittedKeys) =>
       patch(id, (v) => ({
-        mode: revealMode(path, uncommittedPaths, v.mode),
-        selectedPath: path,
+        mode: revealMode(key, uncommittedKeys, v.mode),
+        selectedPath: key,
         order: [],
         composer: null,
       })),

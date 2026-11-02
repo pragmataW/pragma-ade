@@ -8,10 +8,12 @@ import {
   listChangesIpc,
   REVEAL_COMMAND_ID,
   RevealArgsSchema,
+  TOGGLE_FILE_LIST_COMMAND_ID,
 } from '../contract'
 import { GitChangesPanel } from './GitChangesPanel'
 import { type GitChangesRendererContext, setRendererCtx } from './lib/sdk'
 import { useGitChangesStore } from './store'
+import { entryKey } from './tree/build-tree'
 import './styles.css'
 
 /** Mirrors 01's changed-file count of the active worktree into the tab badge (null hides it). */
@@ -34,8 +36,10 @@ function startBadge(ctx: GitChangesRendererContext): void {
 async function reveal(ctx: GitChangesRendererContext, raw: unknown): Promise<void> {
   const { worktreeId, path } = RevealArgsSchema.parse(raw)
   const list = await ctx.ipc.invoke(listChangesIpc, { worktreeId, mode: CHANGE_MODE.uncommitted }).catch(() => null)
-  const uncommitted = list?.state === CHANGE_LIST_STATE.ok ? list.files.map((f) => f.path) : null
-  useGitChangesStore.getState().reveal(worktreeId, path, uncommitted)
+  const files = list?.state === CHANGE_LIST_STATE.ok ? list.files : null
+  // The unstaged entry wins over the staged one of the same path (it is what the disk shows).
+  const entry = files?.find((f) => f.path === path && !f.staged) ?? files?.find((f) => f.path === path)
+  useGitChangesStore.getState().reveal(worktreeId, entry ? entryKey(entry) : path, files?.map(entryKey) ?? null)
   ctx.panels.activateRightTab(TAB_ID)
 }
 
@@ -51,5 +55,8 @@ export default defineRendererModule<GitChangesSettings>({
     })
     startBadge(ctx)
     ctx.commands.register(REVEAL_COMMAND_ID, (raw) => reveal(ctx, raw), { titleKey: 'git-changes:commands.reveal' })
+    ctx.commands.register(TOGGLE_FILE_LIST_COMMAND_ID, () => useGitChangesStore.getState().toggleTree(), {
+      titleKey: 'git-changes:commands.toggleFileList',
+    })
   },
 })

@@ -2,4 +2,5 @@
 export { MAX_FILE_BYTES_DEFAULT, MODULE_ID as GIT_CHANGES_MODULE_ID } from '../constants'
 export * from './ipc'
 export * from './schemas'
+export * from './scm'
 export * from './testids'

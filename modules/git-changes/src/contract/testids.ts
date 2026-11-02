@@ -11,6 +11,10 @@ export const GitChangesTestIds = {
   toggleStyle: 'gc-toggle-style',
   toggleFull: 'gc-toggle-full',
   tree: 'gc-tree',
+  /** The resizable file-list pane, its separator and the toolbar button that collapses / expands it. */
+  treePane: 'gc-tree-pane',
+  treeSeparator: 'gc-tree-separator',
+  toggleTree: 'gc-toggle-tree',
   treeRow: 'gc-tree-row',
   /** Right-click menu of a file row. */
   rowMenu: 'gc-row-menu',
@@ -26,4 +30,24 @@ export const GitChangesTestIds = {
   reviewSend: 'gc-review-send',
   reviewDiscard: 'gc-review-discard',
   commentCard: 'gc-comment-card',
+  /** Source Control: commit box, split Commit button and its menu, Sync, the "…" menu and its items. */
+  commitMessage: 'gc-commit-message',
+  commitButton: 'gc-commit-button',
+  commitMenu: 'gc-commit-menu',
+  commitMenuItem: (id: string) => `gc-commit-menu-${id}`,
+  syncButton: 'gc-sync-button',
+  scmMenu: 'gc-scm-menu',
+  scmMenuItem: (id: string) => `gc-scm-menu-${id}`,
+  stashPrompt: 'gc-stash-prompt',
+  scmError: 'gc-scm-error',
+  /** Inline actions of a tree row (`stage`, `unstage`, `discard`, `open`) and of the diff's hunk list. */
+  rowAction: (action: string) => `gc-row-${action}`,
+  rowMenuItem: (action: string) => `gc-row-menu-${action}`,
+  hunks: 'gc-hunks',
+  hunkAction: (action: string) => `gc-hunk-${action}`,
+  /** The Stashes section: header, rows (with `data-sha`), their actions and files. */
+  stashes: 'gc-stashes',
+  stashRow: 'gc-stash-row',
+  stashAction: (action: string) => `gc-stash-${action}`,
+  stashFile: 'gc-stash-file',
 } as const

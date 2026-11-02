@@ -14,6 +14,12 @@ export const TREE_INDENT_PX = 12
 export const TREE_WIDTH_PX = 232
 export const TREE_MIN_WIDTH_PX = 140
 export const TREE_MAX_WIDTH_PX = 480
+/** The file list collapses fully (toolbar toggle, command, separator double-click). */
+export const TREE_COLLAPSED_PX = 0
+export const DIFF_MIN_WIDTH_PX = 240
+/** `host.layout` keys: the split's sizes (`useDefaultLayout`) and whether the file list is collapsed. */
+export const SPLIT_LAYOUT_ID = 'git-changes.split'
+export const TREE_COLLAPSED_LAYOUT_KEY = 'git-changes.treeCollapsed'
 
 /** Diff rendering. */
 export const DIFF_CONTEXT_LINES = 3
@@ -47,6 +53,11 @@ export const COMMENTS_OPEN_DRAWER_COMMAND = 'comments.openDrawer'
 export const PIERRE_THEMES = { dark: 'pierre-dark', light: 'pierre-light' } as const
 export const HUNK_SEPARATORS = 'line-info'
 
+/** The commit message box grows with its text up to this many rows. */
+export const COMMIT_BOX_MAX_ROWS = 6
+/** fetch / pull / push may wait on the network much longer than local git calls. */
+export const NETWORK_TIMEOUT_MS = 120_000
+
 /** Prefix of every git call (paths stay unquoted, unicode intact). */
 export const GIT_FLAGS = ['-c', 'core.quotepath=false'] as const
 /** Test hook switch: register a fake `editor.openDiff` recorder (PRAGMA_TEST only). */
@@ -55,12 +66,17 @@ export const FAKE_EDITOR_ENV = 'PRAGMA_TEST_FAKE_EDITOR'
 /** Tree node ids: `d:<dir path>` / `f:<file path>`. */
 export const DIR_ID_PREFIX = 'd:'
 export const FILE_ID_PREFIX = 'f:'
+/** Group node ids (`g:staged` / `g:unstaged`). */
+export const GROUP_ID_PREFIX = 'g:'
+/** Entry key prefix of a staged entry: a repo path is never absolute, so it never collides with an unstaged key. */
+export const STAGED_KEY_PREFIX = '/staged/'
 /** Tree height until the container is measured (jsdom, first paint). */
 export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14
-export const TREE_RESIZE_STEP_PX = 16
+export const ROW_ACTION_ICON_PX = 13
 export const DIFF_ICON_PX = 14
 /** Repeated UI attribute values. */
+export const BUTTON_TYPE = 'button'
 export const ROLE_ALERT = 'alert'
 export const VARIANT_OUTLINE = 'outline'
 export const VARIANT_GHOST = 'ghost'

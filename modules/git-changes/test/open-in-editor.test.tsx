@@ -57,12 +57,14 @@ async function mountWithEditor() {
 const row = (path: string) => screen.getAllByTestId(T.treeRow).find((r) => r.dataset.path === path) as HTMLElement
 
 describe('Open in editor (git diff)', () => {
-  it('is hidden without editor.openDiff: no header button, no row menu', async () => {
+  it('is hidden without editor.openDiff: no header button, no row menu item', async () => {
     h = await mountPanel({ answers })
     await screen.findByTestId(T.diff)
     expect(screen.queryByTestId(T.openInEditor)).toBeNull()
+    expect(screen.queryByTestId(T.rowAction('open'))).toBeNull()
     fireEvent.contextMenu(row('src/app.ts'))
-    expect(screen.queryByTestId(T.rowMenu)).toBeNull()
+    expect(await screen.findByTestId(T.rowMenu)).toBeInTheDocument()
+    expect(screen.queryByTestId(T.rowMenuOpenInEditor)).toBeNull()
   })
 
   it('header icon button (tooltip + aria-label) opens the diff and switches to the Files tab', async () => {

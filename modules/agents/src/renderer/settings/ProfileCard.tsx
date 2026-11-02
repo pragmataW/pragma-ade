@@ -19,7 +19,7 @@ import { type RunProfileAction, useProfileAction } from './profile-action'
 
 const SECONDARY = 'secondary'
 const OUTLINE = 'outline'
-const MONO = '[font-family:var(--font-code)]'
+const MONO = 'font-mono'
 const FIELD_LABEL = 'text-[12px] font-medium text-mu'
 
 function Badges({ profile }: { profile: AgentProfile }) {
