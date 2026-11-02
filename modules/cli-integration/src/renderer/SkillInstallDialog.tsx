@@ -35,7 +35,7 @@ function TargetDirs({ targets }: { targets: SkillTargetStatus[] }) {
     <ul className="ml-6 flex flex-col gap-0.5">
       {targets.map((s) => (
         <li key={s.dir} className="flex items-baseline gap-2 text-[11.5px] text-mu">
-          <span data-testid={CLI_TESTIDS.skillsDialogDir} className="[font-family:var(--font-code)] break-all">
+          <span data-testid={CLI_TESTIDS.skillsDialogDir} className="font-mono break-all">
             {s.dir}
           </span>
           {s.state === SKILL_STATE.foreign ? (

@@ -34,9 +34,7 @@ function ProfileOption({ profile, checked, onSelect }: { profile: AgentProfile; 
           {profileName(profile, t)}
           {profile.isDefault ? <Badge variant="secondary">{t('agents:settings.default')}</Badge> : null}
         </span>
-        <span className="truncate [font-family:var(--font-code)] text-[11.5px] text-mu">
-          {commandPreview(profile).effective}
-        </span>
+        <span className="truncate font-mono text-[11.5px] text-mu">{commandPreview(profile).effective}</span>
         <ProfileWarning check={check} command={profile.command} compact />
       </span>
     </PlainButton>

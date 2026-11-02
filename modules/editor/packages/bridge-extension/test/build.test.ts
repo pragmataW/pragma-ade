@@ -20,5 +20,8 @@ describe('build:vsix', () => {
     const list = spawnSync('unzip', ['-l', VSIX], { encoding: 'utf8' }).stdout
     expect(list).toContain('extension/package.json')
     expect(list).toContain('extension/out/extension.js')
+    expect(list).toContain('extension/icon-theme/dist/material-icons.json')
+    expect(list).toContain('extension/icon-theme/icons/typescript.svg')
+    expect(list).toContain('extension/icon-theme/LICENSE')
   }, 60_000)
 })

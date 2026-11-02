@@ -33,7 +33,7 @@ export function ProjectsSettingsPage() {
             setSaved(false)
             setRoot(e.target.value)
           }}
-          className="[font-family:var(--font-code)] text-[12px]"
+          className="font-mono text-[12px]"
         />
       </Field>
       <ErrorText error={save.error} />

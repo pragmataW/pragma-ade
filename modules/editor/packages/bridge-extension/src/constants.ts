@@ -21,6 +21,13 @@ export const CONFIG = {
   mode: 'mode',
   extensions: 'extensions',
   autoUpdate: 'autoUpdate',
+  editor: 'editor',
+  fontFamily: 'fontFamily',
+  fontSize: 'fontSize',
+  lineHeight: 'lineHeight',
+  terminal: 'terminal',
+  terminalFontFamily: 'integrated.fontFamily',
+  iconTheme: 'iconTheme',
 } as const
 export const STATE_KEYS = {
   /** Top-level colour ids written by versions before theme-scoped blocks (removed on the next apply). */
@@ -32,7 +39,16 @@ export const STATE_KEYS = {
 /** A theme apply re-reads what it wrote; another workbench writing the same user settings can undo or reject it. */
 export const THEME_APPLY = { attempts: 5, retryDelayMs: 200 } as const
 export const THEME_SCOPE = { top: '', open: '[', close: ']' } as const
-export const DEFAULT_VALUES = { none: 'none', off: 'off' } as const
+export const DEFAULT_VALUES = {
+  none: 'none',
+  off: 'off',
+  /** The app's code font (`FONT_MONO` in `@pragma/ui`); the app loads it into the workbench. */
+  monoFont: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
+  editorFontSize: 12.5,
+  editorLineHeight: 20,
+  /** `contributes.iconThemes[0].id` in package.json: Material icons, the same set the app's trees draw. */
+  iconTheme: 'pragma-material-icons',
+} as const
 /** The built-in git extension and the commands "Open in editor" (Git Changes) uses. */
 export const GIT = {
   extensionId: 'vscode.git',

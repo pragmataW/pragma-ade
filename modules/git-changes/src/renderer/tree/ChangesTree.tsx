@@ -1,6 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
-import { ChevronDown, ChevronRight, File, Folder, FolderOpen, MessageSquare } from '@pragma/ui/icons'
+import { FileIcon } from '@pragma/ui/components/file-icon'
+import { ChevronDown, ChevronRight, MessageSquare } from '@pragma/ui/icons'
 import {
   type CSSProperties,
   createContext,
@@ -97,11 +98,10 @@ function GroupLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node
 
 function DirLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node']; actions: ReactNode }) {
   const Chevron = node.isOpen ? ChevronDown : ChevronRight
-  const FolderIcon = node.isOpen ? FolderOpen : Folder
   return (
     <>
       <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
-      <FolderIcon size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
+      <FileIcon path={node.data.name} folder open={node.isOpen} size={TREE_ICON_PX} />
       <span className="min-w-0 flex-1 truncate">{node.data.name}</span>
       {actions}
       <span className="shrink-0 text-[11px] text-muted-foreground">{node.data.fileCount}</span>
@@ -113,7 +113,7 @@ function FileLabel({ data, comments, actions }: { data: TreeNode; comments: numb
   const status = data.file?.status ?? FILE_STATUS.M
   return (
     <>
-      <File size={TREE_ICON_PX} className="ml-[14px] shrink-0 text-muted-foreground" aria-hidden />
+      <FileIcon path={data.path} size={TREE_ICON_PX} className="ml-[14px]" />
       <span className="min-w-0 flex-1 truncate" style={status === FILE_STATUS.D ? DELETED_NAME : undefined}>
         {data.name}
       </span>
