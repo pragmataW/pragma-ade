@@ -1,0 +1,53 @@
+{
+  "module": { "name": "Command line" },
+  "settings": {
+    "title": "Command line",
+    "cli": {
+      "heading": "Command line",
+      "description": "Use the pragma command in your own terminal to manage worktrees, agents, tasks and handoffs.",
+      "status": {
+        "installed": "Installed",
+        "notInstalled": "Not installed",
+        "conflict": "Another file is in the way"
+      },
+      "dirLabel": "Install folder",
+      "install": "Add pragma to PATH",
+      "uninstall": "Remove",
+      "notOnPath": "{{dir}} is not on your shell PATH. Add it to use pragma in your terminal.",
+      "bundleMissing": "The pragma CLI bundle was not found. Rebuild the app.",
+      "agentsNote": "Agents started in Pragma ADE always have pragma on their PATH."
+    },
+    "skills": {
+      "heading": "Agent skills",
+      "description": "The pragma-handoff and pragma-cli skills teach agents to use the pragma command.",
+      "state": {
+        "missing": "Not installed",
+        "current": "Up to date",
+        "outdated": "Update available",
+        "foreign": "Not installed by Pragma"
+      },
+      "install": "Install skills",
+      "update": "Update skills"
+    }
+  },
+  "dialog": {
+    "skills": {
+      "title": "Install agent skills",
+      "body": "Pragma ADE will write SKILL.md into these folders:",
+      "replaces": "will be replaced",
+      "confirm": "Install",
+      "cancel": "Cancel"
+    }
+  },
+  "errors": { "generic": "Something went wrong: {{message}}" },
+  "notifications": {
+    "handoff": {
+      "title": "Handed off to {{profile}}",
+      "body": "New agent started on {{branch}}. Click to open."
+    },
+    "skillsOutdated": {
+      "title": "Agent skills can be updated",
+      "body": "A newer version of the pragma skills is available. Click to open Settings."
+    }
+  }
+}
