@@ -1,0 +1,60 @@
+{
+  "module": { "name": "Local History" },
+  "tab": {
+    "title": "Local History",
+    "empty": "Nothing to restore yet. Discards, untracked deletes, dropped stashes and undone commits from Git Changes are saved here.",
+    "restore": "Restore",
+    "restoreAll": "Restore all",
+    "remove": "Delete entry",
+    "restored": "restored",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "stashes_one": "{{count}} stash",
+    "stashes_other": "{{count}} stashes",
+    "commit": "commit {{sha}}",
+    "noPreview": "No preview: the content was not saved ({{state}}).",
+    "missingPreview": "This file did not exist; restoring deletes it."
+  },
+  "reason": {
+    "discard": "Discarded changes",
+    "discardHunk": "Discarded a change",
+    "discardAll": "Discarded all changes",
+    "cleanUntracked": "Deleted untracked files",
+    "stashDrop": "Dropped a stash",
+    "stashClear": "Cleared stashes",
+    "undoCommit": "Undid a commit",
+    "restore": "Before a restore"
+  },
+  "state": {
+    "saved": "saved",
+    "missing": "did not exist",
+    "binary": "binary, not saved",
+    "tooLarge": "too large, not saved"
+  },
+  "confirm": {
+    "restoreTitle": "Restore from local history?",
+    "restoreMessage": "Files are overwritten with the saved version. Their current content is saved first, so this can be undone.",
+    "restoreConfirm": "Restore",
+    "clearTitle": "Clear local history?",
+    "clearMessage": "Every saved entry is deleted. This cannot be undone.",
+    "clearConfirm": "Clear"
+  },
+  "failure": {
+    "notFound": "That entry no longer exists.",
+    "headMoved": "The branch moved since the commit was undone, so it was not redone.",
+    "gitUnavailable": "Git is not available to restore stashes or commits.",
+    "gitFailed": "Git could not restore it: {{detail}}"
+  },
+  "settings": {
+    "title": "Local History",
+    "retentionDays": "Keep entries for (days)",
+    "retentionHint": "Older entries are deleted automatically.",
+    "maxTotalMb": "Maximum size (MB)",
+    "maxTotalHint": "When the saved content grows past this, the oldest entries go first.",
+    "clear": "Clear local history"
+  },
+  "commands": {
+    "show": "Local History: Show",
+    "restoreLatest": "Local History: Restore the last discarded change"
+  }
+}
