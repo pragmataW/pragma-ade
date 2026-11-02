@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ALERT_MS, CONFLICT_KEY } from '../constants'
+import { ALERT_MS, CONFLICT_KEY, START_FAILED_KEY } from '../constants'
 import {
   SWITCH_PHASE,
   type SwitchEligibility,
@@ -73,7 +73,11 @@ export function useSwitchState(sessionId: string, refreshKey: unknown): SwitchSt
   const switchTo = useCallback(
     async (target: SwitchTarget) => {
       setPhase(SWITCH_PHASE.switching)
-      const r = await client.switchTo(sessionId, target)
+      // a rejected call (IPC gone, main threw) still ends the switch with an alert instead of a stuck spinner
+      const r = await client.switchTo(sessionId, target).catch((e: unknown): SwitchResult => {
+        console.warn(`chat-switch: switching ${sessionId} to ${target} failed`, e)
+        return { ok: false, errorKey: START_FAILED_KEY }
+      })
       setPhase(r.ok ? SWITCH_PHASE.done : SWITCH_PHASE.failed)
       if (!r.ok) setAlertKey(r.errorKey)
       else if (r.noticeKey) setNoticeKey(r.noticeKey)

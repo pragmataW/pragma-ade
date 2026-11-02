@@ -2,18 +2,7 @@ import { SESSION_STATUS } from '@pragma/module-agents/contract'
 import { CHAT_SWITCH_MODULE_ID, type SwitchTarget } from './contract'
 
 /** Module-internal constants of chat-switch (§9.2). */
-export const SESSION_STATUS_STARTING = SESSION_STATUS.starting
-
-const SWITCH_REASON_LIST = [
-  'currentMode',
-  'switching',
-  'starting',
-  'noResume',
-  'idUnknown',
-  'busy',
-  'chatResumeUnsupported',
-  'noChat',
-] as const
+const SWITCH_REASON_LIST = ['currentMode', 'switching', 'noResume', 'busy', 'chatResumeUnsupported', 'noChat'] as const
 export const SWITCH_REASON = Object.fromEntries(SWITCH_REASON_LIST.map((r) => [r, r])) as {
   readonly [K in (typeof SWITCH_REASON_LIST)[number]]: K
 }
@@ -44,5 +33,7 @@ export const SPINNER_PX = 12
 /** How long a failure or conflict stays visible under the toggle. */
 export const ALERT_MS = 6000
 export const CONFLICT_KEY = `${CHAT_SWITCH_MODULE_ID}:conflict.toast`
+/** The alert of a switch call that rejected (no result came back). */
+export const START_FAILED_KEY = switchErrorKey(SWITCH_ERROR.startFailed)
 /** A turn is running: switching to the terminal interrupts it, so it is confirmed. */
 export const CONFIRM_STATUSES: ReadonlySet<string> = new Set([SESSION_STATUS.working, SESSION_STATUS.waiting])

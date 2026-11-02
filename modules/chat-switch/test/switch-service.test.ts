@@ -142,8 +142,22 @@ describe('ChatSwitchService', () => {
     expect(s.agents.relaunchSession).toHaveBeenCalledTimes(1)
   })
 
+  it.each(['terminal', 'chat'] as const)(
+    'no external id yet → stops and starts a fresh %s session (no lookup, no claim)',
+    async (target) => {
+      const s = withConversation(true)
+      const from = target === 'chat' ? 'terminal' : 'chat'
+      s.agents.rows.set(SESSION_ID, makeSession({ mode: from, status: 'starting', externalSessionId: null }))
+      const r = await s.service.switchTo(SESSION_ID, target)
+      expect(r).toEqual({ ok: true, sessionId: SESSION_ID, noticeKey: `chat-switch:notice.fresh.${target}` })
+      expect(s.agents.stops).toEqual([SESSION_ID])
+      expect(s.agents.relaunches).toEqual([{ id: SESSION_ID, opts: { mode: target } }])
+      expect(s.hasConversation).not.toHaveBeenCalled()
+      expect(s.guard.ownerOf({ providerId: CLAUDE, externalSessionId: '' })).toBeUndefined()
+    },
+  )
+
   it.each([
-    ['idUnknown', { session: { externalSessionId: null } }, undefined],
     ['noResume', { caps: { chat: { [CLAUDE]: chatOk() } } }, undefined],
     ['busy', {}, OTHER_SESSION_ID],
   ] as const)('ineligible (%s) returns the reason without relaunch', async (reason, o, owner) => {
@@ -213,8 +227,28 @@ describe('ChatSwitchService', () => {
       expect(s.agents.relaunches[0]?.opts).toEqual({ mode: 'terminal', resume: { externalSessionId: EXTERNAL_ID } })
     })
 
-    it('a failing lookup resumes anyway', async () => {
-      const s = withConversation(new Error('EACCES'))
+    // the env pipeline runs every launch decorator for the row's CURRENT mode: after the stop that would re-track
+    // the exited chat as an `external` status source, and the terminal's hook status would never reach the row
+    it('builds the lookup env while the old process still runs (never between stop and relaunch)', async () => {
+      const s = withConversation(false)
+      await s.service.switchTo(SESSION_ID, 'terminal')
+      const built = s.agents.buildLaunchEnv.mock.invocationCallOrder
+      expect(built).toHaveLength(1)
+      expect(built[0] ?? Number.POSITIVE_INFINITY).toBeLessThan(s.agents.stopSession.mock.invocationCallOrder[0] ?? 0)
+    })
+
+    it.each([
+      ['lookup', () => withConversation(new Error('EACCES'))],
+      [
+        'launch env',
+        () => {
+          const s = withConversation(false)
+          s.agents.buildLaunchEnv.mockRejectedValueOnce(new Error('no worktree'))
+          return s
+        },
+      ],
+    ])('a failing %s resumes anyway', async (_n, make) => {
+      const s = make()
       expect(await s.service.switchTo(SESSION_ID, 'terminal')).toEqual({ ok: true, sessionId: SESSION_ID })
       expect(s.agents.relaunches[0]?.opts.resume).toEqual({ externalSessionId: EXTERNAL_ID })
     })
