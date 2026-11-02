@@ -147,3 +147,15 @@ export const FORM_CANCEL_MESSAGE = {
 } as const
 /** zod discriminator of OpenCode's tagged unions. */
 export const TYPE_KEY = 'type'
+export const START_FAILURE = {
+  legacy: 'legacy',
+  old: 'old',
+  infoError: 'info-error',
+  spawnError: 'spawn-error',
+  exited: 'exited',
+  timeout: 'timeout',
+} as const
+export const READY_FORMATS = ['stdio', 'listening', 'legacy'] as const
+export const READY_FORMAT = { stdio: 'stdio', listening: 'listening', legacy: 'legacy' } as const
+export const PIPE_STDIO = ['pipe', 'pipe', 'pipe'] as const
+export const STREAM_EVENT = { data: 'data', error: 'error', close: 'close' } as const
