@@ -71,6 +71,8 @@ pragma handoff --to <profile> --file <path-to-handoff.md> [--task <id>] [--branc
 
 - Omit `--branch` to let Pragma name it `handoff/<title>-<timestamp>`. Use `--base <branch>`
   only if the user asked for a different base.
+- Pragma adds the path of your full session transcript to the next agent's prompt, so the
+  handoff document can stay a summary; still put every decision and next step in it.
 - The handoff is done when the command returns `"ok": true`. Report to the user the target
   profile, branch, worktree path and session id from `result`. Do not wait for the other
   agent to finish, and do not keep working on the task.

@@ -7,20 +7,38 @@ import type { CliRequest } from '../src/contract'
 import { buildHandoffPrompt, deriveHandoffBranch, type HandoffDeps, runHandoff } from '../src/main/handoff'
 import type { NotificationRequest } from '../src/main/notifier'
 import { createNotifier } from '../src/main/notifier'
-import { aTask, aWorktree, fakeAgents, fakeBoard, fakeProjects, silentLog } from './support/fakes'
+import {
+  aTask,
+  aTranscript,
+  aWorktree,
+  fakeAgents,
+  fakeBoard,
+  fakeProjects,
+  fakeTranscripts,
+  silentLog,
+} from './support/fakes'
 
 const NOW = new Date('2026-11-02T08:30:00Z')
 const DOC = '# Fix login\n\nGoal: users can log in again.\n'
 const BRANCH_RE = /^handoff\/fix-login-\d{8}-\d{4}$/
 
-function setup(o: { failStart?: Error; failCreate?: Error; tasks?: ReturnType<typeof aTask>[] } = {}) {
+interface SetupOptions {
+  failStart?: Error
+  failCreate?: Error
+  tasks?: ReturnType<typeof aTask>[]
+  transcripts?: ReturnType<typeof fakeTranscripts>
+}
+
+function setup(o: SetupOptions = {}) {
   const projects = fakeProjects({
     worktrees: [aWorktree('w1', { branch: 'feature/login', path: '/repo' })],
     failCreate: o.failCreate,
   })
   const agents = fakeAgents({
     profiles: [aProfile({ id: 'claude', name: 'Claude' }), aProfile({ id: 'oc', name: 'OpenCode' })],
-    sessions: [aSession('s0', 1, { worktreeId: 'w1', profileId: 'claude' })],
+    sessions: [
+      aSession('s0', 1, { worktreeId: 'w1', profileId: 'claude', providerId: 'claude', externalSessionId: 'ext-1' }),
+    ],
     failStart: o.failStart,
   })
   const board = fakeBoard(o.tasks ?? [aTask(42), aTask(9, { descriptionMd: 'Old body', sessionIds: ['s0'] })])
@@ -33,6 +51,7 @@ function setup(o: { failStart?: Error; failCreate?: Error; tasks?: ReturnType<ty
     now: () => NOW,
     log: silentLog(),
     nameOf: (p) => p.name ?? p.id,
+    transcripts: o.transcripts ?? fakeTranscripts(),
   }
   return { projects, agents, board, shown, deps }
 }
@@ -43,6 +62,42 @@ const request = (over: Partial<CliRequest<'handoff'>> = {}): CliRequest<'handoff
   sameWorktree: false,
   document: DOC,
   ...over,
+})
+
+describe('runHandoff: previous session transcript', () => {
+  it("adds the source session's transcript path, asking only its provider with the worktree as cwd", async () => {
+    const transcripts = fakeTranscripts({
+      claude: { 'ext-1': aTranscript({ extraPaths: ['/home/.claude/projects/-repo/ext-1/subagents/a.jsonl'] }) },
+      opencode: { 'ext-1': aTranscript({ path: '/never' }) },
+    })
+    const t = setup({ transcripts })
+    await runHandoff(request(), t.deps)
+    const prompt = t.agents.state.started[0]?.initialPrompt ?? ''
+    expect(prompt).toContain("The previous agent's full session transcript is stored locally.")
+    expect(prompt).toContain('- /home/.claude/projects/-repo/ext-1.jsonl (Claude Code JSONL; claude session ext-1)')
+    expect(prompt).toContain('  Related: /home/.claude/projects/-repo/ext-1/subagents/a.jsonl')
+    expect(prompt).not.toContain('/never')
+    expect(prompt.indexOf('transcript')).toBeLessThan(prompt.indexOf('<handoff-document>'))
+    expect(transcripts.queries).toEqual([['claude', { sessionId: 'ext-1', cwd: '/repo', home: '/home', env: {} }]])
+  })
+
+  it('a read command is passed on; no located transcript → no section', async () => {
+    const located = setup({
+      transcripts: fakeTranscripts({ claude: { 'ext-1': aTranscript({ readCommand: 'opencode session export x' }) } }),
+    })
+    await runHandoff(request(), located.deps)
+    expect(located.agents.state.started[0]?.initialPrompt).toContain('  Read it with: opencode session export x')
+    const none = setup()
+    await runHandoff(request(), none.deps)
+    expect(none.agents.state.started[0]?.initialPrompt).not.toContain('transcript')
+  })
+
+  it('without a source session the transcript lookup is skipped', async () => {
+    const transcripts = fakeTranscripts({ claude: { 'ext-1': aTranscript() } })
+    const t = setup({ transcripts })
+    await runHandoff(request({ context: { cwd: '/elsewhere', worktreeId: 'w1' } }), t.deps)
+    expect(transcripts.queries).toEqual([])
+  })
 })
 
 describe('runHandoff', () => {
