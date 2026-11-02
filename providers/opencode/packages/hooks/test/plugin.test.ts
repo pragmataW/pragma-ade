@@ -99,6 +99,31 @@ describe('createRecordMapper', () => {
     })
     expect(map({ type: 'form.created', data: { form: { sessionID: 'c' } } })).toMatchObject({ child: true })
   })
+
+  it('a prompt taken back from the inbox is forwarded only when nothing runs and nothing else is queued', () => {
+    const map = createRecordMapper()
+    const enqueue = (inboxID: string, type = 'user') =>
+      map({ type: 'session.inbox.enqueued', data: { sessionID: 'a', inboxID, item: { type } } })
+    const cancel = (inboxID: string) => map({ type: 'session.inbox.cancelled', data: { sessionID: 'a', inboxID } })
+    const withdrawn = { type: 'session.inbox.cancelled', sessionID: 'a' }
+
+    enqueue('i1')
+    enqueue('i2')
+    expect(cancel('i1')).toBeNull()
+    expect(cancel('i2')).toEqual(withdrawn)
+
+    map({ type: 'session.execution.started', data: { sessionID: 'a' } })
+    enqueue('i3')
+    expect(cancel('i3')).toBeNull()
+    map({ type: 'session.execution.interrupted', data: { sessionID: 'a', reason: 'user' } })
+
+    enqueue('i4')
+    map({ type: 'session.inbox.delivered', data: { sessionID: 'a', inboxID: 'i4' } })
+    expect(cancel('i4')).toBeNull()
+    enqueue('i5', 'compaction')
+    expect(cancel('i5')).toBeNull()
+    expect(cancel('unknown')).toBeNull()
+  })
 })
 
 describe('built plugin bundle', () => {

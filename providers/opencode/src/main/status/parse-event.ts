@@ -19,6 +19,7 @@ const SIMPLE: Record<string, Builder> = {
   [T.toolFailed]: () => ({ kind: K.toolFinished }),
   [T.executionSucceeded]: () => ({ kind: K.turnCompleted }),
   [T.executionInterrupted]: () => ({ kind: K.turnInterrupted }),
+  [T.inboxCancelled]: () => ({ kind: K.turnInterrupted }),
   [T.executionFailed]: (r) => ({ kind: K.turnFailed, message: truncateEventField(r.message) }),
   [T.permissionAsked]: () => ({ kind: K.waitingForUser, reason: WAIT_REASON.permission }),
   [T.formCreated]: () => ({ kind: K.waitingForUser, reason: WAIT_REASON.question }),

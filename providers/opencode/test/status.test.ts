@@ -42,6 +42,7 @@ describe('parseOpencodeEvent', () => {
       { kind: 'turnCompleted', externalSessionId: 'oc1' },
     ],
     [{ type: 'session.execution.interrupted', ...s }, { kind: 'turnInterrupted' }],
+    [{ type: 'session.inbox.cancelled', ...s }, { kind: 'turnInterrupted' }],
     [
       { type: 'session.execution.failed', message: 'no model', ...s },
       { kind: 'turnFailed', message: 'no model' },
