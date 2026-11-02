@@ -99,3 +99,24 @@ export const POSIX_SEP = '/'
 export const WIN_SEP = '\\'
 /** Optional tool-only packages, loaded with non-literal specifiers (see lib/deps.ts). */
 export const DEP = { yaml: 'yaml', asar: '@electron/asar', builder: 'electron-builder' } as const
+
+// --- bundle externals ---
+export const JS_EXTENSIONS = ['.js', '.cjs', '.mjs'] as const
+const SPEC = String.raw`(['"])([^'"\n\r]+)\1`
+/** Literal module specifiers: require(), import(), import/export … from, bare side-effect import. */
+export const SPECIFIER_PATTERNS: readonly RegExp[] = [
+  new RegExp(String.raw`\brequire\(\s*${SPEC}\s*\)`, 'g'),
+  new RegExp(String.raw`\bimport\(\s*${SPEC}\s*\)`, 'g'),
+  new RegExp(String.raw`\b(?:import|export)\b[^'"\x60;]*?\bfrom\s*${SPEC}`, 'g'),
+  new RegExp(String.raw`\bimport\s*${SPEC}`, 'g'),
+]
+/** Index of the specifier capture group in `SPECIFIER_PATTERNS`. */
+export const SPECIFIER_GROUP = 2
+export const NODE_PROTOCOL = 'node:'
+export const ELECTRON_MODULE = 'electron'
+export const SCOPE_PREFIX = '@'
+export const RELATIVE_PREFIX = '.'
+export const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i
+export const WORKSPACE_SCOPE = '@pragma/'
+export const DEFAULT_ENTRY = 'index.js'
+export const EXPORT_CONDITIONS = ['import', 'require', 'default'] as const
