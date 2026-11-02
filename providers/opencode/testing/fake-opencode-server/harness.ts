@@ -8,6 +8,7 @@ import { aProfile } from '@pragma/module-agents/testing'
 import type { ChatEvent, ChatSessionContext } from '@pragma/module-chat/contract'
 
 import { PASSWORD_ENV, SERVE_ARGS } from '../../src/main/chat/constants'
+import { type ConnectionPool, createConnectionPool } from '../../src/main/chat/server/connection'
 import {
   BIN,
   FAKE_DIR,
@@ -321,4 +322,18 @@ export const silentLog = {
   warn: () => undefined,
   error: () => undefined,
   debug: () => undefined,
+}
+
+const pools: ConnectionPool[] = []
+/** A connection pool (idle grace 0 by default) disposed by `cleanupAll`. */
+export function newTestPool(idleGraceMs = 0): ConnectionPool {
+  const pool = createConnectionPool({ log: silentLog, idleGraceMs })
+  pools.push(pool)
+  return pool
+}
+
+/** `afterEach` for tests that use pools: dispose them, then kill fakes and remove temp dirs. */
+export async function cleanupAll(): Promise<void> {
+  await Promise.all(pools.splice(0).map((p) => p.disposeAll()))
+  cleanupFakes()
 }

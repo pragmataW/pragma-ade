@@ -1,29 +1,21 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { type ConnectionPool, createConnectionPool, idleGraceMs } from '../src/main/chat/server/connection'
+import { idleGraceMs } from '../src/main/chat/server/connection'
 import type { HubEvent } from '../src/main/chat/wire/event-hub'
 import {
-  cleanupFakes,
+  cleanupAll,
   fakeServeInput,
+  newTestPool,
   readLog,
   requestsOf,
-  silentLog,
   tempOpencodeHome,
   until,
 } from '../testing/fake-opencode-server/harness'
 
-const pools: ConnectionPool[] = []
-afterEach(async () => {
-  await Promise.all(pools.splice(0).map((p) => p.disposeAll()))
-  cleanupFakes()
-})
+afterEach(cleanupAll)
 
-const newPool = (grace = 0) => {
-  const p = createConnectionPool({ log: silentLog, idleGraceMs: grace })
-  pools.push(p)
-  return p
-}
+const newPool = () => newTestPool()
 const starts = (log: string) => readLog(log).filter((r) => r.kind === 'start')
 
 const CHAT_SRC = join(import.meta.dirname, '..', 'src', 'main', 'chat')
