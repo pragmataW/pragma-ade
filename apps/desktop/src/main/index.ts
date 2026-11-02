@@ -4,6 +4,7 @@ import { app, BrowserWindow } from 'electron'
 import { DARWIN, DISPOSE_TIMEOUT_MS, E2E_HEADED_ENABLED, E2E_HEADED_ENV, HIDDEN_ACTIVATION_POLICY } from '../constants'
 import { coreLocales, mainModules } from '../generated/modules.main'
 import { initialDialogStubs, registerShellHandlers } from './app-handlers'
+import { installAppMenu } from './app-menu'
 import { createStubbedDialogs } from './dialog-stubs'
 import { createElectronPlatform } from './electron-platform'
 import { createElectronTransport } from './electron-transport'
@@ -11,6 +12,7 @@ import { installAppShortcutForwarding, registerCoreShortcuts } from './global-sh
 import { resolveUserDataDir } from './user-data'
 import { createWindowViewContainer } from './view-container'
 import { createMainWindow } from './window'
+import { registerWindowHandlers, watchWindowChrome } from './window-chrome'
 
 const USER_DATA = 'userData'
 const ACTIVATE = 'activate'
@@ -44,9 +46,18 @@ async function main(): Promise<void> {
   viewContainer = createWindowViewContainer(host.shortcuts, host.commands, host.log)
   registerShellHandlers(host, { testMode, setDialogStubs: stubbed.setStubs })
   registerCoreShortcuts(host.shortcuts)
+  installAppMenu(process.platform)
+  let current: BrowserWindow | undefined
+  registerWindowHandlers(host.router, () => (current && !current.isDestroyed() ? current : undefined))
 
   const openWindow = (): BrowserWindow => {
-    const win = createMainWindow({ title: host.i18n.t('core:app.title'), hidden: hiddenWindow })
+    const win = createMainWindow({
+      title: host.i18n.t('core:app.title'),
+      theme: host.theme.get(),
+      hidden: hiddenWindow,
+    })
+    current = win
+    watchWindowChrome(win, { router: host.router, theme: host.theme, platform: process.platform })
     viewContainer?.setWindow(win)
     host.nativeViews.reattachAll()
     installAppShortcutForwarding(win, host.shortcuts, host.commands)

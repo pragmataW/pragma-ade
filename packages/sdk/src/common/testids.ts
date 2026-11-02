@@ -1,6 +1,7 @@
 /** Every shell `data-testid` (§10.1.6). */
 export const ShellTestIds = {
   shellReady: 'shell-ready',
+  titlebar: 'titlebar',
   paneSidebar: 'pane-sidebar',
   paneCenter: 'pane-center',
   paneRight: 'pane-right',
