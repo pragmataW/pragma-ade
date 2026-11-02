@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <title>Pragma ADE</title>
-  <!-- Temporary Pragma ADE mark (phase 12): ui-notes Indigo dark bg / bd2 / ac -->
-  <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="#13141b"/>
-  <rect x="8" y="8" width="1008" height="1008" rx="216" ry="216" fill="none" stroke="#363950" stroke-width="16"/>
-  <path fill="#5b5bd6" fill-rule="evenodd"
-        d="M336 232 H560 C680 232 760 312 760 424 C760 536 680 616 560 616 H460 V792 H336 Z M460 344 V504 H552 C604 504 636 472 636 424 C636 376 604 344 552 344 Z"/>
-</svg>

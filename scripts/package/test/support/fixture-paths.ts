@@ -37,8 +37,8 @@ export function useIntCache(): void {
 }
 
 const REPO_ROOT = resolve(import.meta.dirname, '../../../..')
-/** The real repo's packaging config travels with the mini repo (`--repo` reads it from the repo root). */
-const SHARED_CONFIG = ['electron-builder.yml', 'build/icon.png']
+/** The real repo's packaging config, icons and legal files travel with the mini repo (`--repo` reads them from the repo root). */
+const SHARED_CONFIG = ['electron-builder.yml', 'build', 'LICENSE', 'THIRD_PARTY_NOTICES.md']
 const PNPM_INSTALL = [
   'install',
   '--ignore-scripts',

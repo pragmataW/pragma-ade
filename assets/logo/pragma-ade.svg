@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Pragma ADE</title>
+  <!-- Master app icon: navy tile on the macOS 824px grid, white mark.
+       The mark is a "P" whose bowl is a prompt chevron, followed by a cursor block. -->
+  <defs>
+    <linearGradient id="pragma-ade-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22355C"/>
+      <stop offset="1" stop-color="#16223D"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="184" fill="url(#pragma-ade-tile)"/>
+  <g fill="#FFFFFF">
+    <path fill-rule="evenodd" d="M292 272H399.62L732.64 430L392 591.62V752H292Z M392 379.06L499.36 430L392 480.94Z"/>
+    <rect x="466" y="680" width="170" height="72"/>
+  </g>
+</svg>

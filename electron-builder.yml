@@ -1,6 +1,6 @@
 appId: dev.pragma.ade
 productName: Pragma ADE
-copyright: Copyright © 2026 Pragma ADE contributors
+copyright: Copyright © 2026 pragmataW
 asar: true
 npmRebuild: false
 nodeGypRebuild: false
@@ -12,7 +12,7 @@ mac:
   {
     category: public.app-category.developer-tools,
     target: [dmg, zip],
-    icon: build/icon.png,
+    icon: build/icon.icns,
     identity: "-",
     hardenedRuntime: false,
     gatekeeperAssess: false,
@@ -21,13 +21,13 @@ dmg: { writeUpdateInfo: false }
 linux:
   {
     target: [AppImage, deb],
-    icon: build/icon.png,
+    icon: build/icons,
     executableName: pragma-ade,
     category: Development,
     synopsis: Agentic development environment,
-    maintainer: "Pragma ADE contributors <pragma-ade@users.noreply.localhost>",
+    maintainer: "pragmataW <92221201+pragmataW@users.noreply.github.com>",
   }
-win: { target: [nsis, zip], icon: build/icon.png, signExecutable: false }
+win: { target: [nsis, zip], icon: build/icon.ico, signExecutable: false }
 nsis:
   {
     oneClick: false,

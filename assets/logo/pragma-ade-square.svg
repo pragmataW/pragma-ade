@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Pragma ADE</title>
+  <!-- Near full-bleed variant for Windows .ico and Linux PNGs (small sizes need less padding). -->
+  <defs>
+    <linearGradient id="pragma-ade-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22355C"/>
+      <stop offset="1" stop-color="#16223D"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="200" fill="url(#pragma-ade-tile)"/>
+  <g fill="#FFFFFF" transform="translate(512 512) scale(1.165) translate(-512 -512)">
+    <path fill-rule="evenodd" d="M292 272H399.62L732.64 430L392 591.62V752H292Z M392 379.06L499.36 430L392 480.94Z"/>
+    <rect x="466" y="680" width="170" height="72"/>
+  </g>
+</svg>
