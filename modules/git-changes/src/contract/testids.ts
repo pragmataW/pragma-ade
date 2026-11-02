@@ -39,6 +39,11 @@ export const GitChangesTestIds = {
   scmMenu: 'gc-scm-menu',
   scmMenuItem: (id: string) => `gc-scm-menu-${id}`,
   stashPrompt: 'gc-stash-prompt',
+  stashDialog: 'gc-stash-dialog',
+  stashSubmit: 'gc-stash-submit',
+  stashKind: (kind: string) => `gc-stash-kind-${kind}`,
+  stashBanner: 'gc-stash-banner',
+  syncPrimary: 'gc-sync-primary',
   scmError: 'gc-scm-error',
   /** Inline actions of a tree row (`stage`, `unstage`, `discard`, `open`) and of the diff's hunk list. */
   rowAction: (action: string) => `gc-row-${action}`,

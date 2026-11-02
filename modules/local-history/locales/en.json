@@ -2,7 +2,7 @@
   "module": { "name": "Local History" },
   "tab": {
     "title": "Local History",
-    "empty": "Nothing to restore yet. Discards, untracked deletes, dropped stashes and undone commits from Git Changes are saved here.",
+    "empty": "Nothing to restore yet. What Git Changes discards, deletes, drops or undoes shows up here.",
     "restore": "Restore",
     "restoreAll": "Restore all",
     "remove": "Delete entry",

@@ -1,5 +1,7 @@
 import { useModuleSettings, useT } from '@pragma/sdk/renderer'
+import { Archive, X } from '@pragma/ui/icons'
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useMemo, useRef } from 'react'
+import { BUTTON_TYPE, DIFF_ICON_PX } from '../constants'
 import {
   CHANGE_LIST_STATE,
   CHANGE_MODE,
@@ -21,7 +23,7 @@ import { useActiveWorktree } from './lib/projects'
 import { SplitPane } from './SplitPane'
 import { type ScmActions, scmActions } from './scm/actions'
 import { ScmBar } from './scm/ScmBar'
-import { StashList } from './scm/StashList'
+import { StashButtons, StashList, stashLabel } from './scm/StashList'
 import { useStashes } from './scm/use-scm'
 import { useGitChangesStore, useWorktreeView, type WorktreeView } from './store'
 import { type ChangeLists, Toolbar } from './Toolbar'
@@ -97,6 +99,33 @@ function FileListPane(props: {
   )
 }
 
+/** Above a stash file's diff: whose content this is, its Apply / Pop / Drop, and a way back to the changes. */
+function StashBanner(props: { worktreeId: string; entry: StashEntry | undefined; scm: ScmActions }) {
+  const t = useT()
+  const close = t('git-changes:scm.stash.close')
+  return (
+    <div
+      data-testid={T.stashBanner}
+      className="flex h-7 shrink-0 items-center gap-2 border-[var(--bd)] border-b bg-[var(--el)] px-2 text-[12px]"
+    >
+      <Archive size={DIFF_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-[60px] flex-1 truncate" title={props.entry?.message}>
+        {t('git-changes:scm.stash.viewing', { message: stashLabel(props.entry?.message ?? '') })}
+      </span>
+      {props.entry ? <StashButtons entry={props.entry} actions={props.scm} labelled /> : null}
+      <button
+        type={BUTTON_TYPE}
+        aria-label={close}
+        title={close}
+        onClick={() => useGitChangesStore.getState().showStashFile(props.worktreeId, null)}
+        className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-[var(--bd)] hover:text-[var(--tx)]"
+      >
+        <X size={DIFF_ICON_PX} aria-hidden />
+      </button>
+    </div>
+  )
+}
+
 /** The right pane: a stash file's diff, else the selected entry's diff (with hunk actions when uncommitted). */
 function DiffPane(props: {
   worktreeId: string
@@ -106,18 +135,27 @@ function DiffPane(props: {
   review: DiffReview
   diffRef: RefObject<DiffViewHandle | null>
   onOpenInEditor: EditorOpener | null
+  stashes: readonly StashEntry[]
+  scm: ScmActions
 }) {
   const { worktreeId, view, selected, settings, review } = props
-  if (view.stashFile)
+  if (view.stashFile) {
+    const sha = view.stashFile.sha
     return (
-      <DiffView
-        worktreeId={worktreeId}
-        mode={view.mode}
-        file={view.stashFile.file}
-        stash={view.stashFile.sha}
-        settings={settings}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <StashBanner worktreeId={worktreeId} entry={props.stashes.find((s) => s.sha === sha)} scm={props.scm} />
+        <div className="min-h-0 flex-1">
+          <DiffView
+            worktreeId={worktreeId}
+            mode={view.mode}
+            file={view.stashFile.file}
+            stash={sha}
+            settings={settings}
+          />
+        </div>
+      </div>
     )
+  }
   if (!selected) return null
   return (
     <DiffView
@@ -219,6 +257,8 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
               review={review}
               diffRef={diffRef}
               onOpenInEditor={openInEditor}
+              stashes={stashes}
+              scm={scm}
             />
           }
         />

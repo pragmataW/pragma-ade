@@ -142,6 +142,7 @@ export class ScmService {
       ahead: s.ahead ?? 0,
       behind: s.behind ?? 0,
       hasHead: s.oid !== null,
+      hasRemote: s.upstream !== null || (await this.defaultRemote(cwd)) !== null,
     }
   }
 

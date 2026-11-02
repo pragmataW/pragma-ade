@@ -1,5 +1,6 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
+import { FileIcon } from '@pragma/ui/components/file-icon'
 import {
   Archive,
   ArchiveRestore,
@@ -9,7 +10,7 @@ import {
   type LucideIcon,
   Trash2,
 } from '@pragma/ui/icons'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BUTTON_TYPE, ROW_ACTION_ICON_PX, TREE_ICON_PX } from '../../constants'
 import { STASH_ACTIONS, type StashAction, type StashEntry, GitChangesTestIds as T } from '../../contract'
 import { type StashFile, useGitChangesStore } from '../store'
@@ -17,11 +18,45 @@ import type { ScmActions } from './actions'
 import { useStashFiles } from './use-scm'
 
 const [APPLY, POP, DROP] = STASH_ACTIONS
-const STASH_BUTTONS: [StashAction, LucideIcon][] = [
+export const STASH_BUTTONS: [StashAction, LucideIcon][] = [
   [APPLY, ArchiveRestore],
   [POP, ArrowUpFromLine],
   [DROP, Trash2],
 ]
+
+/** git's `On <branch>: ` / `WIP on <branch>: ` prefix: the branch is known, the message is what tells stashes apart. */
+const STASH_PREFIX = /^(?:WIP on|On) [^:]+: /
+export const stashLabel = (message: string): string => message.replace(STASH_PREFIX, '') || message
+
+/** Apply / Pop / Drop of one stash, always visible (also above a stash file's diff, with short labels). */
+export function StashButtons(props: { entry: StashEntry; actions: ScmActions; labelled?: boolean }) {
+  const t = useT()
+  return (
+    <span className="flex shrink-0 items-center gap-0.5">
+      {STASH_BUTTONS.map(([action, Icon]) => {
+        const label = t(`git-changes:scm.stash.${action}`)
+        const short = t(`git-changes:scm.stash.short.${action}`)
+        return (
+          <button
+            key={action}
+            type={BUTTON_TYPE}
+            data-testid={T.stashAction(action)}
+            aria-label={label}
+            title={label}
+            onClick={() => void props.actions.stash(action, props.entry)}
+            className={cn(
+              'flex h-[18px] items-center justify-center gap-1 rounded text-muted-foreground hover:bg-[var(--bd)] hover:text-[var(--tx)]',
+              props.labelled ? 'px-1.5 text-[12px]' : 'w-[18px]',
+            )}
+          >
+            <Icon size={ROW_ACTION_ICON_PX} aria-hidden />
+            {props.labelled ? short : null}
+          </button>
+        )
+      })}
+    </span>
+  )
+}
 
 interface RowProps {
   worktreeId: string
@@ -41,7 +76,7 @@ function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: 
       <div
         data-testid={T.stashRow}
         data-sha={entry.sha}
-        className="group flex h-[22px] items-center gap-1 pr-2 pl-1 text-[13px] hover:bg-[var(--hv)]"
+        className="flex h-[22px] items-center gap-1 pr-2 pl-1 text-[13px] hover:bg-[var(--hv)]"
       >
         <button
           type={BUTTON_TYPE}
@@ -52,23 +87,14 @@ function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: 
         >
           <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
           <Archive size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
-          <span className="min-w-0 flex-1 truncate">{entry.message}</span>
+          <span className="min-w-0 flex-1 truncate">{stashLabel(entry.message)}</span>
+          {files ? (
+            <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+              {t('git-changes:scm.stash.files', { count: files.length })}
+            </span>
+          ) : null}
         </button>
-        <span className="hidden shrink-0 items-center gap-0.5 group-focus-within:flex group-hover:flex">
-          {STASH_BUTTONS.map(([action, Icon]) => (
-            <button
-              key={action}
-              type={BUTTON_TYPE}
-              data-testid={T.stashAction(action)}
-              aria-label={t(`git-changes:scm.stash.${action}`)}
-              title={t(`git-changes:scm.stash.${action}`)}
-              onClick={() => void actions.stash(action, entry)}
-              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-[var(--bd)] hover:text-[var(--tx)]"
-            >
-              <Icon size={ROW_ACTION_ICON_PX} aria-hidden />
-            </button>
-          ))}
-        </span>
+        <StashButtons entry={entry} actions={actions} />
       </div>
       {expanded
         ? files?.map((file) => {
@@ -87,6 +113,7 @@ function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: 
                   isSelected ? 'bg-[var(--hv)]' : 'hover:bg-[var(--hv)]',
                 )}
               >
+                <FileIcon path={file.path} size={TREE_ICON_PX} />
                 <span className="min-w-0 flex-1 truncate">{file.path}</span>
                 <span
                   className={cn(
@@ -104,6 +131,17 @@ function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: 
   )
 }
 
+/** A stash that was not there on the previous render is the one just pushed: open it so it is seen. */
+function useExpandNewest(stashes: readonly StashEntry[], expand: (sha: string) => void): void {
+  const known = useRef<Set<string> | null>(null)
+  const [newest] = stashes
+  useEffect(() => {
+    const before = known.current
+    known.current = new Set(stashes.map((s) => s.sha))
+    if (before && newest && !before.has(newest.sha)) expand(newest.sha)
+  }, [stashes, newest, expand])
+}
+
 /** VS Code's Stashes view: newest first; a row expands to its files (click one to diff it); Apply / Pop / Drop. */
 export function StashList(props: {
   worktreeId: string
@@ -114,6 +152,10 @@ export function StashList(props: {
   const t = useT()
   const [open, setOpen] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  useExpandNewest(props.stashes, (sha) => {
+    setOpen(true)
+    setExpanded(sha)
+  })
   if (props.stashes.length === 0) return null
   const Chevron = open ? ChevronDown : ChevronRight
   return (
