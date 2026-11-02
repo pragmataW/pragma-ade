@@ -159,3 +159,5 @@ export const READY_FORMATS = ['stdio', 'listening', 'legacy'] as const
 export const READY_FORMAT = { stdio: 'stdio', listening: 'listening', legacy: 'legacy' } as const
 export const PIPE_STDIO = ['pipe', 'pipe', 'pipe'] as const
 export const STREAM_EVENT = { data: 'data', error: 'error', close: 'close' } as const
+export const PROCESS_EXIT_EVENT = 'exit'
+export const POOL_DISPOSED = 'pool disposed'

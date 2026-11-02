@@ -291,3 +291,34 @@ export async function newSession(f: RunningFake): Promise<string> {
   const r = await call(f, '/api/session', { body: {} })
   return (r.json as { data: { id: string } }).data.id
 }
+
+export type FakeOptions = {
+  scenario?: ScenarioName
+  mode?: FakeMode
+  prefixArgs?: string[]
+  env?: Record<string, string>
+  logEnv?: string[]
+  testRoutes?: boolean
+}
+
+/** The env a chat context would get for a fake server in `h` (shell PATH + fake vars + extra env). */
+export const fakeContextEnv = (h: FakeHome, o: FakeOptions = {}): Record<string, string> => ({
+  PATH: process.env.PATH ?? '',
+  ...fakeEnv(h, o),
+  ...o.env,
+})
+
+/** `ConnectionPool.acquire` input for a fake server in `h`. */
+export const fakeServeInput = (h: FakeHome, o: FakeOptions = {}) => ({
+  profile: fakeProfile({ prefixArgs: o.prefixArgs }),
+  worktreePath: h.worktree,
+  env: fakeContextEnv(h, o),
+  startupTimeoutMs: 10_000,
+})
+
+export const silentLog = {
+  info: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+  debug: () => undefined,
+}
