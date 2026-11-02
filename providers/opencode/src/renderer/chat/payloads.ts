@@ -5,7 +5,15 @@
  */
 import { z } from '@pragma/sdk'
 
-export const CUSTOM = { form: 'opencode.form', retry: 'opencode.retry' } as const
+export const CUSTOM = { form: 'opencode.form', retry: 'opencode.retry', notice: 'opencode.notice' } as const
+
+/** A session change shown inline: files reverted to before a message, or the chat continued in a fork. */
+export const NOTICE = { reverted: 'reverted', forked: 'forked' } as const
+export const noticePayloadSchema = z.discriminatedUnion('notice', [
+  z.object({ notice: z.literal(NOTICE.reverted), messageId: z.string(), files: z.array(z.string()) }),
+  z.object({ notice: z.literal(NOTICE.forked), from: z.string(), to: z.string() }),
+])
+export type NoticePayload = z.infer<typeof noticePayloadSchema>
 
 const FIELD_TYPES = ['string', 'number', 'integer', 'boolean', 'multiselect', 'external'] as const
 

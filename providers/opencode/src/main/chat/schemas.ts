@@ -270,6 +270,18 @@ export const integrationInfoSchema = z.looseObject({
 })
 export type IntegrationInfo = z.infer<typeof integrationInfoSchema>
 
+/** Anything with an id (`session.prompt` answers the queued user message). */
+export const idSchema = z.looseObject({ id: z.string() })
+export const revertSchema = z.looseObject({
+  messageID: z.string().optional(),
+  files: lenientArray(z.looseObject({ file: z.string() })).optional(),
+})
+export const mcpServerSchema = z.looseObject({
+  name: z.string(),
+  status: z.looseObject({ status: z.string(), error: z.string().optional() }),
+  title: z.string().optional(),
+})
+
 export const commandSchema = z.looseObject({ name: z.string(), description: z.string().optional() })
 export type OpencodeCommand = z.infer<typeof commandSchema>
 

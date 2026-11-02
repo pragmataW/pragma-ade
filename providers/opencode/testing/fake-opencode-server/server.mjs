@@ -30,11 +30,13 @@ const NO_CONTENT = 204
 const BAD_REQUEST = 400
 const UNAUTHORIZED = 401
 const NOT_FOUND = 404
+const CONFLICT = 409
 const UNAVAILABLE = 503
 const SESSION_ROUTE = /^\/api\/session\/([^/]+)(?:\/(.*))?$/
 const REPLY_ROUTE = /^(permission|form)\/([^/]+)\/reply$/
 const FORM_ROUTE = /^form\/([^/]+)$/
 const TEST_ROUTE_PREFIX = '/__test/'
+const MCP_ROUTE = /^\/api\/experimental\/mcp\/([^/]+)\/(connect|disconnect)$/
 const ATTACHMENT_URI = /^(file:\/\/\/|data:)/
 
 // ── process plumbing ──────────────────────────────────────────────────────
@@ -156,7 +158,8 @@ function createApp({ scenario, password }) {
     const frame = `data: ${JSON.stringify({ id: `evt_${++seq}`, created: Date.now(), type, data })}\n\n`
     for (const res of sse) res.write(frame)
   }
-  const ctx = { scenario, store, broadcast, runs, sse, holdSseUntil: 0 }
+  const mcp = scenario.mcp ? JSON.parse(JSON.stringify(scenario.mcp)) : undefined
+  const ctx = { scenario, store, broadcast, runs, sse, holdSseUntil: 0, mcp }
   app.server = createServer((req, res) => {
     readBody(req).then((body) => {
       const url = new URL(req.url ?? '/', 'http://fake')
@@ -229,6 +232,8 @@ function route(ctx, r) {
     case 'GET /api/provider':
     case 'GET /api/integration':
       return listRoute(res, ctx.scenario[path === '/api/provider' ? 'providers' : 'integrations'])
+    case 'GET /api/mcp':
+      return listRoute(res, ctx.mcp)
     case 'POST /api/session':
       return send(res, OK, { data: createSession(ctx, r.body ?? {}) })
     case 'GET /api/session/active':
@@ -242,8 +247,18 @@ function route(ctx, r) {
       ctx.broadcast(r.body?.type, r.body?.data ?? {})
       return send(res, NO_CONTENT)
     default:
-      return sessionRoute(ctx, r)
+      return MCP_ROUTE.test(path) ? mcpRoute(ctx, r) : sessionRoute(ctx, r)
   }
+}
+
+/** `POST /api/experimental/mcp/<name>/connect|disconnect`: connected / disabled, then `mcp.status.changed`. */
+function mcpRoute(ctx, r) {
+  const [, name, action] = MCP_ROUTE.exec(r.path)
+  const server = ctx.mcp?.find((m) => m.name === decodeURIComponent(name))
+  if (!server) return send(r.res, NOT_FOUND, { error: 'McpNotFound' })
+  server.status = { status: action === 'connect' ? 'connected' : 'disabled' }
+  ctx.broadcast('mcp.status.changed', { server: server.name })
+  return send(r.res, NO_CONTENT)
 }
 
 /** A scenario list (`providers`, `integrations`); 404 like an older server when the scenario has none. */
@@ -308,9 +323,46 @@ function sessionRoute(ctx, r) {
       return send(r.res, NO_CONTENT)
     case 'GET message':
       return send(r.res, OK, listMessages(session, r.query))
+    case 'POST revert/stage':
+      return stageRevert(ctx, r, session)
+    case 'POST revert/commit':
+      return commitRevert(ctx, r, session)
+    case 'DELETE revert':
+      session.revert = undefined
+      return send(r.res, NO_CONTENT)
+    case 'POST fork':
+      return send(r.res, OK, { data: forkSession(ctx, session, r.body?.before) })
     default:
       return interactionRoute(ctx, r, session, sub)
   }
+}
+
+const messageIndex = (session, id) => session.messages.findIndex((m) => m.id === id)
+
+/** Stages a revert to before the user message `messageID` (the scenario's `revertFiles` are "restored"). */
+function stageRevert(ctx, r, session) {
+  if (messageIndex(session, r.body?.messageID) < 0) return send(r.res, NOT_FOUND, { error: 'MessageNotFound' })
+  session.revert = { messageID: r.body.messageID, files: (ctx.scenario.revertFiles ?? []).map((file) => ({ file })) }
+  return send(r.res, OK, { data: session.revert })
+}
+
+/** Drops the staged message and everything after it. */
+function commitRevert(ctx, r, session) {
+  if (!session.revert) return send(r.res, CONFLICT, { error: 'NothingStaged' })
+  session.messages = session.messages.slice(0, messageIndex(session, session.revert.messageID))
+  session.revert = undefined
+  ctx.store.save()
+  return send(r.res, NO_CONTENT)
+}
+
+/** A copy of the session (up to before message `before`, else all of it). */
+function forkSession(ctx, session, before) {
+  const at = before ? messageIndex(session, before) : -1
+  const messages = at >= 0 ? session.messages.slice(0, at) : [...session.messages]
+  const info = { ...session.info, id: newId('ses'), fork: { sessionID: session.info.id } }
+  ctx.store.data.sessions[info.id] = { info, messages, turns: session.turns }
+  ctx.store.save()
+  return info
 }
 
 function interactionRoute(ctx, r, session, sub) {

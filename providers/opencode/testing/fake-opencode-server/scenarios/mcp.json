@@ -1,0 +1,8 @@
+{
+  "extends": "revert",
+  "mcp": [
+    { "name": "github", "status": { "status": "connected" }, "title": "GitHub" },
+    { "name": "db", "status": { "status": "failed", "error": "ECONNREFUSED" } },
+    { "name": "linear", "status": { "status": "needs_auth", "error": "Sign in required" } }
+  ]
+}

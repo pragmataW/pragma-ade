@@ -220,6 +220,15 @@ export const MODEL_HINT_KEYS = {
 /** Errors that mean the provider rejected the saved credential (`provider.auth`, `api_key_expired`, …). */
 export const AUTH_ERROR_RE = /auth|api[_-]?key|credential|unauthori[sz]ed/i
 
+/** OpenCode MCP status → chat MCP status (anything else reads as failed). */
+export const MCP_STATUS_OF: Record<string, 'connected' | 'pending' | 'failed' | 'needs-auth' | 'disabled'> = {
+  connected: 'connected',
+  pending: 'pending',
+  failed: 'failed',
+  needs_auth: 'needs-auth',
+  disabled: 'disabled',
+}
+
 /** `ask`: OpenCode's permission rules decide (risky actions ask); `auto`: every request is approved once. */
 export const PERMISSION_MODES = ['ask', 'auto'] as const
 export const PERMISSION_MODE = { ask: 'ask', auto: 'auto' } as const

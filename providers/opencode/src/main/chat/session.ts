@@ -2,15 +2,18 @@ import { existsSync } from 'node:fs'
 import {
   CHAT_OPTION_KEYS,
   type ChatEvent,
+  type ChatMcpServer,
   type ChatOptionDescriptor,
   type ChatOptionValue,
   type ChatPermissionDecision,
+  type ChatSendMeta,
   type ChatSessionContext,
   type ChatSessionHandle,
   ChatStartupError,
   type ChatUserInput,
   ERROR_CODE,
   EVENT_KIND as K,
+  MCP_STATUS,
   PERMISSION_OPTION,
   PERMISSION_OUTCOME,
   RESPONSE_OUTCOME,
@@ -19,13 +22,14 @@ import {
   TURN_END_REASON,
 } from '@pragma/module-chat/contract'
 import type { Logger } from '@pragma/sdk'
-import { CUSTOM, type FormField, formPayloadSchema } from '../../renderer/chat/payloads'
+import { CUSTOM, type FormField, formPayloadSchema, NOTICE } from '../../renderer/chat/payloads'
 import {
   AGENT_OPTION_KEY,
   EV,
   FORM_CANCEL_MESSAGE,
   IDLE_OUTCOMES,
   INVALID_FORM_ANSWER,
+  MCP_STATUS_OF,
   MESSAGE_TYPES,
   ORDER,
   OTHER_EVENT,
@@ -51,11 +55,14 @@ import {
   agentInfoSchema,
   commandSchema,
   defaultModelSchema,
+  idSchema,
   listOf,
   type ModelRef,
+  mcpServerSchema,
   messagePageSchema,
   type OpencodeCommand,
   parseV2Event,
+  revertSchema,
   type SessionInfo,
   sessionInfoSchema,
 } from './schemas'
@@ -133,7 +140,16 @@ export class OpencodeChatSession implements ChatSessionHandle {
   #options: ChatOptionDescriptor[]
   #turnActive = false
   #closed = false
-  readonly externalSessionId: string
+  #sessionId: string
+  #unsubscribeRoot: () => void = () => undefined
+  /** Transcript message id → OpenCode user message id (rewind and fork targets). */
+  readonly #messageIds = new Map<string, string>()
+  readonly #commandList: OpencodeCommand[]
+
+  /** The OpenCode session (a fork switches it). */
+  get externalSessionId(): string {
+    return this.#sessionId
+  }
 
   private constructor(o: {
     ctx: ChatSessionContext
@@ -150,9 +166,10 @@ export class OpencodeChatSession implements ChatSessionHandle {
     this.#log = o.log
     this.#catalog = o.catalog
     this.#commands = o.commands.map((c) => c.name)
+    this.#commandList = o.commands
     this.#sel = o.sel
     this.#options = buildOptionDescriptors(o.catalog, o.sel)
-    this.externalSessionId = o.info.id
+    this.#sessionId = o.info.id
     const contextWindow = (ref: ModelRef) => contextWindowOf(o.catalog.models, ref)
     this.#mapper = new EventMapper({ contextWindow })
     this.#subagents = new SubagentTracker({
@@ -176,7 +193,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
         ? await OpencodeChatSession.#resume(conn, ctx, catalog)
         : await OpencodeChatSession.#create(conn, ctx, catalog)
       const session = new OpencodeChatSession({ ctx, lease, log, catalog, commands, ...opened })
-      session.#attach(commands)
+      session.#attach()
       return session
     } catch (e) {
       lease.release()
@@ -209,20 +226,34 @@ export class OpencodeChatSession implements ChatSessionHandle {
     return { info, sel }
   }
 
-  #attach(commands: OpencodeCommand[]): void {
+  #attach(): void {
     const { hub } = this.#conn
+    this.#subscribeRoot()
     this.#unsubscribe.push(
-      hub.subscribe(this.externalSessionId, (e) => this.#onEvent(e)),
+      () => this.#unsubscribeRoot(),
       hub.onReconnect(() => void this.#resync()),
+      hub.onGlobal((e) => {
+        if (e.type === EV.mcpStatusChanged) void this.#emitMcp()
+      }),
       this.#conn.onCatalogChange(() => void this.#refreshCatalog()),
       this.#conn.onExit((code) => this.#onServerExit(code)),
     )
+    this.#emitSessionInfo()
+    this.#emit({ kind: K.options, options: this.#options })
+    void this.#emitMcp()
+  }
+
+  #subscribeRoot(): void {
+    this.#unsubscribeRoot()
+    this.#unsubscribeRoot = this.#conn.hub.subscribe(this.#sessionId, (e) => this.#onEvent(e))
+  }
+
+  #emitSessionInfo(): void {
     this.#emit({
       kind: K.sessionInfo,
-      externalSessionId: this.externalSessionId,
-      commands: commands.map((c) => ({ name: c.name, description: c.description ?? '' })),
+      externalSessionId: this.#sessionId,
+      commands: this.#commandList.map((c) => ({ name: c.name, description: c.description ?? '' })),
     })
-    this.#emit({ kind: K.options, options: this.#options })
   }
 
   // ── events ──────────────────────────────────────────────────────────────
@@ -373,7 +404,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
     return typeof current === 'string' ? current : undefined
   }
 
-  async send(input: ChatUserInput): Promise<void> {
+  async send(input: ChatUserInput, meta?: ChatSendMeta): Promise<void> {
     const sessionID = this.externalSessionId
     const prompt = toPrompt(input, this.#ctx.worktreePath, existsSync)
     const slash = parseSlash(input.text, this.#commands)
@@ -385,7 +416,10 @@ export class OpencodeChatSession implements ChatSessionHandle {
           ...slash,
           ...(prompt.files ? { files: prompt.files } : {}),
         })
-      else await this.#conn.client.session.prompt({ sessionID, ...prompt })
+      else {
+        const user = idSchema.safeParse(await this.#conn.client.session.prompt({ sessionID, ...prompt }))
+        if (meta && user.success) this.#messageIds.set(meta.messageId, user.data.id)
+      }
     } catch (e) {
       this.#emit({ kind: K.error, code: ERROR_CODE.turn_failed, message: String(e), fatal: false })
       this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })
@@ -423,6 +457,79 @@ export class OpencodeChatSession implements ChatSessionHandle {
     const sessionID = this.#ownerOf(requestId, (m) => m.pendingPermissions)
     if (!sessionID) return
     await this.#conn.client.permission.reply({ sessionID, requestID: requestId, decision: toDecision(decision) })
+  }
+
+  // ── optional actions ────────────────────────────────────────────────────
+
+  /** OpenCode's id of a transcript message (live ones are mapped at send; history ones are OpenCode's own). */
+  #opencodeMessageId(messageId: string): string {
+    return this.#messageIds.get(messageId) ?? messageId
+  }
+
+  async #stopTurn(): Promise<void> {
+    if (this.#turnActive || this.#mapper.turnActive) await this.interrupt()
+  }
+
+  /** Reverts the conversation and the files to before `messageId` (`revert.stage` + `commit`). */
+  async rewind(messageId: string): Promise<void> {
+    await this.#stopTurn()
+    const sessionID = this.externalSessionId
+    const staged = revertSchema.safeParse(
+      await this.#conn.client.session.revert.stage({
+        sessionID,
+        messageID: this.#opencodeMessageId(messageId),
+        files: true,
+      }),
+    )
+    await this.#conn.client.session.revert.commit({ sessionID })
+    const files = staged.success ? (staged.data.files ?? []).map((f) => f.file) : []
+    this.#emit({ kind: K.custom, type: CUSTOM.notice, data: { notice: NOTICE.reverted, messageId, files } })
+  }
+
+  /** Continues in a copy of the conversation (before `messageId`, else all of it); the original stays as it was. */
+  async fork(messageId?: string): Promise<void> {
+    await this.#stopTurn()
+    const from = this.externalSessionId
+    const before = messageId ? this.#opencodeMessageId(messageId) : undefined
+    const forked = sessionInfoSchema.parse(
+      await this.#conn.client.session.fork({ sessionID: from, ...(before ? { before } : {}) }),
+    )
+    this.#sessionId = forked.id
+    this.#subscribeRoot()
+    this.#emitSessionInfo()
+    this.#emit({ kind: K.custom, type: CUSTOM.notice, data: { notice: NOTICE.forked, from, to: forked.id } })
+  }
+
+  /** The server's MCP servers (`refreshMcp`). */
+  async listMcp(): Promise<ChatMcpServer[]> {
+    const raw = await this.#conn.client.mcp.list()
+    return listOf(mcpServerSchema)
+      .parse(raw)
+      .data.map((m) => ({
+        name: m.name,
+        status: MCP_STATUS_OF[m.status.status] ?? MCP_STATUS.failed,
+        ...(m.status.error ? { error: m.status.error } : {}),
+      }))
+  }
+
+  async toggleMcp(name: string, enabled: boolean): Promise<void> {
+    if (enabled) await this.#conn.client.mcp.connect({ server: name })
+    else await this.#conn.client.mcp.disconnect({ server: name })
+    await this.#emitMcp()
+  }
+
+  async reconnectMcp(name: string): Promise<void> {
+    await this.#conn.client.mcp.connect({ server: name })
+    await this.#emitMcp()
+  }
+
+  async #emitMcp(): Promise<void> {
+    try {
+      const servers = await this.listMcp()
+      if (!this.#closed) this.#emit({ kind: K.mcpStatus, servers })
+    } catch (e) {
+      this.#log.warn(`opencode chat ${this.#ctx.sessionId}: mcp list failed`, e)
+    }
   }
 
   /** Interrupts a running subagent's child session. */
