@@ -5,6 +5,7 @@ import { type OverlayGuardMode, setOverlayGuardReporter } from '@pragma/ui/lib/o
 import { createRoot } from 'react-dom/client'
 import { coreLocales, rendererModules } from '../generated/modules.renderer'
 import { applyTheme } from './lib/apply-theme'
+import { readDockLayout } from './lib/dock-layout'
 import { registerShellCommands } from './lib/shell-commands'
 import { ShellStoreContext } from './lib/shell-context'
 import { createShellStore } from './lib/shell-store'
@@ -38,7 +39,7 @@ async function boot(): Promise<void> {
   wireOverlayGuard(host.ipc)
   applyTheme(document.documentElement, host.theme.get())
   host.theme.onChange((s) => applyTheme(document.documentElement, s))
-  const store = createShellStore()
+  const store = createShellStore(readDockLayout(host.layout))
   registerShellCommands(host, store)
   if (host.appInfo.testMode) installTestApi(host)
   createRoot(document.getElementById(ROOT_ID) as HTMLElement).render(

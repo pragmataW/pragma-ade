@@ -6,6 +6,8 @@ export const RENDERER_URL_ENV = 'ELECTRON_RENDERER_URL'
 
 export const WINDOW = { width: 1440, height: 900, minWidth: 1024, minHeight: 640 } as const
 export const TRAFFIC_LIGHT_POSITION = { x: 14, y: 12 } as const
+/** Matches `--titlebar-h`; the Windows/Linux window-control overlay is drawn at this height. */
+export const TITLEBAR_HEIGHT = 38
 export const PRELOAD_FILE = '../preload/index.cjs'
 export const RENDERER_FILE = '../renderer/index.html'
 export const DARWIN = 'darwin'

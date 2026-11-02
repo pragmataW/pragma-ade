@@ -179,6 +179,8 @@ export const CoreIpc = {
   }),
   dialogsOpenFile: defineIpc({ channel: 'core.dialogs.openFile', input: OpenFileInputSchema, output: filesReply }),
   dialogsConfirm: defineIpc({ channel: 'core.dialogs.confirm', input: ConfirmInputSchema, output: z.boolean() }),
+  windowFullScreen: defineIpc({ channel: 'core.window.fullScreen', input: none, output: z.boolean() }),
+  windowFullScreenChanged: defineIpcEvent({ channel: 'core.window.fullScreenChanged', payload: z.boolean() }),
   shellOpenExternal: defineIpc({
     channel: 'core.shell.openExternal',
     input: z.object({ url: z.string() }),

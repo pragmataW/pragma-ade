@@ -6,6 +6,11 @@
 @source "../../../../packages/sdk/src";
 @source "../";
 
+/* The title bar drags the window; its controls (including slot contributions) must stay clickable. */
+.app-titlebar :is(button, a, input, select, textarea, [role="button"], [role="menu"], [contenteditable="true"]) {
+  -webkit-app-region: no-drag;
+}
+
 html,
 body,
 #root {

@@ -1,8 +1,9 @@
 import { join } from 'node:path'
-import { palettes } from '@pragma/ui/tokens'
+import type { ThemeState } from '@pragma/sdk'
 import { BrowserWindow } from 'electron'
-import { DARWIN, PRELOAD_FILE, RENDERER_FILE, RENDERER_URL_ENV, TRAFFIC_LIGHT_POSITION, WINDOW } from '../constants'
+import { DARWIN, PRELOAD_FILE, RENDERER_FILE, RENDERER_URL_ENV, WINDOW } from '../constants'
 import appIcon from './assets/icon.png?asset'
+import { windowChromeOptions } from './window-chrome'
 
 const READY_TO_SHOW = 'ready-to-show'
 const WILL_NAVIGATE = 'will-navigate'
@@ -13,7 +14,7 @@ const DID_FINISH_LOAD = 'did-finish-load'
  * The single app window: sandboxed renderer, no navigation away from the app, no popups.
  * `hidden` (E2E runs) never shows the window and keeps it painting at full speed while hidden.
  */
-export function createMainWindow(opts: { title: string; hidden?: boolean }): BrowserWindow {
+export function createMainWindow(opts: { title: string; theme: ThemeState; hidden?: boolean }): BrowserWindow {
   const hidden = opts.hidden === true
   const isMac = process.platform === DARWIN
   const win = new BrowserWindow({
@@ -23,11 +24,9 @@ export function createMainWindow(opts: { title: string; hidden?: boolean }): Bro
     minHeight: WINDOW.minHeight,
     title: opts.title,
     show: false,
-    backgroundColor: palettes.vscode.dark.bg,
+    ...windowChromeOptions(process.platform, opts.theme),
     // macOS takes the Dock icon from the app bundle; Linux and Windows use the window icon.
-    ...(isMac
-      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: TRAFFIC_LIGHT_POSITION }
-      : { icon: appIcon }),
+    ...(isMac ? {} : { icon: appIcon }),
     webPreferences: {
       preload: join(import.meta.dirname, PRELOAD_FILE),
       contextIsolation: true,

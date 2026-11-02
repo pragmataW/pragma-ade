@@ -6,7 +6,26 @@
     "openSettings": "Open settings",
     "toggleSidebar": "Toggle sidebar",
     "toggleRightPanel": "Toggle right panel",
-    "maximizeRightPanel": "Maximize right panel"
+    "maximizeRightPanel": "Maximize right panel",
+    "swapSidePanels": "Swap sidebar and panel sides",
+    "moveDockLeft": "Move panel to the left",
+    "moveDockRight": "Move panel to the right",
+    "moveDockTop": "Move panel to the top",
+    "moveDockBottom": "Move panel to the bottom",
+    "resetLayout": "Reset panel layout"
+  },
+  "dock": {
+    "menu": "Panel position",
+    "drag": "Drag to move the panel",
+    "dropHint": "Drop to move the panel here",
+    "position": {
+      "left": "Left",
+      "right": "Right",
+      "top": "Top",
+      "bottom": "Bottom"
+    },
+    "swap": "Swap sides",
+    "reset": "Reset layout"
   },
   "titlebar": {
     "search": "Search or run a command",

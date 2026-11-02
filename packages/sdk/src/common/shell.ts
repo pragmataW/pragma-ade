@@ -20,6 +20,12 @@ export const CoreCommands = {
   maximizeRightPanel: 'core.maximizeRightPanel',
   activateRightTab: 'core.activateRightTab',
   activateView: 'core.activateView',
+  swapSidePanels: 'core.swapSidePanels',
+  moveDockLeft: 'core.moveDockLeft',
+  moveDockRight: 'core.moveDockRight',
+  moveDockTop: 'core.moveDockTop',
+  moveDockBottom: 'core.moveDockBottom',
+  resetLayout: 'core.resetLayout',
 } as const
 
 /** Fixed settings page order (§10.4); out-of-tree pages use values above 1000. */

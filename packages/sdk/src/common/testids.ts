@@ -1,6 +1,7 @@
 /** Every shell `data-testid` (§10.1.6). */
 export const ShellTestIds = {
   shellReady: 'shell-ready',
+  titlebar: 'titlebar',
   paneSidebar: 'pane-sidebar',
   paneCenter: 'pane-center',
   paneRight: 'pane-right',
@@ -16,6 +17,13 @@ export const ShellTestIds = {
   settingsView: 'settings-view',
   settingsBack: 'settings-back',
   commandPalette: 'command-palette',
+  dockMenu: 'dock-menu',
+  dockDragHandle: 'dock-drag-handle',
+  dockDropOverlay: 'dock-drop-overlay',
+  dockSwapSides: 'dock-swap-sides',
+  dockReset: 'dock-reset',
+  dockDropZone: (position: string) => `dock-drop-zone-${position}`,
+  dockMoveTo: (position: string) => `dock-move-to-${position}`,
   rightTab: (id: string) => `right-tab-${id}`,
   rightTabBadge: (id: string) => `right-tab-badge-${id}`,
   rightTabContent: (id: string) => `right-tab-content-${id}`,
