@@ -11,3 +11,8 @@ export const CLAUDE_INHERITED_ENV = [
   'CLAUDE_CODE_CHILD_SESSION',
   'CLAUDE_CODE_BRIDGE_SESSION_ID',
 ] as const
+
+/** A transcript's first events carry `cwd`; never read more than this to find it. */
+const KIB = 1024
+const TRANSCRIPT_HEAD_KIB = 64
+export const TRANSCRIPT_HEAD_BYTES = TRANSCRIPT_HEAD_KIB * KIB

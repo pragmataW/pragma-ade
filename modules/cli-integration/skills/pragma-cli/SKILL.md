@@ -2,7 +2,7 @@
 name: pragma-cli
 description: >-
   Use Pragma ADE's `pragma` CLI to list and create worktrees, list and start agent sessions,
-  manage board tasks, and read review comments. Use when working inside Pragma ADE and the user
+  manage board tasks, read review comments, and find a session's local transcript. Use when working inside Pragma ADE and the user
   mentions worktrees, agents, the task board or review comments, or asks to hand work to
   another agent (then use pragma-handoff).
 ---
@@ -31,12 +31,29 @@ Prefer `--json`: every command then prints one JSON document,
 | `pragma task move <id> --column <name>` | Move a task to another column |
 | `pragma comments list [--worktree <id>]` | Review comments (drafts) of a worktree |
 | `pragma handoff --to <profile> --file <path\|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]` | Hand off to another agent |
+| `pragma session locate <id>` | Where a session's full transcript is stored (Pragma, Claude or OpenCode session id) |
+| `pragma session current` | The same for your own session (`PRAGMA_SESSION_ID`) |
 
 - `--worktree` and `--project` default to the current worktree (`PRAGMA_WORKTREE_ID`, else
   the directory you are in).
 - Task ids are the number (`42`) or the key (`PRA-42`); priorities are none, low, medium,
   high, urgent.
 - `-` as a file reads from stdin.
+
+## Session transcripts
+
+Every Claude Code and OpenCode session is stored on this machine. `pragma session locate <id>`
+prints the provider, the transcript `path`, its `format` and the session's `cwd`:
+
+- Claude Code: `path` is a JSONL file (one JSON event per line); read it directly. `related`
+  lists subagent transcripts.
+- OpenCode: `path` is its SQLite database; run the printed `read` command
+  (`opencode session export <id>`) to get the transcript as JSON.
+
+The id can be a Pragma session id (`pragma agent list` shows both it and the provider session
+id), a Claude session id or an OpenCode session id (`ses_…`); sessions started outside Pragma
+are found too. Inside a Pragma agent, `pragma session current` needs no id. Your own provider
+session id is also in the environment: Claude Code sets `CLAUDE_CODE_SESSION_ID`.
 
 ## Exit codes
 

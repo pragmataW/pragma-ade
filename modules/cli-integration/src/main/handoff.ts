@@ -8,7 +8,7 @@ import { type BoardService, IN_PROGRESS_COLUMN_NAME, type TaskDto } from '@pragm
 import type { ProjectsService, Worktree } from '@pragma/module-projects/contract'
 import { type Logger, slugify } from '@pragma/sdk'
 import { BOARD_MODULE_ID, HANDOFF_BRANCH_PREFIX, HANDOFF_SLUG_FALLBACK, HANDOFF_SLUG_MAX } from '../constants'
-import { CLI_ERROR, type CliRequest, type CliResult } from '../contract'
+import { CLI_ERROR, type CliRequest, type CliResult, type CliTranscript } from '../contract'
 import { CliError } from './cli-error'
 import { findTasksForSession, resolveTask } from './handlers/task'
 import { requireService } from './lib/require-service'
@@ -16,6 +16,7 @@ import { toCliError, toCliSession, toCliWorktree } from './mappers'
 import type { Notifier } from './notifier'
 import { resolveWorktree } from './resolve-context'
 import { type ProfileNamer, resolveProfile } from './resolve-profile'
+import { type TranscriptLocator, transcriptsOfPragmaSession } from './session-transcripts'
 
 export interface HandoffDeps {
   projects: ProjectsService
@@ -25,6 +26,7 @@ export interface HandoffDeps {
   now: () => Date
   log: Logger
   nameOf: ProfileNamer
+  transcripts: TranscriptLocator
 }
 
 const HEADING_RE = /^#{1,6}\s+(.+)$/m
@@ -41,10 +43,27 @@ export function deriveHandoffBranch(document: string, now: Date): string {
   return `${HANDOFF_BRANCH_PREFIX}${slug}-${stamp(now)}`
 }
 
+const transcriptLines = (t: CliTranscript): string[] => [
+  `- ${t.path} (${t.format}; ${t.providerId} session ${t.providerSessionId})`,
+  ...(t.readCommand ? [`  Read it with: ${t.readCommand}`] : []),
+  ...t.extraPaths.map((p) => `  Related: ${p}`),
+]
+
+/** Where the previous agent's full session lives; empty when no provider located it. */
+export function buildTranscriptSection(transcripts: readonly CliTranscript[]): string[] {
+  if (transcripts.length === 0) return []
+  return [
+    '',
+    "The previous agent's full session transcript is stored locally. Read it only if the handoff document is not enough:",
+    ...transcripts.flatMap(transcriptLines),
+  ]
+}
+
 /** The target agent's first prompt (fixed English, §6). */
 export function buildHandoffPrompt(
   document: string,
   from: { profileName: string; branch: string | null } | null,
+  transcripts: readonly CliTranscript[] = [],
 ): string {
   const onBranch = from?.branch ? ` on branch ${from.branch}` : ''
   const source = from ? ` (${from.profileName}${onBranch})` : ''
@@ -52,12 +71,18 @@ export function buildHandoffPrompt(
     `You are taking over work handed off from another agent${source}.`,
     'Read the handoff document below, check the current state of the code, then continue the work.',
     'The previous agent has stopped; do not wait for it.',
+    ...buildTranscriptSection(transcripts),
     '',
     '<handoff-document>',
     document,
     '</handoff-document>',
   ].join('\n')
 }
+
+const sourceTranscripts = (deps: HandoffDeps, sessionId: string | undefined): Promise<CliTranscript[]> =>
+  sessionId
+    ? transcriptsOfPragmaSession({ agents: deps.agents, projects: deps.projects, locator: deps.transcripts }, sessionId)
+    : Promise.resolve([])
 
 /** Appended to the description of the source session's cards. */
 export function buildSourceNote(target: { profileName: string; sessionId: string; branch: string }, now: Date): string {
@@ -153,7 +178,11 @@ export async function runHandoff(req: CliRequest<'handoff'>, deps: HandoffDeps):
   const task = req.taskId ? await resolveTask(requireService(deps.board, BOARD_MODULE_ID), req.taskId) : null
   const target = req.sameWorktree ? source : await createTarget(deps, req, source)
   const created = !req.sameWorktree
-  const prompt = buildHandoffPrompt(req.document, await sourceInfo(deps, req.context.sessionId, source))
+  const [from, transcripts] = await Promise.all([
+    sourceInfo(deps, req.context.sessionId, source),
+    sourceTranscripts(deps, req.context.sessionId),
+  ])
+  const prompt = buildHandoffPrompt(req.document, from, transcripts)
   const session = await startTarget(deps, target, profile, prompt, created)
   const profileName = deps.nameOf(profile)
   const note = buildSourceNote({ profileName, sessionId: session.id, branch: target.branch ?? target.path }, deps.now())

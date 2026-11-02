@@ -12,6 +12,7 @@ const result: CliHandoffResult = {
     profileName: 'OpenCode',
     status: 'starting',
     title: null,
+    providerSessionId: null,
     createdAt: 1,
   },
   taskId: null,

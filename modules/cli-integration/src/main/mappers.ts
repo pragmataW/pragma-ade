@@ -38,6 +38,7 @@ export const toCliSession = (s: AgentSession, profileName: string | null): CliSe
   profileName,
   status: s.status,
   title: s.title || null,
+  providerSessionId: s.externalSessionId,
   createdAt: s.createdAt,
 })
 

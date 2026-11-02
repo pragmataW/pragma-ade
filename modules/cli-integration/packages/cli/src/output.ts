@@ -5,6 +5,7 @@ import {
   type CliComment,
   type CliMethod,
   type CliResult,
+  type CliTranscript,
   type CliWorktree,
   EXIT_CODES,
   type ExitCode,
@@ -18,6 +19,7 @@ import {
   DETACHED,
   EMPTY_CELL,
   ERROR_PREFIX,
+  HANDOFF_HINT,
   JSON_INDENT,
   MAIN_MARK,
   NEWLINE,
@@ -41,7 +43,7 @@ const LOCATION_SEP = ':'
 const ID = 'ID'
 const HEADERS = {
   worktrees: [ID, 'BRANCH', 'PATH'],
-  sessions: [ID, 'PROFILE', 'STATUS', 'TITLE'],
+  sessions: [ID, 'PROFILE', 'STATUS', 'PROVIDER SESSION', 'TITLE'],
   profiles: [ID, 'NAME', 'PROVIDER', 'ENABLED', 'DEFAULT'],
   tasks: [ID, 'KEY', 'COLUMN', 'PRIORITY', 'TITLE'],
   comments: [ID, 'LOCATION', 'BODY'],
@@ -81,6 +83,22 @@ const keyValues = (o: Record<string, unknown>): string =>
     .map(([k, v]) => `${k}${KEY_VALUE}${cell(v)}`)
     .join(NEWLINE) + NEWLINE
 
+const transcriptText = (t: CliTranscript): string =>
+  keyValues({
+    provider: t.providerId,
+    session: t.providerSessionId,
+    path: t.path,
+    format: t.format,
+    cwd: t.cwd,
+    ...(t.readCommand ? { read: t.readCommand } : {}),
+    ...(t.extraPaths.length ? { related: t.extraPaths } : {}),
+  })
+
+function locateText(r: CliResult<'sessionLocate'>): string {
+  const pragma = r.pragmaSessionId ? keyValues({ pragma: r.pragmaSessionId }) : ''
+  return pragma + r.transcripts.map(transcriptText).join(NEWLINE) + NEWLINE + HANDOFF_HINT
+}
+
 function humanResult(method: CliMethod, result: unknown): string {
   switch (method) {
     case CLI_METHOD.worktreeList: {
@@ -94,7 +112,7 @@ function humanResult(method: CliMethod, result: unknown): string {
       const r = result as CliResult<'agentList'>
       return formatTable(
         HEADERS.sessions,
-        r.sessions.map((s) => [s.id, cell(s.profileName), s.status, cell(s.title)]),
+        r.sessions.map((s) => [s.id, cell(s.profileName), s.status, cell(s.providerSessionId), cell(s.title)]),
       )
     }
     case CLI_METHOD.profileList: {
@@ -123,6 +141,8 @@ function humanResult(method: CliMethod, result: unknown): string {
       const branch = worktree.branch ?? DETACHED
       return `Handed off to ${cell(session.profileName)} in ${branch} (${worktree.path}), session ${session.id}${NEWLINE}`
     }
+    case CLI_METHOD.sessionLocate:
+      return locateText(result as CliResult<'sessionLocate'>)
     case CLI_METHOD.worktreeCreate:
     case CLI_METHOD.agentSpawn:
     case CLI_METHOD.taskCreate:

@@ -1,0 +1,99 @@
+import type { AgentSessionsService } from '@pragma/module-agents/contract'
+import type { ProjectsService } from '@pragma/module-projects/contract'
+import type { Logger } from '@pragma/sdk'
+import {
+  CLI_ERROR,
+  type CliCallerContext,
+  type CliSessionLocateResult,
+  type CliTranscript,
+  type SessionTranscriptCapability,
+} from '../contract'
+import { CliError } from './cli-error'
+
+/** A provider that implements `sessionTranscript`. */
+export interface TranscriptProvider {
+  id: string
+  transcript: SessionTranscriptCapability
+}
+
+export interface TranscriptLocator {
+  /** Read on every call (providers can be enabled or disabled while the app runs). */
+  providers(): TranscriptProvider[]
+  home: string
+  env: Readonly<Record<string, string | undefined>>
+  log: Logger
+}
+
+export interface TranscriptQuery {
+  providerSessionId: string
+  /** Ask only this provider (the session record names it). */
+  providerId?: string
+  cwd?: string
+}
+
+const NO_SESSION_ID =
+  'No session id given and PRAGMA_SESSION_ID is not set; pass a session id (Pragma, Claude or OpenCode).'
+
+/** Every provider's location for this id (a provider that fails or does not know it is skipped). */
+export async function findTranscripts(locator: TranscriptLocator, q: TranscriptQuery): Promise<CliTranscript[]> {
+  const providers = locator.providers().filter((p) => q.providerId === undefined || p.id === q.providerId)
+  const found = await Promise.all(
+    providers.map(async (p) => {
+      try {
+        const query = { sessionId: q.providerSessionId, home: locator.home, env: locator.env }
+        const location = await p.transcript.locateTranscript(q.cwd ? { ...query, cwd: q.cwd } : query)
+        return location ? [{ ...location, providerId: p.id, providerSessionId: q.providerSessionId }] : []
+      } catch (e) {
+        locator.log.warn(`cli-integration: ${p.id} could not locate session ${q.providerSessionId}`, e)
+        return []
+      }
+    }),
+  )
+  return found.flat()
+}
+
+export interface SessionLookupDeps {
+  agents: AgentSessionsService
+  projects: ProjectsService
+  locator: TranscriptLocator
+}
+
+/** A Pragma session → the provider and cwd to ask; `null` when Pragma does not know the id. */
+async function pragmaQuery(deps: SessionLookupDeps, id: string): Promise<TranscriptQuery | null> {
+  const session = await deps.agents.getSession(id)
+  if (!session) return null
+  if (!session.externalSessionId)
+    throw new CliError(CLI_ERROR.not_found, `Session '${id}' has not reported a provider session id yet.`)
+  const worktree = await deps.projects.getWorktree(session.worktreeId).catch(() => null)
+  return {
+    providerSessionId: session.externalSessionId,
+    providerId: session.providerId,
+    ...(worktree ? { cwd: worktree.path } : {}),
+  }
+}
+
+/** The transcripts of a Pragma session (best effort, for the handoff prompt): never throws. */
+export async function transcriptsOfPragmaSession(deps: SessionLookupDeps, id: string): Promise<CliTranscript[]> {
+  try {
+    const q = await pragmaQuery(deps, id)
+    return q ? await findTranscripts(deps.locator, q) : []
+  } catch (e) {
+    deps.locator.log.warn(`cli-integration: no transcript for session ${id}`, e)
+    return []
+  }
+}
+
+/** `pragma session locate [<id>]`: a Pragma session id, else a provider session id searched in every provider. */
+export async function locateSession(
+  deps: SessionLookupDeps,
+  sessionId: string | undefined,
+  context: CliCallerContext,
+): Promise<CliSessionLocateResult> {
+  const id = sessionId ?? context.sessionId
+  if (!id) throw new CliError(CLI_ERROR.invalid_argument, NO_SESSION_ID)
+  const fromPragma = await pragmaQuery(deps, id)
+  const transcripts = await findTranscripts(deps.locator, fromPragma ?? { providerSessionId: id, cwd: context.cwd })
+  if (transcripts.length === 0)
+    throw new CliError(CLI_ERROR.not_found, `No local transcript found for session '${id}'.`)
+  return { pragmaSessionId: fromPragma ? id : null, transcripts }
+}

@@ -2,5 +2,6 @@
 export * from './bridge-cli'
 export * from './constants'
 export * from './ipc'
+export * from './session-transcript-capability'
 export * from './skills-capability'
 export * from './testids'

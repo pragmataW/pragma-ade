@@ -2,7 +2,7 @@ import { aProfile, aSession } from '@pragma/module-agents/testing'
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentType } from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AGENT_SLOTS, AGENTS_IPC, AGENTS_TESTIDS, type AgentSession } from '../../src/contract'
 import '../support/render'
 import { activateWithFakeContext } from '../support/renderer-context'
@@ -20,6 +20,22 @@ async function mount(opts: Parameters<typeof activateWithFakeContext>[0] = {}) {
 }
 const Probe = ({ session }: { session?: AgentSession }) => <span data-testid="probe">{session?.id}</span>
 const tabs = () => screen.queryAllByTestId(AGENTS_TESTIDS.tab)
+
+describe('session menu: copy session ID', () => {
+  it('copies the provider session id; disabled until the provider reported one', async () => {
+    const writeText = vi.fn(async () => undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    await mount({ sessions: [running('a', 1, { externalSessionId: 'ext-123' }), running('b', 2)] })
+    await waitFor(() => expect(tabs()).toHaveLength(2))
+    await userEvent.click(tabs()[0] as HTMLElement)
+    await userEvent.click(screen.getByTestId(AGENTS_TESTIDS.sessionMenu))
+    await userEvent.click(await screen.findByTestId(AGENTS_TESTIDS.sessionCopyId))
+    expect(writeText).toHaveBeenCalledWith('ext-123')
+    await userEvent.click(tabs()[1] as HTMLElement)
+    await userEvent.click(screen.getByTestId(AGENTS_TESTIDS.sessionMenu))
+    expect(await screen.findByTestId(AGENTS_TESTIDS.sessionCopyId)).toHaveAttribute('data-disabled')
+  })
+})
 
 describe('agents center view', () => {
   it('registers the default agents view and the terminal view entry', async () => {

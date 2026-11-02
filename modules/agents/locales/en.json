@@ -31,7 +31,8 @@
       "label": "Session actions",
       "stop": "Stop agent",
       "restart": "Restart",
-      "close": "Close tab"
+      "close": "Close tab",
+      "copyId": "Copy session ID"
     }
   },
   "close": {

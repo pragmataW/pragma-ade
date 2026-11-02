@@ -1,5 +1,6 @@
 import { z } from '@pragma/sdk'
 import { MAX_DOCUMENT_BYTES } from './constants'
+import { sessionTranscriptLocationSchema } from './session-transcript-capability'
 
 /** Bridge namespace served by this module; wire types are `cli.<method>`. */
 export const CLI_NAMESPACE = 'cli'
@@ -15,6 +16,7 @@ export const CLI_METHODS = [
   'taskMove',
   'commentsList',
   'handoff',
+  'sessionLocate',
 ] as const
 export type CliMethod = (typeof CLI_METHODS)[number]
 /** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
@@ -86,6 +88,8 @@ export const cliSessionSchema = z.object({
   profileName: z.string().nullable(),
   status: z.string(),
   title: z.string().nullable(),
+  /** The provider's own session id (Claude / OpenCode), once it reported one. */
+  providerSessionId: z.string().nullable(),
   createdAt: z.number(),
 })
 export type CliSession = z.infer<typeof cliSessionSchema>
@@ -121,6 +125,19 @@ export const cliHandoffResultSchema = z.object({
   sourceTaskIds: z.array(z.number().int()),
 })
 export type CliHandoffResult = z.infer<typeof cliHandoffResultSchema>
+
+/** One located transcript: the provider's location plus who owns it. */
+export const cliTranscriptSchema = sessionTranscriptLocationSchema.extend({
+  providerId: z.string(),
+  providerSessionId: z.string(),
+})
+export type CliTranscript = z.infer<typeof cliTranscriptSchema>
+export const cliSessionLocateResultSchema = z.object({
+  /** The Pragma session the id resolved to, if Pragma knows it. */
+  pragmaSessionId: z.string().nullable(),
+  transcripts: z.array(cliTranscriptSchema),
+})
+export type CliSessionLocateResult = z.infer<typeof cliSessionLocateResultSchema>
 
 const UPDATE_FIELDS = ['title', 'description', 'priority', 'labels'] as const
 const NEEDS_UPDATE_FIELD = `pass at least one of ${UPDATE_FIELDS.join(', ')}`
@@ -162,6 +179,8 @@ export const cliRequestSchemas = {
     document: documentText,
     taskId: taskRefSchema.optional(),
   }),
+  /** A Pragma or provider session id; without one, the caller's `PRAGMA_SESSION_ID`. */
+  sessionLocate: withContext({ sessionId: id.optional() }),
 } satisfies Record<CliMethod, z.ZodType>
 
 export const cliResultSchemas = {
@@ -176,6 +195,7 @@ export const cliResultSchemas = {
   taskMove: cliTaskSchema,
   commentsList: z.object({ worktreeId: id, comments: z.array(cliCommentSchema) }),
   handoff: cliHandoffResultSchema,
+  sessionLocate: cliSessionLocateResultSchema,
 } satisfies Record<CliMethod, z.ZodType>
 
 export type CliRequest<M extends CliMethod> = z.infer<(typeof cliRequestSchemas)[M]>
