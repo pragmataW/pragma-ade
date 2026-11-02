@@ -82,5 +82,7 @@ export const RestoreResultSchema = z.discriminatedUnion('ok', [
 export type RestoreResult = z.infer<typeof RestoreResultSchema>
 
 export const IdSchema = z.object({ id: z.number() })
+/** Absent: every worktree's entries. */
+export const ListInputSchema = z.object({ worktreeId: z.string().optional() })
 export const RestoreInputSchema = z.object({ id: z.number(), paths: z.array(z.string()).optional() })
 export const FileRefSchema = z.object({ id: z.number(), path: z.string() })

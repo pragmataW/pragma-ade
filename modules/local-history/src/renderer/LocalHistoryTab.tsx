@@ -4,7 +4,7 @@ import { CodeBlock } from '@pragma/ui/components/code-block'
 import { FileIcon } from '@pragma/ui/components/file-icon'
 import { Icon } from '@pragma/ui/components/icon'
 import { useEffect, useState } from 'react'
-import { BUTTON, ICONS, ROW_ICON_PX as ICON_PX, PLAIN_LANG, SHORT_SHA } from '../constants'
+import { BUTTON, ROW_ICON_PX as ICON_PX, ICONS, PLAIN_LANG, SHORT_SHA } from '../constants'
 import {
   type EntryFile,
   type EntrySummary,
@@ -14,6 +14,7 @@ import {
   LOCAL_HISTORY_TESTIDS as T,
 } from '../contract'
 import { confirmRestore, reportRestore } from './restore'
+import { useActiveWorktreeId } from './use-active-worktree'
 
 const TIME = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 const SEPARATOR = /[\\/]/
@@ -24,9 +25,9 @@ type Selected = { id: number; path: string } | null
 
 function useRestore() {
   const ctx = useRendererContext<LocalHistorySettings>()
-  return async (id: number, paths?: string[]) => {
-    if (!(await confirmRestore(ctx))) return
-    reportRestore(ctx, await ctx.ipc.invoke(LocalHistoryIpc.restore, { id, paths }))
+  return async (entry: EntrySummary, paths?: string[]) => {
+    if (!(await confirmRestore(ctx, entry, paths))) return
+    reportRestore(ctx, await ctx.ipc.invoke(LocalHistoryIpc.restore, { id: entry.id, paths }))
   }
 }
 
@@ -48,10 +49,11 @@ function RowButton(props: { icon: string; label: string; testId: string; onClick
   )
 }
 
-function FileRow(props: { entryId: number; file: EntryFile; selected: boolean; onSelect(): void }) {
+function FileRow(props: { entry: EntrySummary; file: EntryFile; selected: boolean; onSelect(): void }) {
   const t = useT()
   const restore = useRestore()
-  const { entryId, file } = props
+  const { entry, file } = props
+  const entryId = entry.id
   return (
     <div
       data-testid={T.file(entryId, file.path)}
@@ -76,7 +78,7 @@ function FileRow(props: { entryId: number; file: EntryFile; selected: boolean; o
         icon={ICONS.restore}
         label={t('local-history:tab.restore')}
         testId={T.restoreFile(entryId, file.path)}
-        onClick={() => void restore(entryId, [file.path])}
+        onClick={() => void restore(entry, [file.path])}
       />
     </div>
   )
@@ -92,7 +94,7 @@ function EntryFiles(props: { entry: EntrySummary; selected: Selected; onSelect(s
       {detail.data?.files.map((file) => (
         <FileRow
           key={file.path}
-          entryId={entry.id}
+          entry={entry}
           file={file}
           selected={props.selected?.id === entry.id && props.selected.path === file.path}
           onSelect={() => props.onSelect({ id: entry.id, path: file.path })}
@@ -147,7 +149,7 @@ function EntryRow(props: { entry: EntrySummary; selected: Selected; onSelect(s: 
           icon={ICONS.restore}
           label={t('local-history:tab.restoreAll')}
           testId={T.restoreEntry(entry.id)}
-          onClick={() => void restore(entry.id)}
+          onClick={() => void restore(entry)}
         />
         <RowButton
           icon={ICONS.remove}
@@ -168,7 +170,9 @@ function Preview({ selected }: { selected: NonNullable<Selected> }) {
   const c = content.data
   return (
     <div data-testid={T.preview} className="min-h-0 flex-1 overflow-auto border-[var(--bd)] border-t">
-      {c?.saved != null && <CodeBlock code={c.saved} lang={langOf(selected.path)} className="m-0 rounded-none px-3 py-2" />}
+      {c?.saved != null && (
+        <CodeBlock code={c.saved} lang={langOf(selected.path)} className="m-0 rounded-none px-3 py-2" />
+      )}
       {c?.state === FILE_STATE.missing && (
         <p className="p-3 text-[var(--mu)]">{t('local-history:tab.missingPreview')}</p>
       )}
@@ -181,11 +185,18 @@ function Preview({ selected }: { selected: NonNullable<Selected> }) {
   )
 }
 
-/** Right-dock tab: what Git Changes threw away, newest first; restore an entry, one file, or preview it. */
+/**
+ * Right-dock tab: what Git Changes threw away in the active worktree, newest first; restore an entry, one file, or
+ * preview it. Other worktrees' entries stay hidden until that worktree is selected.
+ */
 export function LocalHistoryTab() {
   const t = useT()
   const ctx = useRendererContext()
-  const list = useLatestAsync(() => ctx.ipc.invoke(LocalHistoryIpc.list, undefined), [ctx])
+  const active = useActiveWorktreeId()
+  const list = useLatestAsync(
+    async () => (active === null ? [] : ctx.ipc.invoke(LocalHistoryIpc.list, { worktreeId: active })),
+    [ctx, active],
+  )
   const [selected, setSelected] = useState<Selected>(null)
   const { reload } = list
   useEffect(() => {
@@ -198,7 +209,7 @@ export function LocalHistoryTab() {
       <div className={cn('min-h-0 overflow-auto', selected ? 'max-h-[55%]' : 'flex-1')}>
         {list.data && entries.length === 0 && (
           <p data-testid={T.empty} className="p-4 text-[var(--mu)]">
-            {t('local-history:tab.empty')}
+            {t(active === null ? 'local-history:tab.noWorktree' : 'local-history:tab.empty')}
           </p>
         )}
         {entries.map((entry) => (
