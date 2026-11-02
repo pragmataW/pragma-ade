@@ -6,9 +6,12 @@ import { boardActions, select } from '../store'
 import { goToSession } from './navigation'
 import { useDebouncedValue } from './use-debounced-value'
 
-/** `prepareStart` for the task, refetched when its worktree or sessions change. */
+/** `prepareStart` for the task, refetched when its title (branch suggestion), worktree or sessions change. */
 export const useStartPrep = (task: TaskDto) =>
-  useLatestAsync(() => boardActions.prepareStart(task.id), [task.id, task.worktreeId, task.sessionIds.length])
+  useLatestAsync(
+    () => boardActions.prepareStart(task.id),
+    [task.id, task.title, task.worktreeId, task.sessionIds.length],
+  )
 
 /** The branch name check, debounced; `null` while unchecked. */
 export function useBranchCheck(projectId: string, branch: string) {

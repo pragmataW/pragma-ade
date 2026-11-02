@@ -4,7 +4,7 @@ import { createSessionInfo } from '../src/main/session-info'
 import { fakeAgentSessions, fakeStatus } from './support/fakes'
 
 const sessions = fakeAgentSessions()
-sessions.add(aSession('s1', 1, { profileId: 'fake', providerId: 'custom', title: 'Fix login' }))
+sessions.add(aSession('s1', 1, { profileId: 'fake', providerId: 'custom', title: 'Fix login', createdAt: 1234 }))
 
 describe('createSessionInfo', () => {
   it('skips missing sessions', async () => {
@@ -27,8 +27,14 @@ describe('createSessionInfo', () => {
     expect((await info.describe(['s1']))[0]?.status).toBe(status)
   })
 
-  it('fills profile name, provider and title', async () => {
+  it('fills profile name, provider, title and start time', async () => {
     const [s] = await createSessionInfo({ sessions: sessions.service }).describe(['s1'])
-    expect(s).toMatchObject({ profileName: 'Fake', providerId: 'custom', title: 'Fix login', profileId: 'fake' })
+    expect(s).toMatchObject({
+      profileName: 'Fake',
+      providerId: 'custom',
+      title: 'Fix login',
+      profileId: 'fake',
+      startedAt: 1234,
+    })
   })
 })

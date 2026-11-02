@@ -29,6 +29,7 @@ export function createSessionInfo(deps: {
       profileName: profile?.name ?? null,
       profileDisplayNameKey: profile?.displayNameKey ?? null,
       providerId: session.providerId,
+      startedAt: session.createdAt,
     }
   }
   return {

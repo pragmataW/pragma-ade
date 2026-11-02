@@ -7,6 +7,7 @@ import { runAction } from '../lib/actions'
 import { profileLabel } from '../lib/labels'
 import { goToSession } from '../lib/navigation'
 import { boardActions, useBoardStore } from '../store'
+import { SectionTitle } from './SectionTitle'
 
 /** The task's agent sessions: status (when agent-status is enabled), Go to agent, Unlink. */
 export function LinkedSessions({ task }: { task: TaskDto }) {
@@ -14,9 +15,7 @@ export function LinkedSessions({ task }: { task: TaskDto }) {
   const statusAvailable = useBoardStore((s) => s.snapshot?.statusAvailable ?? false)
   return (
     <section className="flex flex-col gap-1.5">
-      <h3 className="font-semibold text-[11px] text-[var(--mu)] uppercase tracking-[0.06em]">
-        {t('board:sessions.title')}
-      </h3>
+      <SectionTitle>{t('board:sessions.title')}</SectionTitle>
       {task.sessions.length === 0 && <span className="text-[12px] text-[var(--fa)]">{t('board:sessions.empty')}</span>}
       {task.sessions.map((s) => (
         <div

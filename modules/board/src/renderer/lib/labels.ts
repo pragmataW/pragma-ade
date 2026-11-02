@@ -17,7 +17,3 @@ export const profileLabel = (
 }
 
 export const monogram = (label: string): string => label.slice(0, MONOGRAM_LETTERS).toUpperCase()
-
-/** `Intl` date + time of an epoch-ms timestamp. */
-export const formatDateTime = (ms: number, options: Intl.DateTimeFormatOptions): string =>
-  new Intl.DateTimeFormat(undefined, options).format(new Date(ms))

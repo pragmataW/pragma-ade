@@ -92,6 +92,8 @@ export const LinkedSessionDtoSchema = z.object({
   profileName: z.string().nullable(),
   profileDisplayNameKey: z.string().nullable(),
   providerId: z.string().nullable(),
+  /** The agent session's start (epoch ms), for the drawer's activity list. */
+  startedAt: z.number().int(),
 })
 export type LinkedSessionDto = z.infer<typeof LinkedSessionDtoSchema>
 

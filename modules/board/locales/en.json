@@ -40,14 +40,18 @@
     "edit": "Edit",
     "preview": "Preview",
     "emptyPreview": "No description",
-    "created": "Created {{date}}",
-    "updated": "Updated {{date}}",
     "delete": "Delete task",
     "deleteConfirm": "Delete {{key}}? This cannot be undone.",
     "deleteConfirmButton": "Delete",
     "cancel": "Cancel",
     "close": "Close",
     "title": "Title"
+  },
+  "activity": {
+    "title": "Activity",
+    "created": "Created {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+    "sessionStarted": "{{agent}} session started {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+    "updated": "Updated {{date, datetime(dateStyle: medium; timeStyle: short)}}"
   },
   "labels": { "create": "New label, Enter to add", "toggle": "Toggle label {{name}}" },
   "search": { "placeholder": "Search tasks" },

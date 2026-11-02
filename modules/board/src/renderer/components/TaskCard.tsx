@@ -1,12 +1,13 @@
-import { Slot, useT } from '@pragma/sdk/renderer'
+import { ProviderIcon, Slot, useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Monogram } from '@pragma/ui/components/monogram'
-import { MONOGRAM_PX } from '../../constants'
+import { AGENT_MARK_PX } from '../../constants'
 import {
   BOARD_TESTID_ATTRS as A,
   BOARD_CARD_BADGES_SLOT,
   type BoardCardBadgesProps,
   type BoardSection,
+  type LinkedSessionDto,
   BOARD_TESTIDS as T,
   type TaskDto,
 } from '../../contract'
@@ -16,51 +17,58 @@ import { LabelChip } from './LabelChip'
 import { PlainButton } from './PlainButton'
 import { PriorityBars } from './PriorityBars'
 
-function WorktreeChip({ worktreeId }: { worktreeId: string | null }) {
-  const t = useT()
-  const worktree = useWorktrees().get(worktreeId ?? '')
-  if (!worktreeId)
-    return (
-      <span data-testid={T.cardNoWorktree} className="text-[11px] text-[var(--fa)]">
-        {t('board:card.noWorktree')}
-      </span>
-    )
+/** The linked sessions' most urgent status (agent-status fills the slot; empty without it). */
+function StatusDot({ task }: { task: TaskDto }) {
   return (
-    <span
-      data-testid={T.cardWorktree}
-      {...{ [A.worktreeId]: worktreeId }}
-      className="truncate font-mono text-[11px] text-[var(--mu)]"
-    >
-      {worktree?.branch ?? t('board:worktree.detached')}
+    <span data-testid={T.cardBadges} className="flex shrink-0 items-center">
+      <Slot<BoardCardBadgesProps>
+        id={BOARD_CARD_BADGES_SLOT}
+        props={{ taskId: task.id, sessionIds: task.sessionIds }}
+      />
     </span>
   )
 }
 
-function SessionMarks({ task }: { task: TaskDto }) {
+/** ui-notes: linked worktree chip (status dot + branch) or "No worktree". */
+function WorktreeChip({ task }: { task: TaskDto }) {
   const t = useT()
+  const worktree = useWorktrees().get(task.worktreeId ?? '')
   return (
-    <span className="flex items-center gap-1">
-      {task.sessions.map((s) => (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <StatusDot task={task} />
+      {task.worktreeId ? (
         <span
-          key={s.sessionId}
-          data-testid={T.cardSession}
-          {...{ [A.sessionId]: s.sessionId }}
-          title={profileLabel(t, s)}
+          data-testid={T.cardWorktree}
+          {...{ [A.worktreeId]: task.worktreeId }}
+          className="truncate font-mono text-[11px] text-[var(--mu)]"
         >
-          <Monogram letters={monogram(profileLabel(t, s))} size={MONOGRAM_PX} />
+          {worktree?.branch ?? t('board:worktree.detached')}
         </span>
-      ))}
-      <span data-testid={T.cardBadges} className="flex items-center">
-        <Slot<BoardCardBadgesProps>
-          id={BOARD_CARD_BADGES_SLOT}
-          props={{ taskId: task.id, sessionIds: task.sessionIds }}
-        />
-      </span>
+      ) : (
+        <span data-testid={T.cardNoWorktree} className="text-[11px] text-[var(--fa)]">
+          {t('board:card.noWorktree')}
+        </span>
+      )}
     </span>
   )
 }
 
-/** Card (ui-notes Screen 5): key · priority · title · labels · worktree · agent marks + status slot. */
+/** The agent's official logo (SDK `ProviderIcon`, 20px on cards); a monogram when the provider is unknown. */
+function AgentMark({ session }: { session: LinkedSessionDto }) {
+  const t = useT()
+  const label = profileLabel(t, session)
+  return (
+    <span data-testid={T.cardSession} {...{ [A.sessionId]: session.sessionId }} title={label} className="flex">
+      {session.providerId ? (
+        <ProviderIcon providerId={session.providerId} size={AGENT_MARK_PX} />
+      ) : (
+        <Monogram letters={monogram(label)} size={AGENT_MARK_PX} />
+      )}
+    </span>
+  )
+}
+
+/** Card (ui-notes Screen 5): key · priority · title · labels · worktree · agent marks. */
 export function TaskCard(props: {
   task: TaskDto
   section: BoardSection | undefined
@@ -103,8 +111,12 @@ export function TaskCard(props: {
         </div>
       )}
       <div className="flex items-center justify-between gap-2">
-        <WorktreeChip worktreeId={task.worktreeId} />
-        <SessionMarks task={task} />
+        <WorktreeChip task={task} />
+        <span className="flex shrink-0 items-center gap-1">
+          {task.sessions.map((s) => (
+            <AgentMark key={s.sessionId} session={s} />
+          ))}
+        </span>
       </div>
     </article>
   )

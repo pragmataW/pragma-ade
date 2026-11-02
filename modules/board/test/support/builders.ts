@@ -66,6 +66,7 @@ export function aLinkedSession(sessionId: string, over: Partial<LinkedSessionDto
     profileName: 'Fake',
     profileDisplayNameKey: null,
     providerId: 'custom',
+    startedAt: 0,
     ...over,
   }
 }

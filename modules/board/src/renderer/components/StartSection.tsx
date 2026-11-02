@@ -1,17 +1,18 @@
 import { useT } from '@pragma/sdk/renderer'
-import type { StartPrep, TaskDto } from '../../contract'
+import type { TaskDto } from '../../contract'
 import { useStartPrep, useStartRunner } from '../lib/use-start'
 import { boardActions } from '../store'
 import { Field } from './Field'
 import { StartFailureText, StartWorkBox, useStartOptions } from './StartWorkBox'
 import { WorktreeField } from './WorktreeField'
 
-function Loaded({ task, prep }: { task: TaskDto; prep: StartPrep }) {
-  const t = useT()
+/** One drawer's start state, shared by the Worktree field ("Start agent in this worktree") and the Start work box. */
+export function useStartFlow(task: TaskDto) {
+  const prep = useStartPrep(task).data ?? null
   const [options, setOptions] = useStartOptions(prep)
   const runner = useStartRunner()
   const startHere = () =>
-    runner.run(
+    void runner.run(
       boardActions.startInWorktree({
         taskId: task.id,
         worktreeId: task.worktreeId as string,
@@ -19,29 +20,36 @@ function Loaded({ task, prep }: { task: TaskDto; prep: StartPrep }) {
         sendPrompt: options.sendPrompt,
       }),
     )
+  return { prep, options, setOptions, runner, startHere }
+}
+
+export type StartFlow = ReturnType<typeof useStartFlow>
+
+/** The Worktree row of the drawer's field grid (after `prepareStart` answered). */
+export function WorktreeRow({ task, flow }: { task: TaskDto; flow: StartFlow }) {
+  const t = useT()
+  if (!flow.prep) return null
   return (
-    <>
-      <div className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
-        <Field label={t('board:drawer.worktree')}>
-          <WorktreeField task={task} prep={prep} running={runner.running} onStartHere={() => void startHere()} />
-        </Field>
-      </div>
-      <StartWorkBox
-        task={task}
-        prep={prep}
-        options={options}
-        setOptions={setOptions}
-        running={runner.running}
-        onStart={(p) => void runner.run(p)}
-      />
-      <StartFailureText failure={runner.failure} />
-    </>
+    <Field label={t('board:drawer.worktree')}>
+      <WorktreeField task={task} prep={flow.prep} running={flow.runner.running} onStartHere={flow.startHere} />
+    </Field>
   )
 }
 
-/** Worktree link + Start work box (after `prepareStart` answered). */
-export function StartSection({ task }: { task: TaskDto }) {
-  const prep = useStartPrep(task)
-  if (!prep.data) return null
-  return <Loaded key={task.id} task={task} prep={prep.data} />
+/** The Start work box and the last start failure (after `prepareStart` answered). */
+export function StartSection({ task, flow }: { task: TaskDto; flow: StartFlow }) {
+  if (!flow.prep) return null
+  return (
+    <>
+      <StartWorkBox
+        task={task}
+        prep={flow.prep}
+        options={flow.options}
+        setOptions={flow.setOptions}
+        running={flow.runner.running}
+        onStart={(p) => void flow.runner.run(p)}
+      />
+      <StartFailureText failure={flow.runner.failure} />
+    </>
+  )
 }

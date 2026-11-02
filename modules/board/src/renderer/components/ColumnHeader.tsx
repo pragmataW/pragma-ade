@@ -2,7 +2,7 @@ import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import { useT } from '@pragma/sdk/renderer'
 import { Icon } from '@pragma/ui/components/icon'
 import { Input } from '@pragma/ui/components/input'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { ENTER_KEY, ESCAPE_KEY, ICON_PX } from '../../constants'
 import { BOARD_ERROR, type ColumnDto, errorMessage, BOARD_TESTIDS as T } from '../../contract'
 import { boardActions, isBoardError, setError } from '../store'
@@ -48,11 +48,13 @@ function RenameInput({ column, onDone }: { column: ColumnDto; onDone(): void }) 
   )
 }
 
-/** Drag handle, name (inline rename) and the column menu; project scope only. */
+/** Drag handle, name (inline rename), count and the column menu; project scope only. */
 export function ColumnHeader(props: {
   column: ColumnDto
   columns: ColumnDto[]
   taskCount: number
+  /** The visible-card count, drawn right after the name (ui-notes: name · count … menu). */
+  count: ReactNode
   handle: DraggableSyntheticListeners
 }) {
   const t = useT()
@@ -73,6 +75,7 @@ export function ColumnHeader(props: {
       ) : (
         <span className="truncate font-medium text-[12.5px]">{column.name}</span>
       )}
+      {props.count}
       <ColumnMenu
         column={column}
         columns={props.columns}

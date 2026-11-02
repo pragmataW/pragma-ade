@@ -43,10 +43,10 @@ export const PRIORITY_BARS = { none: 0, low: 1, medium: 2, high: 3, urgent: 3 } 
 export const PRIORITY_BAR_CLASSES = ['h-1', 'h-[7px]', 'h-2.5'] as const
 export const DESCRIPTION_ROWS = 8
 export const MONOGRAM_LETTERS = 2
-export const MONOGRAM_PX = 16
+/** ui-notes mark sizes: 20px on cards. */
+export const AGENT_MARK_PX = 20
 export const ESCAPE_KEY = 'Escape'
 export const ENTER_KEY = 'Enter'
-export const DATE_TIME_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
 /** Pointer travel before a drag starts (clicks stay clicks). */
 export const DRAG_ACTIVATION_PX = 5
 export const DND_TASK_PREFIX = 'task:'

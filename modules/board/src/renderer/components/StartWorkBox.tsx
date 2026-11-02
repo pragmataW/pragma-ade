@@ -12,22 +12,29 @@ import {
   type TaskDto,
 } from '../../contract'
 import { profileLabel } from '../lib/labels'
+import { useDerivedDraft } from '../lib/use-derived-draft'
 import { type StartFailure, useBranchCheck } from '../lib/use-start'
 import { boardActions } from '../store'
+import { SectionTitle } from './SectionTitle'
 
 export interface StartOptions {
   profileId: string | undefined
   sendPrompt: boolean
 }
 
-/** The agent picker and the "send task as first prompt" box, shared with "Start agent in this worktree". */
-export function useStartOptions(prep: StartPrep): [StartOptions, (o: Partial<StartOptions>) => void] {
+/**
+ * The agent picker and the "send task as first prompt" box, shared with "Start agent in this worktree". Each follows
+ * its default (the default profile, the `sendPromptByDefault` setting) until the user picks a value.
+ */
+export function useStartOptions(prep: StartPrep | null): [StartOptions, (o: Partial<StartOptions>) => void] {
   const settings = useModuleSettings<BoardSettings>()
-  const [options, setOptions] = useState<StartOptions>({
-    profileId: prep.defaultProfileId ?? undefined,
-    sendPrompt: settings.sendPromptByDefault,
-  })
-  return [options, (o) => setOptions((x) => ({ ...x, ...o }))]
+  const [profileId, setProfileId] = useDerivedDraft(prep?.defaultProfileId ?? undefined)
+  const [sendPrompt, setSendPrompt] = useDerivedDraft(settings.sendPromptByDefault)
+  const set = (o: Partial<StartOptions>) => {
+    if (o.profileId !== undefined) setProfileId(o.profileId)
+    if (o.sendPrompt !== undefined) setSendPrompt(o.sendPrompt)
+  }
+  return [{ profileId, sendPrompt }, set]
 }
 
 function BranchError({ reason }: { reason: string | null }) {
@@ -70,7 +77,8 @@ export function StartWorkBox(props: {
 }) {
   const t = useT()
   const { task, prep, options } = props
-  const [branch, setBranch] = useState(prep.suggestedBranch)
+  // Follows the suggestion (re-derived from the current title) until the user types a branch.
+  const [branch, setBranch] = useDerivedDraft(prep.suggestedBranch)
   const [base, setBase] = useState(prep.defaultBaseBranch ?? prep.baseBranches[0] ?? '')
   const check = useBranchCheck(task.projectId, branch)
   const invalid = check.result !== null && !check.result.ok ? check.result.reason : null
@@ -87,9 +95,7 @@ export function StartWorkBox(props: {
     )
   return (
     <section className="flex flex-col gap-2 rounded-[var(--radius-popover)] border border-[var(--bd)] p-3">
-      <h3 className="font-semibold text-[11px] text-[var(--mu)] uppercase tracking-[0.06em]">
-        {t('board:start.title')}
-      </h3>
+      <SectionTitle>{t('board:start.title')}</SectionTitle>
       <Row label={t('board:start.branch')}>
         <Input
           data-testid={T.startBranch}
