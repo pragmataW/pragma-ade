@@ -93,6 +93,7 @@ export class EditorServiceImpl implements EditorService {
 
   async setTheme(mode: ThemeMode, palette?: ThemePalette): Promise<void> {
     const map = this.#d.settings().themeMap
-    this.#d.bridge.pushTheme({ themeName: map[mode], mode, ...(palette ? { colors: palette } : {}) })
+    const themeName = map[mode]
+    this.#d.bridge.pushTheme({ themeName, mode, ...(palette ? { colorsByTheme: { [themeName]: palette } } : {}) })
   }
 }

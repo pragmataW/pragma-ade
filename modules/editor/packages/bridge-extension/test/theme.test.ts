@@ -1,17 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { applyTheme } from '../src/handlers/theme'
+import { applyTheme, nextCustomizations } from '../src/handlers/theme'
+import { LatestQueue } from '../src/latestQueue'
 import { paletteToColorCustomizations } from '../src/palette'
 import { fakeApi } from './fakes/vscode'
 
 const COLORS = 'workbench.colorCustomizations'
 const THEME = 'workbench.colorTheme'
+const DARK = '[Dark Modern]'
+const LIGHT = '[Light Modern]'
+const BG = 'editor.background'
+const dark = (colors: Record<string, string>) => ({
+  themeName: 'Dark Modern',
+  mode: 'dark' as const,
+  colorsByTheme: { 'Dark Modern': colors },
+})
+type Colors = Record<string, string> & Record<string, Record<string, string> | undefined>
+const colorsOf = (api: ReturnType<typeof fakeApi>) => api.config.get(COLORS) as Colors
 
 describe('palette and theme', () => {
   it('palette maps bg and ac, omits missing tokens', () => {
     const out = paletteToColorCustomizations({ bg: '#111111', ac: '#0078d4' })
-    expect(out['editor.background']).toBe('#111111')
+    expect(out[BG]).toBe('#111111')
     expect(out['button.background']).toBe('#0078d4')
     expect(out['sideBar.background']).toBeUndefined()
+  })
+
+  it('colours the inactive title bar and selection too (the workbench is unfocused while the app has focus)', () => {
+    const out = paletteToColorCustomizations({ sb: '#16120f', hv: '#30271f' })
+    expect(out['titleBar.inactiveBackground']).toBe('#16120f')
+    expect(out['titleBar.activeBackground']).toBe('#16120f')
+    expect(out['list.inactiveSelectionBackground']).toBe('#30271f')
   })
 
   it('applyTheme switches theme only when different', async () => {
@@ -22,22 +40,117 @@ describe('palette and theme', () => {
     expect(api.config.get(THEME)).toBe('Dark Modern')
   })
 
-  it("applyTheme preserves user's own colorCustomizations keys and replaces only managed ones", async () => {
+  it('writes each palette into its theme block, never at the top level', async () => {
     const api = fakeApi()
-    api.config.set(COLORS, { 'terminal.background': '#000000' })
-    await applyTheme(api, { themeName: 'Dark Modern', mode: 'dark', colors: { bg: '#111111', ac: '#222222' } })
-    await applyTheme(api, { themeName: 'Dark Modern', mode: 'dark', colors: { bg: '#333333' } })
-    const colors = api.config.get(COLORS) as Record<string, string>
-    expect(colors['terminal.background']).toBe('#000000')
-    expect(colors['editor.background']).toBe('#333333')
-    expect(colors['button.background']).toBeUndefined()
+    await applyTheme(api, {
+      themeName: 'Light Modern',
+      mode: 'light',
+      colorsByTheme: { 'Dark Modern': { bg: '#1c1714' }, 'Light Modern': { bg: '#fbf7f2' } },
+    })
+    const colors = colorsOf(api)
+    expect(Object.keys(colors).sort()).toEqual([DARK, LIGHT])
+    expect(colors[DARK]?.[BG]).toBe('#1c1714')
+    expect(colors[LIGHT]?.[BG]).toBe('#fbf7f2')
+    expect(api.config.get(THEME)).toBe('Light Modern')
   })
 
-  it('applyTheme without colors removes managed keys', async () => {
+  it('a mode switch with the same palette is a single colorTheme write', async () => {
+    const api = fakeApi()
+    const both = { 'Dark Modern': { bg: '#1e1e1e' }, 'Light Modern': { bg: '#ffffff' } }
+    await applyTheme(api, { themeName: 'Dark Modern', mode: 'dark', colorsByTheme: both })
+    api.configWrites.length = 0
+    await applyTheme(api, { themeName: 'Light Modern', mode: 'light', colorsByTheme: both })
+    expect(api.configWrites).toEqual([THEME])
+  })
+
+  it("preserves the user's own keys, top level and inside theme blocks, and replaces only managed ones", async () => {
+    const api = fakeApi()
+    api.config.set(COLORS, { 'terminal.background': '#000000', [DARK]: { 'editorCursor.foreground': '#ff0000' } })
+    await applyTheme(api, dark({ bg: '#111111', ac: '#222222' }))
+    await applyTheme(api, dark({ bg: '#333333' }))
+    const colors = colorsOf(api)
+    expect(colors['terminal.background']).toBe('#000000')
+    expect(colors[DARK]?.['editorCursor.foreground']).toBe('#ff0000')
+    expect(colors[DARK]?.[BG]).toBe('#333333')
+    expect(colors[DARK]?.['button.background']).toBeUndefined()
+  })
+
+  it('applyTheme without colors removes managed keys and the blocks they leave empty', async () => {
     const api = fakeApi()
     api.config.set(COLORS, { mine: '#010101' })
-    await applyTheme(api, { themeName: 'Light Modern', mode: 'light', colors: { bg: '#ffffff' } })
-    await applyTheme(api, { themeName: 'Light Modern', mode: 'light' })
+    await applyTheme(api, dark({ bg: '#ffffff' }))
+    await applyTheme(api, { themeName: 'Dark Modern', mode: 'dark' })
     expect(api.config.get(COLORS)).toEqual({ mine: '#010101' })
+  })
+
+  it('removes top-level keys written by older versions (they painted one palette over both themes)', async () => {
+    const api = fakeApi()
+    api.config.set(COLORS, { mine: '#010101', [BG]: '#1e1e1e' })
+    api.state.set('pragma.managedColorKeys', [BG])
+    await applyTheme(api, dark({ bg: '#1c1714' }))
+    const colors = colorsOf(api)
+    expect(colors.mine).toBe('#010101')
+    expect(colors[BG]).toBeUndefined()
+    expect(colors[DARK]?.[BG]).toBe('#1c1714')
+    expect(api.state.get('pragma.managedColorKeys')).toBeUndefined()
+  })
+
+  it('retries when a write fails or another workbench overwrites it with an older value', async () => {
+    const api = fakeApi()
+    const write = api.updateGlobalConfig
+    let calls = 0
+    api.updateGlobalConfig = async (section, key, value) => {
+      calls++
+      if (calls === 1) throw new Error('file modified since')
+      await write(section, key, value)
+      if (key === 'colorTheme' && api.configWrites.filter((k) => k === THEME).length === 1)
+        await write(section, key, 'Light Modern')
+    }
+    await applyTheme(api, dark({ bg: '#1c1714' }))
+    expect(api.config.get(THEME)).toBe('Dark Modern')
+    expect(colorsOf(api)[DARK]?.[BG]).toBe('#1c1714')
+  })
+
+  it('keeps a user block Pragma wrote nothing into', () => {
+    const { next, managed } = nextCustomizations({ [LIGHT]: { x: '#1' } }, { [LIGHT]: ['y'] }, dark({ bg: '#2' }))
+    expect(next[LIGHT]).toEqual({ x: '#1' })
+    expect(Object.keys(managed)).toEqual([DARK])
+  })
+})
+
+describe('LatestQueue', () => {
+  it('runs one task at a time and skips values replaced while waiting', async () => {
+    const ran: number[] = []
+    let active = 0
+    let maxActive = 0
+    const q = new LatestQueue<number>(
+      async (n) => {
+        active++
+        maxActive = Math.max(maxActive, active)
+        await new Promise((r) => setTimeout(r, 5))
+        ran.push(n)
+        active--
+      },
+      () => undefined,
+    )
+    await Promise.all([1, 2, 3, 4].map((n) => q.push(n)))
+    expect(ran).toEqual([1, 4])
+    expect(maxActive).toBe(1)
+  })
+
+  it('a failing task does not stop the next one', async () => {
+    const errors: unknown[] = []
+    const ran: number[] = []
+    const q = new LatestQueue<number>(
+      async (n) => {
+        if (n === 1) throw new Error('boom')
+        ran.push(n)
+      },
+      (e) => errors.push(e),
+    )
+    void q.push(1)
+    await q.push(2)
+    expect(ran).toEqual([2])
+    expect(errors).toHaveLength(1)
   })
 })

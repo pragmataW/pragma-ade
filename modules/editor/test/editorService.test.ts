@@ -98,7 +98,9 @@ describe('EditorServiceImpl', () => {
   it('setTheme pushes an override', async () => {
     const { service, themes } = setup()
     await service.setTheme('light', { bg: '#fff' })
-    expect(themes).toEqual([{ themeName: 'Light Modern', mode: 'light', colors: { bg: '#fff' } }])
+    expect(themes).toEqual([
+      { themeName: 'Light Modern', mode: 'light', colorsByTheme: { 'Light Modern': { bg: '#fff' } } },
+    ])
   })
 
   it('command editor.openFile validates args (line 0 rejected)', () => {

@@ -17,7 +17,11 @@ const count = () => z.number().int().min(0)
 export const EditorThemeSchema = z.object({
   themeName: z.string(),
   mode: z.enum(THEME_MODES),
-  colors: z.record(z.string(), z.string()).optional(),
+  /**
+   * Colour theme name → palette tokens. Written as `[<theme>]` blocks of `workbench.colorCustomizations`, so the
+   * palette always matches the active colour theme and a mode switch is one `workbench.colorTheme` write.
+   */
+  colorsByTheme: z.record(z.string(), z.record(z.string(), z.string())).optional(),
 })
 export const EditorHelloSchema = z.object({
   folderKey: z.string(),
