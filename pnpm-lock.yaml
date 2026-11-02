@@ -436,6 +436,9 @@ importers:
       '@pragma/module-comments':
         specifier: workspace:*
         version: link:../comments
+      '@pragma/module-projects':
+        specifier: workspace:*
+        version: link:../projects
       '@pragma/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk

@@ -1,9 +1,9 @@
 /** Shared builders for every chat-switch unit test (§9.1: no copied setup). */
 import type { AgentProfile, AgentSession, LaunchDecorator, RelaunchOptions } from '@pragma/module-agents/contract'
 import { aProfile, aSession } from '@pragma/module-agents/testing'
-import type { ChatCapability } from '@pragma/module-chat/contract'
+import type { ChatCapability, ChatService } from '@pragma/module-chat/contract'
 import type { DeliverFn } from '@pragma/module-comments/contract'
-import type { CapabilityMap, Logger } from '@pragma/sdk'
+import type { CapabilityMap, IpcContract, IpcEventContract, Logger } from '@pragma/sdk'
 import { createEventBus } from '@pragma/sdk/runtime/main'
 import { vi } from 'vitest'
 import type { ResumeCapability } from '../src/contract'
@@ -44,9 +44,13 @@ export function fakeAgents(sessions: AgentSession[] = [makeSession()]) {
     relaunches,
     getSession: vi.fn(async (id: string) => rows.get(id) ?? null),
     getProfile: vi.fn(async (id: string) => makeProfile({ id, providerId: id.split(':')[1] ?? CLAUDE })),
-    relaunchSession: vi.fn(async (id: string, opts: RelaunchOptions = {}) => {
+    relaunchSession: vi.fn(async (id: string, opts: RelaunchOptions = {}): Promise<AgentSession> => {
       relaunches.push({ id, opts })
-      const s = { ...(rows.get(id) ?? makeSession({ id })), mode: opts.mode ?? 'terminal', status: 'starting' as const }
+      const s: AgentSession = {
+        ...(rows.get(id) ?? makeSession({ id })),
+        mode: opts.mode ?? 'terminal',
+        status: 'starting',
+      }
       rows.set(id, s)
       return s
     }),
@@ -58,6 +62,48 @@ export function fakeAgents(sessions: AgentSession[] = [makeSession()]) {
   return agents
 }
 export type FakeAgents = ReturnType<typeof fakeAgents>
+
+type StartGuard = Parameters<ChatService['registerStartGuard']>[0]
+
+/** 11a's `ChatService`, recording composer appends and start guards. */
+export function fakeChat() {
+  const guards: StartGuard[] = []
+  const appends: { sessionId: string; text: string; opts?: { chipLabels?: string[] } }[] = []
+  const chat: ChatService & { guards: StartGuard[]; appends: typeof appends } = {
+    guards,
+    appends,
+    appendToComposer: (sessionId, text, opts) => void appends.push({ sessionId, text, ...(opts ? { opts } : {}) }),
+    getHistory: vi.fn(),
+    registerStartGuard: (g) => {
+      guards.push(g)
+      return () => undefined
+    },
+  }
+  return chat
+}
+
+/** A recording `ctx.ipc`: handlers by channel, published events in order. */
+export function fakeIpc() {
+  type Handler = (input: unknown, meta: never) => unknown
+  const handlers = new Map<string, Handler>()
+  const published: { channel: string; payload: unknown }[] = []
+  return {
+    handlers,
+    published,
+    handle<I, O>(c: IpcContract<I, O>, h: (input: I, meta: never) => O | Promise<O>) {
+      handlers.set(c.channel, h as Handler)
+      return { dispose: () => handlers.delete(c.channel) }
+    },
+    publish<P>(c: IpcEventContract<P>, payload: P) {
+      published.push({ channel: c.channel, payload })
+    },
+    async invoke<I, O>(c: IpcContract<I, O>, input: I): Promise<O> {
+      const h = handlers.get(c.channel)
+      if (!h) throw new Error(`no handler ${c.channel}`)
+      return (await h(input, undefined as never)) as O
+    },
+  }
+}
 
 /** 05's `CommentsService`: only the delivery-target registration matters here. */
 export function fakeComments() {

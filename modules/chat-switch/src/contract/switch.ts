@@ -9,6 +9,12 @@ export const switchTargetSchema = z.enum(SWITCH_TARGETS)
 export type SwitchTarget = z.infer<typeof switchTargetSchema>
 
 export const SWITCH_PHASES = ['idle', 'switching', 'done', 'failed'] as const
+export const SWITCH_PHASE = {
+  idle: SWITCH_PHASES[0],
+  switching: SWITCH_PHASES[1],
+  done: SWITCH_PHASES[2],
+  failed: SWITCH_PHASES[3],
+} as const
 export const switchPhaseSchema = z.enum(SWITCH_PHASES)
 export type SwitchPhase = z.infer<typeof switchPhaseSchema>
 

@@ -29,3 +29,6 @@ export const RESUME_CAPABILITY = 'resume'
 export const RESUME_DECORATOR_ID = 'chat-switch.resume'
 /** Before 04's status decorator (100): it must see OpenCode's `--server` to leave out `--standalone`. */
 export const RESUME_DECORATOR_ORDER = 50
+
+export const CHAT_CAPABILITY = 'chat'
+export const CHAT_SWITCH_KEY_PREFIX = `${CHAT_SWITCH_MODULE_ID}:`

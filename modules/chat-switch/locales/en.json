@@ -1,5 +1,7 @@
 {
-  "module": { "name": "Chat / terminal switch" },
+  "module": {
+    "name": "Chat / terminal switch"
+  },
   "reason": {
     "currentMode": "This session is already in this view.",
     "switching": "Switching…",
@@ -9,5 +11,13 @@
     "busy": "This conversation is already running in another session.",
     "chatResumeUnsupported": "This agent cannot resume a session in chat.",
     "noChat": "Chat view is not available for this agent."
+  },
+  "error": {
+    "inProgress": "A switch is already in progress for this session.",
+    "busy": "This conversation is already running in another session.",
+    "startFailed": "Could not reopen the session. Try again."
+  },
+  "conflict": {
+    "toast": "This conversation is already running in another session."
   }
 }

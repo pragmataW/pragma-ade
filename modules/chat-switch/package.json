@@ -32,6 +32,7 @@
     "@pragma/module-agents": "workspace:*",
     "@pragma/module-chat": "workspace:*",
     "@pragma/module-comments": "workspace:*",
+    "@pragma/module-projects": "workspace:*",
     "@pragma/sdk": "workspace:*",
     "@pragma/ui": "workspace:*"
   },
