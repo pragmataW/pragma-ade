@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { REASON } from '../src/main/chat/constants'
 import { messageSchema, parseV2Event } from '../src/main/chat/schemas'
-import { CUSTOM, formPayloadSchema, formResponseSchema, retryPayloadSchema } from '../src/renderer/chat/payloads'
+import { CUSTOM, formPayloadSchema, formResponseSchema } from '../src/renderer/chat/payloads'
 import { lookupLocale, scenarioEvents } from '../testing/fake-opencode-server/harness'
 
 const samples = [...scenarioEvents('basic'), ...scenarioEvents('form-retry')].map((e) => [e.type, e] as const)
@@ -45,7 +45,6 @@ describe('opencode v2 schemas', () => {
 
   it('custom payload schemas round-trip', () => {
     expect(formPayloadSchema.parse(sampleForm)).toEqual(sampleForm)
-    expect(retryPayloadSchema.parse({ attempt: 1, at: 2, message: 'm' })).toEqual({ attempt: 1, at: 2, message: 'm' })
     expect(formResponseSchema.parse({ cancel: true })).toEqual({ cancel: true })
     expect(Object.values(CUSTOM).every((t) => t.startsWith('opencode.'))).toBe(true)
   })

@@ -1,15 +1,21 @@
 import {
+  ATTACHMENT_KIND,
   type ChatCapability,
   type ChatSessionContext,
   EVENT_KIND,
   type RetainServerQuery,
 } from '@pragma/module-chat/contract'
 import type { CapabilityContext } from '@pragma/sdk'
+import { DEFAULT_COMMAND } from '../../constants'
 import { OPENCODE_PLUGIN_RESOURCE } from '../status/constants'
+import { createConnections } from './connections'
+import { SETTINGS_COMMAND_ENV } from './constants'
 import { loadOpencodeHistory } from './history-loader'
 import { createConnectionPool } from './server/connection'
 import { OpencodeChatSession } from './session'
 import { checkOpencodeSupport } from './support'
+
+const ATTACHMENTS = [ATTACHMENT_KIND.image, ATTACHMENT_KIND.pdf, ATTACHMENT_KIND.text] as const
 
 export type OpencodeChatCapability = ChatCapability & { dispose(): Promise<void> }
 
@@ -19,13 +25,22 @@ const hosts = (q: RetainServerQuery) => (s: OpencodeChatSession, ctx: ChatSessio
 /** `chat` capability (factory form, §10.2): one connection pool; `dispose` closes live sessions and stops every server. */
 export function createOpencodeChat(
   capCtx: Pick<CapabilityContext, 'log' | 'getShellEnv' | 'resolveCommand' | 'paths'>,
-  o: { idleGraceMs?: number } = {},
+  o: { idleGraceMs?: number; settingsCommand?: { command: string; args: string[] } } = {},
 ): OpencodeChatCapability {
   const statusPluginDir = capCtx.paths.resource(OPENCODE_PLUGIN_RESOURCE)
   const pool = createConnectionPool({ log: capCtx.log, idleGraceMs: o.idleGraceMs, statusPluginDir })
   /** Live sessions with the context they acquired their server with (11c re-acquires the same key). */
   const live = new Map<OpencodeChatSession, ChatSessionContext>()
+  const connections = createConnections({
+    pool,
+    env: () => capCtx.getShellEnv(),
+    ...(o.settingsCommand ?? { command: process.env[SETTINGS_COMMAND_ENV] || DEFAULT_COMMAND }),
+  })
   return {
+    /** Images, PDFs and text files go to OpenCode inline (data URIs). */
+    attachmentKinds: ATTACHMENTS,
+    /** Settings › OpenCode (provider connections). */
+    settingsCall: (request) => connections.call(request),
     checkSupport: (profile) => checkOpencodeSupport(profile, capCtx),
     async createSession(ctx) {
       let session: OpencodeChatSession | undefined
@@ -48,6 +63,7 @@ export function createOpencodeChat(
       return { url: lease.resource.server.url, release: async () => lease.release() }
     },
     async dispose() {
+      connections.dispose()
       await Promise.allSettled([...live.keys()].map((s) => s.close()))
       await pool.disposeAll()
     },

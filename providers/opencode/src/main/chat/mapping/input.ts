@@ -36,14 +36,17 @@ function mentionFiles(text: string, worktreePath: string, exists: (abs: string) 
   })
 }
 
-/** The 2.x prompt body: images inline as data URIs, `@` mentions as `file://` attachments; `files` omitted when empty. */
+/**
+ * The 2.x prompt body: images and documents (PDF, text) inline as data URIs, `@` mentions as `file://` attachments;
+ * `files` omitted when empty.
+ */
 export function toPrompt(input: ChatUserInput, worktreePath: string, exists: (abs: string) => boolean): Prompt {
-  const images = input.images.map((i) => ({
+  const inline = [...input.images, ...(input.files ?? [])].map((i) => ({
     uri: DATA_URI(i.mediaType, i.dataBase64),
     source: INLINE_SOURCE,
     name: i.name,
   }))
-  const files = [...images, ...mentionFiles(input.text, worktreePath, exists)]
+  const files = [...inline, ...mentionFiles(input.text, worktreePath, exists)]
   return files.length ? { text: input.text, files } : { text: input.text }
 }
 

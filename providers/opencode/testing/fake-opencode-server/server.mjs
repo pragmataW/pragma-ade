@@ -36,6 +36,8 @@ const SESSION_ROUTE = /^\/api\/session\/([^/]+)(?:\/(.*))?$/
 const REPLY_ROUTE = /^(permission|form)\/([^/]+)\/reply$/
 const FORM_ROUTE = /^form\/([^/]+)$/
 const TEST_ROUTE_PREFIX = '/__test/'
+const INTEGRATION_ROUTE = /^\/api\/integration\/([^/]+)\/(.+)$/
+const CREDENTIAL_ROUTE = /^\/api\/credential\/([^/]+)$/
 const MCP_ROUTE = /^\/api\/experimental\/mcp\/([^/]+)\/(connect|disconnect)$/
 const ATTACHMENT_URI = /^(file:\/\/\/|data:)/
 
@@ -158,8 +160,18 @@ function createApp({ scenario, password }) {
     const frame = `data: ${JSON.stringify({ id: `evt_${++seq}`, created: Date.now(), type, data })}\n\n`
     for (const res of sse) res.write(frame)
   }
-  const mcp = scenario.mcp ? JSON.parse(JSON.stringify(scenario.mcp)) : undefined
-  const ctx = { scenario, store, broadcast, runs, sse, holdSseUntil: 0, mcp }
+  const copy = (v) => (v ? JSON.parse(JSON.stringify(v)) : undefined)
+  const ctx = {
+    scenario,
+    store,
+    broadcast,
+    runs,
+    sse,
+    holdSseUntil: 0,
+    mcp: copy(scenario.mcp),
+    integrations: copy(scenario.integrations),
+    attempts: new Map(),
+  }
   app.server = createServer((req, res) => {
     readBody(req).then((body) => {
       const url = new URL(req.url ?? '/', 'http://fake')
@@ -230,8 +242,9 @@ function route(ctx, r) {
     case 'GET /api/command':
       return send(res, OK, located(ctx.scenario.commands))
     case 'GET /api/provider':
+      return listRoute(res, ctx.scenario.providers)
     case 'GET /api/integration':
-      return listRoute(res, ctx.scenario[path === '/api/provider' ? 'providers' : 'integrations'])
+      return listRoute(res, ctx.integrations)
     case 'GET /api/mcp':
       return listRoute(res, ctx.mcp)
     case 'POST /api/session':
@@ -247,7 +260,75 @@ function route(ctx, r) {
       ctx.broadcast(r.body?.type, r.body?.data ?? {})
       return send(res, NO_CONTENT)
     default:
-      return MCP_ROUTE.test(path) ? mcpRoute(ctx, r) : sessionRoute(ctx, r)
+      if (MCP_ROUTE.test(path)) return mcpRoute(ctx, r)
+      if (INTEGRATION_ROUTE.test(path) || CREDENTIAL_ROUTE.test(path)) return integrationRoute(ctx, r)
+      return sessionRoute(ctx, r)
+  }
+}
+
+/** Adds a saved credential to an integration (then `integration.updated`, like OpenCode). */
+function removeCredential(ctx, r, id) {
+  for (const i of ctx.integrations ?? []) i.connections = i.connections.filter((c) => c.id !== id)
+  ctx.broadcast('credential.updated', {})
+  return send(r.res, NO_CONTENT)
+}
+
+/** An `auto` attempt: pending on the first poll, complete (credential saved) on the next; unknown = expired. */
+function pollAttempt(ctx, integration, attemptID) {
+  const attempt = ctx.attempts.get(attemptID)
+  if (!attempt) return 'expired'
+  attempt.polls += 1
+  if (attempt.polls < 2) return 'pending'
+  ctx.attempts.delete(attemptID)
+  addCredential(ctx, integration, 'oauth')
+  return 'complete'
+}
+
+function addCredential(ctx, integration, method) {
+  const id = newId('cred')
+  integration.connections.push({ type: 'credential', id, label: method === 'key' ? 'API key' : 'OAuth', method })
+  ctx.broadcast('integration.updated', {})
+}
+
+/**
+ * `connect/key` (`bad-key` → 400), `connect/oauth` (an `auto` attempt: pending once, then complete), its `complete` and
+ * cancel, and `DELETE /api/credential/<id>`.
+ */
+function integrationRoute(ctx, r) {
+  const credential = CREDENTIAL_ROUTE.exec(r.path)
+  if (credential && r.req.method === 'DELETE') return removeCredential(ctx, r, credential[1])
+  const [, id, rest = ''] = INTEGRATION_ROUTE.exec(r.path) ?? []
+  const integration = ctx.integrations?.find((i) => i.id === decodeURIComponent(id ?? ''))
+  if (!integration) return send(r.res, NOT_FOUND, { error: 'IntegrationNotFound' })
+  const key = `${r.req.method} ${rest.replace(/\/att_[^/]+/, '/:attempt')}`
+  switch (key) {
+    case 'POST connect/key':
+      if (r.body?.key === 'bad-key')
+        return send(r.res, BAD_REQUEST, { error: 'InvalidKey', message: 'Invalid API key' })
+      addCredential(ctx, integration, 'key')
+      return send(r.res, NO_CONTENT)
+    case 'POST connect/oauth': {
+      const attemptID = newId('att')
+      ctx.attempts.set(attemptID, { polls: 0, integration })
+      const time = { created: Date.now(), expires: Date.now() + 600_000 }
+      const data = {
+        attemptID,
+        url: 'https://example.test/device',
+        instructions: 'Enter code WXYZ-1234',
+        mode: 'auto',
+        time,
+      }
+      return send(r.res, OK, located(data))
+    }
+    case 'GET connect/oauth/:attempt':
+      return send(r.res, OK, located({ status: pollAttempt(ctx, integration, rest.split('/').at(-1)), time: {} }))
+    case 'POST connect/oauth/:attempt/complete':
+      addCredential(ctx, integration, 'oauth')
+      return send(r.res, NO_CONTENT)
+    case 'DELETE connect/oauth/:attempt':
+      return send(r.res, NO_CONTENT)
+    default:
+      return send(r.res, NOT_FOUND, { error: 'not found' })
   }
 }
 

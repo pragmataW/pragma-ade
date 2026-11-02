@@ -1,0 +1,31 @@
+{
+  "extends": "auth-error",
+  "integrations": [
+    {
+      "id": "fakeprov",
+      "name": "Fake Provider",
+      "methods": [{ "type": "key" }],
+      "connections": [{ "type": "credential", "id": "cred_fake", "label": "API key", "method": "key" }]
+    },
+    { "id": "freeprov", "name": "Free Provider", "methods": [{ "type": "key" }], "connections": [] },
+    {
+      "id": "brokenprov",
+      "name": "Broken",
+      "methods": [{ "type": "key" }, { "type": "oauth", "id": "device", "label": "Sign in with Broken" }],
+      "connections": [{ "type": "credential", "id": "cred_broken", "label": "OAuth", "method": "oauth" }]
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "methods": [{ "type": "key" }, { "type": "env", "names": ["ANTHROPIC_API_KEY"] }],
+      "connections": []
+    },
+    {
+      "id": "copilot",
+      "name": "GitHub Copilot",
+      "methods": [{ "type": "oauth", "id": "device", "label": "Login with GitHub Copilot" }],
+      "connections": [{ "type": "env", "name": "GITHUB_TOKEN" }]
+    },
+    { "id": "hiddenprov", "name": "Hidden", "methods": [{ "type": "key" }], "connections": [] }
+  ]
+}

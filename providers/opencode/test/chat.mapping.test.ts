@@ -89,6 +89,22 @@ describe('prompt input', () => {
     expect(text.slice(4, 13)).toBe('@src/a.ts')
   })
 
+  it('toPrompt: PDF and text documents go inline after the images', () => {
+    const p = toPrompt(
+      {
+        text: 'read these',
+        images: [],
+        files: [
+          { name: 'spec.pdf', mediaType: 'application/pdf', dataBase64: 'UERG' },
+          { name: 'notes.md', mediaType: 'text/markdown', dataBase64: 'IyBh' },
+        ],
+      },
+      '/w',
+      exists,
+    )
+    expect(p.files?.map((f) => f.uri)).toEqual(['data:application/pdf;base64,UERG', 'data:text/markdown;base64,IyBh'])
+  })
+
   it('toPrompt omits files when there are none', () => {
     expect(toPrompt({ text: 'hi', images: [] }, '/w', exists)).toEqual({ text: 'hi' })
   })

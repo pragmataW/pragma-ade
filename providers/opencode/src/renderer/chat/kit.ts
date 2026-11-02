@@ -1,6 +1,11 @@
 /** The single import point of the chat kit (`@pragma/module-chat/renderer`, §5.4) for this provider. */
 
-export type { ChatPartProps, ChatUiDefinition } from '@pragma/module-chat/renderer'
+export type {
+  ChatPartProps,
+  ChatProviderSettingsProps,
+  ChatSlotProps,
+  ChatUiDefinition,
+} from '@pragma/module-chat/renderer'
 export {
   ChatHostProvider,
   ChatSessionView,
@@ -8,8 +13,14 @@ export {
   createOptionPicker,
   defaultChatUi,
   defaultComposerExtensions,
+  documentAttachmentsExtension,
   ErrorRow,
-  ModelPicker,
+  McpStatus,
+  PermissionModePicker,
+  RateLimitBanner,
+  RetryBanner,
   StopButton,
   UsageMeter,
+  UserMessage,
+  useChatHost,
 } from '@pragma/module-chat/renderer'

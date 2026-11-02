@@ -125,7 +125,7 @@ describe('opencode chat session', () => {
     await h.send({ text: 'go', images: [] })
     const form = await formEvent(s.events)
     expect(form).toMatchObject({ eventId: 'frm_1', awaitsResponse: true })
-    expect(ofKind(s.events, 'custom')[0]?.type).toBe(CUSTOM.retry)
+    expect(ofKind(s.events, 'retry')[0]).toMatchObject({ attempt: 1, reason: 'rate limited' })
     await h.respond?.('frm_1', { color: 'red', confirm: true })
     await waitForEvent(s.events, 'turn-end')
     expect(lastBody(s.h.log, FORM_REPLY_RE)).toEqual({ answer: { color: 'red', confirm: true } })

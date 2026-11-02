@@ -4,7 +4,7 @@ import { TOOL_OUTPUT_MAX_CHARS } from '../src/main/chat/constants'
 import { EventMapper, errorCodeOf } from '../src/main/chat/mapping/event-mapper'
 import { parseV2Event } from '../src/main/chat/schemas'
 import type { HubEvent } from '../src/main/chat/wire/event-hub'
-import { CUSTOM, formPayloadSchema, retryPayloadSchema } from '../src/renderer/chat/payloads'
+import { CUSTOM, formPayloadSchema } from '../src/renderer/chat/payloads'
 import { FAKE_AMID, FAKE_SID, kinds, ofKind, scenarioEvents } from '../testing/fake-opencode-server/harness'
 
 const WINDOW = 10_000
@@ -162,15 +162,14 @@ describe('EventMapper', () => {
     expect(m.pendingPermissions).toEqual([])
   })
 
-  it('form and retry become opencode custom events with valid payloads', () => {
-    const out = feed(newMapper(), [
+  it('a scheduled retry becomes the kit retry event; forms become opencode custom events', () => {
+    const out = feed(new EventMapper({ contextWindow: () => WINDOW, now: () => 0 }), [
       ...scenarioEvents('form-retry').flatMap((r) => {
         const e = parseV2Event(r)
         return e && e.type !== 'other' ? [e] : []
       }),
     ])
-    const retry = ofKind(out, 'custom').find((c) => c.type === CUSTOM.retry)
-    expect(retryPayloadSchema.parse(retry?.data)).toEqual({ attempt: 1, at: 0, message: 'rate limited' })
+    expect(ofKind(out, 'retry')).toEqual([{ kind: 'retry', attempt: 1, delayMs: 0, reason: 'rate limited' }])
     const m = newMapper()
     const form = m.map(
       ev('form.created', {

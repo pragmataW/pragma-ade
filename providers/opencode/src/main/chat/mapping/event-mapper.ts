@@ -3,6 +3,7 @@ import {
   type ChatEvent,
   ERROR_CODE,
   EVENT_KIND as K,
+  RATE_LIMIT_STATUS,
   RESPONSE_OUTCOME,
   TEXT_MODE,
   TODO_STATUS,
@@ -143,11 +144,14 @@ export class EventMapper {
   #turnActive = false
   #stepFailed = false
   #interrupted = false
+  #rateLimited = false
+  readonly #now: () => number
 
   /** `parentId`: this mapper translates a subagent's session; its output nests under that tool call. */
-  constructor(o: { contextWindow: (ref: ModelRef) => number | undefined; parentId?: string }) {
+  constructor(o: { contextWindow: (ref: ModelRef) => number | undefined; parentId?: string; now?: () => number }) {
     this.#contextWindow = o.contextWindow
     this.#parentId = o.parentId
+    this.#now = o.now ?? Date.now
   }
 
   /** The model of the last step (provider auth errors name it). */
@@ -231,14 +235,15 @@ export class EventMapper {
       case EV.retryScheduled:
         return [
           {
-            kind: K.custom,
-            type: CUSTOM.retry,
-            data: { attempt: e.data.attempt, at: e.data.at, message: e.data.error.message },
+            kind: K.retry,
+            attempt: Math.max(1, e.data.attempt),
+            delayMs: Math.max(0, Math.round(e.data.at - this.#now())),
+            reason: e.data.error.message,
           },
         ]
       case EV.stepFailed:
         this.#stepFailed = true
-        return [{ kind: K.error, code: errorCodeOf(e.data.error), message: e.data.error.message, fatal: false }]
+        return this.#errorEvents(e.data.error)
       case EV.stepEnded:
         this.#lastStep = { tokens: e.data.tokens, model: this.#model }
         return []
@@ -337,11 +342,37 @@ export class EventMapper {
 
   #failed(error: StructuredError): ChatEvent[] {
     if (this.#interrupted) return this.#end(TURN_END_REASON.interrupted)
-    const err: ChatEvent = { kind: K.error, code: errorCodeOf(error), message: error.message, fatal: false }
-    return [err, ...this.#end(TURN_END_REASON.error)]
+    return [...this.#errorEvents(error), ...this.#end(TURN_END_REASON.error)]
+  }
+
+  /** The error row; a rate limit also raises the kit's banner (with the reset time when OpenCode knows it). */
+  #errorEvents(error: StructuredError): ChatEvent[] {
+    const code = errorCodeOf(error)
+    const err: ChatEvent = { kind: K.error, code, message: error.message, fatal: false }
+    if (code !== ERROR_CODE.rate_limit) return [err]
+    this.#rateLimited = true
+    const resetsAt = error.retryAfterMs === undefined ? undefined : this.#now() + error.retryAfterMs
+    return [
+      err,
+      {
+        kind: K.rateLimit,
+        status: RATE_LIMIT_STATUS.rejected,
+        message: error.message,
+        ...(resetsAt === undefined ? {} : { resetsAt }),
+      },
+    ]
   }
 
   #end(reason: (typeof TURN_END_REASON)[keyof typeof TURN_END_REASON]): ChatEvent[] {
+    const cleared: ChatEvent[] =
+      this.#rateLimited && reason === TURN_END_REASON.completed
+        ? [{ kind: K.rateLimit, status: RATE_LIMIT_STATUS.cleared }]
+        : []
+    if (cleared.length) this.#rateLimited = false
+    return [...cleared, ...this.#endTurn(reason)]
+  }
+
+  #endTurn(reason: (typeof TURN_END_REASON)[keyof typeof TURN_END_REASON]): ChatEvent[] {
     this.#turnActive = false
     this.#stepFailed = false
     this.#interrupted = false

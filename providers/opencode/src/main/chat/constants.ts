@@ -220,6 +220,19 @@ export const MODEL_HINT_KEYS = {
 /** Errors that mean the provider rejected the saved credential (`provider.auth`, `api_key_expired`, …). */
 export const AUTH_ERROR_RE = /auth|api[_-]?key|credential|unauthori[sz]ed/i
 
+/** Settings › OpenCode: the pooled `serve` of the default command (credentials are global to OpenCode). */
+export const SETTINGS_PROFILE = 'opencode.settings'
+export const SETTINGS_STARTUP_TIMEOUT_MS = 20_000
+/** Tests: the `opencode` command Settings › OpenCode runs (default: `opencode` on PATH). */
+export const SETTINGS_COMMAND_ENV = 'PRAGMA_OPENCODE_SETTINGS_COMMAND'
+export const CONNECTION_TYPES = { credential: 'credential', env: 'env' } as const
+export const INTEGRATION_METHODS = { key: 'key', oauth: 'oauth' } as const
+/**
+ * Providers connected by API key only in a third-party app: their subscription sign-in (e.g. Claude Pro/Max) may not
+ * be used here.
+ */
+export const KEY_ONLY_INTEGRATIONS = ['anthropic'] as const
+
 /** OpenCode MCP status → chat MCP status (anything else reads as failed). */
 export const MCP_STATUS_OF: Record<string, 'connected' | 'pending' | 'failed' | 'needs-auth' | 'disabled'> = {
   connected: 'connected',

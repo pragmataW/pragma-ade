@@ -26,6 +26,7 @@ export const structuredErrorSchema = z.looseObject({
   type: z.string(),
   message: z.string(),
   status: z.number().optional(),
+  retryAfterMs: z.number().optional(),
 })
 export type StructuredError = z.infer<typeof structuredErrorSchema>
 

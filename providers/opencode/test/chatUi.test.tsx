@@ -17,7 +17,6 @@ import { FormCard } from '../src/renderer/chat/FormCard'
 import { ChatHostProvider, ChatSessionView } from '../src/renderer/chat/kit'
 import { opencodeChatUi } from '../src/renderer/chat/opencode-chat-ui'
 import { CUSTOM } from '../src/renderer/chat/payloads'
-import { RetryNotice } from '../src/renderer/chat/RetryNotice'
 
 afterEach(cleanup)
 installJsdomLayout()
@@ -76,10 +75,12 @@ describe('opencodeChatUi', () => {
       'turn-end',
       'session-exit',
       `custom:${CUSTOM.form}`,
-      `custom:${CUSTOM.retry}`,
+      `custom:${CUSTOM.notice}`,
     ] as const)
       expect(opencodeChatUi.parts[k], k).toBeTypeOf('function')
-    expect(opencodeChatUi.composerToolbar).toHaveLength(5)
+    expect(opencodeChatUi.composerToolbar).toHaveLength(6)
+    expect(opencodeChatUi.banners).toHaveLength(2)
+    expect(opencodeChatUi.settingsPage?.titleKey).toBe('opencode:chatUi.connections.title')
   })
 
   it('FormCard submits answers via session.respond', async () => {
@@ -115,14 +116,6 @@ describe('opencodeChatUi', () => {
     expect(screen.getByTestId(IDS.formOutcome)).toHaveTextContent(text)
     expect(screen.queryByTestId(IDS.formSubmit)).toBeNull()
     expect(screen.getByTestId(IDS.formOption('color', 'red'))).toBeDisabled()
-  })
-
-  it('RetryNotice renders attempt', () => {
-    const item = makeTranscript([
-      { kind: 'custom', type: CUSTOM.retry, data: { attempt: 2, at: 0, message: 'rate limited' } },
-    ]).items[0] as CustomItem
-    render(<RetryNotice item={item} session={stubSessionApi().api} />, { wrapper })
-    expect(screen.getByTestId(IDS.retry)).toHaveTextContent('Retrying (attempt 2)rate limited')
   })
 
   it('opencode error keys are translated with their detail', async () => {
