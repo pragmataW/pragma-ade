@@ -28,7 +28,8 @@ export const switchEligibilitySchema = z.object({ terminal: eligibilitySchema, c
 export type SwitchEligibility = z.infer<typeof switchEligibilitySchema>
 
 export const switchResultSchema = z.discriminatedUnion(OK_KEY, [
-  z.object({ ok: z.literal(true), sessionId: z.string() }),
+  /** `noticeKey`: an info key to show (e.g. nothing to resume, a fresh session was started). */
+  z.object({ ok: z.literal(true), sessionId: z.string(), noticeKey: z.string().optional() }),
   z.object({ ok: z.literal(false), errorKey: z.string() }),
 ])
 export type SwitchResult = z.infer<typeof switchResultSchema>

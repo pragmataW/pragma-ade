@@ -22,6 +22,7 @@ import {
   EVENT_KIND as K,
   PERMISSION_OPTION,
   PERMISSION_OUTCOME,
+  RESUME_REASON,
   SESSION_EXIT_REASON,
   type SESSION_EXIT_REASONS,
   TURN_END_REASON,
@@ -34,6 +35,7 @@ import {
   BEHAVIOR,
   DENY_MESSAGE,
   ENOENT,
+  NO_CONVERSATION_RE,
   PERMISSION_CANCELLED_MESSAGE,
   SDK_SETTING_EFFORT,
 } from './constants'
@@ -151,9 +153,16 @@ export class ClaudeChatSession implements ChatSessionHandle {
       return new ChatStartupError(UNSUPPORTED_REASON.commandNotFound, command)
     const tail = this.#spawner.stderrTail()
     const exit = this.#spawner.exitInfo()
-    if (exit) return new ChatStartupError(UNSUPPORTED_REASON.exitedEarly, `exit ${exit.code ?? exit.signal}: ${tail}`)
+    if (exit) return this.#exitedError(`exit ${exit.code ?? exit.signal}: ${tail}`, tail)
     const detail = tail || (outcome === TIMEOUT ? undefined : outcome.message)
     return new ChatStartupError(UNSUPPORTED_REASON.noProtocol, detail)
+  }
+
+  /** An early exit while resuming is a failed resume (not an "unsupported" verdict); no conversation → `notFound`. */
+  #exitedError(detail: string, stderr: string): ChatStartupError {
+    if (!this.#ctx.resumeExternalSessionId) return new ChatStartupError(UNSUPPORTED_REASON.exitedEarly, detail)
+    const reason = NO_CONVERSATION_RE.test(stderr) ? RESUME_REASON.notFound : RESUME_REASON.failed
+    return new ChatStartupError(reason, detail)
   }
 
   #ready(init: SDKControlInitializeResponse): void {

@@ -45,6 +45,8 @@ export const SCRIPT_EXECUTABLE_RE = /\.(c|m)?js$|\.ts$/
 export const SIGTERM = 'SIGTERM'
 export const SIGKILL = 'SIGKILL'
 export const ENOENT = 'ENOENT'
+/** stderr of `--resume <id>` when the CLI has no transcript for the id (claude 2.1.316). */
+export const NO_CONVERSATION_RE = /No conversation found with session ID/i
 export const PART_ID_SEPARATOR = ':'
 export const JOIN_NEWLINE = '\n'
 export const BEHAVIOR = { allow: 'allow', deny: 'deny' } as const

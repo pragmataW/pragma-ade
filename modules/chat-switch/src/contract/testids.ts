@@ -5,4 +5,5 @@ export const CHAT_SWITCH_TESTIDS = {
   toTerminal: 'chat-switch-to-terminal',
   spinner: 'chat-switch-spinner',
   alert: 'chat-switch-alert',
+  notice: 'chat-switch-notice',
 } as const

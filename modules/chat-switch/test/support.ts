@@ -14,6 +14,7 @@ export const CLAUDE = 'claude'
 export const OPENCODE = 'opencode'
 export const EXTERNAL_ID = '3f2c9a1e-8d4b-4c1a-9f00-1234567890ab'
 export const SERVE_URL = 'http://127.0.0.1:43123'
+export const LAUNCH_ENV = { CLAUDE_CONFIG_DIR: '/cfg/claude' }
 
 export const makeProfile = (patch: Partial<AgentProfile> = {}): AgentProfile =>
   aProfile({ id: `builtin:${CLAUDE}`, providerId: CLAUDE, ...patch })
@@ -38,10 +39,12 @@ export function fakeAgents(sessions: AgentSession[] = [makeSession()]) {
   const rows = new Map(sessions.map((s) => [s.id, s]))
   const decorators: LaunchDecorator[] = []
   const relaunches: { id: string; opts: RelaunchOptions }[] = []
+  const stops: string[] = []
   const agents = {
     rows,
     decorators,
     relaunches,
+    stops,
     getSession: vi.fn(async (id: string) => rows.get(id) ?? null),
     getProfile: vi.fn(async (id: string) => makeProfile({ id, providerId: id.split(':')[1] ?? CLAUDE })),
     relaunchSession: vi.fn(async (id: string, opts: RelaunchOptions = {}): Promise<AgentSession> => {
@@ -54,6 +57,10 @@ export function fakeAgents(sessions: AgentSession[] = [makeSession()]) {
       rows.set(id, s)
       return s
     }),
+    stopSession: vi.fn(async (id: string) => {
+      stops.push(id)
+    }),
+    buildLaunchEnv: vi.fn(async (_ctx: { sessionId: string }) => ({ ...LAUNCH_ENV })),
     registerLaunchDecorator: vi.fn((d: LaunchDecorator) => {
       decorators.push(d)
       return () => undefined
@@ -64,18 +71,25 @@ export function fakeAgents(sessions: AgentSession[] = [makeSession()]) {
 export type FakeAgents = ReturnType<typeof fakeAgents>
 
 type StartGuard = Parameters<ChatService['registerStartGuard']>[0]
+type FallbackListener = Parameters<ChatService['onResumeFallback']>[0]
 
-/** 11a's `ChatService`, recording composer appends and start guards. */
+/** 11a's `ChatService`, recording composer appends, start guards and resume-fallback listeners. */
 export function fakeChat() {
   const guards: StartGuard[] = []
+  const fallbacks: FallbackListener[] = []
   const appends: { sessionId: string; text: string; opts?: { chipLabels?: string[] } }[] = []
-  const chat: ChatService & { guards: StartGuard[]; appends: typeof appends } = {
+  const chat: ChatService & { guards: StartGuard[]; fallbacks: FallbackListener[]; appends: typeof appends } = {
     guards,
+    fallbacks,
     appends,
     appendToComposer: (sessionId, text, opts) => void appends.push({ sessionId, text, ...(opts ? { opts } : {}) }),
     getHistory: vi.fn(),
     registerStartGuard: (g) => {
       guards.push(g)
+      return () => undefined
+    },
+    onResumeFallback: (l) => {
+      fallbacks.push(l)
       return () => undefined
     },
   }

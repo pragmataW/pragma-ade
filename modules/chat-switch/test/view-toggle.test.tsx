@@ -138,4 +138,23 @@ describe('Chat | Terminal toggle', () => {
     c.emitConflict({ sessionId: 's1', ownerSessionId: 's2' })
     expect(screen.getByTestId(T.alert)).toHaveTextContent('This conversation is already running in another session.')
   })
+
+  it('a fresh start shows the info notice (from the result or from a changed event of this session)', async () => {
+    const noticeKey = 'chat-switch:notice.fresh.terminal'
+    renderToggle(makeSession({ mode: 'chat' }), stubClient({ result: { ok: true, sessionId: 's1', noticeKey } }))
+    await waitFor(() => expect(item(T.toTerminal)).toBeEnabled())
+    await userEvent.click(item(T.toTerminal))
+    expect(await screen.findByTestId(T.notice)).toHaveTextContent(
+      'No previous conversation to continue — started a new terminal session.',
+    )
+    expect(screen.queryByTestId(T.alert)).toBeNull()
+  })
+
+  it('a changed event with a notice for another session shows nothing', async () => {
+    const c = renderToggle(makeSession({ mode: 'chat' }))
+    c.emitChanged({ sessionId: 'other', phase: 'idle', noticeKey: 'chat-switch:notice.fresh.chat' })
+    expect(screen.queryByTestId(T.notice)).toBeNull()
+    c.emitChanged({ sessionId: 's1', phase: 'idle', noticeKey: 'chat-switch:notice.fresh.chat' })
+    expect(screen.getByTestId(T.notice)).toHaveTextContent('No previous conversation to continue — started a new chat.')
+  })
 })

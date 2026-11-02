@@ -8,7 +8,7 @@ to chat sessions as composer chips.
 
 | Name | What |
 |---|---|
-| `ResumeCapability` (`resume` in `CapabilityMap`) | `terminalResumeArgs({ externalSessionId, serverUrl? }) → { args, env }`, `canResumeInChat` |
+| `ResumeCapability` (`resume` in `CapabilityMap`) | `terminalResumeArgs({ externalSessionId, serverUrl? }) → { args, env }`, `canResumeInChat`, optional `hasConversation({ externalSessionId, worktreePath, env }) → boolean` (false → the switch starts a fresh session and shows `chat-switch:notice.fresh.<target>`) |
 | `isSafeExternalSessionId`, `SAFE_EXTERNAL_ID_RE`, `INVALID_EXTERNAL_ID_MESSAGE` | argv-safe id check used by every resume capability |
 | `ExternalSessionGuardToken` | `claim(key, sessionId)`, `release(sessionId)`, `ownerOf(key)` (in memory) |
 | `ChatSwitchServiceToken` | `eligibility(sessionId)`, `switchTo(sessionId, target)` |

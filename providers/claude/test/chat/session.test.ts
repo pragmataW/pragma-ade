@@ -1,3 +1,6 @@
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ClaudeChatSession } from '../../src/main/chat/session'
 import {
@@ -155,6 +158,32 @@ describe('ClaudeChatSession', () => {
     expect(await startupError('exit-early')).toMatchObject({
       reasonKey: 'chat:unsupported.exitedEarly',
       detail: expect.stringContaining('exit 1: wrapper: cannot start claude'),
+    })
+  })
+
+  describe('resume failures (11c): never an "unsupported" verdict', () => {
+    const resume = { ctx: { resumeExternalSessionId: '88f976ca-736c-4d22-8d69-a298d1c792dc' } }
+
+    it('exit before init while resuming → chat:resume.failed with the CLI reason', async () => {
+      expect(await startupError('exit-early', resume)).toMatchObject({
+        reasonKey: 'chat:resume.failed',
+        detail: expect.stringContaining('exit 1: wrapper: cannot start claude'),
+      })
+    })
+
+    it('"No conversation found with session ID" → chat:resume.notFound', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'pragma-claude-noconv-'))
+      const command = join(dir, 'claude')
+      writeFileSync(command, `#!/bin/sh\necho "No conversation found with session ID: $3" >&2\nexit 1\n`)
+      chmodSync(command, 0o755)
+      try {
+        expect(await startupError('basic', { ...resume, command })).toMatchObject({
+          reasonKey: 'chat:resume.notFound',
+          detail: expect.stringContaining('exit 1: No conversation found with session ID'),
+        })
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
     })
   })
 

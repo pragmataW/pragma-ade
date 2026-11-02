@@ -217,7 +217,10 @@ describe('opencode chat session', () => {
     expect(lastBody(first.h.log, /\/agent$/)).toEqual({ agent: 'plan' })
     expect(h.describeOptions().find((d) => d.key === 'agent')?.current).toBe('plan')
     const missing = chatSetup({ home: first.h, cap: first.cap, resumeExternalSessionId: 'ses_missing' })
-    await expect(missing.start()).rejects.toMatchObject({ reasonKey: REASON.exitedEarly, detail: 'session not found' })
+    await expect(missing.start()).rejects.toMatchObject({
+      reasonKey: 'chat:resume.notFound',
+      detail: expect.stringContaining('session not found: ses_missing'),
+    })
   })
 
   it('resyncs after SSE reconnect using the idle outcome', async () => {

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { type ChatEvent, ChatStartupError, emptyTranscript, reduceTranscript } from '../../src/contract'
+import { ChatSessionController } from '../../src/main/controller'
 import { FAKE_OPTIONS } from '../../testing'
 import { flush, harness } from './harness'
 
@@ -143,6 +144,49 @@ describe('ChatSessionController', () => {
     expect(h.exits).toEqual([null])
     expect(h.statuses().at(-1)).toBe('error')
     expect(h.supportCache.get(h.profile)).toEqual({ reasonKey: 'chat:unsupported.noProtocol', detail: 'no json' })
+  })
+
+  describe('resume failures (11c)', () => {
+    const RESUME = { externalSessionId: 'gone-1' }
+
+    it('notFound → a fresh session (no resume), the fallback listener, no error and no support-cache entry', async () => {
+      const h = harness()
+      const create = vi.spyOn(h.fake.capability, 'createSession')
+      create.mockRejectedValueOnce(new ChatStartupError('chat:resume.notFound', 'exit 1: No conversation found'))
+      const onResumeFallback = vi.fn()
+      const c = new ChatSessionController({
+        ...h.deps,
+        sessionId: h.session.id,
+        onResumeFallback,
+      })
+      await c.attach(h.request({ resume: RESUME }))
+      expect(create).toHaveBeenCalledTimes(2)
+      expect(create.mock.calls[0]?.[0].resumeExternalSessionId).toBe('gone-1')
+      expect(create.mock.calls[1]?.[0].resumeExternalSessionId).toBeUndefined()
+      expect(onResumeFallback).toHaveBeenCalledWith({ sessionId: h.session.id, externalSessionId: 'gone-1' })
+      expect(h.kinds()).not.toContain('error')
+      expect(c.snapshot().status).not.toBe('error')
+      expect(h.supportCache.get(h.profile)).toBeUndefined()
+      expect(c.snapshot().transcript.info.externalSessionId).not.toBe('gone-1')
+    })
+
+    it('another resume failure is a fatal error with the CLI reason, not "unsupported"', async () => {
+      const h = harness({ startupError: new ChatStartupError('chat:resume.failed', 'exit 1: boom') })
+      await h.attached({ resume: RESUME })
+      expect(h.published.at(-2)?.event).toMatchObject({
+        code: 'unknown',
+        message: 'chat:resume.failed',
+        detail: 'exit 1: boom',
+        fatal: true,
+      })
+      expect(h.supportCache.get(h.profile)).toBeUndefined()
+    })
+
+    it('notFound without a resume is not retried', async () => {
+      const h = harness({ startupError: new ChatStartupError('chat:resume.notFound', 'x') })
+      await h.attached()
+      expect(h.published.at(-2)?.event).toMatchObject({ message: 'chat:resume.notFound', fatal: true })
+    })
   })
 
   it('no chat capability → chat:unsupported.noCapability', async () => {

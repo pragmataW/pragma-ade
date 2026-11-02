@@ -14,6 +14,7 @@ import {
   PERMISSION_OPTION,
   PERMISSION_OUTCOME,
   RESPONSE_OUTCOME,
+  RESUME_REASON,
   SESSION_EXIT_REASON,
   TURN_END_REASON,
 } from '@pragma/module-chat/contract'
@@ -170,8 +171,9 @@ export class OpencodeChatSession implements ChatSessionHandle {
 
   static async #resume(conn: OpencodeConnection, ctx: ChatSessionContext, catalog: Catalog) {
     const sessionID = ctx.resumeExternalSessionId ?? ''
-    const raw = await conn.client.session.get({ sessionID }).catch(() => {
-      throw new ChatStartupError(REASON.exitedEarly, SESSION_NOT_FOUND)
+    // 11c: the serve does not know the id → `notFound` (the core starts a fresh session, never "unsupported")
+    const raw = await conn.client.session.get({ sessionID }).catch((e: unknown) => {
+      throw new ChatStartupError(RESUME_REASON.notFound, `${SESSION_NOT_FOUND}: ${sessionID} (${String(e)})`)
     })
     const info = sessionInfoSchema.parse(raw)
     const base = selectionOf(info)

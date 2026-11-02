@@ -114,5 +114,9 @@
     "next": "Next match",
     "previous": "Previous match",
     "close": "Close search"
+  },
+  "resume": {
+    "notFound": "Could not continue the previous conversation: the agent has no record of it",
+    "failed": "Could not continue the previous conversation"
   }
 }
