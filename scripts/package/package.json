@@ -1,0 +1,25 @@
+{
+  "name": "@pragma/packaging-tool",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test:unit": "vitest run --project unit",
+    "test:int": "vitest run --project int",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@electron/asar": "4.3.1",
+    "electron-builder": "26.18.0",
+    "node-gyp": "13.1.0",
+    "yaml": "2.9.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}
