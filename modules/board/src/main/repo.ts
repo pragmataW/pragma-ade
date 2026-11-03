@@ -6,6 +6,7 @@ import {
   boardLabels,
   boardTaskSessions,
   boardTasks,
+  type ColumnInsert,
   type ColumnRow,
   type LabelRow,
   type SessionLinkRow,
@@ -20,7 +21,6 @@ export interface TaskQuery {
   taskIds?: number[]
 }
 
-type ColumnInsert = Omit<ColumnRow, 'id'>
 type LabelInsert = Omit<LabelRow, 'id'>
 type TaskPatch = Partial<Omit<TaskInsert, 'id' | 'boardId' | 'number' | 'createdAt'>>
 

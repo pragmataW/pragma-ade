@@ -1,6 +1,6 @@
 # CLI integration (`@pragma/module-cli-integration`)
 
-Phase 10. Ships the `pragma` command-line tool, the `pragma-handoff` and `pragma-cli` agent skills, and the module
+Phase 10. Ships the `pragma` command-line tool, the `pragma-handoff`, `pragma-cli` and `pragma-board` agent skills, and the module
 that serves the CLI's `cli.*` bridge namespace, puts `pragma` on every agent's `PATH` and installs the CLI and the
 skills from Settings › Command line.
 
@@ -10,7 +10,9 @@ Dependencies: `projects`, `agents`, `bridge` (required); `board`, `comments` (op
 ## What the module provides
 
 - **Bridge namespace `cli`** (`src/main/handlers`): `worktreeList`, `worktreeCreate`, `agentList`, `agentSpawn`,
-  `profileList`, `taskList`, `taskCreate`, `taskUpdate`, `taskMove`, `commentsList`, `handoff`, plus `ping`. Every
+  `profileList`, `taskList`, `taskCreate`, `taskUpdate`, `taskMove`, `commentsList`, `handoff`, `sessionLocate`,
+  `taskColumns` (columns in board order with description and task count, read live), `taskShow` (one task in full:
+  description markdown, column description, worktree branch), plus `ping`. Every
   handler answers the envelope `{ ok: true, result } | { ok: false, error: { code, message, details? } }`
   (`cliResponseSchema`); error codes are `CLI_ERROR_CODES`. Board/comments missing → `module_unavailable`.
 - **Launch decorator** `cli-integration.path` (order 500): prepends `<userData>/modules/cli-integration/bin` (the
@@ -22,7 +24,8 @@ Dependencies: `projects`, `agents`, `bridge` (required); `board`, `comments` (op
   the real home is refused).
 - **Settings › Command line** (`SETTINGS_PAGE_ORDER.cli` = 110): PATH link status/install/remove and the agent
   skill targets with a consent dialog (`SkillInstallDialog`) listing every directory that will be written.
-- **Skills**: `skills/handoff` (installed as `pragma-handoff`) and `skills/pragma-cli`. Providers declare targets
+- **Skills**: `skills/handoff` (installed as `pragma-handoff`), `skills/pragma-cli` and `skills/board` (installed as
+  `pragma-board`: the board autopilot procedure). Providers declare targets
   through the `skills` capability (`providers/<id>/src/main/skills.capability.ts`). The install registry is
   `<userData>/modules/cli-integration/installed-skills.json` (never inside skill dirs). States: `missing`,
   `foreign`, `current`, `outdated`. On start, one notification per skills version when an installed target is

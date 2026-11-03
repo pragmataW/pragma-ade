@@ -41,6 +41,8 @@ const COMMAND_TABLE: readonly (readonly [string, CliMethod])[] = [
   ],
   ['task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]', CLI_METHOD.taskUpdate],
   ['task move <id> --column <name>', CLI_METHOD.taskMove],
+  ['task columns [--project <id>]', CLI_METHOD.taskColumns],
+  ['task show <id>', CLI_METHOD.taskShow],
   ['comments list [--worktree <id>]', CLI_METHOD.commentsList],
   [
     'handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',

@@ -38,9 +38,12 @@ describe('IPC contracts', () => {
     for (const c of channels) expect(c.startsWith('board.')).toBe(true)
     expect(new Set(channels).size).toBe(channels.length)
   })
-  it.each(['board.moveTask', 'board.startInNewWorktree', 'board.changedEvent'])('include %s', (c) => {
-    expect(channels).toContain(c)
-  })
+  it.each(['board.moveTask', 'board.startInNewWorktree', 'board.changedEvent', 'board.setColumnDescription'])(
+    'include %s',
+    (c) => {
+      expect(channels).toContain(c)
+    },
+  )
 })
 
 it('filter and slot props accept session ids', () => {

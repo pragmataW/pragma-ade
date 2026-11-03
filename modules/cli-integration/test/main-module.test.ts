@@ -59,11 +59,13 @@ describe('skills IPC', () => {
     expect(before.skills.map((s) => [s.providerId, s.state])).toEqual([
       ['alpha', 'missing'],
       ['alpha', 'missing'],
+      ['alpha', 'missing'],
+      ['beta', 'missing'],
       ['beta', 'missing'],
       ['beta', 'missing'],
     ])
     const after = await m.fake.invoke(cliIntegrationIpc.installSkills, { providerIds: ['alpha'] })
-    expect(after.skills.map((s) => s.state)).toEqual(['current', 'current', 'missing', 'missing'])
+    expect(after.skills.map((s) => s.state)).toEqual(['current', 'current', 'current', 'missing', 'missing', 'missing'])
     expect(existsSync(join(f.home, '.alpha', 'skills', 'pragma-handoff', 'SKILL.md'))).toBe(true)
     expect(existsSync(join(m.userData, 'modules', 'cli-integration', 'installed-skills.json'))).toBe(true)
     expect(m.fake.publishedOn(cliIntegrationIpc.statusChanged)).toEqual([after])

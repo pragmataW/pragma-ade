@@ -39,6 +39,7 @@ export function createBoardService(deps: BoardServiceDeps) {
     unlinkSession: links.unlinkSession,
     createColumn: columns.createColumn,
     renameColumn: columns.renameColumn,
+    setColumnDescription: columns.setColumnDescription,
     moveColumn: columns.moveColumn,
     deleteColumn: columns.deleteColumn,
     prepareStart: (taskId) => launcher.prepareStart(taskId),

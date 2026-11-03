@@ -1,16 +1,24 @@
 /** The only file that knows upstream DTO and error shapes (projects, agents, board, comments). */
 import type { AgentProfile, AgentSession } from '@pragma/module-agents/contract'
-import { BoardError, type BoardErrorCode, type BoardSection, type TaskDto } from '@pragma/module-board/contract'
+import {
+  BoardError,
+  type BoardErrorCode,
+  type BoardSection,
+  type ColumnDto,
+  type TaskDto,
+} from '@pragma/module-board/contract'
 import type { Comment } from '@pragma/module-comments/contract'
 import { ProjectsError, type ProjectsErrorCode, type Worktree } from '@pragma/module-projects/contract'
 import { z } from '@pragma/sdk'
 import {
   CLI_ERROR,
+  type CliColumn,
   type CliComment,
   type CliErrorCode,
   type CliProfile,
   type CliSession,
   type CliTask,
+  type CliTaskDetail,
   type CliWorktree,
 } from '../contract'
 import { CliError } from './cli-error'
@@ -111,4 +119,23 @@ export function toCliError(e: unknown): CliError {
   if (e instanceof BoardError) return new CliError(BOARD_ERRORS[e.code], e.message)
   if (e instanceof z.ZodError) return new CliError(INVALID, e.message)
   return new CliError(INTERNAL, e instanceof Error ? e.message : String(e))
+}
+
+export const toCliColumn = (c: ColumnDto, taskCount: number): CliColumn => ({
+  id: c.id,
+  name: c.name,
+  description: c.description,
+  taskCount,
+})
+
+/** `toCliTask` plus the description, the column's description and the linked worktree's branch. */
+export function toCliTaskDetail(t: TaskDto, section: BoardSection, worktreeBranch: string | null): CliTaskDetail {
+  return {
+    ...toCliTask(t, section),
+    description: t.descriptionMd,
+    columnDescription: section.columns.find((c) => c.id === t.columnId)?.description ?? '',
+    worktreeBranch,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  }
 }

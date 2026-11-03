@@ -7,6 +7,7 @@ import {
   BoardScopeSchema,
   BoardSnapshotSchema,
   BranchCheckSchema,
+  ColumnDescriptionSchema,
   ColumnDtoSchema,
   ColumnIdSchema,
   ColumnPositionSchema,
@@ -67,6 +68,11 @@ export const boardIpc = {
     ColumnDtoSchema,
   ),
   renameColumn: call(C.renameColumn, z.object({ columnId: ColumnIdSchema, name: NameSchema }), ColumnDtoSchema),
+  setColumnDescription: call(
+    C.setColumnDescription,
+    z.object({ columnId: ColumnIdSchema, description: ColumnDescriptionSchema }),
+    ColumnDtoSchema,
+  ),
   moveColumn: call(
     C.moveColumn,
     z.object({ columnId: ColumnIdSchema, position: ColumnPositionSchema }),

@@ -35,6 +35,7 @@ Reference conventions:
 | `moveTask(id, column, position?)` | `position` = `{ afterTaskId }` or `{ beforeTaskId }`; the server computes the fractional key from the neighbours, so a filtered view never corrupts order. |
 | `linkSession` / `unlinkSession` | Idempotent link between a task and an agent session. |
 | `createColumn` / `renameColumn` / `moveColumn` / `deleteColumn` | Names unique per board (case-insensitive); the last column cannot be deleted; a non-empty column needs `moveTasksTo`. |
+| `setColumnDescription` | Optional plain-text guidance (trimmed, max 2000 chars, `''` clears it) that agents working the board read to pick a task's column. |
 | `createLabel` / `updateLabel` / `deleteLabel` | Labels per board; deleting a label removes it from every task. |
 | `prepareStart(taskId)` | Suggested branch `feat/<key>-<slug>` (taken → `-2`, `-3`…), base branches, enabled profiles, worktrees. |
 | `checkBranch(projectId, branch)` | `{ ok: true }` or `{ ok: false, reason: 'invalid' \| 'exists' }`. |
@@ -58,11 +59,11 @@ One channel per service method (answers are `Result<T, BoardErrorDto>`, so error
 ### Tables and migration
 
 `migrations/0901_board.sql`: `board_boards`, `board_columns`, `board_labels`, `board_tasks`,
-`board_task_sessions`. No foreign keys to other modules' tables.
+`board_task_sessions`; `0902_board_column_description.sql` adds `board_columns.description`. No foreign keys to other modules' tables.
 
 ### Testing
 
 - `BOARD_TESTIDS` / `BOARD_TESTID_ATTRS` from `@pragma/module-board/contract`.
 - `@pragma/module-board/testing`: `BoardPage` (Playwright): `open`, `selectScope`, `column`, `columnNames`, `card`,
   `cardsIn`, `allCards`, `quickAdd`, `openCard`, `filter`, `dragCard`, `dragColumn`, `expectDropTarget`,
-  `keyboardMoveTo`.
+  `keyboardMoveTo`, `columnDescription`, `editColumnDescription`.

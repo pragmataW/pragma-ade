@@ -5,6 +5,7 @@ import {
   type CliComment,
   type CliMethod,
   type CliResult,
+  type CliTaskDetail,
   type CliTranscript,
   type CliWorktree,
   EXIT_CODES,
@@ -16,14 +17,18 @@ import { NotRunningError } from './connection'
 import {
   COLUMN_GAP,
   COMMENT_PREVIEW_CHARS,
+  DESCRIPTION_HEADING,
   DETACHED,
   EMPTY_CELL,
   ERROR_PREFIX,
   HANDOFF_HINT,
   JSON_INDENT,
+  LINE_BREAKS_RE,
   MAIN_MARK,
   NEWLINE,
+  NO_DESCRIPTION,
   NOT_RUNNING_TEXT,
+  TRAILING_NEWLINES_RE,
   USAGE_FOOTER,
   YES_NO,
 } from './constants'
@@ -48,6 +53,7 @@ const HEADERS = {
   tasks: [ID, 'KEY', 'COLUMN', 'PRIORITY', 'TITLE'],
   comments: [ID, 'LOCATION', 'BODY'],
   candidates: [ID, 'NAME', 'PROVIDER'],
+  columns: [ID, 'NAME', 'TASKS', 'DESCRIPTION'],
 } as const
 
 /** Plain-text table; every column padded to its widest cell (Contract issue: belongs in the SDK, §9.1). */
@@ -75,6 +81,8 @@ function location(c: CliComment): string {
   const end = c.lineEnd !== null && c.lineEnd !== c.lineStart ? `${RANGE}${c.lineEnd}` : ''
   return `${c.filePath}${LOCATION_SEP}${c.lineStart}${end}`
 }
+/** A multi-line text as one cell; '' → `EMPTY_CELL`. */
+const oneLine = (text: string): string => text.trim().replace(LINE_BREAKS_RE, ' ') || EMPTY_CELL
 const preview = (body: string): string => (body.split(NEWLINE)[0] ?? '').slice(0, COMMENT_PREVIEW_CHARS)
 
 /** `key: value` lines for a single object. */
@@ -82,6 +90,26 @@ const keyValues = (o: Record<string, unknown>): string =>
   Object.entries(o)
     .map(([k, v]) => `${k}${KEY_VALUE}${cell(v)}`)
     .join(NEWLINE) + NEWLINE
+
+const worktreeCell = (t: CliTaskDetail): string | null =>
+  t.worktreeBranch && t.worktreeId ? `${t.worktreeBranch} (${t.worktreeId})` : t.worktreeId
+
+/** `key: value` fields, then the description markdown verbatim under its own heading. */
+function taskDetailText(t: CliTaskDetail): string {
+  const fields = keyValues({
+    key: t.key,
+    id: t.id,
+    title: t.title,
+    column: t.column,
+    ...(t.columnDescription ? { 'column description': oneLine(t.columnDescription) } : {}),
+    priority: t.priority,
+    labels: t.labels,
+    worktree: worktreeCell(t),
+    sessions: t.sessionIds,
+  })
+  const body = t.description.trim() ? t.description.replace(TRAILING_NEWLINES_RE, '') : NO_DESCRIPTION
+  return fields + DESCRIPTION_HEADING + NEWLINE + body + NEWLINE
+}
 
 const transcriptText = (t: CliTranscript): string =>
   keyValues({
@@ -129,6 +157,13 @@ function humanResult(method: CliMethod, result: unknown): string {
         r.tasks.map((t) => [String(t.id), t.key, t.column, t.priority, t.title]),
       )
     }
+    case CLI_METHOD.taskColumns: {
+      const r = result as CliResult<'taskColumns'>
+      return formatTable(
+        HEADERS.columns,
+        r.columns.map((c) => [String(c.id), c.name, String(c.taskCount), oneLine(c.description)]),
+      )
+    }
     case CLI_METHOD.commentsList: {
       const r = result as CliResult<'commentsList'>
       return formatTable(
@@ -141,6 +176,8 @@ function humanResult(method: CliMethod, result: unknown): string {
       const branch = worktree.branch ?? DETACHED
       return `Handed off to ${cell(session.profileName)} in ${branch} (${worktree.path}), session ${session.id}${NEWLINE}`
     }
+    case CLI_METHOD.taskShow:
+      return taskDetailText(result as CliTaskDetail)
     case CLI_METHOD.sessionLocate:
       return locateText(result as CliResult<'sessionLocate'>)
     case CLI_METHOD.worktreeCreate:

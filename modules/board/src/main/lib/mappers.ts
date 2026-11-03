@@ -28,6 +28,7 @@ export const toColumnDto = (c: ColumnRow): ColumnDto => ({
   boardId: c.boardId,
   name: c.name,
   sortKey: c.sortOrder,
+  description: c.description,
 })
 export const toLabelDto = (l: LabelRow): LabelDto => ({ id: l.id, boardId: l.boardId, name: l.name, color: l.color })
 

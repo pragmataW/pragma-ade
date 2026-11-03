@@ -88,7 +88,7 @@ export function aSection(
       keyPrefix: projectName.slice(0, 3).toUpperCase(),
     },
     projectName,
-    columns: columns.map((name, i) => ({ id: ids(i), boardId, name, sortKey: `a${i}` })),
+    columns: columns.map((name, i) => ({ id: ids(i), boardId, name, sortKey: `a${i}`, description: '' })),
     labels: labels.map((name, i) => ({ id: ids(i) + 100, boardId, name, color: 'gray' })),
   }
 }

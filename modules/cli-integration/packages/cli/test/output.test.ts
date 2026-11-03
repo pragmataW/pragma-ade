@@ -46,6 +46,11 @@ const TABLES: [CliMethod, unknown, string[]][] = [
     ['NAME', 'PROVIDER', 'ENABLED', 'DEFAULT', 'yes', 'no'],
   ],
   ['taskList', { projectId: 'p1', tasks: [task] }, ['COLUMN', 'PRIORITY', '42', 'PRA-42', 'Review', 'Fix login']],
+  [
+    'taskColumns',
+    { projectId: 'p1', columns: [{ id: 4, name: 'Review', description: 'Needs\n  review', taskCount: 2 }] },
+    ['NAME', 'TASKS', 'DESCRIPTION', 'Review', 'Needs review', '2'],
+  ],
   ['commentsList', { worktreeId: 'w1', comments: [comment] }, ['LOCATION', 'BODY', 'src/a.ts:3-5', 'Rename this']],
   ['taskCreate', task, ['title: Fix login', 'labels: ui', 'worktreeId: -']],
   [
@@ -64,6 +69,37 @@ describe('formatResult', () => {
   it('json success envelope', () => {
     const result = { profiles: [] }
     expect(formatResult('profileList', result, true)).toBe(`${JSON.stringify({ ok: true, result }, null, 2)}\n`)
+  })
+
+  it('taskShow prints the fields, then the description markdown verbatim', () => {
+    const detail = {
+      ...task,
+      worktreeId: 'w2',
+      description: '# Goal\n- [ ] x',
+      columnDescription: 'Needs my review',
+      worktreeBranch: 'feat/pra-42',
+      createdAt: 1,
+      updatedAt: 2,
+    }
+    const lines = formatResult('taskShow', detail, false).split('\n')
+    for (const line of ['column: Review', 'column description: Needs my review', 'worktree: feat/pra-42 (w2)'])
+      expect(lines).toContain(line)
+    expect(lines.slice(lines.indexOf('description:') + 1, -1)).toEqual(['# Goal', '- [ ] x'])
+  })
+
+  it('taskShow without a description says so and omits an empty column description', () => {
+    const detail = {
+      ...task,
+      description: ' ',
+      columnDescription: '',
+      worktreeBranch: null,
+      createdAt: 1,
+      updatedAt: 2,
+    }
+    const text = formatResult('taskShow', detail, false)
+    expect(text).toContain('(no description)')
+    expect(text).toContain('worktree: -')
+    expect(text).not.toContain('column description')
   })
 
   it('comment body shows only the first line', () => {

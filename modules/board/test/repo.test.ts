@@ -16,12 +16,27 @@ beforeEach(async () => {
   todo = seedColumn(repo, board)
 })
 
-it('records migration 0901 once', async () => {
+it('records migrations 0901 and 0902 once', async () => {
   await t.reopen()
   const rows = t.opened.sqlite.prepare("SELECT name FROM schema_migrations WHERE module = 'board'").all() as {
     name: string
   }[]
-  expect(rows.map((r) => r.name)).toEqual(['0901_board.sql'])
+  expect(rows.map((r) => r.name)).toEqual(['0901_board.sql', '0902_board_column_description.sql'])
+})
+
+it('0902 adds an empty description to existing columns', async () => {
+  const old = await openTestDb({ migrations: 1 })
+  const sqlite = old.opened.sqlite
+  const boardId = Number(
+    sqlite
+      .prepare("INSERT INTO board_boards (project_id, name, key_prefix, created_at) VALUES ('p9', 'old', 'OLD', 0)")
+      .run().lastInsertRowid,
+  )
+  sqlite.prepare("INSERT INTO board_columns (board_id, name, sort_order) VALUES (?, 'Todo', 'a0')").run(boardId)
+  await old.reopen()
+  const columns = old.opened.sqlite.prepare('PRAGMA table_info(board_columns)').all() as { name: string }[]
+  expect(columns.map((c) => c.name)).toContain('description')
+  expect(createBoardRepo(old.opened.db).listColumns(boardId)[0]?.description).toBe('')
 })
 
 it('column names are unique per board, case-insensitively', () => {

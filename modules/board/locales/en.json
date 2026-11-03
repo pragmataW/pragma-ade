@@ -38,7 +38,12 @@
     "deleteEmpty": "The column is empty.",
     "deleteMove": "Move its {{count}} tasks to",
     "deleteConfirm": "Delete column",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "editDescription": "Edit description…",
+    "descriptionTitle": "Description of {{name}}",
+    "descriptionHelp": "Agents that work the board read this to decide which tasks belong in this column.",
+    "descriptionPlaceholder": "Tell the AI when a task belongs in this column, e.g. \"Finished work waiting for my review. Never move tasks to Done yourself.\"",
+    "descriptionSave": "Save"
   },
   "quickAdd": {
     "placeholder": "Task title, Enter to add",

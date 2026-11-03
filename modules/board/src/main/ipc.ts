@@ -45,6 +45,7 @@ export function registerBoardIpc(ipc: Pick<MainIpcApi, 'handle'>, service: Board
   h(I.unlinkSession, ({ taskId, sessionId }) => service.unlinkSession(taskId, sessionId))
   h(I.createColumn, ({ projectId, name, position }) => service.createColumn(projectId, name, position))
   h(I.renameColumn, ({ columnId, name }) => service.renameColumn(columnId, name))
+  h(I.setColumnDescription, ({ columnId, description }) => service.setColumnDescription(columnId, description))
   h(I.moveColumn, ({ columnId, position }) => service.moveColumn(columnId, position))
   h(I.deleteColumn, ({ columnId, moveTasksTo }) => service.deleteColumn(columnId, { moveTasksTo }))
   h(I.createLabel, ({ projectId, name, color }) => service.createLabel(projectId, name, color))

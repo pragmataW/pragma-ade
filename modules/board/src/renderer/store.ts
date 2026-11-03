@@ -180,6 +180,8 @@ export const boardActions = {
   createColumn: (projectId: string, name: string, position?: ColumnPosition) =>
     mutate(call(boardIpc.createColumn, { projectId, name, position })),
   renameColumn: (columnId: ColumnId, name: string) => mutate(call(boardIpc.renameColumn, { columnId, name })),
+  setColumnDescription: (columnId: ColumnId, description: string) =>
+    mutate(call(boardIpc.setColumnDescription, { columnId, description })),
   moveColumn: (columnId: ColumnId, position: ColumnPosition) =>
     mutate(call(boardIpc.moveColumn, { columnId, position })),
   deleteColumn: (columnId: ColumnId, moveTasksTo?: ColumnId) =>

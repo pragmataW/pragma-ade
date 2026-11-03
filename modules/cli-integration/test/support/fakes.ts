@@ -21,7 +21,7 @@ import type { Comment, CommentsService } from '@pragma/module-comments/contract'
 import type { CreateWorktreeInput, Project, ProjectsService, Worktree } from '@pragma/module-projects/contract'
 import type { Logger } from '@pragma/sdk'
 import type { SessionTranscriptLocation, SessionTranscriptQuery } from '../../src/contract'
-import type { CliHandlerDeps } from '../../src/main/handlers'
+import { type CliHandlerDeps, createCliHandlers } from '../../src/main/handlers'
 import type { TranscriptLocator } from '../../src/main/session-transcripts'
 
 const NOW = 1_700_000_000_000
@@ -128,6 +128,9 @@ export function fakeComments(comments: Comment[] = []) {
 }
 
 const COLUMNS = ['Backlog', 'Todo', 'In Progress', 'Review', 'Done']
+/** Only Review carries a description in the fake board. */
+export const REVIEW_DESCRIPTION = 'Finished work waiting for my review. Never move to Done yourself.'
+const COLUMN_DESCRIPTIONS: Record<string, string> = { Review: REVIEW_DESCRIPTION }
 
 export const aTask = (id: number, over: Partial<TaskDto> = {}): TaskDto => ({
   id,
@@ -159,7 +162,13 @@ export function fakeBoard(tasks: TaskDto[] = []) {
   let section: BoardSection = {
     board: { id: 1, projectId: 'p1', name: 'p1', keyPrefix: 'P1' },
     projectName: 'p1',
-    columns: COLUMNS.map((name, i) => ({ id: i + 1, boardId: 1, name, sortKey: String(i) })),
+    columns: COLUMNS.map((name, i) => ({
+      id: i + 1,
+      boardId: 1,
+      name,
+      sortKey: String(i),
+      description: COLUMN_DESCRIPTIONS[name] ?? '',
+    })),
     labels: [{ id: 1, boardId: 1, name: 'ui', color: 'blue' }],
   }
   const columnId = (ref: ColumnRef): number => {
@@ -279,3 +288,9 @@ export function makeDeps(over: Partial<CliHandlerDeps> = {}): CliHandlerDeps {
 }
 
 export const context = (over: Record<string, string> = {}) => ({ cwd: '/elsewhere', ...over })
+
+/** The real handler map over a `fakeBoard(tasks)`; `over` replaces other deps (e.g. `projects`). */
+export function handlersOnBoard(tasks: TaskDto[], over: Partial<CliHandlerDeps> = {}) {
+  const board = fakeBoard(tasks)
+  return { board, h: createCliHandlers(makeDeps({ board, ...over })) }
+}

@@ -31,7 +31,7 @@ const FILE_FIELDS: Record<string, string> = {
   file: 'document',
 }
 /** Methods whose positional `<id>` is a task reference. */
-const TASK_REF_METHODS = new Set<CliMethod>([CLI_METHOD.taskUpdate, CLI_METHOD.taskMove])
+const TASK_REF_METHODS = new Set<CliMethod>([CLI_METHOD.taskUpdate, CLI_METHOD.taskMove, CLI_METHOD.taskShow])
 const TASK_REF_FIELD = 'taskId'
 /** Methods whose positional `<id>` is a session id (Pragma or provider). */
 const SESSION_REF_METHODS = new Set<CliMethod>([CLI_METHOD.sessionLocate])

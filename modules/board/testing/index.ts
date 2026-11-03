@@ -120,4 +120,19 @@ export class BoardPage {
     const target = this.page.getByTestId(T.column).nth(toIndex).getByTestId(T.columnMenu)
     await dragTo(this.page, source, target, { steps: DRAG_STEPS })
   }
+
+  /** The header's info icon of `column`; its `title` is the description (absent when there is none). */
+  columnDescription(column: string): Locator {
+    return this.column(column).getByTestId(T.columnDescription)
+  }
+
+  /** Column menu → Edit description…, replaces the text and saves ('' clears it). */
+  async editColumnDescription(column: string, text: string): Promise<void> {
+    await settleAnimations(this.page)
+    await this.column(column).getByTestId(T.columnMenu).click()
+    await this.page.getByTestId(T.columnEditDescription).click()
+    await this.page.getByTestId(T.columnDescriptionInput).fill(text)
+    await this.page.getByTestId(T.columnDescriptionSave).click()
+    await expect(this.page.getByTestId(T.columnDescriptionDialog)).toHaveCount(0, { timeout: WAIT_MS })
+  }
 }
