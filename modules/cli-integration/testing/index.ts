@@ -3,6 +3,8 @@ import { basename } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { SKILL_IDS, SKILL_INSTALL_NAMES, type SkillsCapability } from '../src/contract'
 
+export * from './ask-provider'
+export * from './fake-ask-bin'
 export * from './run-cli'
 
 export interface SkillsCase {

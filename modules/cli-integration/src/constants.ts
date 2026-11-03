@@ -32,3 +32,17 @@ export const POWERSHELL = {
 } as const
 /** lucide icon of Settings › Command line. */
 export const SETTINGS_PAGE_ICON = 'square-terminal'
+
+/** `pragma ask`: the provider capability and the headless runner (§9.2). */
+export const ASK_CAPABILITY = 'ask'
+/** SIGTERM first, SIGKILL after this. */
+export const ASK_KILL_GRACE_MS = 5000
+const KIB = 1024
+const MIB = KIB * KIB
+const ASK_MAX_STDOUT_MIB = 8
+const ASK_MAX_STDERR_KIB = 64
+/** Raw stdout above this kills the child (the answer is cut to `MAX_DOCUMENT_BYTES` later). */
+export const ASK_MAX_STDOUT_BYTES = ASK_MAX_STDOUT_MIB * MIB
+/** Only the last this-many bytes of stderr are kept (for error messages). */
+export const ASK_MAX_STDERR_BYTES = ASK_MAX_STDERR_KIB * KIB
+export const TASKKILL = { exe: 'taskkill', args: ['/T', '/F', '/PID'] } as const
