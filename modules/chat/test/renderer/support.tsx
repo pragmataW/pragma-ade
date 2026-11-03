@@ -6,13 +6,17 @@ import type { ChatEvent, ChatItem, ChatPartProps } from '../../src/contract'
 import { ChatHostProvider } from '../../src/renderer/host-adapter'
 import { defaultChatUi } from '../../src/renderer/kit/default-ui'
 import { ChatPartsProvider } from '../../src/renderer/kit/parts/ChatRows'
+import { resetTasksPanels } from '../../src/renderer/kit/tasks/store'
 import { useChatStore } from '../../src/renderer/session/store'
 import { chatTestI18n, installJsdomLayout, type StubChatHost, stubChatHost, stubSessionApi } from '../../testing'
 
 afterEach(cleanup)
 
 installJsdomLayout()
-beforeEach(() => useChatStore.setState({ sessions: {}, inboxVersions: {}, activeSessionId: null }))
+beforeEach(() => {
+  useChatStore.setState({ sessions: {}, inboxVersions: {}, activeSessionId: null })
+  resetTasksPanels()
+})
 
 const i18n = await chatTestI18n(['claude'])
 

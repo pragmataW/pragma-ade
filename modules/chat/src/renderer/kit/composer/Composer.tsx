@@ -81,9 +81,9 @@ export function Composer({
         className="field-sizing-content block max-h-60 min-h-12 w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] text-tx outline-none placeholder:text-fa"
       />
       {c.notice ? <div className="px-3 text-[11.5px] text-warn">{t(c.notice)}</div> : null}
-      <div className="flex h-9 items-center gap-1 px-1.5">
+      <div className="flex min-h-9 flex-wrap items-center gap-1 px-1.5 py-0.5">
         <ExtensionAreas extensions={extensions} api={c.api} area="toolbar" />
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">
           {toolbar.map((Slot, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: slot components have no identity of their own
             <Slot key={i} session={session} />

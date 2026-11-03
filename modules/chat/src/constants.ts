@@ -33,6 +33,7 @@ export const ROW_ESTIMATE_PX = 64
 export const INITIAL_RECT = { width: 740, height: 800 } as const
 export const ICON_PX = 14
 export const SMALL_ICON_PX = 12
+export const LARGE_ICON_PX = 16
 /** Tool-call input fields the kit renders (task prompt, todo list). */
 export const TASK_PROMPT_FIELD = 'prompt'
 export const TODO_INPUT_FIELD = 'todos'
@@ -52,6 +53,29 @@ export const PLAN_MAX_H_PX = 420
 /** Indent per nesting level in the task tree. */
 export const TASK_INDENT_PX = 12
 export const MARK_PX = 14
+/** Tasks panel (docked right in the chat view; overlays the transcript when the chat would get narrower). */
+export const TASKS_PANEL = { defaultWidth: 380, minWidth: 300, maxWidth: 640, keyStep: 24 } as const
+/** Below this transcript width the panel overlays it instead of docking. */
+export const TASKS_PANEL_MIN_CHAT_PX = 480
+/** "Show in chat" highlight and the indicator's new-task pulse. */
+export const TASK_FLASH_MS = 1600
+/** Longer prompts are clamped in the task detail ("Show more"). */
+export const TASK_PROMPT_CLAMP_CHARS = 280
+export const TASK_PULSE_MS = 1200
+export const TASKS_COMMAND_ID = 'chat.toggleTasksPanel'
+export const TASKS_SHORTCUT = { accelerator: 'CmdOrCtrl+Shift+A', scope: 'app' } as const
+export const MAC_USER_AGENT_RE = /Mac/
+/** Joins meta parts ("12.3K tokens · $0.02"). */
+export const META_SEPARATOR = ' · '
+export const ROLE_RADIO = 'radio'
+export const KEY_ARROW_LEFT = 'ArrowLeft'
+export const KEY_ARROW_RIGHT = 'ArrowRight'
+export const POINTER_MOVE = 'pointermove'
+export const POINTER_UP = 'pointerup'
+export const SCROLL_CENTER = 'center'
+export const SCROLL_SMOOTH = 'smooth'
+/** Numbers and times in the kit use the app's locale (English in v1), not the system one. */
+export const FORMAT_LOCALE = 'en-US'
 export const ELAPSED_TICK_MS = 1000
 export const MS_PER_SECOND = 1000
 export const SECONDS_PER_MINUTE = 60

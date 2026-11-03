@@ -1,9 +1,17 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Button } from '@pragma/ui/components/button'
-import { ChevronRight, LoaderCircle, Square } from '@pragma/ui/icons'
-import { useState } from 'react'
-import { BUTTON_TYPE, ICON_PX, ICON_STROKE, SIZE_ICON_XS, SMALL_ICON_PX, VARIANT_GHOST } from '../../../constants'
+import { ChevronRight, LoaderCircle, PanelRightOpen, Square } from '@pragma/ui/icons'
+import { useCallback, useRef, useState } from 'react'
+import {
+  BUTTON_TYPE,
+  ICON_PX,
+  ICON_STROKE,
+  META_SEPARATOR,
+  SIZE_ICON_XS,
+  SMALL_ICON_PX,
+  VARIANT_GHOST,
+} from '../../../constants'
 import {
   CHAT_DATA_ATTRS,
   CHAT_TESTIDS,
@@ -16,8 +24,10 @@ import {
   TASK_STATUS,
   type TaskItem,
 } from '../../../contract'
+import { useTasksPanelMounted, useTasksPanelStore } from '../tasks/store'
+import { useTaskMetaParts } from '../tasks/TaskMeta'
+import { useTaskReveal } from '../tasks/use-task-reveal'
 import { ChildTranscript } from './ChatRows'
-import { formatTokens, formatUsd } from './lib/format'
 import { isLiveTask, TASK_ICONS, TASK_TONE } from './lib/task-visual'
 import { PILL, TONE_BADGE } from './lib/tone'
 
@@ -58,16 +68,34 @@ export function TaskStopButton({ item, session }: { item: TaskItem; session: Cha
   )
 }
 
-/** "Last: Grep · 12.3K tokens · $0.02" */
-function TaskMeta({ item }: { item: TaskItem }) {
+/** Opens the task in the chat's Tasks panel (only when the provider's chat UI has one). */
+export function TaskOpenInPanel({ item, session }: { item: TaskItem; session: ChatSessionApi }) {
   const t = useT()
-  const parts = [
-    item.lastTool && isLiveTask(item.status) ? t('chat:task.lastTool', { tool: item.lastTool }) : undefined,
-    item.usage ? t('chat:task.tokens', { tokens: formatTokens(item.usage.tokens) }) : undefined,
-    item.usage?.costUsd === undefined ? undefined : formatUsd(item.usage.costUsd),
-  ].filter(Boolean)
+  if (!useTasksPanelMounted(session.sessionId)) return null
+  return (
+    <Button
+      variant={VARIANT_GHOST}
+      size={SIZE_ICON_XS}
+      data-testid={CHAT_TESTIDS.taskOpenInPanel}
+      aria-label={t('chat:tasks.openInPanel', { name: item.name })}
+      title={t('chat:tasks.openInPanel', { name: item.name })}
+      onClick={() => useTasksPanelStore.getState().openTask(session.sessionId, item.id)}
+      className="size-6 text-mu hover:text-act"
+    >
+      <PanelRightOpen size={SMALL_ICON_PX} strokeWidth={ICON_STROKE} />
+    </Button>
+  )
+}
+
+/** "12.3K tokens · $0.02 · Last: Grep" */
+function TaskMeta({ item }: { item: TaskItem }) {
+  const parts = useTaskMetaParts(item, null, { lastTool: true, toolUses: false })
   if (parts.length === 0) return null
-  return <span className="shrink-0 text-[11.5px] tabular-nums text-mu">{parts.join(' · ')}</span>
+  return (
+    <span className="min-w-0 max-w-[45%] shrink truncate text-[11.5px] tabular-nums text-mu">
+      {parts.join(META_SEPARATOR)}
+    </span>
+  )
 }
 
 /**
@@ -77,14 +105,27 @@ function TaskMeta({ item }: { item: TaskItem }) {
 export function TaskCard({ item, session }: ChatPartProps<TaskItem>) {
   const t = useT()
   const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  const flashing = useTaskReveal(
+    session.sessionId,
+    item.id,
+    root,
+    useCallback(() => setOpen(true), []),
+  )
   const Icon = TASK_ICONS[item.taskKind]
   const workflow = item.taskKind === TASK_KIND.workflow
   return (
     <div
+      ref={root}
       data-testid={CHAT_TESTIDS.part(EVENT_KIND.task)}
       data-open={open}
+      data-flash={flashing || undefined}
       {...{ [CHAT_DATA_ATTRS.status]: item.status, [CHAT_DATA_ATTRS.itemId]: item.id }}
-      className={cn('rounded-lg border border-bd bg-el', workflow && 'border-l-2 border-l-act')}
+      className={cn(
+        'rounded-lg border border-bd bg-el transition-[box-shadow,background-color] duration-700 ease-out',
+        workflow && 'border-l-2 border-l-act',
+        flashing && 'bg-acs ring-2 ring-act/70 duration-150',
+      )}
     >
       <div className="flex h-8 min-w-0 items-center gap-2 pr-1.5">
         <button
@@ -92,7 +133,7 @@ export function TaskCard({ item, session }: ChatPartProps<TaskItem>) {
           aria-expanded={open}
           data-testid={CHAT_TESTIDS.taskToggle}
           onClick={() => setOpen((o) => !o)}
-          className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-lg pl-2.5 text-left text-[12.5px] hover:bg-hv"
+          className="flex h-full min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-l-lg pl-2.5 text-left text-[12.5px] hover:bg-hv"
         >
           <ChevronRight
             size={ICON_PX}
@@ -107,6 +148,7 @@ export function TaskCard({ item, session }: ChatPartProps<TaskItem>) {
         </button>
         <TaskMeta item={item} />
         <TaskStatusPill item={item} />
+        <TaskOpenInPanel item={item} session={session} />
         <TaskStopButton item={item} session={session} />
       </div>
       {item.summary ? (

@@ -87,12 +87,15 @@ function ServerRow({ server, session }: { server: ChatMcpServer; session: ChatSe
   )
 }
 
-/** Header slot: a plug with the worst server status dot; the popover lists servers with toggle / reconnect. */
+/**
+ * Header slot: a plug with the worst server status dot; the popover lists servers with toggle / reconnect. Hidden
+ * while the session has no MCP servers (no "0" in the header).
+ */
 export function McpStatus({ session }: ChatSlotProps) {
   const t = useT()
   const servers = session.transcript.mcpServers
   const canRefresh = hasAction(session.transcript.info, SESSION_ACTION.refreshMcp)
-  if (servers.length === 0 && !canRefresh) return null
+  if (servers.length === 0) return null
   const tone = aggregateMcpTone(servers)
   return (
     <Popover>
@@ -130,15 +133,11 @@ export function McpStatus({ session }: ChatSlotProps) {
             </Button>
           ) : null}
         </div>
-        {servers.length === 0 ? (
-          <p className="px-2 py-3 text-[12px] text-fa">{t('chat:mcp.empty')}</p>
-        ) : (
-          <ul className="max-h-80 overflow-y-auto py-1">
-            {servers.map((s) => (
-              <ServerRow key={s.name} server={s} session={session} />
-            ))}
-          </ul>
-        )}
+        <ul className="max-h-80 overflow-y-auto py-1">
+          {servers.map((s) => (
+            <ServerRow key={s.name} server={s} session={session} />
+          ))}
+        </ul>
       </PopoverContent>
     </Popover>
   )

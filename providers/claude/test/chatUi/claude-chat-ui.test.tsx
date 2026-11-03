@@ -7,7 +7,7 @@ import {
   makeTranscript,
   stubChatHost,
 } from '@pragma/module-chat/testing'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -40,8 +40,11 @@ const cards: ChatEvent[] = [
   { kind: 'rate-limit', status: 'warning', window: 'five_hour', utilization: 0.92 },
 ]
 
-async function renderClaude(events: ChatEvent[] = base, definition: ChatUiDefinition = claudeChatUi) {
-  const host = stubChatHost({ chatUi: () => definition })
+async function renderClaude(
+  events: ChatEvent[] = base,
+  definition: ChatUiDefinition = claudeChatUi,
+  host = stubChatHost({ chatUi: () => definition }),
+) {
   host.snapshots.set('s1', { providerId: 'claude', transcript: makeTranscript(events), status: 'idle' })
   const wrapper = ({ children }: { children: ReactNode }) => (
     <I18nextProvider i18n={i18n}>
@@ -92,5 +95,29 @@ describe('claudeChatUi', () => {
       expect(screen.getByTestId(CHAT_TESTIDS.part(kind))).toBeInTheDocument()
     expect(screen.getByText('Which test runner should we use?')).toBeInTheDocument()
     expect(screen.getByTestId(CHAT_TESTIDS.rateLimit)).toBeInTheDocument()
+  })
+
+  it('rewind on a user message: the kit action after a confirmation in Claude words (files only)', async () => {
+    const asked: string[] = []
+    const host = stubChatHost({
+      chatUi: () => claudeChatUi,
+      confirm: async (o) => {
+        asked.push(i18n.t(o.titleKey), i18n.t(o.messageKey))
+        return true
+      },
+    })
+    const message: ChatEvent = {
+      kind: 'message',
+      messageId: 'u1',
+      role: 'user',
+      text: 'edit it',
+      attachments: [],
+      origin: 'live',
+    }
+    await renderClaude([{ kind: 'session-info', actions: ['rewind'] }, message, ...base], claudeChatUi, host)
+    fireEvent.click(screen.getByTestId(CHAT_TESTIDS.messageRewind))
+    await waitFor(() => expect(callsOf(host, 'action')[0]?.args).toEqual(['s1', { action: 'rewind', messageId: 'u1' }]))
+    expect(asked.join(' ')).toMatch(/Restore the files/)
+    expect(asked.join(' ')).toMatch(/conversation stays/)
   })
 })

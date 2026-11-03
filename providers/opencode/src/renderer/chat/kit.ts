@@ -11,6 +11,7 @@ export {
   ChatSessionView,
   ContextMeter,
   createOptionPicker,
+  createUserMessage,
   defaultChatUi,
   defaultComposerExtensions,
   documentAttachmentsExtension,
@@ -20,7 +21,8 @@ export {
   RateLimitBanner,
   RetryBanner,
   StopButton,
+  TasksIndicator,
+  TasksPanel,
   UsageMeter,
-  UserMessage,
   useChatHost,
 } from '@pragma/module-chat/renderer'

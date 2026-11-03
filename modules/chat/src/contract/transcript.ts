@@ -1,5 +1,13 @@
 import type { ChatSessionActionKind } from './actions'
-import { EVENT_KIND as K, RATE_LIMIT_STATUS, TEXT_MODE, TOOL_KIND, TOOL_STATUSES, TURN_END_REASON } from './constants'
+import {
+  FINISHED_TASK_STATUSES,
+  EVENT_KIND as K,
+  RATE_LIMIT_STATUS,
+  TEXT_MODE,
+  TOOL_KIND,
+  TOOL_STATUSES,
+  TURN_END_REASON,
+} from './constants'
 import type {
   ChatAttachmentRef,
   ChatErrorCode,
@@ -94,8 +102,17 @@ export interface CustomItem extends Resolvable {
   eventId?: string
   awaitsResponse: boolean
 }
-/** A subagent / workflow / background task (the task id); its output is `childItems(t, [id, toolCallId])`. */
-export type TaskItem = Omit<Body<ChatEventOf<typeof K.task>>, 'taskId'> & { kind: typeof K.task; id: string }
+/**
+ * A subagent / workflow / background task (the task id); its output is `childItems(t, [id, toolCallId])`.
+ * `startedAt` / `endedAt`: envelope times of its first event and of its first final status (history replay stamps
+ * every event with the load time, so both are equal there).
+ */
+export type TaskItem = Omit<Body<ChatEventOf<typeof K.task>>, 'taskId'> & {
+  kind: typeof K.task
+  id: string
+  startedAt: number
+  endedAt?: number
+}
 /** The event id (`respond(id, ChatQuestionResponse)`). */
 export type QuestionItem = Omit<Body<ChatEventOf<typeof K.question>>, 'eventId'> &
   Resolvable & { kind: typeof K.question; id: string }
@@ -319,10 +336,20 @@ function applyMessageAck(t: ChatTranscript, messageId: string): ChatTranscript {
   return upsert(t, rest)
 }
 
-function applyTask(t: ChatTranscript, e: ChatEventOf<typeof K.task>): ChatTranscript {
+const FINISHED = new Set<string>(FINISHED_TASK_STATUSES)
+
+function applyTask(t: ChatTranscript, e: ChatEventOf<typeof K.task>, at: number): ChatTranscript {
   const { kind, taskId, ...rest } = e
   const prev = find<TaskItem>(t, K.task, taskId)
-  return upsert(t, { ...prev, ...defined(rest), kind, id: taskId } as TaskItem)
+  const { endedAt: _ended, ...base } = prev ?? { startedAt: at }
+  const endedAt = FINISHED.has(e.status) ? (prev?.endedAt ?? at) : undefined
+  return upsert(t, {
+    ...base,
+    ...defined(rest),
+    kind,
+    id: taskId,
+    ...(endedAt === undefined ? {} : { endedAt }),
+  } as TaskItem)
 }
 
 function applyRateLimit(t: ChatTranscript, e: RateLimitEvent): ChatTranscript {
@@ -415,7 +442,7 @@ function apply(t: ChatTranscript, e: ChatEvent, seq: number, at: number): ChatTr
     case K.responseResolved:
       return applyResponseResolved(t, e)
     case K.task:
-      return applyTask(t, e)
+      return applyTask(t, e, at)
     case K.question:
     case K.planProposal:
       return applyPrompt(t, e)

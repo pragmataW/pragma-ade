@@ -93,8 +93,7 @@
     },
     "toggle": "Enable {{name}}",
     "reconnect": "Reconnect {{name}}",
-    "refresh": "Refresh",
-    "empty": "No MCP servers configured"
+    "refresh": "Refresh"
   },
   "rateLimit": {
     "warning": "Approaching the usage limit ({{percent}}%)",
@@ -205,5 +204,55 @@
   },
   "message": {
     "midTurn": "Sent while working · the agent reads it next"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "show": "Show tasks",
+    "hide": "Hide tasks",
+    "close": "Close tasks",
+    "total_one": "{{count}} task",
+    "total_other": "{{count}} tasks",
+    "count": {
+      "running": "{{count}} running",
+      "waiting": "{{count}} waiting",
+      "done": "{{count}} done",
+      "failed": "{{count}} failed"
+    },
+    "group": {
+      "running": "Running",
+      "waiting": "Waiting",
+      "finished": "Finished"
+    },
+    "filterLabel": "Show",
+    "filter": {
+      "all": "All",
+      "running": "Running",
+      "subagents": "Subagents",
+      "workflows": "Workflows"
+    },
+    "search": "Search tasks",
+    "empty": {
+      "title": "No subagents or workflows yet",
+      "hint": "When the agent starts a subagent, a workflow or a background job, it shows up here live."
+    },
+    "noMatch": "No tasks match",
+    "openInPanel": "Open {{name}} in the Tasks panel",
+    "back": "All tasks",
+    "parent": "in {{name}}",
+    "showInChat": "Show in chat",
+    "copy": "Copy output",
+    "prompt": "Prompt",
+    "summary": "Summary",
+    "activity": "Activity",
+    "result": "Result",
+    "subtasks": "Subtasks ({{count}})",
+    "toolUses_one": "{{count}} tool use",
+    "toolUses_other": "{{count}} tool uses",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "resize": "Resize the Tasks panel"
+  },
+  "commands": {
+    "toggleTasks": "Chat: Toggle the Tasks panel"
   }
 }

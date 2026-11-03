@@ -11,8 +11,6 @@ export const OPENCODE_CHAT_TESTIDS = {
   modelPicker: 'opencode-model-picker',
   modelOption: (value: string) => `opencode-model-option-${value}`,
   manageProviders: 'opencode-manage-providers',
-  rewind: 'opencode-rewind',
-  fork: 'opencode-fork',
   reauth: 'opencode-reauth',
   providers: 'opencode-providers',
   providerRow: (id: string) => `opencode-provider-${id}`,
@@ -47,12 +45,15 @@ export const MODEL_I18N = {
   none: 'opencode:chatUi.model.none',
   manage: 'opencode:chatUi.model.manage',
 } as const
+/** Rewind (files and conversation) and fork copy of the kit's user message actions. */
 export const USER_MESSAGE_I18N = {
-  rewind: 'opencode:chatUi.message.rewind',
-  rewindTitle: 'opencode:chatUi.message.rewindTitle',
-  rewindMessage: 'opencode:chatUi.message.rewindMessage',
-  rewindConfirm: 'opencode:chatUi.message.rewindConfirm',
-  fork: 'opencode:chatUi.message.fork',
+  rewind: {
+    labelKey: 'opencode:chatUi.message.rewind',
+    titleKey: 'opencode:chatUi.message.rewindTitle',
+    messageKey: 'opencode:chatUi.message.rewindMessage',
+    confirmKey: 'opencode:chatUi.message.rewindConfirm',
+  },
+  fork: { labelKey: 'opencode:chatUi.message.fork' },
 } as const
 export const ERROR_I18N = {
   reauthHint: 'opencode:chatUi.error.reauthHint',

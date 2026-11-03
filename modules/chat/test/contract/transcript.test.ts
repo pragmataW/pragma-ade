@@ -10,7 +10,7 @@ import {
   type ToolCallItem,
   taskOfToolCall,
 } from '../../src/contract'
-import { makeEnvelope, makeEnvelopes, makeTranscript } from '../../testing'
+import { makeEnvelope, makeEnvelopes, makeTranscript, TEST_AT } from '../../testing'
 import { EVENT_SAMPLES as E } from './samples'
 
 const text = (t: string, mode: 'delta' | 'snapshot' = 'delta'): ChatEvent => ({
@@ -207,6 +207,18 @@ describe('reduceTranscript: subagent tree', () => {
     })
     expect(taskOfToolCall(t, 'tc1')?.id).toBe('task1')
     expect(taskOfToolCall(t, 'other')).toBeUndefined()
+  })
+
+  it('a task keeps when it started (first event) and when it finished (first final status)', () => {
+    const t = makeTranscript([
+      task(),
+      task({ lastTool: 'Read' }),
+      task({ status: 'completed' }),
+      task({ status: 'completed', summary: 'late summary' }),
+    ])
+    expect(only(t)).toMatchObject({ startedAt: TEST_AT + 1, endedAt: TEST_AT + 3, summary: 'late summary' })
+    const resumed = makeTranscript([task({ status: 'paused' }), task({ status: 'running' })])
+    expect(only(resumed)).not.toHaveProperty('endedAt')
   })
 
   it('a nested task is a child of its parent task', () => {

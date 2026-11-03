@@ -148,6 +148,8 @@ export class OpencodeChatSession implements ChatSessionHandle {
   #unsubscribeRoot: () => void = () => undefined
   /** Transcript message id → OpenCode user message id (rewind and fork targets). */
   readonly #messageIds = new Map<string, string>()
+  /** Transcript ids of messages steered into the running turn and not yet taken in (`message-ack` clears them). */
+  #steered: string[] = []
   readonly #commandList: OpencodeCommand[]
 
   /** The OpenCode session (a fork switches it). */
@@ -270,7 +272,10 @@ export class OpencodeChatSession implements ChatSessionHandle {
   // ── events ──────────────────────────────────────────────────────────────
 
   #emit(e: ChatEvent): void {
-    if (e.kind === K.turnEnd) this.#turnActive = false
+    if (e.kind === K.turnEnd) {
+      this.#turnActive = false
+      this.#ackSteered()
+    }
     if (e.kind === K.error && e.code === ERROR_CODE.auth) this.#authFailed()
     if (e.kind === K.permissionRequest && this.#autoApprove) queueMicrotask(() => this.#approve(e.requestId))
     if (e.kind === K.custom && e.type === CUSTOM.form && e.eventId) {
@@ -284,10 +289,18 @@ export class OpencodeChatSession implements ChatSessionHandle {
   #onEvent(e: HubEvent): void {
     if (this.#closed) return
     this.#subagents.observe(this.externalSessionId, e)
+    if (e.type === EV.stepStarted) this.#ackSteered()
     for (const out of this.#mapper.map(e)) {
       if (out.kind === K.turnEnd) this.#subagents.endAll(out.reason)
       this.#emit(out)
     }
+  }
+
+  /** OpenCode takes steered messages in at the next step boundary (or the turn ends with them): ack each once. */
+  #ackSteered(): void {
+    const taken = this.#steered
+    this.#steered = []
+    for (const messageId of taken) this.#ctx.emit({ kind: K.messageAck, messageId })
   }
 
   /** The root mapper and every subagent's, with the session each one translates. */
@@ -443,6 +456,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
     const sessionID = this.externalSessionId
     const user = idSchema.safeParse(await this.#conn.client.session.prompt({ sessionID, ...prompt, ...delivery }))
     if (meta && user.success) this.#messageIds.set(meta.messageId, user.data.id)
+    if (meta && busy) this.#steered.push(meta.messageId)
   }
 
   /** Mark the turn interrupted, reject pending permissions and cancel pending forms, then interrupt the turn. */
