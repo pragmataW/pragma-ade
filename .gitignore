@@ -33,3 +33,6 @@ Thumbs.db
 !test/e2e/
 test/e2e/*
 !test/e2e/packaging/
+
+# vitest json reporter output
+.vitest/
