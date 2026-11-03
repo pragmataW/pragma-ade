@@ -2,7 +2,10 @@ import type { RendererContext } from '@pragma/sdk/renderer'
 import type { CommentsSettings } from '../contract'
 
 /** The renderer context pieces the store, send flow and components use (also from other modules' trees). */
-export type CommentsRuntime = Pick<RendererContext<CommentsSettings>, 'ipc' | 'commands' | 'services' | 'settings'>
+export type CommentsRuntime = Pick<
+  RendererContext<CommentsSettings>,
+  'ipc' | 'commands' | 'services' | 'settings' | 'dialogs'
+>
 
 let current: CommentsRuntime | undefined
 

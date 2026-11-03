@@ -183,6 +183,8 @@ export const aWorktree = (over: Partial<Worktree> = {}): Worktree => ({
   ...over,
 })
 
+/** Stands in for 05's ThreadView: the root body, so card tests can find the comment. */
+const NoThread: CommentsUiService['ThreadView'] = ({ comment }) => <p data-testid="fake-thread">{comment.body}</p>
 const NoComposer = () => null
 
 function GitChangesTab() {
@@ -242,8 +244,10 @@ export async function mountPanel(
   }
   const ui: CommentsUiService = {
     CommentComposer: NoComposer,
+    ThreadView: NoThread,
     openDrawer: () => undefined,
     send: async () => undefined,
+    clearResolved: async () => 0,
     ...opts.ui,
   }
   const commentsRenderer: RendererModule<never> = {

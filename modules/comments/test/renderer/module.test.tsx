@@ -40,6 +40,8 @@ describe('renderer module', () => {
     expect(r.commands.has(openDrawerCommand.id)).toBe(true)
     expect(r.pagesRegistered.map((p) => [p.id, p.order])).toEqual([['comments', 70]])
     expect(ui().CommentComposer).toBeTypeOf('function')
+    expect(ui().ThreadView).toBeTypeOf('function')
+    expect(ui().clearResolved).toBeTypeOf('function')
   })
 
   test('ui.send with two running sessions opens the target picker; with one it sends directly', async () => {

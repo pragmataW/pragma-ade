@@ -3,10 +3,12 @@ import { SETTINGS_PAGE_ORDER, ShellSlots } from '@pragma/sdk'
 import { defineRendererModule } from '@pragma/sdk/renderer'
 import { COMMENTS_MODULE_ID, SLOT_ENTRY_IDS, SLOT_ORDER } from '../constants'
 import { type CommentsSettings, CommentsUiServiceToken, type OpenDrawerArgs, openDrawerCommand } from '../contract'
+import { clearResolved } from './clear-resolved'
 import { CommentComposer } from './components/CommentComposer'
 import { CommentsHost } from './components/CommentsHost'
 import { CommentsSettingsPage } from './components/CommentsSettingsPage'
 import { ToolbarBadge } from './components/ToolbarBadge'
+import { ThreadView } from './components/thread/ThreadView'
 import { setRuntime } from './runtime'
 import { useCommentsStore } from './store'
 import { createSendFlow } from './use-send-flow'
@@ -40,6 +42,12 @@ export default defineRendererModule<CommentsSettings>({
       component: CommentsSettingsPage,
     })
     const flow = createSendFlow(ctx, useCommentsStore)
-    ctx.services.provide(CommentsUiServiceToken, { CommentComposer, openDrawer, send: flow.send })
+    ctx.services.provide(CommentsUiServiceToken, {
+      CommentComposer,
+      ThreadView,
+      openDrawer,
+      send: flow.send,
+      clearResolved: (worktreeId) => clearResolved(worktreeId, ctx),
+    })
   },
 })

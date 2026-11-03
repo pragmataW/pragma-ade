@@ -38,11 +38,20 @@ function RecordingComposer(p: CommentComposerProps) {
   return <div data-testid="fake-composer" />
 }
 
+const NoThread = () => null
+
 /** A CommentsUi whose composer records its props. */
 export function fakeCommentsUi(): CommentsUiService & FakeComposer {
   const props: CommentComposerProps[] = []
   recorded.push(props)
-  return { props, CommentComposer: RecordingComposer, openDrawer: vi.fn(), send: vi.fn() }
+  return {
+    props,
+    CommentComposer: RecordingComposer,
+    ThreadView: NoThread,
+    openDrawer: vi.fn(),
+    send: vi.fn(),
+    clearResolved: vi.fn(),
+  }
 }
 
 export function fakeRendererCtx(

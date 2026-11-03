@@ -15,11 +15,14 @@
     "emptyThreads": "No review threads. Add comments from the editor, the diff or the browser.",
     "sendPending_one": "Send {{count}} pending item",
     "sendPending_other": "Send {{count}} pending items",
-    "nothingToSend": "Nothing to send"
+    "nothingToSend": "Nothing to send",
+    "resolvedSection": "Resolved ({{count}})",
+    "round": "Round {{round}}",
+    "clearResolved": "Clear resolved"
   },
   "row": {
     "edit": "Edit",
-    "delete": "Delete",
+    "delete": "Delete thread",
     "source": {
       "editor": "Editor",
       "diff": "Diff",
@@ -65,5 +68,28 @@
     "empty": "Nothing new to send.",
     "agentNotReady": "The agent is not ready to receive multi-line text yet. Try again in a moment.",
     "alreadyDelivered": "This comment was already sent. Add a reply instead."
+  },
+  "clearResolved": {
+    "title": "Clear resolved threads?",
+    "message_one": "Delete {{count}} resolved thread? This cannot be undone.",
+    "message_other": "Delete {{count}} resolved threads? This cannot be undone.",
+    "confirm": "Delete"
+  },
+  "thread": {
+    "you": "You",
+    "agent": "Agent",
+    "pending": "Pending",
+    "open": "Open",
+    "resolved": "Resolved",
+    "resolve": "Resolve",
+    "reopen": "Reopen",
+    "reply": "Reply",
+    "replyPlaceholder": "Reply to the agent…",
+    "replySubmit": "Reply",
+    "replyCancel": "Cancel",
+    "discardReply": "Discard reply",
+    "expand_one": "Show thread ({{count}} reply)",
+    "expand_other": "Show thread ({{count}} replies)",
+    "collapse": "Hide thread"
   }
 }

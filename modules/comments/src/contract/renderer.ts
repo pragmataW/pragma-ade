@@ -1,5 +1,5 @@
 import { createServiceToken } from '@pragma/sdk'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { Comment, CommentContext } from './dto'
 import type { OpenDrawerArgs } from './ipc'
 import type { SendResult } from './results'
@@ -33,9 +33,27 @@ export interface CommentComposerProps {
   className?: string
 }
 
-/** Renderer service for other modules (07, 08, 11c): the composer, the drawer and the drawer's send flow. */
+/** One review thread as every surface shows it (`CommentsUiService.ThreadView`). */
+export interface ThreadViewProps {
+  comment: Comment
+  /** Before the location (e.g. the drawer's source icon). */
+  leading?: ReactNode
+  /** e.g. `src/a.ts:3-5` (drawer) or `L3–5` (diff). */
+  locationLabel?: string
+  /** The host's edit flow; the Edit action shows only while the root is pending. */
+  onEdit?: () => void
+  /** Default `card`: own `el` card; `plain` for hosts that are the card. */
+  surface?: ComposerSurface
+  className?: string
+}
+
+/** Renderer service for other modules (07, 08, 11c): the composer, the thread view, the drawer and the send flow. */
 export interface CommentsUiService {
   CommentComposer: ComponentType<CommentComposerProps>
+  /** Replies, author badges, resolve / reopen / delete, reply box; acts through the comments IPC. */
+  ThreadView: ComponentType<ThreadViewProps>
+  /** Asks the user (SDK confirm dialog), then deletes the worktree's resolved threads; resolves to how many (0 = none or cancelled). */
+  clearResolved(worktreeId: string): Promise<number>
   openDrawer(args?: OpenDrawerArgs): void
   /**
    * Same flow as the drawer: delivers every pending item of the worktree (default: the active one) as one review
