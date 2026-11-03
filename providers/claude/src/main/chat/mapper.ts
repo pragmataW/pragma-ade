@@ -212,8 +212,8 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
   }
 
   function userText(frame: Obj, content: unknown): ChatEvent[] {
-    // a subagent's prompt arrives as a user frame with a parent: its tool call already shows it
-    if (!history || frame.isSynthetic === true || str(frame.parent_tool_use_id)) return []
+    // a subagent's prompt arrives as a user frame with a parent (or an agent id): its tool call already shows it
+    if (!history || frame.isSynthetic === true || str(frame.parent_tool_use_id) || str(frame.agent_id)) return []
     const blocks = typeof content === 'string' ? [{ type: BLOCK.text, text: content }] : list(content)
     const text = blocks
       .map((b) => (b.type === BLOCK.text ? str(b.text) : undefined))
@@ -303,10 +303,18 @@ export function createSdkMessageMapper(opts: SdkMessageMapperOptions = {}): SdkM
     ]
   }
 
+  /**
+   * Subagent output nests under its spawning tool call (`parent_tool_use_id`); a frame with only an `agent_id` (a
+   * workflow agent) under that agent's task or the running workflow, and is dropped when there is none: subagent
+   * output never lands in the main transcript.
+   */
   const nested =
     (handler: (f: Obj) => ChatEvent[]) =>
-    (f: Obj): ChatEvent[] =>
-      nest(handler(f), str(f.parent_tool_use_id))
+    (f: Obj): ChatEvent[] => {
+      const agent = str(f.agent_id)
+      const parent = str(f.parent_tool_use_id) ?? (agent ? tasks.parentOfAgent(agent) : undefined)
+      return agent && !parent ? [] : nest(handler(f), parent)
+    }
 
   const HANDLERS: Record<string, (frame: Obj) => ChatEvent[]> = {
     [FRAME.streamEvent]: nested((f) => streamEvent(obj(f.event), str(f.parent_tool_use_id) ?? '')),

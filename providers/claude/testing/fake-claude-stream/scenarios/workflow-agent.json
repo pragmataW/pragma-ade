@@ -1,0 +1,136 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitToolUse": {
+          "messageId": "msg_wfa_0",
+          "id": "toolu_workflow_run_1",
+          "name": "Workflow",
+          "input": {
+            "script": "agent(\"sleep 1\")"
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "wf_run_1",
+          "tool_use_id": "toolu_workflow_run_1",
+          "task_type": "local_workflow",
+          "workflow_name": "sleepy",
+          "description": "Sleep one second",
+          "uuid": "task_started-wf_run_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitUserText": {
+          "text": "[Workflow harness — computed task] The task text below was computed at runtime by a workflow script.\n  Run `sleep 1` with Bash, then report.",
+          "agentId": "a9f3c1e2b4d5",
+          "transcript": "workflows/wf_run_1/agent-a9f3c1e2b4d5.jsonl"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_wfa_1",
+          "id": "toolu_wfa_sleep",
+          "name": "Bash",
+          "input": {
+            "command": "sleep 1"
+          },
+          "agentId": "a9f3c1e2b4d5",
+          "transcript": "workflows/wf_run_1/agent-a9f3c1e2b4d5.jsonl"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_wfa_sleep",
+          "content": "",
+          "agentId": "a9f3c1e2b4d5",
+          "transcript": "workflows/wf_run_1/agent-a9f3c1e2b4d5.jsonl"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_wfa_2",
+          "text": "workflow agent done: slept 1s",
+          "chunks": 2,
+          "agentId": "a9f3c1e2b4d5",
+          "transcript": "workflows/wf_run_1/agent-a9f3c1e2b4d5.jsonl"
+        }
+      },
+      {
+        "delayMs": 400
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_notification",
+          "task_id": "wf_run_1",
+          "tool_use_id": "toolu_workflow_run_1",
+          "status": "completed",
+          "output_file": "/tmp/fake-task.output",
+          "summary": "Dynamic workflow \"sleepy\" completed",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 3,
+            "duration_ms": 4200
+          },
+          "uuid": "task_notification-wf_run_1",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_workflow_run_1",
+          "content": "Dynamic workflow \"sleepy\" completed"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_wfa_3",
+          "text": "The workflow finished.",
+          "chunks": 4
+        }
+      },
+      {
+        "result": {
+          "costUsd": 0.0123,
+          "contextWindow": 200000
+        }
+      }
+    ]
+  ]
+}

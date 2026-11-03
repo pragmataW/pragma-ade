@@ -21,6 +21,21 @@ describe('createClaudeChatCapability', () => {
     expect(seen).toEqual(['claude'])
   })
 
+  it.each([
+    [[], 'default'],
+    [['--dangerously-skip-permissions'], 'bypassPermissions'],
+    [['--permission-mode', 'plan', '--verbose'], 'plan'],
+  ])('defaultOptions (no process): the permission picker in the mode the args %j start in', (args, mode) => {
+    const [permission, ...rest] = createClaudeChatCapability(fakeCapabilityContext()).defaultOptions?.(
+      profileFor('claude', args),
+    ) ?? [undefined]
+    expect(rest).toEqual([])
+    expect(permission).toMatchObject({ key: 'permissionMode', type: 'enum', current: mode, default: 'default' })
+    expect(permission?.values?.map((v) => v.value)).toEqual(
+      expect.arrayContaining(['default', 'acceptEdits', 'plan', 'bypassPermissions']),
+    )
+  })
+
   it('dispose closes every live session and each emits session-exit closed', async () => {
     const cap = createClaudeChatCapability(fakeCapabilityContext())
     const a = sessionContext('basic')

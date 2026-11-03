@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
 
 const env = process.env
@@ -54,11 +54,16 @@ if (existsSync(transcriptPath)) {
   const lines = readFileSync(transcriptPath, 'utf8').trim().split('\n').filter(Boolean)
   lastUuid = lines.length > 0 ? JSON.parse(lines[lines.length - 1]).uuid : null
 }
-function record(type, message, uuid, extra = {}) {
-  mkdirSync(projectDir, { recursive: true })
+/** Subagent transcripts (`<session>/subagents/<transcript>`): the last record uuid per file. */
+const sidechainLast = new Map()
+/** `on.transcript`: the record goes to that subagent transcript (a sidechain of `on.agentId`) instead. */
+function record(type, message, uuid, extra = {}, on = {}) {
+  const file = on.transcript ? join(projectDir, sessionId, 'subagents', on.transcript) : transcriptPath
+  mkdirSync(dirname(file), { recursive: true })
   const entry = {
-    parentUuid: lastUuid,
-    isSidechain: false,
+    parentUuid: on.transcript ? (sidechainLast.get(file) ?? null) : lastUuid,
+    isSidechain: Boolean(on.transcript),
+    ...(on.agentId ? { agentId: on.agentId } : {}),
     userType: 'external',
     cwd: process.cwd(),
     sessionId,
@@ -69,15 +74,20 @@ function record(type, message, uuid, extra = {}) {
     timestamp: new Date().toISOString(),
     ...extra,
   }
-  appendFileSync(transcriptPath, `${JSON.stringify(entry)}\n`)
-  lastUuid = uuid
+  appendFileSync(file, `${JSON.stringify(entry)}\n`)
+  if (on.transcript) sidechainLast.set(file, uuid)
+  else lastUuid = uuid
 }
 
 // ── output ──────────────────────────────────────────────────────────────────────────────────────────────────
 const write = (frame) => process.stdout.write(`${JSON.stringify(frame)}\n`)
 const base = () => ({ uuid: randomUUID(), session_id: sessionId })
-const streamEvent = (event, parent = null) =>
-  write({ type: 'stream_event', event, parent_tool_use_id: parent, ...base() })
+/** `on`: the subagent a frame comes from: `parentToolUseId` (its spawning call) and/or `agentId` (no call). */
+const origin = (on = {}) => ({
+  parent_tool_use_id: on.parentToolUseId ?? null,
+  ...(on.agentId ? { agent_id: on.agentId } : {}),
+})
+const streamEvent = (event, on) => write({ type: 'stream_event', event, ...origin(on), ...base() })
 const usage = { input_tokens: 120, output_tokens: 40, cache_read_input_tokens: 30, cache_creation_input_tokens: 10 }
 const blockIndex = new Map()
 const nextIndex = (messageId) => {
@@ -86,21 +96,21 @@ const nextIndex = (messageId) => {
   return k
 }
 
-function emitAssistant(messageId, block, parent = null) {
+function emitAssistant(messageId, block, on) {
   const frame = {
     type: 'assistant',
     message: { id: messageId, type: 'message', role: 'assistant', model: MODEL, content: [block], usage },
-    parent_tool_use_id: parent,
+    ...origin(on),
     ...base(),
   }
   write(frame)
-  record('assistant', frame.message, frame.uuid)
+  record('assistant', frame.message, frame.uuid, {}, on)
 }
 
-/** `parent`: the spawning tool call id when a subagent streams the block. */
-async function streamBlock(messageId, start, deltas, final, chunkDelayMs, parent = null) {
+/** `on`: the subagent that streams the block (see `origin`), with its own transcript when `on.transcript`. */
+async function streamBlock(messageId, start, deltas, final, chunkDelayMs, on) {
   const index = nextIndex(messageId)
-  const event = (e) => streamEvent(e, parent)
+  const event = (e) => streamEvent(e, on)
   if (index === 0)
     event({ type: 'message_start', message: { id: messageId, role: 'assistant', model: MODEL, content: [] } })
   event({ type: 'content_block_start', index, content_block: start })
@@ -110,7 +120,7 @@ async function streamBlock(messageId, start, deltas, final, chunkDelayMs, parent
     if (chunkDelayMs) await sleep(chunkDelayMs)
   }
   event({ type: 'content_block_stop', index })
-  emitAssistant(messageId, final, parent)
+  emitAssistant(messageId, final, on)
 }
 
 const chunksOf = (text, n = 1) => {
@@ -127,7 +137,7 @@ const emitText = (s) =>
     chunksOf(s.text, s.chunks).map((text) => ({ type: 'text_delta', text })),
     { type: 'text', text: s.text },
     s.chunkDelayMs,
-    s.parentToolUseId,
+    s,
   )
 const emitThinking = (s) =>
   streamBlock(
@@ -136,7 +146,7 @@ const emitThinking = (s) =>
     chunksOf(s.text, s.chunks).map((thinking) => ({ type: 'thinking_delta', thinking })),
     { type: 'thinking', thinking: s.text, signature: 'sig' },
     s.chunkDelayMs,
-    s.parentToolUseId,
+    s,
   )
 const emitToolUse = (s) =>
   streamBlock(
@@ -145,7 +155,7 @@ const emitToolUse = (s) =>
     [{ type: 'input_json_delta', partial_json: JSON.stringify(s.input) }],
     { type: 'tool_use', id: s.id, name: s.name, input: s.input },
     0,
-    s.parentToolUseId,
+    s,
   )
 
 function emitToolResult(s) {
@@ -153,10 +163,18 @@ function emitToolResult(s) {
     role: 'user',
     content: [{ type: 'tool_result', tool_use_id: s.toolUseId, content: s.content, is_error: s.isError === true }],
   }
-  const frame = { type: 'user', message, parent_tool_use_id: s.parentToolUseId ?? null, ...base() }
+  const frame = { type: 'user', message, ...origin(s), ...base() }
   if (s.toolUseResult !== undefined) frame.tool_use_result = s.toolUseResult
   write(frame)
-  record('user', message, frame.uuid, s.toolUseResult === undefined ? {} : { toolUseResult: s.toolUseResult })
+  record('user', message, frame.uuid, s.toolUseResult === undefined ? {} : { toolUseResult: s.toolUseResult }, s)
+}
+
+/** A subagent's prompt (a user text frame of its own conversation). */
+function emitUserText(s) {
+  const message = { role: 'user', content: [{ type: 'text', text: s.text }] }
+  const frame = { type: 'user', message, ...origin(s), ...base() }
+  write(frame)
+  record('user', message, frame.uuid, {}, s)
 }
 
 function emitResult(s = {}) {
@@ -304,6 +322,7 @@ const STEPS = {
   emitThinking,
   emitToolUse,
   emitToolResult,
+  emitUserText,
   requestPermission,
   result: emitResult,
   stdoutRaw: (v) => process.stdout.write(v),

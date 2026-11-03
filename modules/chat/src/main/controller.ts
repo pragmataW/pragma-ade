@@ -90,6 +90,8 @@ export class ChatSessionController {
   #status: ChatSessionStatus = S.starting
   #providerId = ''
   #profile: AgentProfile | null = null
+  /** The session's profile (known before any attach): key of the profile's latest options. */
+  #profileId: string | undefined
   #handle: ChatSessionHandle | null = null
   #capability: ChatCapability | null = null
   #req: ModeStartRequest | null = null
@@ -117,11 +119,19 @@ export class ChatSessionController {
   initDormant(
     history: ChatEvent[],
     status: ChatSessionStatus,
-    meta: { providerId: string; externalSessionId?: string },
+    meta: {
+      providerId: string
+      externalSessionId?: string
+      profileId?: string
+      fallbackOptions?: ChatOptionDescriptor[]
+    },
   ) {
     const saved = this.#d.optionsStore?.get(this.#d.sessionId)?.options
-    const restored = saved?.length && !history.some((e) => e.kind === K.options)
-    this.#transcript = reduceEvents(restored ? [...history, { kind: K.options, options: saved }] : history, this.#now())
+    // a session with no saved options (e.g. created before the store) still gets a toolbar: the registry's fallback
+    const options = saved?.length ? saved : meta.fallbackOptions
+    const restored = options?.length && !history.some((e) => e.kind === K.options)
+    this.#transcript = reduceEvents(restored ? [...history, { kind: K.options, options }] : history, this.#now())
+    this.#profileId = meta.profileId
     this.#seq = this.#transcript.lastSeq
     this.#status = status
     this.#providerId = meta.providerId
@@ -174,6 +184,7 @@ export class ChatSessionController {
       Object.entries(this.#chosen).map(([k, v]) => [k, current.has(k) ? (current.get(k) as ChatOptionValue) : v]),
     )
     this.#d.optionsStore?.set(this.#d.sessionId, { options, chosen: this.#chosen })
+    if (this.#profileId) this.#d.optionsStore?.setLatest(this.#profileId, options)
   }
 
   #choose(key: string, value: ChatOptionValue): void {
@@ -206,6 +217,7 @@ export class ChatSessionController {
     this.#closeRequested = false
     this.#handle = null
     this.#profile = req.profile
+    this.#profileId = req.profile.id
     this.#providerId = req.profile.providerId
     this.#status = S.starting
     const generation = ++this.#generation

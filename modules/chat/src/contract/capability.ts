@@ -116,6 +116,11 @@ export interface ChatCapability {
    */
   midTurnInput?: boolean
   checkSupport(profile: AgentProfile): Promise<ChatSupport>
+  /**
+   * The options a fresh start of `profile` would describe, known without starting it (e.g. the permission mode its
+   * args pick): the composer toolbar of a dormant session that has no saved options yet. Synchronous, no I/O.
+   */
+  defaultOptions?(profile: AgentProfile): ChatOptionDescriptor[]
   /** Resolves after the protocol handshake; rejects with `ChatStartupError`. */
   createSession(ctx: ChatSessionContext): Promise<ChatSessionHandle>
   /** Owner widening: the transcript of an earlier session. */

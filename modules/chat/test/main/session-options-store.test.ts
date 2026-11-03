@@ -32,7 +32,26 @@ describe('SessionOptionsStore', () => {
     const store = new SessionOptionsStore(file)
     expect(store.get('s0')).toBeUndefined()
     store.set('s1', saved)
-    expect(Object.keys(JSON.parse(readFileSync(file, 'utf8')))).toEqual(['s1'])
+    expect(Object.keys(JSON.parse(readFileSync(file, 'utf8')).sessions)).toEqual(['s1'])
+  })
+
+  it("keeps each profile's latest options across a restart, apart from the session entries", () => {
+    const file = tempFile()
+    const store = new SessionOptionsStore(file)
+    store.set('s1', saved)
+    store.setLatest('p1', FAKE_OPTIONS)
+    const again = new SessionOptionsStore(file)
+    expect(again.latest('p1')).toEqual(FAKE_OPTIONS)
+    expect(again.latest('p2')).toBeUndefined()
+    expect(again.get('s1')).toEqual(saved)
+    expect(again.get('p1')).toBeUndefined()
+  })
+
+  it('reads the earlier file format (sessions only)', () => {
+    const file = tempFile()
+    new SessionOptionsStore(file).set('s0', saved)
+    writeFileSync(file, JSON.stringify({ s1: saved }))
+    expect(new SessionOptionsStore(file).get('s1')).toEqual(saved)
   })
 
   it('keeps the most recently changed sessions only', () => {

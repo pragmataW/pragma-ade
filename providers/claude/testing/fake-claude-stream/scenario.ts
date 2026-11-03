@@ -13,9 +13,15 @@ const DIR = import.meta.dirname
 export const fakeClaudePath = join(DIR, 'fake-claude')
 export const scenariosDir = join(DIR, 'scenarios')
 
-/** `parentToolUseId`: the frame comes from the subagent that tool call spawned. */
+/**
+ * `parentToolUseId`: the frame comes from the subagent that tool call spawned. `agentId`: the subagent's id
+ * (`agent_id`; alone for an agent a workflow script runs). `transcript`: its records go to
+ * `<session>/subagents/<transcript>` instead of the main transcript.
+ */
 interface Nested {
   parentToolUseId?: string
+  agentId?: string
+  transcript?: string
 }
 export interface TextStep extends Nested {
   messageId: string
@@ -41,6 +47,7 @@ export type Step =
   | { emitThinking: TextStep }
   | { emitToolUse: ToolUseStep }
   | { emitToolResult: ToolResultStep }
+  | { emitUserText: Nested & { text: string } }
   | {
       requestPermission: {
         requestId: string
@@ -433,6 +440,57 @@ export const workflowScenario = (): Scenario => ({
   ],
 })
 
+export const FAKE_WORKFLOW_AGENT = {
+  toolId: 'toolu_workflow_run_1',
+  taskId: 'wf_run_1',
+  prompt:
+    '[Workflow harness — computed task] The task text below was computed at runtime by a workflow script.\n' +
+    '  Run `sleep 1` with Bash, then report.',
+  reply: 'workflow agent done: slept 1s',
+  summary: 'Dynamic workflow "sleepy" completed',
+  final: 'The workflow finished.',
+} as const
+const WF_AGENT = {
+  agentId: 'a9f3c1e2b4d5',
+  transcript: `workflows/${FAKE_WORKFLOW_AGENT.taskId}/agent-a9f3c1e2b4d5.jsonl`,
+}
+
+/**
+ * A workflow whose script runs one agent: the agent has no task and no spawning tool call of its own, so its frames
+ * carry only `agent_id` and its transcript sits under `subagents/workflows/<run>/` without a tool call in its sidecar.
+ */
+export const workflowAgentScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      tool('msg_wfa_0', FAKE_WORKFLOW_AGENT.toolId, 'Workflow', { script: 'agent("sleep 1")' }),
+      sys('task_started', {
+        task_id: FAKE_WORKFLOW_AGENT.taskId,
+        tool_use_id: FAKE_WORKFLOW_AGENT.toolId,
+        task_type: 'local_workflow',
+        workflow_name: 'sleepy',
+        description: 'Sleep one second',
+      }),
+      { emitUserText: { text: FAKE_WORKFLOW_AGENT.prompt, ...WF_AGENT } },
+      {
+        emitToolUse: {
+          messageId: 'msg_wfa_1',
+          id: 'toolu_wfa_sleep',
+          name: 'Bash',
+          input: { command: 'sleep 1' },
+          ...WF_AGENT,
+        },
+      },
+      { emitToolResult: { toolUseId: 'toolu_wfa_sleep', content: '', ...WF_AGENT } },
+      { emitText: { messageId: 'msg_wfa_2', text: FAKE_WORKFLOW_AGENT.reply, chunks: 2, ...WF_AGENT } },
+      { delayMs: BEAT_MS },
+      ...finishTask(FAKE_WORKFLOW_AGENT.taskId, FAKE_WORKFLOW_AGENT.toolId, FAKE_WORKFLOW_AGENT.summary),
+      text('msg_wfa_3', FAKE_WORKFLOW_AGENT.final),
+      done,
+    ],
+  ],
+})
+
 const RELEASE_TOOL_ID = 'toolu_release_1'
 const EXPLORE_TOOL_ID = 'toolu_tp_explore'
 const NOTES_TOOL_ID = 'toolu_tp_notes'
@@ -664,6 +722,7 @@ export const SCENARIOS = {
   compact: compactScenario,
   subagent: subagentScenario,
   workflow: workflowScenario,
+  'workflow-agent': workflowAgentScenario,
   'background-task': backgroundTaskScenario,
   'tasks-panel': tasksPanelScenario,
   'ask-question': askQuestionScenario,

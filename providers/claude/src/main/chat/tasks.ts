@@ -38,12 +38,24 @@ const defined = <T extends Obj>(o: T): T =>
 export interface TaskMapper {
   /** `system/task_*` and `background_tasks_changed` frames → `task` events (ambient/skip_transcript tasks hidden). */
   map(frame: Obj): ChatEvent[] | undefined
+  /**
+   * Where the output of the agent `agentId` (a frame's `agent_id`) nests: its task's tool call (else the task), or,
+   * for an agent without a task of its own (one a workflow script runs), the latest running workflow; else undefined.
+   */
+  parentOfAgent(agentId: string): string | undefined
 }
 
 /** Stateful SDK task frames → upserted `task` events. */
 export function createTaskMapper(): TaskMapper {
   const known = new Map<string, KnownTask>()
   const hidden = new Set<string>()
+  /** Running workflow task ids, oldest first. */
+  const workflows: string[] = []
+  const settle = (taskId: string, status: TaskStatus | undefined) => {
+    const at = workflows.indexOf(taskId)
+    if (at >= 0 && status && status !== TASK_STATUS.running) workflows.splice(at, 1)
+  }
+  const anchor = (t: KnownTask | undefined) => (t ? (t.base.toolCallId ?? t.base.taskId) : undefined)
 
   const event = (t: KnownTask, status: TaskStatus | undefined, extra: Obj = {}): TaskEvent =>
     defined({ kind: K.task, ...t.base, taskKind: t.kind, ...(status ? { status } : {}), ...extra }) as TaskEvent
@@ -71,6 +83,7 @@ export function createTaskMapper(): TaskMapper {
       base: baseOf(f, taskId, type),
     }
     known.set(taskId, t)
+    if (t.kind === TASK_KIND.workflow && !workflows.includes(taskId)) workflows.push(taskId)
     return t
   }
 
@@ -85,6 +98,7 @@ export function createTaskMapper(): TaskMapper {
     if (!t) return []
     const patch = obj(f.patch)
     if (patch.is_backgrounded === true) t.shown = true
+    settle(t.base.taskId, asStatus(patch.status))
     if (!t.shown) return []
     return [event(t, asStatus(patch.status), { summary: str(patch.error) })]
   }
@@ -104,6 +118,7 @@ export function createTaskMapper(): TaskMapper {
     const t = known.get(str(f.task_id) ?? '')
     if (!t?.shown) return []
     const status = NOTIFICATION_STATUS[str(f.status) as keyof typeof NOTIFICATION_STATUS] ?? TASK_STATUS.completed
+    settle(t.base.taskId, status)
     return [event(t, status, { summary: str(f.summary), usage: usageOf(f.usage) })]
   }
 
@@ -122,5 +137,8 @@ export function createTaskMapper(): TaskMapper {
     [SYSTEM_SUBTYPE.backgroundTasksChanged]: background,
   }
 
-  return { map: (frame) => HANDLERS[str(frame.subtype) ?? '']?.(frame) }
+  return {
+    map: (frame) => HANDLERS[str(frame.subtype) ?? '']?.(frame),
+    parentOfAgent: (agentId) => anchor(known.get(agentId) ?? known.get(workflows.at(-1) ?? '')),
+  }
 }
