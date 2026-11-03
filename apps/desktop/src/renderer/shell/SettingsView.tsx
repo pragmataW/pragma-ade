@@ -3,7 +3,7 @@ import { ErrorBoundary, useRendererHost, useT } from '@pragma/sdk/renderer'
 import { Icon } from '@pragma/ui/components/icon'
 import { cn } from '@pragma/ui/lib/utils'
 import { useStore } from 'zustand'
-import { NAV_ICON_PX } from '../constants'
+import { EMPTY_ICONS, NAV_ICON_PX } from '../constants'
 import { useShell, useShellStore } from '../lib/shell-context'
 import { EmptyState } from './EmptyState'
 import { PlainButton } from './PlainButton'
@@ -52,7 +52,12 @@ export function SettingsView() {
             </ErrorBoundary>
           </section>
         ) : (
-          <EmptyState textKey="core:settings.empty" testId={T.settingsPage('none')} />
+          <EmptyState
+            textKey="core:settings.empty"
+            descriptionKey="core:settings.emptyHint"
+            icon={EMPTY_ICONS.settings}
+            testId={T.settingsPage('none')}
+          />
         )}
       </main>
     </div>

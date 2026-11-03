@@ -6,8 +6,8 @@ import { BOARD_TESTIDS as T } from '../../contract'
 import { runAction } from '../lib/actions'
 import { boardActions, select, useBoardStore } from '../store'
 
-/** "Untitled task" in the first column of the scope's (first) project, then opens it. */
-export function NewTaskButton() {
+/** Creates "Untitled task" in the first column of the scope's (first) project, then opens it. */
+export function useCreateTask(): { create(): void; disabled: boolean } {
   const t = useT()
   const projectId = useBoardStore((s) => s.snapshot?.sections[0]?.board.projectId)
   const create = async () => {
@@ -15,8 +15,15 @@ export function NewTaskButton() {
     const task = await boardActions.createTask({ projectId, title: t('board:card.untitled') })
     select(task.id)
   }
+  return { create: () => runAction(create()), disabled: !projectId }
+}
+
+/** The header's "New task" button. */
+export function NewTaskButton() {
+  const t = useT()
+  const { create, disabled } = useCreateTask()
   return (
-    <Button data-testid={T.newTask} size={SIZE.sm} disabled={!projectId} onClick={() => runAction(create())}>
+    <Button data-testid={T.newTask} size={SIZE.sm} disabled={disabled} onClick={create}>
       <Icon name="plus" size={ICON_PX.row} />
       {t('board:newTask')}
     </Button>

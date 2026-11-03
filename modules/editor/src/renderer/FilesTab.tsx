@@ -1,5 +1,7 @@
 import { type RightTabProps, useT } from '@pragma/sdk/renderer'
+import { EmptyState } from '@pragma/ui'
 import { useEffect, useRef } from 'react'
+import { RENDERER_ICONS } from '../constants'
 import { EditorIpc, EDITOR_TEST_IDS as T } from '../contract'
 import { useActiveWorktree, useEditorStatus } from './hooks'
 import { editorRuntime } from './runtime'
@@ -28,9 +30,12 @@ export function FilesTab({ visible }: Pick<RightTabProps, 'visible'>) {
   return (
     <div data-testid={T.filesTab} className="relative h-full w-full bg-[var(--bg)]">
       {worktree ? null : (
-        <div data-testid={T.status} className="flex h-full items-center justify-center text-[13px] text-[var(--mu)]">
-          {t('editor:status.noWorktree')}
-        </div>
+        <EmptyState
+          testId={T.status}
+          icon={RENDERER_ICONS.noWorktree}
+          title={t('editor:status.noWorktreeTitle')}
+          description={t('editor:status.noWorktree')}
+        />
       )}
       {worktree && status ? (
         <StatusPanel

@@ -1,7 +1,8 @@
 import { useT } from '@pragma/sdk/renderer'
-import { cn } from '@pragma/ui'
+import { cn, EmptyState } from '@pragma/ui'
 import { useEffect } from 'react'
 import { useStore } from 'zustand'
+import { RIGHT_TAB_ICON } from '../../constants'
 import { TerminalTestIds } from '../../contract'
 import { getWorkspace } from '../runtime'
 import { PaneArea } from './PaneArea'
@@ -10,12 +11,12 @@ import { TabStrip } from './TabStrip'
 function EmptyPanel() {
   const t = useT()
   return (
-    <div
-      data-testid={TerminalTestIds.empty}
-      className="flex h-full items-center justify-center p-6 text-center text-[12px] text-mu"
-    >
-      {t('terminal:empty.noWorktree')}
-    </div>
+    <EmptyState
+      testId={TerminalTestIds.empty}
+      icon={RIGHT_TAB_ICON}
+      title={t('terminal:empty.noWorktreeTitle')}
+      description={t('terminal:empty.noWorktree')}
+    />
   )
 }
 

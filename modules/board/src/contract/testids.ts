@@ -72,6 +72,8 @@ export const BOARD_TESTIDS = {
   deleteColumnConfirm: 'board-delete-column-confirm',
   list: 'board-list',
   listRow: 'board-list-row',
+  listEmpty: 'board-list-empty',
+  emptyProjects: 'board-empty-projects',
   settingsSendPrompt: 'board-settings-send-prompt',
   settingsMoveToInProgress: 'board-settings-move-to-in-progress',
 } as const

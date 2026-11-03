@@ -128,7 +128,6 @@ export const TOOLBAR_PX = 32
 export const VIEW_INSET_TOP_PX = TAB_STRIP_PX + TOOLBAR_PX
 export const POPOVER_WIDTH = 340
 export const TOOL_ICON_PX = 14
-export const EMPTY_ICON_PX = 28
 export const BUTTON_TYPE = 'button'
 export const GHOST_VARIANT = 'ghost'
 export const FAVICON_PX = 12
@@ -146,6 +145,7 @@ export const ICONS = {
   pick: 'square-dashed-mouse-pointer',
   devtools: 'code-xml',
   globe: 'globe',
+  noWorktree: 'folder-git-2',
 } as const
 
 // Settings bounds

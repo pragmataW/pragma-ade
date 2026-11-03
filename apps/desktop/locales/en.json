@@ -40,9 +40,20 @@
     "maximizeRightPanel": "Maximize panel"
   },
   "sidebar": { "settings": "Settings" },
-  "center": { "empty": "Nothing open yet" },
-  "right": { "welcome": "Panels from modules appear here" },
-  "settings": { "back": "Back", "empty": "No settings pages" },
+  "center": {
+    "empty": "Nothing open yet",
+    "emptyHint": "Pick a worktree in the sidebar, then start an agent or open a file.",
+    "paletteHint": "to search or run a command"
+  },
+  "right": {
+    "welcome": "Panels from modules appear here",
+    "welcomeHint": "Changes, history, browser and other tools open as tabs in this panel."
+  },
+  "settings": {
+    "back": "Back",
+    "empty": "No settings pages",
+    "emptyHint": "Modules add their settings pages here."
+  },
   "palette": {
     "title": "Command palette",
     "description": "Search for a command to run",

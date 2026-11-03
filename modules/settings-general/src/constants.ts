@@ -56,3 +56,4 @@ export const OTHER_ACCELERATOR_TOKENS: Record<string, string> = {
 }
 export const OUTLINE_VARIANT = 'outline'
 export const SINGLE_SELECT = 'single'
+export const EMPTY_SHORTCUTS_ICON = 'keyboard'

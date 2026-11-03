@@ -6,7 +6,8 @@
     "title": "Terminal"
   },
   "empty": {
-    "noWorktree": "Select a worktree to open a terminal"
+    "noWorktreeTitle": "No worktree selected",
+    "noWorktree": "Select a worktree to open a terminal in it."
   },
   "status": {
     "exited": "Exited (code {{code}})",

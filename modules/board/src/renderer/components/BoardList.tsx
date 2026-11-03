@@ -4,6 +4,7 @@ import { useColumns, useGroupedTasks } from '../lib/use-board'
 import { useWorktrees } from '../lib/use-worktrees'
 import { columnKeyOf } from '../model'
 import { select, useBoardStore } from '../store'
+import { NoTasks } from './BoardEmpty'
 import { LabelChip } from './LabelChip'
 import { PriorityBars } from './PriorityBars'
 
@@ -62,7 +63,7 @@ export function BoardList() {
           ))}
         </tbody>
       </table>
-      {rows.length === 0 && <p className="p-4 text-[var(--fa)]">{t('board:list.empty')}</p>}
+      {rows.length === 0 && <NoTasks />}
     </div>
   )
 }

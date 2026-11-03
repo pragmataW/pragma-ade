@@ -1,10 +1,10 @@
-import { useT } from '@pragma/sdk/renderer'
 import { useEffect, useRef } from 'react'
 import { BOARD_TESTID_ATTRS as A, BOARD_TESTIDS as T } from '../../contract'
 import { scopeKey } from '../../lib/scope'
 import { useEscapeLeavesBoard, useTrackViews } from '../lib/use-leave-board'
 import { useBoardStore, VIEW_MODE } from '../store'
 import { BoardColumns } from './BoardColumns'
+import { NoProjects } from './BoardEmpty'
 import { BoardHeader } from './BoardHeader'
 import { BoardList } from './BoardList'
 import { ErrorBanner } from './ErrorBanner'
@@ -24,7 +24,6 @@ function useFocusOnOpen() {
 
 /** The center view `board` (replaces center + right dock). */
 export function BoardView() {
-  const t = useT()
   const ref = useFocusOnOpen()
   useTrackViews()
   useEscapeLeavesBoard()
@@ -41,13 +40,7 @@ export function BoardView() {
     >
       <BoardHeader />
       <ErrorBanner />
-      {projects.length === 0 ? (
-        <p className="p-6 text-[var(--mu)]">{t('board:empty.noProjects')}</p>
-      ) : mode === VIEW_MODE.list ? (
-        <BoardList />
-      ) : (
-        <BoardColumns />
-      )}
+      {projects.length === 0 ? <NoProjects /> : mode === VIEW_MODE.list ? <BoardList /> : <BoardColumns />}
       <TaskDrawer />
     </div>
   )

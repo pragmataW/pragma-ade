@@ -13,6 +13,7 @@ export const COMMANDS = { show: 'localHistory.show', restoreLatest: 'localHistor
 export const SERVICE_ID = 'local-history.store'
 export const TAB_ID = 'local-history'
 export const TAB_ICON = 'rotate-ccw-clock'
+export const EMPTY_ICONS = { noWorktree: 'folder-git-2' } as const
 /** After Git Changes (40). */
 export const TAB_ORDER = 45
 export const SETTINGS_PAGE_ID = 'local-history'

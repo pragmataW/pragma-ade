@@ -4,7 +4,13 @@
   "sidebar": { "entry": "Task Board", "count": "{{count}} open tasks" },
   "commands": { "open": "Open task board" },
   "scope": { "all": "All projects", "label": "Board" },
-  "empty": { "noProjects": "Add a project to start a board.", "noTasks": "No tasks" },
+  "empty": {
+    "noProjectsTitle": "No projects yet",
+    "noProjects": "Add a git repository to get a board for its tasks.",
+    "addProject": "Add project",
+    "noTasks": "No tasks yet",
+    "noTasksHint": "Create a task to plan work, then start an agent on it in its own worktree."
+  },
   "error": {
     "unexpected": "Something went wrong. Try again.",
     "sessionGone": "That agent session is no longer open.",
@@ -93,7 +99,8 @@
     "priority": "Priority",
     "labels": "Labels",
     "worktree": "Worktree",
-    "empty": "No tasks match"
+    "empty": "No tasks match",
+    "emptyFilteredHint": "Change or clear the filters to see more tasks."
   },
   "dnd": { "noSuchColumn": "{{project}} has no column {{column}}" },
   "start": {

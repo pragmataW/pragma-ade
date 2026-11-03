@@ -2,7 +2,9 @@
   "module": { "name": "Local History" },
   "tab": {
     "title": "Local History",
-    "empty": "Nothing to restore in this worktree yet. What Git Changes discards, deletes, drops or undoes here shows up in this list.",
+    "emptyTitle": "Nothing to restore yet",
+    "empty": "What Git Changes discards, deletes, drops or undoes in this worktree is saved here, so you can bring it back.",
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to see what can be restored in it.",
     "restore": "Restore",
     "restoreAll": "Restore all",
