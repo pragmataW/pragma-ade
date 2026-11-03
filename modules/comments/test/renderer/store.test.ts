@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest'
 import { commentsIpc, commentsIpcEvents, type SendResult } from '../../src/contract'
-import { locationLabel } from '../../src/renderer/location'
 import { selectPending } from '../../src/renderer/store'
 import { aReply } from '../../src/testing'
-import { makeComment, makeElement, OTHER_WT, WT } from '../factories'
+import { makeComment, OTHER_WT, WT } from '../factories'
 import { type MountedRenderer, mountRenderer } from '../fakes'
 
 let r: MountedRenderer | undefined
@@ -103,10 +102,3 @@ describe('store', () => {
     expect(state().launchSuggestion).toBeNull()
   })
 })
-
-it.each([
-  ['range', makeComment({ filePath: 'a.ts', lineStart: 1, lineEnd: 3 }), 'a.ts:1-3'],
-  ['one line', makeComment({ filePath: 'a.ts', lineStart: 4, lineEnd: 4 }), 'a.ts:4'],
-  ['no lines', makeComment({ filePath: 'a.ts', lineStart: undefined, lineEnd: undefined }), 'a.ts'],
-  ['browser', makeComment({ source: 'browser', element: makeElement({ selector: 'nav > a' }) }), 'nav > a'],
-])('locationLabel %s', (_n, c, want) => expect(locationLabel(c)).toBe(want))

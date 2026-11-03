@@ -48,4 +48,6 @@ export const COMMENTS_TESTIDS = {
   reopen: 'comment-thread-reopen',
   clearResolved: 'comments-clear-resolved',
   resolvedSection: 'comments-resolved-section',
+  drawerGroup: 'comments-drawer-group',
+  drawerGroupHeader: 'comments-drawer-group-header',
 } as const

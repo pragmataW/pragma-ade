@@ -20,7 +20,9 @@
     "nothingToSend": "Nothing to send",
     "resolvedSection": "Resolved ({{count}})",
     "round": "Round {{round}}",
-    "clearResolved": "Clear resolved"
+    "clearResolved": "Clear resolved",
+    "groupCount_one": "{{count}} thread",
+    "groupCount_other": "{{count}} threads"
   },
   "row": {
     "edit": "Edit",
@@ -29,7 +31,9 @@
       "editor": "Editor",
       "diff": "Diff",
       "browser": "Browser"
-    }
+    },
+    "line": "L{{start}}",
+    "lines": "L{{start}}–{{end}}"
   },
   "composer": {
     "label": "Comment",
