@@ -3,6 +3,7 @@ import {
   FAKE_AGENT_TOOL_ID,
   FAKE_SUBAGENT_TEXT,
   FAKE_TASK_ID,
+  FAKE_WORKFLOW_AGENT,
   FAKE_WORKFLOW_TASK_ID,
 } from '../../testing/fake-claude-stream/scenario'
 import { isKind, ofKind, startSession } from './support'
@@ -32,6 +33,16 @@ describe('ClaudeChatSession tasks (fake CLI through the real SDK)', () => {
     const tasks = ofKind(s.events, 'task')
     expect(tasks[0]).toMatchObject({ taskId: FAKE_WORKFLOW_TASK_ID, taskKind: 'workflow', name: 'spec' })
     expect(tasks.find((t) => t.taskId === 'wf_child_1')).toMatchObject({ parentId: FAKE_WORKFLOW_TASK_ID, depth: 2 })
+  })
+
+  it('workflow-agent: frames with only an agent_id nest under the Workflow call; nothing reaches the main transcript', async () => {
+    const s = await turnOf('workflow-agent')
+    const reply = s.events.find(isKind('text-delta', (e) => e.text === FAKE_WORKFLOW_AGENT.reply))
+    expect(reply).toMatchObject({ parentId: FAKE_WORKFLOW_AGENT.toolId })
+    expect(s.events.find(isKind('tool-call', (e) => e.name === 'Bash'))).toMatchObject({
+      parentId: FAKE_WORKFLOW_AGENT.toolId,
+    })
+    expect(s.events.filter(isKind('message'))).toEqual([])
   })
 
   it('background-task: a running background job; stopTask sends stop_task', async () => {

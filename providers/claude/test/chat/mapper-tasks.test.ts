@@ -33,6 +33,47 @@ describe('subagent output', () => {
     ])
   })
 
+  describe('frames with an agent_id but no parent_tool_use_id (e.g. a workflow agent)', () => {
+    const byAgent = <T extends Record<string, unknown>>(frame: T, agent: string) => ({ ...frame, agent_id: agent })
+    const parents = (events: ReturnType<typeof F.mapAll>) =>
+      events.filter((e) => e.kind !== 'task').map((e) => [e.kind, 'parentId' in e ? e.parentId : undefined])
+    const workflow = F.taskStarted({
+      task_id: 'wf',
+      tool_use_id: 'toolu_wf',
+      task_type: 'local_workflow',
+      workflow_name: 'spec',
+      subagent_type: undefined,
+    })
+
+    it("nest under that agent's task (its spawning tool call)", () => {
+      const events = F.mapAll([F.taskStarted(), byAgent(F.assistant('sub', F.text('found')), 'task-1')])
+      expect(parents(events)).toEqual([['text-delta', AGENT]])
+    })
+
+    it('an agent without a task of its own nests under the running workflow', () => {
+      const events = F.mapAll([
+        workflow,
+        byAgent(F.assistant('w1', F.toolUse('toolu_sleep', 'Bash', { command: 'sleep 20' })), 'wf-agent'),
+        byAgent(F.toolResult('toolu_sleep', ''), 'wf-agent'),
+        byAgent(F.assistant('w2', F.text('workflow agent tamam: 20sn bekledim')), 'wf-agent'),
+      ])
+      expect(parents(events)).toEqual([
+        ['tool-call', 'toolu_wf'],
+        ['tool-result', undefined],
+        ['text-delta', 'toolu_wf'],
+      ])
+    })
+
+    it('with no task to nest under, they are left out (never main-transcript content)', () => {
+      expect(F.mapAll([byAgent(F.assistant('x', F.text('stray')), 'ghost')])).toEqual([])
+    })
+
+    it('their prompt is never a history message', () => {
+      const prompt = byAgent(F.userText('p', '[Workflow harness — computed task] …'), 'wf-agent')
+      expect(F.mapAll([workflow, prompt], { origin: 'history' })).toEqual([expect.objectContaining({ kind: 'task' })])
+    })
+  })
+
   it('a subagent prompt (user text with a parent) is never a history message', () => {
     expect(F.mapAll([F.inSubagent(F.userText('p', 'List the files'))], { origin: 'history' })).toEqual([])
   })
