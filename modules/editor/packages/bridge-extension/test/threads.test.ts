@@ -21,7 +21,7 @@ describe('toThreadSpec', () => {
   it.each([
     [{}, 'L3 · Open'],
     [{ lineEnd: 5 }, 'L3–5 · Open'],
-    [{ pending: true }, 'L3 · Open · Pending'],
+    [{ pending: true }, 'L3 · Open'],
     [{ status: 'resolved' as const }, 'L3 · Resolved'],
   ])('%o is labelled %s', (o, label) => {
     expect(toThreadSpec('/w', thread(o)).label).toBe(label)
@@ -59,6 +59,10 @@ describe('toThreadSpec', () => {
     const info = toThreadInfo(
       thread({ replies: [{ id: 'r', author: 'user', label: null, body: 'x', pending: true, createdAt: 1 }] }),
     )
-    expect(info).toMatchObject({ label: 'L3 · Open', replies: [{ author: 'You', body: 'x', pending: true }] })
+    expect(info).toMatchObject({
+      label: 'L3 · Open',
+      pending: false,
+      replies: [{ author: 'You', body: 'x', pending: true }],
+    })
   })
 })

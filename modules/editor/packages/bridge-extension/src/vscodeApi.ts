@@ -190,7 +190,9 @@ function applySpec(vs: typeof vscode, t: vscode.CommentThread, spec: ThreadSpec,
 }
 
 function drawThread(vs: typeof vscode, c: vscode.CommentController, spec: ThreadSpec): ThreadHandle {
-  const thread = c.createCommentThread(vs.Uri.file(spec.path), new vs.Range(spec.startLine, 0, spec.endLine, 0), [])
+  // Created with its comments: a thread created empty opens its reply editor (the workbench's new-comment mode).
+  const range = new vs.Range(spec.startLine, 0, spec.endLine, 0)
+  const thread = c.createCommentThread(vs.Uri.file(spec.path), range, toComments(vs, spec))
   thread.canReply = true
   threadIds.set(thread, spec.id)
   applySpec(vs, thread, spec, true)

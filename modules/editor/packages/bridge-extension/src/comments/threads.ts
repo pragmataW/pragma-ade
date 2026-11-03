@@ -18,6 +18,8 @@ export interface ThreadInfo {
   status: ThreadStatus
   /** The header text. */
   label: string
+  /** The root was not sent yet. */
+  pending: boolean
   body: string
   replies: { author: string; body: string; pending: boolean }[]
 }
@@ -33,12 +35,10 @@ const comment = (body: string, author: string, pending: boolean, createdAt: numb
   contextValue: pending ? COMMENT_CONTEXT.pending : COMMENT_CONTEXT.sent,
 })
 
-/** `L3 · Open`, `L3–5 · Resolved`, `L3 · Open · Pending` (root not sent yet). */
+/** `L3 · Open`, `L3–5 · Resolved` (a root not sent yet carries its own Pending label). */
 export function threadLabel(t: EditorThread): string {
   const lines = t.lineEnd > t.lineStart ? `${t.lineStart}${L.range}${t.lineEnd}` : `${t.lineStart}`
-  const parts = [`${L.line}${lines}`, t.status === THREAD_STATUS.resolved ? L.resolved : L.open]
-  if (t.pending) parts.push(M.pendingLabel)
-  return parts.join(L.sep)
+  return [`${L.line}${lines}`, t.status === THREAD_STATUS.resolved ? L.resolved : L.open].join(L.sep)
 }
 
 /** Root (You) and replies (You / agent label / Agent), Pending on unsent items. */
@@ -66,6 +66,7 @@ export const toThreadInfo = (t: EditorThread): ThreadInfo => ({
   endLine: t.lineEnd - 1,
   status: t.status,
   label: threadLabel(t),
+  pending: t.pending,
   body: t.body,
   replies: t.replies.map((r) => ({ author: authorOf(r), body: r.body, pending: r.pending })),
 })

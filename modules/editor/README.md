@@ -70,8 +70,8 @@ stays silent.
   app's ⌘Enter), **Send now** (adds it and sends the worktree's whole review round, `send(worktreeId)`, once, the same
   as every other surface) and **Cancel**. `reply { threadId, body, send }` adds a user reply (and with `send` sends
   the round), `setStatus`, `deleteThread`, `send` go to the comments service.
-- The extension draws each thread as a VS Code `CommentThread`: header label `L3 · Open` / `L3–5 · Resolved`
-  (`· Pending` while the root is unsent), root + replies (author You / agent label / Agent, creation time, `Pending`
+- The extension draws each thread as a VS Code `CommentThread`: header label `L3 · Open` / `L3–5 · Resolved`,
+  root + replies (author You / agent label / Agent, creation time, `Pending`
   label and `pragma-comment-pending` context on unsent items), `state` Resolved/Unresolved, collapsed when resolved,
   `contextValue` `pragma-thread-open` / `pragma-thread-resolved`. Threads are updated in place, so a half-typed reply
   survives a push. The collapsed reply button reads **Reply** (the controller's `prompt`); it opens Reply / Reply and
