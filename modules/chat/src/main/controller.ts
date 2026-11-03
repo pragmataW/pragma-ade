@@ -149,9 +149,24 @@ export class ChatSessionController {
 
   // ── events ──────────────────────────────────────────────────────────────
 
-  #emit(event: ChatEvent): void {
+  /** The next envelope, applied to the transcript (not yet published). */
+  #append(event: ChatEvent): ChatEventEnvelope {
     const env: ChatEventEnvelope = { sessionId: this.#d.sessionId, seq: ++this.#seq, at: this.#now(), event }
     this.#transcript = reduceTranscript(this.#transcript, env)
+    return env
+  }
+
+  /**
+   * The conversation so far of a resume this controller has not shown yet (e.g. a terminal session continued in
+   * chat): published like live events (an open view applies them), but no status change, report or side effect.
+   */
+  #seed(history: ChatEvent[]): void {
+    if (this.#seq > 0) return
+    for (const event of history) this.#d.publish(this.#append(event))
+  }
+
+  #emit(event: ChatEvent): void {
+    const env = this.#append(event)
     if (event.kind === K.sessionInfo && event.externalSessionId) this.#followExternalSession(event.externalSessionId)
     if (event.kind === K.options) this.#saveOptions(event.options)
     const next = nextStatus(this.#status, event, { pendingInteractions: this.#transcript.pendingInteractions })
@@ -210,8 +225,11 @@ export class ChatSessionController {
 
   // ── attach / startup ────────────────────────────────────────────────────
 
-  /** Starts (or resumes) the provider session for a mode-handler `start`; never rejects. */
-  attach(req: ModeStartRequest): Promise<void> {
+  /**
+   * Starts (or resumes) the provider session for a mode-handler `start`; never rejects. `history` (never rejects):
+   * the resumed conversation's transcript, shown before the live events when this controller has none yet.
+   */
+  attach(req: ModeStartRequest, history?: Promise<ChatEvent[]>): Promise<void> {
     this.#req = req
     this.#exitReported = false
     this.#closeRequested = false
@@ -221,14 +239,15 @@ export class ChatSessionController {
     this.#providerId = req.profile.providerId
     this.#status = S.starting
     const generation = ++this.#generation
-    this.#attaching = this.#startup(req, generation).finally(() => {
+    this.#attaching = this.#startup(req, generation, history).finally(() => {
       if (generation === this.#generation) this.#attaching = null
     })
     return this.#attaching
   }
 
-  async #startup(req: ModeStartRequest, generation: number): Promise<void> {
+  async #startup(req: ModeStartRequest, generation: number, history?: Promise<ChatEvent[]>): Promise<void> {
     await nextTurn()
+    if (history) this.#seed(await history)
     const capability = this.#d.resolveCapability(req.profile)
     this.#capability = capability ?? null
     if (!capability) return this.#startupFailed(req.profile, UNSUPPORTED_REASON.noCapability)
