@@ -22,6 +22,8 @@ export const COMMENTS_TESTIDS = {
   thread: 'comment-thread',
   threadStatus: 'comment-thread-status',
   threadToggle: 'comment-thread-toggle',
+  threadBody: 'comment-thread-body',
+  threadBodyToggle: 'comment-thread-body-toggle',
   pendingBadge: 'comment-pending',
   reply: 'comment-reply',
   replyAuthor: 'comment-reply-author',

@@ -45,5 +45,11 @@ export const ELLIPSIS = '…'
 /** Visible lines of a reply box before it grows. */
 export const REPLY_ROWS = 2
 
+/** A thread body longer than this (lines or characters) starts clamped behind "Show more". */
+export const BODY_COLLAPSE_LINES = 12
+export const BODY_COLLAPSE_CHARS = 800
+
 /** Lucide icons of the drawer's empty states. */
 export const EMPTY_ICONS = { noThreads: 'message-square-dashed', noWorktree: 'folder-git-2' } as const
+/** `type` of plain (non-form) buttons. */
+export const BUTTON_TYPE = 'button'

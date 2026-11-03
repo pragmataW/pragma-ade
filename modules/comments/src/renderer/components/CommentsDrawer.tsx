@@ -3,7 +3,7 @@ import { EmptyState } from '@pragma/ui'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
 import { ChevronDown, ChevronRight } from '@pragma/ui/icons'
 import { useState } from 'react'
-import { EMPTY_ICONS } from '../../constants'
+import { BUTTON_TYPE, EMPTY_ICONS } from '../../constants'
 import { COMMENT_STATUS, type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
 import { clearResolved } from '../clear-resolved'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
@@ -74,7 +74,7 @@ function ResolvedSection({ threads }: { threads: Comment[] }) {
   return (
     <li data-testid={T.resolvedSection} className="border-b">
       <button
-        type="button"
+        type={BUTTON_TYPE}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-1.5 px-4 py-2 text-left text-[12px] text-muted-foreground hover:text-foreground"

@@ -3,6 +3,7 @@ import { X } from '@pragma/ui/icons'
 import { type CommentReply, isPendingReply, COMMENTS_TESTIDS as T } from '../../../contract'
 import { IconButton } from '../../lib/buttons'
 import { AuthorBadge, PendingBadge } from './AuthorBadge'
+import { ThreadBody } from './ThreadBody'
 
 const ICON_PX = 12
 
@@ -31,7 +32,7 @@ function ReplyItem({ reply, onDiscard }: { reply: CommentReply; onDiscard(id: st
           </IconButton>
         ) : null}
       </div>
-      <p className="whitespace-pre-wrap break-words text-[12.5px]">{reply.body}</p>
+      <ThreadBody body={reply.body} className="text-[12.5px]" />
     </li>
   )
 }

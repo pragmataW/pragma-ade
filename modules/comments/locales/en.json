@@ -92,6 +92,8 @@
     "discardReply": "Discard reply",
     "expand_one": "Show thread ({{count}} reply)",
     "expand_other": "Show thread ({{count}} replies)",
-    "collapse": "Hide thread"
+    "collapse": "Hide thread",
+    "showMore": "Show more",
+    "showLess": "Show less"
   }
 }

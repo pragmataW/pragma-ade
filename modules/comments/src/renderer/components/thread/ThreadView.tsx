@@ -17,6 +17,7 @@ import { PendingBadge } from './AuthorBadge'
 import { ReplyBox } from './ReplyBox'
 import { ReplyList } from './ReplyList'
 import { ThreadActions } from './ThreadActions'
+import { ThreadBody } from './ThreadBody'
 import { threadActions } from './use-thread-actions'
 
 const ICON_PX = 12
@@ -99,9 +100,7 @@ export function ThreadView({ comment, leading, locationLabel, onEdit, onDelete, 
         <span className="ml-auto" />
         <ThreadActions comment={comment} api={api} onEdit={onEdit} onDelete={onDelete} />
       </div>
-      <p className={cn('whitespace-pre-wrap break-words', !open && 'line-clamp-2 text-muted-foreground')}>
-        {comment.body}
-      </p>
+      <ThreadBody body={comment.body} preview={!open} />
       {open ? <ReplyList replies={comment.replies} onDiscard={api.removeReply} /> : null}
       {open ? <ReplyArea api={api} /> : null}
       {comment.status === COMMENT_STATUS.resolved ? (

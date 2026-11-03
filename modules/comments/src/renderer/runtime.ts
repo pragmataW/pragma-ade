@@ -4,7 +4,7 @@ import type { CommentsSettings } from '../contract'
 /** The renderer context pieces the store, send flow and components use (also from other modules' trees). */
 export type CommentsRuntime = Pick<
   RendererContext<CommentsSettings>,
-  'ipc' | 'commands' | 'services' | 'settings' | 'dialogs'
+  'ipc' | 'commands' | 'services' | 'settings' | 'dialogs' | 'shell'
 >
 
 let current: CommentsRuntime | undefined

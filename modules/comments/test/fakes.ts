@@ -168,8 +168,10 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
       record(...a)
       return disposable
     }
+  const opened: string[] = []
   const ctx = {
     ipc,
+    shell: { openExternal: async (url: string) => void opened.push(url) },
     dialogs: {
       confirm: async (o: unknown) => {
         confirms.push(o)
@@ -221,6 +223,7 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
     updates,
     confirms,
     confirmAnswer,
+    opened,
   })
 }
 export type FakeRendererCtx = ReturnType<typeof createFakeRendererCtx>
