@@ -24,6 +24,14 @@ describe('board main module', () => {
     await vi.waitFor(() => expect(changedPushes(a)).toEqual([{ projectIds: ['p1'] }]))
   })
 
+  it('setColumnDescription via IPC returns the column with its description', async () => {
+    const a = await activateBoard()
+    const review = (await a.service.getBoard('p1')).columns[3]
+    if (!review) throw new Error('no column')
+    const r = await a.fake.invoke(boardIpc.setColumnDescription, { columnId: review.id, description: 'Needs review' })
+    expect(unwrap(r)).toMatchObject({ id: review.id, description: 'Needs review' })
+  })
+
   it('expected failures cross IPC as BoardErrorDto', async () => {
     const a = await activateBoard()
     const r = await a.fake.invoke(boardIpc.getSnapshot, { scope: { kind: SCOPE_KIND.project, projectId: 'nope' } })

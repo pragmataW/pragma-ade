@@ -53,6 +53,7 @@ export const BOARD_CHANNELS = {
   unlinkSession: 'board.unlinkSession',
   createColumn: 'board.createColumn',
   renameColumn: 'board.renameColumn',
+  setColumnDescription: 'board.setColumnDescription',
   moveColumn: 'board.moveColumn',
   deleteColumn: 'board.deleteColumn',
   createLabel: 'board.createLabel',

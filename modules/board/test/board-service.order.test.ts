@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { ColumnDto } from '../src/contract'
+import { type ColumnDto, LIMITS } from '../src/contract'
 import { makeService, type ServiceHarness } from './support/fakes'
 
 let h: ServiceHarness
@@ -122,5 +122,34 @@ describe('columns', () => {
   it('deleteColumn refuses the last column', async () => {
     for (const name of ['Backlog', 'Todo', 'In Progress', 'Review']) await h.service.deleteColumn((await col(name)).id)
     await expect(h.service.deleteColumn((await col('Done')).id)).rejects.toMatchObject({ code: 'last_column' })
+  })
+
+  it('setColumnDescription stores trimmed text, survives restart, and "" clears it', async () => {
+    const review = await col('Review')
+    expect((await h.service.setColumnDescription(review.id, '  Needs my review  ')).description).toBe('Needs my review')
+    await h.restart()
+    expect((await col('Review')).description).toBe('Needs my review')
+    await h.service.setColumnDescription(review.id, '')
+    expect((await col('Review')).description).toBe('')
+  })
+
+  it('setColumnDescription over the limit throws and keeps the stored text', async () => {
+    const review = await col('Review')
+    await h.service.setColumnDescription(review.id, 'kept')
+    await expect(
+      h.service.setColumnDescription(review.id, 'x'.repeat(LIMITS.columnDescriptionMax + 1)),
+    ).rejects.toBeTruthy()
+    expect((await col('Review')).description).toBe('kept')
+  })
+
+  it('setColumnDescription on an unknown column throws column_not_found', async () => {
+    await expect(h.service.setColumnDescription(9999, 'x')).rejects.toMatchObject({ code: 'column_not_found' })
+  })
+
+  it('setColumnDescription emits board.changed once', async () => {
+    const review = await col('Review')
+    h.emitted.length = 0
+    await h.service.setColumnDescription(review.id, 'x')
+    expect(h.emitted.map((e) => [e.projectId, e.kind])).toEqual([['p1', 'column']])
   })
 })

@@ -46,6 +46,8 @@ export interface BoardService {
   unlinkSession(taskId: TaskId, sessionId: AgentSessionId): Promise<void>
   createColumn(projectId: ProjectId, name: string, position?: ColumnPosition): Promise<ColumnDto>
   renameColumn(columnId: ColumnId, name: string): Promise<ColumnDto>
+  /** Plain text for people and agents, trimmed; '' clears it. */
+  setColumnDescription(columnId: ColumnId, description: string): Promise<ColumnDto>
   moveColumn(columnId: ColumnId, position: ColumnPosition): Promise<ColumnDto>
   deleteColumn(columnId: ColumnId, opts?: { moveTasksTo?: ColumnId }): Promise<void>
   createLabel(projectId: ProjectId, name: string, color?: LabelColor): Promise<LabelDto>

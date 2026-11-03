@@ -35,6 +35,7 @@ Reference conventions:
 | `moveTask(id, column, position?)` | `position` = `{ afterTaskId }` or `{ beforeTaskId }`; the server computes the fractional key from the neighbours, so a filtered view never corrupts order. |
 | `linkSession` / `unlinkSession` | Idempotent link between a task and an agent session. |
 | `createColumn` / `renameColumn` / `moveColumn` / `deleteColumn` | Names unique per board (case-insensitive); the last column cannot be deleted; a non-empty column needs `moveTasksTo`. |
+| `setColumnDescription` | Optional plain-text guidance (trimmed, max 2000 chars, `''` clears it) that agents working the board read to pick a task's column. |
 | `createLabel` / `updateLabel` / `deleteLabel` | Labels per board; deleting a label removes it from every task. |
 | `prepareStart(taskId)` | Suggested branch `feat/<key>-<slug>` (taken → `-2`, `-3`…), base branches, enabled profiles, worktrees. |
 | `checkBranch(projectId, branch)` | `{ ok: true }` or `{ ok: false, reason: 'invalid' \| 'exists' }`. |

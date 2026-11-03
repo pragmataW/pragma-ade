@@ -2,6 +2,7 @@ import {
   BOARD_ERROR,
   BoardError,
   CHANGE_KIND,
+  ColumnDescriptionSchema,
   type ColumnDto,
   type ColumnId,
   type ColumnPosition,
@@ -11,7 +12,7 @@ import { columnMergeKey } from '../../lib/merge-columns'
 import { compareSortKeys } from '../../lib/order'
 import { rankBetween, resolveRank } from '../../lib/rank'
 import { toColumnDto } from '../lib/mappers'
-import type { BoardRow, ColumnRow } from '../schema'
+import type { BoardRow, ColumnInsert, ColumnRow } from '../schema'
 import type { BoardCore } from './core'
 
 /** Column management: names unique per board (case-insensitive), fractional order, never zero columns. */
@@ -42,6 +43,16 @@ export function createColumnOps(core: BoardCore) {
   function withColumn<T>(columnId: ColumnId, fn: (column: ColumnRow, board: BoardRow) => T): T {
     const column = core.requireColumn(columnId)
     return fn(column, core.requireBoard(column.boardId))
+  }
+
+  /** Patches one column in a transaction, emits `board.changed` once, and returns the new DTO. */
+  function updateIn(columnId: ColumnId, patchOf: (c: ColumnRow, b: BoardRow) => Partial<ColumnInsert>): ColumnDto {
+    const [row, board] = withColumn(
+      columnId,
+      (c, b) => [repo.transaction(() => repo.updateColumn(c.id, patchOf(c, b))), b] as const,
+    )
+    core.changed(board, [], CHANGE_KIND.column)
+    return toColumnDto(row)
   }
 
   /** Moves `column`'s tasks after the target's last task, keeping their order. */
@@ -83,21 +94,13 @@ export function createColumnOps(core: BoardCore) {
       return toColumnDto(row)
     },
     async renameColumn(columnId: ColumnId, name: string): Promise<ColumnDto> {
-      const [row, board] = withColumn(
-        columnId,
-        (c, b) => [repo.transaction(() => repo.updateColumn(c.id, { name: checkName(b, name, c.id) })), b] as const,
-      )
-      core.changed(board, [], CHANGE_KIND.column)
-      return toColumnDto(row)
+      return updateIn(columnId, (c, b) => ({ name: checkName(b, name, c.id) }))
     },
     async moveColumn(columnId: ColumnId, position: ColumnPosition): Promise<ColumnDto> {
-      const [row, board] = withColumn(
-        columnId,
-        (c, b) =>
-          [repo.transaction(() => repo.updateColumn(c.id, { sortOrder: columnKey(b, position, c.id) })), b] as const,
-      )
-      core.changed(board, [], CHANGE_KIND.column)
-      return toColumnDto(row)
+      return updateIn(columnId, (c, b) => ({ sortOrder: columnKey(b, position, c.id) }))
+    },
+    async setColumnDescription(columnId: ColumnId, description: string): Promise<ColumnDto> {
+      return updateIn(columnId, () => ({ description: ColumnDescriptionSchema.parse(description) }))
     },
     async deleteColumn(columnId: ColumnId, opts: { moveTasksTo?: ColumnId } = {}): Promise<void> {
       const [moved, board] = withColumn(
