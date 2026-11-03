@@ -1,11 +1,26 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeLaunchContext } from '@pragma/module-agents/testing'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LAUNCH_DECORATOR_ID } from '../src/constants'
 import { cliIntegrationIpc } from '../src/contract'
 import { activateModule } from './support/module-ctx'
 import { makeSkillsFixture } from './support/skills'
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
+/** Activates the module and posts one bridge message to it. */
+async function postCli(type: string, payload: unknown): Promise<Response> {
+  const m = await activateModule()
+  return fetch(`${m.bridge.url}/hook`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${m.bridge.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ type, payload }),
+  })
+}
 
 describe('cli-integration main module', () => {
   it('writes the shim and registers the PATH decorator', async () => {
@@ -22,24 +37,14 @@ describe('cli-integration main module', () => {
   })
 
   it('serves cli.* on the bridge', async () => {
-    const m = await activateModule()
-    const res = await fetch(`${m.bridge.url}/hook`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${m.bridge.token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ type: 'cli.profileList', payload: { context: { cwd: '/' } } }),
-    })
+    const res = await postCli('cli.profileList', { context: { cwd: '/' } })
     expect(await res.json()).toMatchObject({
       payload: { ok: true, result: { profiles: [{ id: 'claude' }, { id: 'oc' }] } },
     })
   })
 
   it('serves cli.askWait (unknown ids are not found)', async () => {
-    const m = await activateModule()
-    const res = await fetch(`${m.bridge.url}/hook`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${m.bridge.token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ type: 'cli.askWait', payload: { context: { cwd: '/' }, askId: 'gone' } }),
-    })
+    const res = await postCli('cli.askWait', { context: { cwd: '/' }, askId: 'gone' })
     expect(await res.json()).toMatchObject({ payload: { ok: false, error: { code: 'not_found' } } })
   })
 
@@ -53,6 +58,7 @@ describe('cli-integration main module', () => {
 
 describe('settings IPC', () => {
   it('getStatus reports the CLI under <home>/.local/bin as not installed', async () => {
+    vi.stubEnv('HOME', mkdtempSync(join(tmpdir(), 'pragma-cli-home-')))
     const m = await activateModule()
     const status = await m.fake.invoke(cliIntegrationIpc.getStatus, undefined)
     expect(status.cli).toMatchObject({ state: 'not_installed', bundleFound: true })
