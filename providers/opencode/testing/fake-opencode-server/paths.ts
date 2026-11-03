@@ -12,6 +12,7 @@ export const SCENARIOS = [
   'revert',
   'mcp',
   'provider-connect',
+  'rich-markdown',
 ] as const
 export type ScenarioName = (typeof SCENARIOS)[number]
 export const scenarioPath = (name: ScenarioName): string => join(FAKE_DIR, 'scenarios', `${name}.json`)

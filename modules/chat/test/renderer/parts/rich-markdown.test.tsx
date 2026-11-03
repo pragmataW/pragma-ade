@@ -130,6 +130,41 @@ describe('RichMarkdown fences', () => {
   })
 })
 
+describe('RichMarkdown list-item fences', () => {
+  const LIST = [
+    '1. Emit a map:',
+    '   ```yaml',
+    '   tools:',
+    '     read: true',
+    '   ```',
+    '   Then verify.',
+    '2. Next',
+  ].join('\n')
+
+  it('keeps the list whole and frames the nested code', async () => {
+    const { container } = show(LIST)
+    expect(container.querySelectorAll('ol')).toHaveLength(1)
+    expect(container.querySelectorAll('ol > li')).toHaveLength(2)
+    const frame = within(container.querySelector('li') as HTMLElement).getByTestId(CHAT_TESTIDS.codeFrame)
+    expect(frame.getAttribute('data-variant')).toBe('code')
+    expect(frame).toHaveTextContent('yaml')
+    await waitFor(() => expect(frame.querySelector('.shiki')).not.toBeNull())
+    expect(frame.querySelector('pre')?.textContent).toBe('tools:\n  read: true')
+  })
+
+  it('renders a nested mermaid fence as a diagram', async () => {
+    show('- flow:\n\n  ```mermaid\n  graph TD; A-->B\n  ```')
+    await screen.findByTestId(CHAT_TESTIDS.mermaidDiagram)
+    expect(mermaid.render).toHaveBeenCalledWith(expect.any(String), 'graph TD; A-->B')
+  })
+
+  it('keeps inline code inline', () => {
+    const { container } = show('- use `x` here')
+    expect(container.querySelector('li code')?.textContent).toBe('x')
+    expect(screen.queryByTestId(CHAT_TESTIDS.codeFrame)).toBeNull()
+  })
+})
+
 describe('RichMarkdown prose', () => {
   it('draws task-list boxes', () => {
     const { container } = show('- [x] done\n- [ ] todo')

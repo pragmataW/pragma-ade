@@ -142,7 +142,13 @@ export const SEARCH_HIGHLIGHT = 'chat-search'
 export const SEARCH_HIGHLIGHT_CURRENT = 'chat-search-current'
 export const SEARCH_SHORTCUT_KEY = 'f'
 export const KEY_ESCAPE = 'Escape'
-export const FENCE_OPEN_RE = /^ {0,3}(?<fence>`{3,}|~{3,})(?<info>[^`]*)$/
+export const FENCE_OPEN_RE = /^(?<indent> {0,3})(?<fence>`{3,}|~{3,})(?<info>[^`]*)$/
+/** A list item's first line (`- `, `* `, `+ `, `1. `, `1) `). */
+export const LIST_ITEM_RE = /^\s*(?:[-*+]|\d{1,9}[.)])(?:\s|$)/
+/** The newline the Markdown parser leaves at the end of a fenced block's code. */
+export const TRAILING_NEWLINE_RE = /\n$/
+/** A line that starts with indentation (a list item's continuation). */
+export const INDENTED_RE = /^\s/
 export const FENCE_CLOSE_RE = /^ {0,3}(?<fence>`{3,}|~{3,})\s*$/
 export const CODE_SEGMENT = 'code'
 

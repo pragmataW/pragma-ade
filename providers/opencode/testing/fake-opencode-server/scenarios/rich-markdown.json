@@ -1,0 +1,92 @@
+{
+  "version": "2.2.5",
+  "models": [
+    {
+      "id": "fake-model",
+      "providerID": "fakeprov",
+      "name": "Fake Model",
+      "variants": [{ "id": "high" }, { "id": "low" }],
+      "limit": { "context": 10000, "output": 4000 },
+      "enabled": true
+    }
+  ],
+  "defaultModel": "fake-model",
+  "agents": [
+    { "id": "build", "name": "Build", "mode": "primary", "hidden": false },
+    { "id": "plan", "name": "Plan", "mode": "primary", "hidden": false }
+  ],
+  "commands": [],
+  "turns": [
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "model": { "id": "fake-model", "providerID": "fakeprov" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "delta": "## Cache review\n\n| Backend | Requests | p95 (ms) |\n| :--- | ---: | ---: |\n| Redis | 1,204 | 4.2 |\n| Memcached | 884 | 6.8 |\n\n```ts\nexport function keyOf(id: string): string {\n"
+            }
+          }
+        },
+        { "sleepMs": 200 },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "delta": "  return `item:${id}`\n}\n```\n\n```mermaid\nflowchart LR\n  A[Client] --> B{Cache hit?}\n  B -->|no| C[(Database)]\n```\n\n"
+            }
+          }
+        },
+        { "sleepMs": 200 },
+        {
+          "emit": {
+            "type": "session.text.delta",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "delta": "**Plan**\n\n1. Emit the tools as a YAML map:\n   ```yaml\n   tools:\n     read: true\n   ```\n   Same for the verifier.\n2. Drop the MCP writes."
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.ended",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "ordinal": 0,
+              "text": "## Cache review\n\n| Backend | Requests | p95 (ms) |\n| :--- | ---: | ---: |\n| Redis | 1,204 | 4.2 |\n| Memcached | 884 | 6.8 |\n\n```ts\nexport function keyOf(id: string): string {\n  return `item:${id}`\n}\n```\n\n```mermaid\nflowchart LR\n  A[Client] --> B{Cache hit?}\n  B -->|no| C[(Database)]\n```\n\n**Plan**\n\n1. Emit the tools as a YAML map:\n   ```yaml\n   tools:\n     read: true\n   ```\n   Same for the verifier.\n2. Drop the MCP writes."
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.step.ended",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "tokens": { "input": 120, "output": 80, "reasoning": 0, "cache": { "read": 0, "write": 0 } }
+            }
+          }
+        },
+        { "emit": { "type": "session.execution.succeeded", "data": { "sessionID": "$SID" } } }
+      ]
+    }
+  ]
+}

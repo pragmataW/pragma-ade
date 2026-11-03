@@ -1,8 +1,9 @@
 import { cn } from '@pragma/ui'
 import { Markdown, type MarkdownComponents } from '@pragma/ui/components/markdown'
+import { LANGUAGE_CLASS } from '@pragma/ui/constants/ui'
 import { Check } from 'lucide-react'
 import { type ComponentProps, memo, useCallback, useMemo } from 'react'
-import { CHECK_STROKE, CODE_SEGMENT } from '../../../../constants'
+import { CHECK_STROKE, CODE_SEGMENT, TRAILING_NEWLINE_RE } from '../../../../constants'
 import { splitFences } from '../../../lib/markdown-segments'
 import { holdPartialTable } from '../../../lib/stream-stable'
 import { useLatest } from '../../../lib/use-latest'
@@ -25,7 +26,30 @@ function TaskBox({ type, checked, node: _node }: ComponentProps<'input'> & { nod
   )
 }
 
-const COMPONENTS: MarkdownComponents = { table: MarkdownTable, tr: MarkdownTableRow, input: TaskBox }
+/**
+ * A fence the segment split left in the prose (inside a list item or quote): framed like a top-level one. While the
+ * message streams it stays plain (`closed: false`), as the fence may still be open.
+ */
+type CodeProps = ComponentProps<'code'> & { node?: unknown }
+
+function NestedCode({ className, children, node: _node, closed, ...rest }: CodeProps & { closed: boolean }) {
+  const text = String(children)
+  const lang = LANGUAGE_CLASS.exec(className ?? '')?.groups?.lang
+  if (lang === undefined && !TRAILING_NEWLINE_RE.test(text))
+    return (
+      <code className={className} {...rest}>
+        {children}
+      </code>
+    )
+  return <CodeSegment code={text.replace(TRAILING_NEWLINE_RE, '')} lang={lang ?? ''} closed={closed} />
+}
+
+const ClosedCode = (props: CodeProps) => <NestedCode {...props} closed />
+const StreamingCode = (props: CodeProps) => <NestedCode {...props} closed={false} />
+
+const BASE: MarkdownComponents = { table: MarkdownTable, tr: MarkdownTableRow, input: TaskBox }
+const COMPONENTS: MarkdownComponents = { ...BASE, code: ClosedCode }
+const STREAMING_COMPONENTS: MarkdownComponents = { ...BASE, code: StreamingCode }
 
 /** Prose rhythm (headings, lists, quotes, rules, inline code) on top of Tailwind's reset. */
 export const PROSE_CLASS = cn(
@@ -46,12 +70,15 @@ export const PROSE_CLASS = cn(
 
 const ProseSegment = memo(function ProseSegment({
   text,
+  streaming,
   onLinkClick,
 }: {
   text: string
+  streaming: boolean
   onLinkClick: (href: string) => void
 }) {
-  return <Markdown source={text} onLinkClick={onLinkClick} components={COMPONENTS} className={PROSE_CLASS} />
+  const components = streaming ? STREAMING_COMPONENTS : COMPONENTS
+  return <Markdown source={text} onLinkClick={onLinkClick} components={components} className={PROSE_CLASS} />
 })
 
 /**
@@ -78,7 +105,7 @@ export function RichMarkdown({
           <CodeSegment key={i} code={s.code} lang={s.lang} closed={s.closed} />
         ) : (
           // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional parts of one message
-          <ProseSegment key={i} text={s.text} onLinkClick={onLink} />
+          <ProseSegment key={i} text={s.text} streaming={streaming} onLinkClick={onLink} />
         ),
       )}
     </>
