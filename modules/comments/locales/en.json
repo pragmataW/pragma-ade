@@ -94,7 +94,14 @@
     "expand_other": "Show thread ({{count}} replies)",
     "collapse": "Hide thread",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "more": "More actions",
+    "confirmDelete": "Delete this thread?",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteFailed": "Could not delete the thread.",
+    "round": "R{{round}}",
+    "roundTitle": "Round {{round}}"
   },
   "time": {
     "justNow": "just now",

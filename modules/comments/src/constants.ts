@@ -61,3 +61,5 @@ export const TIME_TICK_MS = 30_000
 /** Author marks next to a thread's names. */
 export const AUTHOR_MARK_PX = 16
 export const MONOGRAM_MAX_LETTERS = 2
+/** Below this width (px) a thread's secondary actions (Edit, links, Delete) collapse into its "…" menu. */
+export const THREAD_NARROW_PX = 360

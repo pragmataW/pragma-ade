@@ -1,7 +1,7 @@
 import { Button, type ButtonProps } from '@pragma/ui/components/button'
 
 const SMALL = 'sm'
-const GHOST = 'ghost'
+export const GHOST = 'ghost'
 /** Badge / button variant names shared by the thread view. */
 export const OUTLINE = 'outline'
 export const SIZE_XS = 'xs'

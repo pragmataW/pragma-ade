@@ -150,9 +150,11 @@ describe('CommentsDrawer', () => {
     expect(screen.queryByTestId(T.clearResolved)).toBeNull()
   })
 
-  test('delete calls comments.remove', async () => {
+  test('delete asks inline, then calls comments.remove', async () => {
     await open({ threads: [draftA()] })
     fireEvent.click(screen.getByTestId(T.rowDelete))
+    expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([])
+    fireEvent.click(screen.getByTestId(T.threadDeleteConfirm))
     await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([{ id: 'a1' }]))
   })
 
