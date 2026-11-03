@@ -58,4 +58,6 @@ export const PROJECTS_DATA_ATTRS = {
   active: 'data-active',
   folderId: 'data-folder-id',
   folderName: 'data-folder-name',
+  /** `"true"` on a project group while a worktree row of it is dragged over its root zone. */
+  dropTarget: 'data-drop-target',
 } as const

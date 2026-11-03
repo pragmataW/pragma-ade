@@ -152,8 +152,8 @@ describe('sidebar folders', () => {
   })
 })
 
-/** A drag of `source` dropped on `target` (native HTML5 drag and drop with a shared DataTransfer). */
-function drag(source: HTMLElement, target: HTMLElement) {
+/** A native HTML5 drag of `source`: `over(target)` drags over it, `drop(target)` drops there and ends the drag. */
+function startDrag(source: HTMLElement) {
   const data = new Map<string, string>()
   const dataTransfer = {
     get types() {
@@ -165,15 +165,40 @@ function drag(source: HTMLElement, target: HTMLElement) {
     effectAllowed: 'all',
   }
   fireEvent.dragStart(source, { dataTransfer })
-  fireEvent.dragOver(target, { dataTransfer })
-  fireEvent.drop(target, { dataTransfer })
-  return data
+  return {
+    data,
+    over: (target: HTMLElement) => fireEvent.dragOver(target, { dataTransfer }),
+    drop(target: HTMLElement) {
+      fireEvent.dragOver(target, { dataTransfer })
+      fireEvent.drop(target, { dataTransfer })
+      fireEvent.dragEnd(source, { dataTransfer })
+    },
+  }
 }
+const drag = (source: HTMLElement, target: HTMLElement) => startDrag(source).drop(target)
+
+const other = { ...aProject({ id: 'q', name: 'lib' }), sortOrder: 1 }
+const otherMain = aWorktree('q', { id: 'qm', branch: 'trunk', isMain: true })
+async function mountTwoProjects() {
+  mounted.h = await mountSidebar({
+    projects: [project, other],
+    worktrees: [main, login, docs, otherMain],
+    folders: { p: [reviews, empty], q: [] },
+    activeWorktreeId: 'm',
+  })
+  return mounted.h
+}
+const group = (name: string) =>
+  screen.getAllByTestId(T.projectGroup).find((g) => g.dataset.projectName === name) as HTMLElement
+const header = (name: string) => within(group(name)).getByTestId(T.projectHeader)
+const isRootTarget = (el: HTMLElement) => el.dataset.dropTarget === 'true'
 
 describe('sidebar folders: drag and drop', () => {
   it('dropping a row on a folder moves it in; on the tree outside folders, back to the root', async () => {
     const h = await mount()
-    expect(drag(row('docs'), folderItem('Empty')).get(WORKTREE_DRAG_TYPE)).toBe('d')
+    const docsDrag = startDrag(row('docs'))
+    expect(docsDrag.data.get(WORKTREE_DRAG_TYPE)).toBe('d')
+    docsDrag.drop(folderItem('Empty'))
     drag(row('feat/login'), screen.getByTestId(T.worktreeTree))
     expect(h.callsOn(C.moveWorktreeToFolder)).toEqual([
       { worktreeId: 'd', folderId: 'e' },
@@ -181,10 +206,45 @@ describe('sidebar folders: drag and drop', () => {
     ])
   })
 
+  it.each([
+    ['the project header row', () => header('app')],
+    ['a root-level worktree row', () => row('main')],
+    ['the project root area below the rows', () => screen.getAllByTestId(T.projectNewWorktree)[0] as HTMLElement],
+    ['the project group itself', () => group('app')],
+  ])('dragging a row out of its folder onto %s moves it to the root', async (_name, target) => {
+    const h = await mountTwoProjects()
+    drag(row('feat/login'), target())
+    expect(h.callsOn(C.moveWorktreeToFolder)).toEqual([{ worktreeId: 'l', folderId: null }])
+  })
+
+  it('highlights the project root while dragging over it (not a folder, not another project)', async () => {
+    await mountTwoProjects()
+    const d = startDrag(row('feat/login'))
+    d.over(row('main'))
+    expect(isRootTarget(group('app'))).toBe(true)
+    d.over(folderItem('Empty'))
+    expect(isRootTarget(group('app'))).toBe(false)
+    d.over(header('lib'))
+    expect(isRootTarget(group('lib'))).toBe(false)
+    d.over(header('app'))
+    expect(isRootTarget(group('app'))).toBe(true)
+    fireEvent.dragEnd(row('feat/login'))
+    expect(isRootTarget(group('app'))).toBe(false)
+  })
+
+  it('dropping onto another project does nothing', async () => {
+    const h = await mountTwoProjects()
+    drag(row('feat/login'), header('lib'))
+    drag(row('feat/login'), row('trunk'))
+    drag(row('trunk'), folderItem('Empty'))
+    expect(h.callsOn(C.moveWorktreeToFolder)).toEqual([])
+  })
+
   it('dropping where the worktree already is, or a foreign drag, does nothing', async () => {
     const h = await mount()
     drag(row('feat/login'), folderItem('Reviews'))
     drag(row('docs'), screen.getByTestId(T.worktreeTree))
+    drag(row('docs'), header('app'))
     fireEvent.drop(folderItem('Empty'), { dataTransfer: { types: ['text/plain'], getData: () => 'd' } })
     expect(h.callsOn(C.moveWorktreeToFolder)).toEqual([])
   })
