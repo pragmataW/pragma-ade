@@ -19,7 +19,11 @@ export async function startEditorBridge(o: { port?: number; token?: string } = {
     comment: () => ({ status: 'drafted' as const, commentId: 'c1' }),
     testResponse: () => null,
     languageStatus: () => null,
-    drafts: () => ({ comments: [] }),
+    threads: () => ({ threads: [] }),
+    reply: () => ({ status: 'drafted' as const, commentId: 'c1' }),
+    setStatus: () => null,
+    deleteThread: () => null,
+    send: () => ({ status: 'sent' as const }),
   })
   return { server, hellos }
 }
@@ -33,7 +37,7 @@ export function recordingHandlers() {
     openDiff: async (m) => void events.push({ name: 'openDiff', payload: m }),
     setTheme: async (m) => void events.push({ name: 'setTheme', payload: m }),
     testRequest: async (m) => void events.push({ name: 'testRequest', payload: m }),
-    drafts: async (m) => void events.push({ name: 'drafts', payload: m }),
+    threads: async (m) => void events.push({ name: 'threads', payload: m }),
     ready: async () => {
       readies++
     },

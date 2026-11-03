@@ -42,6 +42,29 @@
       {
         "command": "pragma.comment.cancel",
         "title": "Cancel"
+      },
+      {
+        "command": "pragma.thread.reply",
+        "title": "Reply"
+      },
+      {
+        "command": "pragma.thread.replyAndSend",
+        "title": "Reply and Send to Agent"
+      },
+      {
+        "command": "pragma.thread.resolve",
+        "title": "Resolve",
+        "icon": "$(check)"
+      },
+      {
+        "command": "pragma.thread.reopen",
+        "title": "Reopen",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "pragma.thread.delete",
+        "title": "Delete Thread",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -49,17 +72,27 @@
         {
           "command": "pragma.comment.sendToAgent",
           "group": "inline@1",
-          "when": "commentController == pragma-review"
+          "when": "commentController == pragma-review && commentThreadIsEmpty"
         },
         {
           "command": "pragma.comment.addToReview",
           "group": "inline@2",
-          "when": "commentController == pragma-review"
+          "when": "commentController == pragma-review && commentThreadIsEmpty"
         },
         {
           "command": "pragma.comment.cancel",
           "group": "inline@3",
-          "when": "commentController == pragma-review"
+          "when": "commentController == pragma-review && commentThreadIsEmpty"
+        },
+        {
+          "command": "pragma.thread.replyAndSend",
+          "group": "inline@1",
+          "when": "commentController == pragma-review && !commentThreadIsEmpty"
+        },
+        {
+          "command": "pragma.thread.reply",
+          "group": "inline@2",
+          "when": "commentController == pragma-review && !commentThreadIsEmpty"
         }
       ],
       "commandPalette": [
@@ -74,6 +107,43 @@
         {
           "command": "pragma.comment.cancel",
           "when": "false"
+        },
+        {
+          "command": "pragma.thread.reply",
+          "when": "false"
+        },
+        {
+          "command": "pragma.thread.replyAndSend",
+          "when": "false"
+        },
+        {
+          "command": "pragma.thread.resolve",
+          "when": "false"
+        },
+        {
+          "command": "pragma.thread.reopen",
+          "when": "false"
+        },
+        {
+          "command": "pragma.thread.delete",
+          "when": "false"
+        }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "pragma.thread.resolve",
+          "group": "inline@1",
+          "when": "commentController == pragma-review && commentThread == pragma-thread-open"
+        },
+        {
+          "command": "pragma.thread.reopen",
+          "group": "inline@1",
+          "when": "commentController == pragma-review && commentThread == pragma-thread-resolved"
+        },
+        {
+          "command": "pragma.thread.delete",
+          "group": "inline@2",
+          "when": "commentController == pragma-review"
         }
       ]
     }
@@ -91,6 +161,7 @@
       "LICENSE",
       "README.md",
       "../../src/contract/**",
+      "../../../comments/src/contract/**",
       "../../../bridge/src/client/**",
       "../../../bridge/src/contract/**"
     ],

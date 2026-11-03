@@ -19,7 +19,9 @@ function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewControll
   const ops = createTestOps(api, {
     folderPath,
     handleComment: (r, a) => review.handle(r, a),
-    drafts: () => review.drafts(),
+    handleReply: (r, send) => review.handleReply(r, send),
+    setStatus: (id, status) => review.setStatus(id, status),
+    threads: () => review.threads(),
   })
   // One apply at a time, only the newest waiting theme (hello reply and broadcasts share the queue).
   const themes = new LatestQueue<EditorSetThemeMsg>(
@@ -36,7 +38,7 @@ function handlers(api: VscodeApi, conn: BridgeConnection, review: ReviewControll
     setTheme: async (m) => {
       if (fresh(m)) await themes.push(m)
     },
-    drafts: async (m) => review.showDrafts(m.comments),
+    threads: async (m) => review.showThreads(m.threads),
     ready: () => review.refresh(),
     ...(api.env[TEST_MODE.env] === TEST_MODE.enabled ? { testRequest: (m) => answerTestRequest(ops, conn, m) } : {}),
   }

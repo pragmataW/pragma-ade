@@ -141,6 +141,11 @@ export const COMMANDS = {
   sendToAgent: 'pragma.comment.sendToAgent',
   addToReview: 'pragma.comment.addToReview',
   cancel: 'pragma.comment.cancel',
+  reply: 'pragma.thread.reply',
+  replyAndSend: 'pragma.thread.replyAndSend',
+  resolve: 'pragma.thread.resolve',
+  reopen: 'pragma.thread.reopen',
+  deleteThread: 'pragma.thread.delete',
 } as const
 export const CONTROLLER = {
   id: 'pragma-review',
@@ -159,9 +164,12 @@ export const COMMENT_MESSAGES = {
   notSentLabel: 'Not sent',
   pendingLabel: 'Pending',
   author: 'You',
+  agent: 'Agent',
+  replied: 'Reply added',
+  notStored: 'This thread is not stored in Pragma',
 } as const
-/** `CommentThread.contextValue` of a stored draft's read-only thread. */
-export const DRAFT_THREAD_CONTEXT = 'pragma-draft'
+/** `CommentThread.contextValue` of a stored review thread (the manifest's title menu keys on it). */
+export const THREAD_CONTEXT = { open: 'pragma-thread-open', resolved: 'pragma-thread-resolved' } as const
 export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const
 /** Index = `vscode.DiagnosticSeverity` (Error 0, Warning 1, Information 2, Hint 3). */
 export const SEVERITIES = ['error', 'warning', 'info', 'hint'] as const
@@ -173,11 +181,13 @@ export const LANGUAGE_STATUS_DEBOUNCE_MS = 300
 export const TEST_MODE = { env: 'PRAGMA_TEST', enabled: '1' } as const
 export const TEST_ARG = {
   id: 'id',
+  send: 'send',
+  status: 'status',
   path: 'path',
   lineStart: 'lineStart',
   lineEnd: 'lineEnd',
   body: 'body',
 } as const
 export const TEST_RESPONSE = 'testResponse'
-/** The `editor` bridge request and event carrying the worktree's drafts. */
-export const DRAFTS_MESSAGE = 'drafts'
+/** The `editor` bridge request and event carrying the worktree's review threads. */
+export const THREADS_MESSAGE = 'threads'

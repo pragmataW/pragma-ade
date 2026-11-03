@@ -1,7 +1,14 @@
 import { resolve } from 'node:path'
-import { type CommentAction, type EditorTestRequest, TEST_OP, type TestOp } from '@pragma/module-editor/contract'
+import {
+  type CommentAction,
+  type EditorTestRequest,
+  TEST_OP,
+  type TestOp,
+  type ThreadStatus,
+} from '@pragma/module-editor/contract'
 import type { BridgeConnection } from './bridgeConnection'
-import type { DraftThreadInfo, ReplyLike } from './comments/controller'
+import type { ReplyLike } from './comments/controller'
+import type { ThreadInfo } from './comments/threads'
 import { TEST_ARG as A, FILE_SCHEME, TEST_RESPONSE } from './constants'
 import type { VscodeApi } from './vscodeApi'
 
@@ -10,6 +17,7 @@ type Op = (args: Args) => unknown
 
 const str = (a: Args, k: string): string => String(a[k] ?? '')
 const num = (a: Args, k: string): number => Number(a[k])
+const NO_OP_THREAD = { addComment: () => undefined, dispose: () => undefined }
 
 /** Test-mode operations the E2E drives through `editor.testRequest` (only wired when `PRAGMA_TEST=1`). */
 export function createTestOps(
@@ -17,7 +25,9 @@ export function createTestOps(
   o: {
     folderPath: () => string
     handleComment(reply: ReplyLike, action: CommentAction): Promise<void>
-    drafts(): DraftThreadInfo[]
+    handleReply(reply: ReplyLike, send: boolean): Promise<void>
+    setStatus(threadId: string, status: ThreadStatus): Promise<void>
+    threads(): ThreadInfo[]
   },
 ): Record<TestOp, Op> {
   const abs = (p: string): string => resolve(o.folderPath(), p)
@@ -38,7 +48,12 @@ export function createTestOps(
       await o.handleComment({ thread, text: str(a, A.body) }, a.action as CommentAction)
       return { notSent: added }
     },
-    [TEST_OP.draftThreads]: () => o.drafts(),
+    [TEST_OP.threads]: () => o.threads(),
+    [TEST_OP.replyThread]: (a) => {
+      const thread = { id: str(a, A.id), uri: { scheme: FILE_SCHEME, fsPath: '' }, range: undefined, ...NO_OP_THREAD }
+      return o.handleReply({ thread, text: str(a, A.body) }, a[A.send] === true)
+    },
+    [TEST_OP.setThreadStatus]: (a) => o.setStatus(str(a, A.id), str(a, A.status) as ThreadStatus),
   }
 }
 
