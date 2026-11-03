@@ -73,15 +73,19 @@ describe('task frames', () => {
     expect(events[2]).not.toHaveProperty('parentId')
   })
 
-  it('a backgrounded task is a background task; a foreground shell job shows once it moves to the background', () => {
+  it('a backgrounded subagent stays a subagent; a foreground shell job shows once it moves to the background', () => {
     const events = F.mapAll([
       F.taskStarted({ task_id: 'bg', is_backgrounded: true }),
+      F.taskStarted({ task_id: 'fg' }),
+      F.taskUpdated({ is_backgrounded: true }, 'fg'),
       F.taskStarted({ task_id: 'sh', task_type: 'local_bash', subagent_type: undefined, tool_use_id: 'toolu_sh' }),
       F.taskUpdated({ is_backgrounded: true }, 'sh'),
       F.taskUpdated({ status: 'failed', error: 'exit 1' }, 'sh'),
     ])
     expect(events).toEqual([
-      expect.objectContaining({ taskId: 'bg', taskKind: 'background', status: 'running' }),
+      expect.objectContaining({ taskId: 'bg', taskKind: 'subagent', status: 'running' }),
+      expect.objectContaining({ taskId: 'fg', taskKind: 'subagent', status: 'running' }),
+      expect.objectContaining({ taskId: 'fg', taskKind: 'subagent' }),
       expect.objectContaining({ taskId: 'sh', taskKind: 'background', name: 'Bash', toolCallId: 'toolu_sh' }),
       expect.objectContaining({ taskId: 'sh', status: 'failed', summary: 'exit 1' }),
     ])

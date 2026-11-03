@@ -20,10 +20,10 @@ const asStatus = (v: unknown): TaskStatus | undefined => {
   return s && TASK_STATUSES.has(s) ? (s as TaskStatus) : undefined
 }
 
-/** `local_workflow` → workflow; backgrounded or non-agent jobs → background; subagents otherwise. */
-function kindOf(type: string, backgrounded: boolean): TaskKind {
+/** `local_workflow` → workflow; `local_agent` → subagent (also when backgrounded); other jobs → background. */
+function kindOf(type: string): TaskKind {
   if (type === TASK_TYPE.workflow) return TASK_KIND.workflow
-  return backgrounded || type !== TASK_TYPE.agent ? TASK_KIND.background : TASK_KIND.subagent
+  return type === TASK_TYPE.agent ? TASK_KIND.subagent : TASK_KIND.background
 }
 
 const usageOf = (u: unknown): TaskEvent['usage'] | undefined => {
@@ -67,7 +67,7 @@ export function createTaskMapper(): TaskMapper {
     const type = str(f.task_type) ?? TASK_TYPE.agent
     const t: KnownTask = {
       shown: backgrounded || type === TASK_TYPE.agent || type === TASK_TYPE.workflow,
-      kind: kindOf(type, backgrounded),
+      kind: kindOf(type),
       base: baseOf(f, taskId, type),
     }
     known.set(taskId, t)
@@ -84,11 +84,7 @@ export function createTaskMapper(): TaskMapper {
     const t = known.get(str(f.task_id) ?? '')
     if (!t) return []
     const patch = obj(f.patch)
-    const backgrounded = patch.is_backgrounded === true
-    if (backgrounded) {
-      t.shown = true
-      if (t.kind === TASK_KIND.subagent) t.kind = TASK_KIND.background
-    }
+    if (patch.is_backgrounded === true) t.shown = true
     if (!t.shown) return []
     return [event(t, asStatus(patch.status), { summary: str(patch.error) })]
   }
