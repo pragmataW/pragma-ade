@@ -33,6 +33,21 @@ export const PROJECTS_TESTIDS = {
   settingsSave: 'projects-settings-save',
   statusbarBranch: 'projects-statusbar-branch',
   statusbarAheadBehind: 'projects-statusbar-ahead-behind',
+  worktreeTree: 'projects-worktree-tree',
+  projectNewFolder: 'projects-project-new-folder',
+  folder: 'projects-folder',
+  folderHeader: 'projects-folder-header',
+  folderCount: 'projects-folder-count',
+  folderMenu: 'projects-folder-menu',
+  folderRename: 'projects-folder-rename',
+  folderDelete: 'projects-folder-delete',
+  moveToFolder: 'projects-move-to-folder',
+  moveToFolderTarget: 'projects-move-to-folder-target',
+  moveToNewFolder: 'projects-move-to-new-folder',
+  removeFromFolder: 'projects-remove-from-folder',
+  folderDialog: 'projects-folder-dialog',
+  folderName: 'projects-folder-name',
+  folderSubmit: 'projects-folder-submit',
 } as const
 
 /** Data attributes on project groups and worktree rows (E2E locators). */
@@ -41,4 +56,6 @@ export const PROJECTS_DATA_ATTRS = {
   branch: 'data-branch',
   main: 'data-main',
   active: 'data-active',
+  folderId: 'data-folder-id',
+  folderName: 'data-folder-name',
 } as const

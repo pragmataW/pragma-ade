@@ -11,6 +11,7 @@ import { addProjectFlow, sidebarAction } from '../lib/actions'
 import { useProjects, useRuntime } from '../lib/runtime'
 import { filterWorktrees, selectWorktreesOf } from '../store'
 import { CreateWorktreeDialog } from './CreateWorktreeDialog'
+import { FolderNameDialog } from './FolderNameDialog'
 import { ProjectGroup } from './ProjectGroup'
 import { RemoveWorktreeDialog } from './RemoveWorktreeDialog'
 import { SidebarError } from './SidebarError'
@@ -125,6 +126,7 @@ export function ProjectsSidebar() {
       <SortableProjects projects={projects} query={query} />
       <CreateWorktreeDialog />
       <RemoveWorktreeDialog />
+      <FolderNameDialog />
     </section>
   )
 }

@@ -5,6 +5,7 @@ import { GitServiceToken, PROJECTS_COMMANDS, projectsIpc, projectsIpcEvents, typ
 import { createCleanups } from './support/cleanups'
 import { type FixtureRepo, makeClone, makePlainDir, makeRepo } from './support/git-fixture'
 import { type ProjectsHost, startProjectsHost } from './support/main-harness'
+import { unwrap } from './support/result'
 import { sleep, waitFor } from './support/wait'
 
 const STATUS_WAIT_MS = 3000
@@ -20,10 +21,6 @@ afterEach(async () => {
   cleanups.run()
 })
 
-const unwrap = <T>(r: { ok: true; value: T } | { ok: false; error: unknown }): T => {
-  if (!r.ok) throw new Error(`unexpected error result ${JSON.stringify(r.error)}`)
-  return r.value
-}
 const addRepo = async (dir: string) => unwrap(await h.t.ipc.invoke(projectsIpc.addProject, { path: dir }))
 async function createWorktree(projectId: string, branch: string): Promise<Worktree> {
   return unwrap(await h.t.ipc.invoke(projectsIpc.createWorktree, { projectId, branch }))

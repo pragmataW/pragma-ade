@@ -87,6 +87,8 @@ const PROJECTS_ERRORS: Record<ProjectsErrorCode, CliErrorCode> = {
   gitNotFound: INTERNAL,
   gitFailed: INTERNAL,
   invalidSettings: INVALID,
+  folderNotFound: NOT_FOUND,
+  invalidFolderName: INVALID,
 }
 
 const BOARD_ERRORS: Record<BoardErrorCode, CliErrorCode> = {

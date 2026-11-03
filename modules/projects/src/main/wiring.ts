@@ -17,6 +17,7 @@ import {
   worktreeRemoved,
   worktreeSelected,
 } from '../contract'
+import { createFolderStore } from './folders'
 import { FsWatcher } from './fs-watcher'
 import { createGitService } from './git/git-service'
 import { registerProjectsIpc } from './ipc'
@@ -143,7 +144,11 @@ function activate(ctx: MainContext<ProjectsSettings>, opts: ProjectsMainOptions)
   subscribeEvents(ctx, service, watching, tasks)
   ctx.services.provide(GitServiceToken, git)
   ctx.services.provide(ProjectsServiceToken, service)
-  registerProjectsIpc(ctx, service)
+  const folders = createFolderStore({
+    repo,
+    onChanged: () => ctx.ipc.publish(projectsIpcEvents.foldersChanged, folders.snapshot()),
+  })
+  registerProjectsIpc(ctx, service, folders)
   const active = service
   ctx.commands.register(projectsCommands.selectWorktree, ({ worktreeId }) => active.setActiveWorktree(worktreeId))
   const backgroundFailed = 'projects background start'

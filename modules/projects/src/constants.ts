@@ -115,6 +115,9 @@ export const COLUMNS = {
   value: 'value',
 } as const
 export const ACTIVE_WORKTREE_STATE_KEY = 'activeWorktreeId'
+/** `projects_state` key of one project's sidebar folders (`<prefix><projectId>` → JSON `{ folders }`). */
+export const FOLDERS_STATE_KEY_PREFIX = 'folders:'
+export const FOLDER_NAME_MAX_CHARS = 64
 
 /** File watching (`@parcel/watcher`). */
 export const WATCH_DEBOUNCE_MS = 300
@@ -163,6 +166,8 @@ export const ICONS = {
   dismiss: 'x',
   settings: 'folder-git-2',
   filter: 'list-filter',
+  folder: 'folder',
+  folderOpen: 'folder-open',
 } as const
 /** Closes and clears the sidebar filter. */
 export const FILTER_CLEAR_KEY = 'Escape'
@@ -180,6 +185,19 @@ export const FIELD_IDS = {
   path: 'projects-create-path-input',
   deleteBranch: 'projects-remove-delete-branch-input',
   root: 'projects-settings-root-input',
+  folderName: 'projects-folder-name-input',
+} as const
+
+/** Sidebar folders: native drag data type of a worktree row, WAI-ARIA tree roles, levels and keys. */
+export const WORKTREE_DRAG_TYPE = 'application/x-pragma-worktree'
+export const DROP_EFFECT_MOVE = 'move'
+export const TREE_LEVEL = { root: 1, inFolder: 2 } as const
+export const TREE_KEYS = {
+  enter: 'Enter',
+  space: ' ',
+  expand: 'ArrowRight',
+  collapse: 'ArrowLeft',
+  rename: 'F2',
 } as const
 export const BUTTON_TYPES = { button: 'button', submit: 'submit' } as const
 export const ALERT_ROLE = 'alert'

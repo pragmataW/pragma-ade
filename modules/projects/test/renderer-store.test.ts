@@ -1,6 +1,7 @@
 import type { IpcContract, IpcEventContract } from '@pragma/sdk'
 import { describe, expect, it } from 'vitest'
 import {
+  type FoldersSnapshot,
   PROJECTS_CHANNELS,
   type ProjectsSnapshot,
   projectsIpcEvents,
@@ -17,6 +18,7 @@ import {
   filterWorktrees,
   type ProjectsIpc,
   selectActiveWorktree,
+  selectFoldersOf,
   selectProjectOf,
   selectWorktreesOf,
 } from '../src/renderer/store'
@@ -43,7 +45,10 @@ const status = (worktreeId: string, changedFiles: number): StatusChangedPayload 
   behind: 0,
 })
 
-/** A fake renderer IPC: `getState` resolves on demand, events are fired by the test. */
+const folder = { id: 'fo', name: 'Folder', collapsed: false, worktreeIds: ['f'] }
+const storedFolders: FoldersSnapshot = { p: [folder] }
+
+/** A fake renderer IPC: `getState` resolves on demand, `getFolders` at once, events are fired by the test. */
 function fakeIpc() {
   const listeners = new Map<string, Set<(p: unknown) => void>>()
   const invoked: { channel: string; input: unknown }[] = []
@@ -51,6 +56,7 @@ function fakeIpc() {
   const ipc: ProjectsIpc = {
     invoke: <I, O>(c: IpcContract<I, O>, input: I): Promise<O> => {
       invoked.push({ channel: c.channel, input })
+      if (c.channel === PROJECTS_CHANNELS.getFolders) return Promise.resolve(storedFolders as O)
       if (c.channel === PROJECTS_CHANNELS.getState)
         return new Promise((r) => {
           resolveState = r as (s: ProjectsSnapshot) => void
@@ -104,6 +110,20 @@ describe('createProjectsStore', () => {
     expect(store.getState().activeWorktreeId).toBe('f')
     f.fire(projectsIpcEvents.stateChanged, snapshot({ activeWorktreeId: null }))
     expect(store.getState().activeWorktreeId).toBeNull()
+  })
+
+  it('hydrates the folders, keeps them across snapshots and follows foldersChanged', async () => {
+    const f = fakeIpc()
+    const { store, start } = createProjectsStore(f.ipc)
+    const started = start()
+    f.resolve(snapshot())
+    await started
+    expect(selectFoldersOf(store.getState(), 'p')).toEqual([folder])
+    expect(selectFoldersOf(store.getState(), 'q')).toEqual([])
+    f.fire(projectsIpcEvents.stateChanged, snapshot())
+    expect(store.getState().folders).toEqual(storedFolders)
+    f.fire(projectsIpcEvents.foldersChanged, {})
+    expect(selectFoldersOf(store.getState(), 'p')).toEqual([])
   })
 
   it('stop unsubscribes', async () => {

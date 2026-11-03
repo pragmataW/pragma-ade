@@ -21,6 +21,24 @@
     "removeWorktree": "Remove worktree…",
     "dismissError": "Dismiss"
   },
+  "folders": {
+    "newFolder": "New folder…",
+    "moveToFolder": "Move to folder",
+    "removeFromFolder": "Remove from folder",
+    "menu": "Folder actions",
+    "rename": "Rename…",
+    "delete": "Delete folder",
+    "label_one": "{{name}}, {{count}} worktree",
+    "label_other": "{{name}}, {{count}} worktrees"
+  },
+  "folderDialog": {
+    "createTitle": "New folder",
+    "renameTitle": "Rename folder",
+    "name": "Name",
+    "create": "Create",
+    "rename": "Rename",
+    "cancel": "Cancel"
+  },
   "breadcrumb": {
     "separator": "›"
   },
@@ -81,6 +99,8 @@
     "cannotRemoveMain": "The main checkout cannot be removed.",
     "gitNotFound": "git was not found on your PATH.",
     "gitFailed": "git failed: {{detail}}",
-    "invalidSettings": "Use an absolute path or one starting with ~."
+    "invalidSettings": "Use an absolute path or one starting with ~.",
+    "folderNotFound": "Folder not found.",
+    "invalidFolderName": "Folder names cannot be empty or longer than 64 characters."
   }
 }

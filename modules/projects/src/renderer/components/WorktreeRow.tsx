@@ -1,5 +1,6 @@
 import { Slot, useT } from '@pragma/sdk/renderer'
 import { cva } from 'class-variance-authority'
+import { TREE_LEVEL } from '../../constants'
 import {
   PROJECTS_DATA_ATTRS as A,
   projectsIpc,
@@ -9,13 +10,16 @@ import {
   type WorktreeRowSlotProps,
 } from '../../contract'
 import { sidebarAction } from '../lib/actions'
+import { worktreeDragProps } from '../lib/folder-actions'
 import { useProjects, useRuntime } from '../lib/runtime'
 import { PlainButton } from './PlainButton'
+import { TreeItem } from './TreeItem'
 import { WorktreeMenu } from './WorktreeMenu'
 
 /**
  * ui-notes: 2-line ~40px row (px, not rem: the root font is 13px), content indented 22px past the project
  * name (`ProjectGroup` puts the name at 22px); selected = hover bg + a straight 2px accent bar on the left.
+ * Rows inside a folder are indented one step more.
  */
 const rowVariants = cva('group relative flex h-[40px] items-center rounded-[var(--radius-button)] pr-1 hover:bg-hv', {
   variants: {
@@ -25,8 +29,13 @@ const rowVariants = cva('group relative flex h-[40px] items-center rounded-[var(
     },
   },
 })
+const contentVariants = cva('flex h-full min-w-0 flex-1 flex-col justify-center gap-[2px] text-left', {
+  variants: { level: { [TREE_LEVEL.root]: 'pl-[44px]', [TREE_LEVEL.inFolder]: 'pl-[60px]' } },
+})
+type TreeLevel = (typeof TREE_LEVEL)[keyof typeof TREE_LEVEL]
 
-export function WorktreeRow({ worktree }: { worktree: Worktree }) {
+/** A worktree `treeitem`; drag it onto a folder (or the project root) to move it. */
+export function WorktreeRow({ worktree, level = TREE_LEVEL.root }: { worktree: Worktree; level?: TreeLevel }) {
   const t = useT()
   const runtime = useRuntime()
   const active = useProjects((s) => s.activeWorktreeId === worktree.id)
@@ -38,11 +47,15 @@ export function WorktreeRow({ worktree }: { worktree: Worktree }) {
   }
   const select = () => void sidebarAction(runtime, projectsIpc.selectWorktree, { worktreeId: worktree.id })
   return (
-    <div data-testid={T.worktreeRow} {...attrs} className={rowVariants({ active })}>
-      <PlainButton
-        onClick={select}
-        className="flex h-full min-w-0 flex-1 flex-col justify-center gap-[2px] pl-[44px] text-left"
-      >
+    <TreeItem
+      data-testid={T.worktreeRow}
+      {...attrs}
+      level={level}
+      aria-selected={active}
+      {...worktreeDragProps(worktree.id)}
+      className={rowVariants({ active })}
+    >
+      <PlainButton onClick={select} className={contentVariants({ level })}>
         <span className="flex w-full items-center gap-1.5">
           <Slot id={S.worktreeRowLeading} props={props} />
           <span className="truncate font-mono text-[12px]">{worktree.branch ?? t('projects:sidebar.detached')}</span>
@@ -63,6 +76,6 @@ export function WorktreeRow({ worktree }: { worktree: Worktree }) {
         </span>
       </PlainButton>
       <WorktreeMenu worktree={worktree} />
-    </div>
+    </TreeItem>
   )
 }

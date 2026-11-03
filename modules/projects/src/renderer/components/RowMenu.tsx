@@ -15,7 +15,7 @@ export function RowMenu({ label, testId, children }: { label: string; testId: st
           data-testid={testId}
           aria-label={label}
           title={label}
-          className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
+          className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
         >
           <Icon name={ICONS.menu} size={ICON_PX.row} />
         </Button>
