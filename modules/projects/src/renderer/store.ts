@@ -1,15 +1,18 @@
 import type { RendererContext } from '@pragma/sdk/renderer'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import {
+  type FoldersSnapshot,
   type Project,
   type ProjectsSnapshot,
   projectsIpc,
   projectsIpcEvents,
   type StatusChangedPayload,
   type Worktree,
+  type WorktreeFolder,
 } from '../contract'
 
-export type ProjectsState = ProjectsSnapshot & { hydrated: boolean }
+/** The main snapshot plus the sidebar folders (`projects.getFolders` / `foldersChanged`). */
+export type ProjectsState = ProjectsSnapshot & { hydrated: boolean; folders: FoldersSnapshot }
 export type ProjectsIpc = Pick<RendererContext['ipc'], 'invoke' | 'subscribe'>
 export type ProjectsStore = StoreApi<ProjectsState>
 
@@ -21,12 +24,20 @@ export const EMPTY_PROJECTS_STATE: ProjectsState = {
   projectErrors: {},
   activeWorktreeId: null,
   hydrated: false,
+  folders: {},
 }
 
-export const applySnapshot = (_state: ProjectsState, snap: ProjectsSnapshot): ProjectsState => ({
+export const applySnapshot = (state: ProjectsState, snap: ProjectsSnapshot): ProjectsState => ({
+  ...state,
   ...snap,
   hydrated: true,
 })
+
+export const applyFolders = (state: ProjectsState, folders: FoldersSnapshot): ProjectsState => ({ ...state, folders })
+
+const NO_FOLDERS: WorktreeFolder[] = []
+export const selectFoldersOf = (s: ProjectsState, projectId: string): WorktreeFolder[] =>
+  s.folders[projectId] ?? NO_FOLDERS
 
 export const applyStatus = (state: ProjectsState, p: StatusChangedPayload): ProjectsState => ({
   ...state,
@@ -80,12 +91,16 @@ export function createProjectsStore(ipc: ProjectsIpc) {
         ipc.subscribe(projectsIpcEvents.stateChanged, (snap) => apply((s) => applySnapshot(s, snap))),
         ipc.subscribe(projectsIpcEvents.statusChanged, (p) => apply((s) => applyStatus(s, p))),
         ipc.subscribe(projectsIpcEvents.selected, (p) => apply((s) => applySelected(s, p))),
+        ipc.subscribe(projectsIpcEvents.foldersChanged, (f) => apply((s) => applyFolders(s, f))),
       )
-      const snap = await ipc.invoke(projectsIpc.getState, undefined)
+      const [snap, folders] = await Promise.all([
+        ipc.invoke(projectsIpc.getState, undefined),
+        ipc.invoke(projectsIpc.getFolders, undefined),
+      ])
       const pending = buffer
       buffer = null
       store.setState(
-        pending.reduce((s, r) => r(s), applySnapshot(store.getState(), snap)),
+        pending.reduce((s, r) => r(s), applyFolders(applySnapshot(store.getState(), snap), folders)),
         true,
       )
     },

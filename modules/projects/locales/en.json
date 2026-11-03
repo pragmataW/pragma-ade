@@ -21,6 +21,24 @@
     "removeWorktree": "Remove worktree…",
     "dismissError": "Dismiss"
   },
+  "folders": {
+    "newFolder": "New folder…",
+    "moveToFolder": "Move to folder",
+    "removeFromFolder": "Remove from folder",
+    "menu": "Folder actions",
+    "rename": "Rename…",
+    "delete": "Delete folder",
+    "label_one": "{{name}}, {{count}} worktree",
+    "label_other": "{{name}}, {{count}} worktrees"
+  },
+  "folderDialog": {
+    "createTitle": "New folder",
+    "renameTitle": "Rename folder",
+    "name": "Name",
+    "create": "Create",
+    "rename": "Rename",
+    "cancel": "Cancel"
+  },
   "breadcrumb": {
     "separator": "›"
   },

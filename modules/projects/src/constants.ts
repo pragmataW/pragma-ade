@@ -185,6 +185,19 @@ export const FIELD_IDS = {
   path: 'projects-create-path-input',
   deleteBranch: 'projects-remove-delete-branch-input',
   root: 'projects-settings-root-input',
+  folderName: 'projects-folder-name-input',
+} as const
+
+/** Sidebar folders: native drag data type of a worktree row, WAI-ARIA tree roles, levels and keys. */
+export const WORKTREE_DRAG_TYPE = 'application/x-pragma-worktree'
+export const DROP_EFFECT_MOVE = 'move'
+export const TREE_LEVEL = { root: 1, inFolder: 2 } as const
+export const TREE_KEYS = {
+  enter: 'Enter',
+  space: ' ',
+  expand: 'ArrowRight',
+  collapse: 'ArrowLeft',
+  rename: 'F2',
 } as const
 export const BUTTON_TYPES = { button: 'button', submit: 'submit' } as const
 export const ALERT_ROLE = 'alert'

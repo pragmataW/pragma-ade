@@ -27,7 +27,12 @@ Failures throw `ProjectsError` with a `code` from `PROJECTS_ERROR_CODES` (`proje
 ## IPC
 
 Requests (`projectsIpc`): `projects.getState`, `pickFolder`, `addProject`, `removeProject`, `reorderProjects`, `syncProject`, `listBranches`, `suggestWorktreePath`, `createWorktree` (`select` defaults to true), `getRemovalInfo`, `removeWorktree`, `selectWorktree`, `setBaseBranch`, `getSettings`, `updateSettings`. Every mutation answers `Result<T, ProjectsErrorDto>`.
-Events (`projectsIpcEvents`, main → renderer): `projects.stateChanged` (full snapshot), `projects.statusChanged` (`{ worktreeId, changedFiles, upstream, ahead, behind }`), `projects.selected`.
+Sidebar folders: `getFolders` (`FoldersSnapshot` = `{ [projectId]: WorktreeFolder[] }`), `createFolder { projectId, name, worktreeId? }`, `renameFolder`, `deleteFolder` (members go back to the root; no worktree is removed), `setFolderCollapsed`, `moveWorktreeToFolder { worktreeId, folderId | null }`.
+Events (`projectsIpcEvents`, main → renderer): `projects.stateChanged` (full snapshot), `projects.statusChanged` (`{ worktreeId, changedFiles, upstream, ahead, behind }`), `projects.selected`, `projects.foldersChanged` (`FoldersSnapshot`).
+
+## Sidebar folders
+
+User-made, per project, renderer organisation only (git, the CLI and `ProjectsService` do not see them). Stored in `projects_state` under `folders:<projectId>` as JSON `{ folders: [{ id, name, collapsed, worktreeIds }] }`, read through a zod schema with defaults (an unreadable value or folder is skipped). Every read drops worktree ids that are no longer live; a worktree is in at most one folder and new worktrees show at the project root. Move rows by native drag and drop (onto a folder, or onto the tree outside folders for the root) or with the row menu (Move to folder ▸). The tree follows the WAI-ARIA tree pattern: a folder item takes Enter/Space (toggle), →/← (expand/collapse), F2 (rename).
 
 ## Slots
 
@@ -35,6 +40,9 @@ Hosted by the worktree row, props `WorktreeRowSlotProps = { worktreeId, projectI
 - `sidebar.worktreeRow.leading` — before the branch (status icon, 04);
 - `sidebar.worktreeRow.badges` — after the branch; projects registers the changed-file count (order 10);
 - `sidebar.worktreeRow.subtitle` — second line (first entry wins; default "main checkout").
+
+Hosted by a collapsed sidebar folder, props `WorktreeFolderSlotProps = { projectId, folderId, worktreeIds }`:
+- `sidebar.worktreeFolder.leading` — aggregated status of the members; without entries the folder shows each member's `sidebar.worktreeRow.leading`.
 
 Shell slots filled (via `ShellSlots`): `sidebar.main` (project tree), `titlebar.left` (`project › branch`), `statusbar.left` order 10 (branch + ahead/behind; other status items come after it).
 
@@ -48,7 +56,7 @@ Section `projects`: `{ worktreesRoot }` (default `~/pragma/worktrees`; absolute 
 
 ## Test ids
 
-`PROJECTS_TESTIDS` and `PROJECTS_DATA_ATTRS` (`data-project-name`, `data-branch`, `data-main`, `data-active`) from `@pragma/module-projects/contract`.
+`PROJECTS_TESTIDS` and `PROJECTS_DATA_ATTRS` (`data-project-name`, `data-branch`, `data-main`, `data-active`, `data-folder-id`, `data-folder-name`) from `@pragma/module-projects/contract`.
 
 ## Notes
 
