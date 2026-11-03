@@ -1,8 +1,6 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KEY_ENTER, NOTICE_MS } from '../../../constants'
 import {
-  type ChatFile,
-  type ChatImage,
   type ChatSessionApi,
   COMPOSER_ENTRY_KIND,
   type ComposerApi,
@@ -12,6 +10,7 @@ import {
 } from '../../../contract'
 import { useChatHost } from '../../host-adapter'
 import { appendDraft, composeOutgoing } from '../../lib/compose-outgoing'
+import { DRAFT_FIELD, useDraftField } from '../../session/drafts'
 import { useChatStore } from '../../session/store'
 import { usePermissionModeCycle } from '../controls/use-permission-mode'
 import { findTrigger, type OpenMenu } from './triggers'
@@ -21,9 +20,10 @@ const KEY = { enter: KEY_ENTER, tab: 'Tab', escape: 'Escape', up: 'ArrowUp', dow
 /** Composer state: text, images, the open trigger menu, sending, and appended texts (never auto-sent). */
 export function useComposer(session: ChatSessionApi, extensions: readonly ComposerExtension[]) {
   const ref = useRef<HTMLTextAreaElement>(null)
-  const [text, setTextState] = useState('')
-  const [images, setImages] = useState<ChatImage[]>([])
-  const [files, setFiles] = useState<ChatFile[]>([])
+  // the draft outlives this component: switching chats remounts the composer
+  const [text, setTextState] = useDraftField(session.sessionId, DRAFT_FIELD.text)
+  const [images, setImages] = useDraftField(session.sessionId, DRAFT_FIELD.images)
+  const [files, setFiles] = useDraftField(session.sessionId, DRAFT_FIELD.files)
   const cycleMode = usePermissionModeCycle(session)
   const [menu, setMenu] = useState<OpenMenu | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -37,7 +37,7 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
       setMenu(findTrigger(next, cursor, extensions))
       setActiveIndex(0)
     },
-    [extensions],
+    [extensions, setTextState],
   )
   const chips = useComposerInbox(session.sessionId, setTextState)
   useEffect(() => {
@@ -70,7 +70,7 @@ export function useComposer(session: ChatSessionApi, extensions: readonly Compos
       notify: setNotice,
       session,
     }),
-    [text, images, files, session, sync],
+    [text, images, files, session, sync, setImages, setFiles],
   )
 
   const send = async () => {
@@ -148,28 +148,20 @@ const isChip = (e: ComposerEntry): e is ComposerChipEntry => e.kind === COMPOSER
 function useComposerInbox(sessionId: string, setText: (update: (t: string) => string) => void) {
   const host = useChatHost()
   const version = useChatStore((s) => s.inboxVersions[sessionId] ?? 0)
-  const [list, setList] = useState<ComposerChipEntry[]>([])
-  const alive = useRef(true)
-  useEffect(() => {
-    alive.current = true
-    return () => {
-      alive.current = false
-    }
-  }, [])
+  const [list, setList] = useDraftField(sessionId, DRAFT_FIELD.chips)
   useEffect(() => {
     void version
     host
       .takeComposerInbox(sessionId)
       .then((entries) => {
-        // a take is never discarded on re-run: its entries are gone from main once returned
-        if (!alive.current) return
+        // a take is never discarded (its entries are gone from main once returned): the draft outlives the view
         const add = entries.filter((e) => !isChip(e)).map((e) => e.text)
         if (add.length > 0) setText((t) => add.reduce(appendDraft, t))
         const more = entries.filter(isChip)
         if (more.length > 0) setList((l) => [...l, ...more])
       })
       .catch((e: unknown) => console.warn(`chat: composer inbox of ${sessionId} failed`, e))
-  }, [host, sessionId, version, setText])
+  }, [host, sessionId, version, setText, setList])
   return {
     list,
     remove: (id: string) => setList((l) => l.filter((c) => c.id !== id)),

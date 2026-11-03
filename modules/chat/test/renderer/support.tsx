@@ -7,6 +7,7 @@ import { ChatHostProvider } from '../../src/renderer/host-adapter'
 import { defaultChatUi } from '../../src/renderer/kit/default-ui'
 import { ChatPartsProvider } from '../../src/renderer/kit/parts/ChatRows'
 import { resetTasksPanels } from '../../src/renderer/kit/tasks/store'
+import { resetComposerDrafts } from '../../src/renderer/session/drafts'
 import { useChatStore } from '../../src/renderer/session/store'
 import { chatTestI18n, installJsdomLayout, type StubChatHost, stubChatHost, stubSessionApi } from '../../testing'
 
@@ -16,6 +17,7 @@ installJsdomLayout()
 beforeEach(() => {
   useChatStore.setState({ sessions: {}, inboxVersions: {}, activeSessionId: null })
   resetTasksPanels()
+  resetComposerDrafts()
 })
 
 const i18n = await chatTestI18n(['claude'])
