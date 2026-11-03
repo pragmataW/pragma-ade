@@ -45,6 +45,7 @@ const THREAD = {
   status: 'open',
   pending: true,
   body: 'Pending note',
+  createdAt: 1,
   replies: [],
 }
 
@@ -188,8 +189,8 @@ describe('EditorBridge', () => {
         diffSide: 'new',
         lineStart: 4,
         replies: [
-          aReply({ id: 'r1', author: 'agent', authorLabel: 'Claude', round: 1, body: 'Done.' }),
-          aReply({ id: 'r2', body: 'Thanks.' }),
+          aReply({ id: 'r1', author: 'agent', authorLabel: 'Claude', round: 1, body: 'Done.', createdAt: 20 }),
+          aReply({ id: 'r2', body: 'Thanks.', createdAt: 30 }),
         ],
       }),
       stored({ id: 'old', source: 'diff', diffSide: 'old' }),
@@ -209,8 +210,8 @@ describe('EditorBridge', () => {
           lineStart: 4,
           lineEnd: 4,
           replies: [
-            { id: 'r1', author: 'agent', label: 'Claude', body: 'Done.', pending: false },
-            { id: 'r2', author: 'user', label: null, body: 'Thanks.', pending: true },
+            { id: 'r1', author: 'agent', label: 'Claude', body: 'Done.', pending: false, createdAt: 20 },
+            { id: 'r2', author: 'user', label: null, body: 'Thanks.', pending: true, createdAt: 30 },
           ],
         },
       ],

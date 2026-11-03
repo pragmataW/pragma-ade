@@ -67,6 +67,7 @@ describe('BridgeConnection', () => {
             status: 'open',
             pending: true,
             body: 'note',
+            createdAt: 1,
             replies: [],
           },
         ],

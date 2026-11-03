@@ -82,6 +82,8 @@ export const EditorThreadReplySchema = z.object({
   body: z.string(),
   /** A user reply no Send delivered yet. */
   pending: z.boolean(),
+  /** Epoch ms. */
+  createdAt: z.number().int().min(0),
 })
 /**
  * A review thread on code as the workbench draws it: editor comments and the diff's new-side comments of the
@@ -97,6 +99,8 @@ export const EditorThreadSchema = z.object({
   /** The root was not sent yet. */
   pending: z.boolean(),
   body: z.string(),
+  /** Epoch ms of the root comment. */
+  createdAt: z.number().int().min(0),
   replies: z.array(EditorThreadReplySchema),
 })
 /** Every code thread of the client's worktree (oldest first); the extension replaces what it shows with it. */

@@ -18,6 +18,7 @@ const draft = (id: string, o: Partial<EditorThread> = {}): EditorThread => ({
   status: 'open',
   pending: true,
   body: `note ${id}`,
+  createdAt: 1_000,
   replies: [],
   ...o,
 })
@@ -101,9 +102,9 @@ describe('ReviewController', () => {
   it('draws each thread with its replies, authors and Pending labels on 0-based lines of the absolute file', () => {
     const { api, controller } = setup({ status: 'sent', commentId: 'c' })
     const replies = [
-      { id: 'r1', author: 'agent', label: 'Claude', body: 'Done.', pending: false },
-      { id: 'r2', author: 'agent', label: null, body: 'Also.', pending: false },
-      { id: 'r3', author: 'user', label: null, body: 'Thanks.', pending: true },
+      { id: 'r1', author: 'agent', label: 'Claude', body: 'Done.', pending: false, createdAt: 2_000 },
+      { id: 'r2', author: 'agent', label: null, body: 'Also.', pending: false, createdAt: 3_000 },
+      { id: 'r3', author: 'user', label: null, body: 'Thanks.', pending: true, createdAt: 4_000 },
     ] as const
     controller.showThreads([draft('a', { lineStart: 2, lineEnd: 4, pending: false, replies: [...replies] })])
     expect(api.threads).toEqual([
