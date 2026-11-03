@@ -64,3 +64,15 @@ export const TERMINAL_COMMANDS = {
   splitHorizontal: 'terminal.splitHorizontal',
   focusSearch: 'terminal.focusSearch',
 } as const
+
+/**
+ * Wheel scrolling while the program owns the wheel (mouse reporting or the alternate screen, e.g. Claude Code's
+ * fullscreen mode). `WheelEvent.deltaMode` values; one wheel report or arrow key per line of travel, capped per event.
+ */
+export const WHEEL_DELTA_MODE = { pixel: 0, line: 1, page: 2 } as const
+export const MAX_WHEEL_STEPS_PER_EVENT = 50
+/** xterm reports a program-owned wheel only in these mouse tracking modes (`x10` reports clicks only). */
+export const WHEEL_REPORTING_MODES = ['vt200', 'drag', 'any'] as const
+export const ALT_BUFFER_TYPE = 'alternate'
+export const XTERM_SCREEN_SELECTOR = '.xterm-screen'
+export const WHEEL_EVENT = 'wheel'
