@@ -9,11 +9,12 @@ import {
   COMPOSER_SURFACE,
   type Comment,
   isPendingRoot,
+  REPLY_AUTHOR,
   COMMENTS_TESTIDS as T,
   type ThreadViewProps,
 } from '../../../contract'
 import { OUTLINE, SIZE_XS } from '../../lib/buttons'
-import { PendingBadge } from './AuthorBadge'
+import { AuthorLine } from './AuthorBadge'
 import { ReplyBox } from './ReplyBox'
 import { ReplyList } from './ReplyList'
 import { ThreadActions } from './ThreadActions'
@@ -58,13 +59,18 @@ function ToggleButton({ open, count, onClick }: { open: boolean; count: number; 
 function ReplyArea({ api }: { api: ReturnType<typeof threadActions> }) {
   const t = useT()
   const [replying, setReplying] = useState(false)
-  if (replying) return <ReplyBox onSubmit={api.reply} onClose={() => setReplying(false)} />
+  if (replying)
+    return (
+      <div className="ml-[7px] border-[var(--bd2)] border-l-2 pl-3">
+        <ReplyBox onSubmit={api.reply} onClose={() => setReplying(false)} />
+      </div>
+    )
   return (
     <Button
       data-testid={T.replyOpen}
       size={SIZE_XS}
       variant="ghost"
-      className="h-6 self-start px-1.5 text-xs text-muted-foreground"
+      className="-ml-1 h-6 self-start px-1.5 text-muted-foreground text-xs hover:text-foreground"
       onClick={() => setReplying(true)}
     >
       <CornerDownRight size={ICON_PX} aria-hidden />
@@ -96,11 +102,18 @@ export function ThreadView({ comment, leading, locationLabel, onEdit, onDelete, 
         {leading}
         {locationLabel ? <span className="min-w-0 truncate font-mono">{locationLabel}</span> : null}
         <StatusBadge comment={comment} />
-        {isPendingRoot(comment) ? <PendingBadge /> : null}
         <span className="ml-auto" />
         <ThreadActions comment={comment} api={api} onEdit={onEdit} onDelete={onDelete} />
       </div>
-      <ThreadBody body={comment.body} preview={!open} />
+      <div className="flex min-w-0 flex-col gap-1">
+        <AuthorLine
+          author={REPLY_AUTHOR.user}
+          createdAt={comment.createdAt}
+          pending={isPendingRoot(comment)}
+          testId={T.threadAuthor}
+        />
+        <ThreadBody body={comment.body} preview={!open} />
+      </div>
       {open ? <ReplyList replies={comment.replies} onDiscard={api.removeReply} /> : null}
       {open ? <ReplyArea api={api} /> : null}
       {comment.status === COMMENT_STATUS.resolved ? (

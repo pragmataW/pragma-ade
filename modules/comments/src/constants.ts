@@ -53,3 +53,11 @@ export const BODY_COLLAPSE_CHARS = 800
 export const EMPTY_ICONS = { noThreads: 'message-square-dashed', noWorktree: 'folder-git-2' } as const
 /** `type` of plain (non-form) buttons. */
 export const BUTTON_TYPE = 'button'
+/** Relative time ("5m ago"): bucket sizes and how often a shown time re-renders. */
+export const MINUTE_MS = 60_000
+export const HOUR_MS = 3_600_000
+export const DAY_MS = 86_400_000
+export const TIME_TICK_MS = 30_000
+/** Author marks next to a thread's names. */
+export const AUTHOR_MARK_PX = 16
+export const MONOGRAM_MAX_LETTERS = 2
