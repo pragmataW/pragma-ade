@@ -1,10 +1,10 @@
 import { useLatestAsync, useRendererContext, useT } from '@pragma/sdk/renderer'
-import { cn } from '@pragma/ui'
+import { cn, EmptyState } from '@pragma/ui'
 import { CodeBlock } from '@pragma/ui/components/code-block'
 import { FileIcon } from '@pragma/ui/components/file-icon'
 import { Icon } from '@pragma/ui/components/icon'
 import { useEffect, useState } from 'react'
-import { BUTTON, ROW_ICON_PX as ICON_PX, ICONS, PLAIN_LANG, SHORT_SHA } from '../constants'
+import { BUTTON, EMPTY_ICONS, ROW_ICON_PX as ICON_PX, ICONS, PLAIN_LANG, SHORT_SHA, TAB_ICON } from '../constants'
 import {
   type EntryFile,
   type EntrySummary,
@@ -208,9 +208,12 @@ export function LocalHistoryTab() {
     <div data-testid={T.tab} className="flex h-full min-h-0 flex-col text-[13px]">
       <div className={cn('min-h-0 overflow-auto', selected ? 'max-h-[55%]' : 'flex-1')}>
         {list.data && entries.length === 0 && (
-          <p data-testid={T.empty} className="p-4 text-[var(--mu)]">
-            {t(active === null ? 'local-history:tab.noWorktree' : 'local-history:tab.empty')}
-          </p>
+          <EmptyState
+            testId={T.empty}
+            icon={active === null ? EMPTY_ICONS.noWorktree : TAB_ICON}
+            title={t(active === null ? 'local-history:tab.noWorktreeTitle' : 'local-history:tab.emptyTitle')}
+            description={t(active === null ? 'local-history:tab.noWorktree' : 'local-history:tab.empty')}
+          />
         )}
         {entries.map((entry) => (
           <EntryRow key={entry.id} entry={entry} selected={selected} onSelect={setSelected} />
