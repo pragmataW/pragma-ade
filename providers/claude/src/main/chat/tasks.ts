@@ -10,6 +10,8 @@ interface KnownTask {
   /** Foreground shell jobs stay hidden (their tool call shows them) until they move to the background. */
   shown: boolean
   kind: TaskKind
+  /** The last status sent: a frame without a (known) status keeps it, the contract requires one on every event. */
+  status: TaskStatus
   base: Pick<TaskEvent, 'taskId' | 'name'> &
     Partial<Pick<TaskEvent, 'toolCallId' | 'description' | 'depth' | 'parentId'>>
 }
@@ -51,14 +53,17 @@ export function createTaskMapper(): TaskMapper {
   const hidden = new Set<string>()
   /** Running workflow task ids, oldest first. */
   const workflows: string[] = []
-  const settle = (taskId: string, status: TaskStatus | undefined) => {
+  const settle = (taskId: string, status: TaskStatus) => {
     const at = workflows.indexOf(taskId)
-    if (at >= 0 && status && status !== TASK_STATUS.running) workflows.splice(at, 1)
+    if (at >= 0 && status !== TASK_STATUS.running) workflows.splice(at, 1)
   }
   const anchor = (t: KnownTask | undefined) => (t ? (t.base.toolCallId ?? t.base.taskId) : undefined)
 
-  const event = (t: KnownTask, status: TaskStatus | undefined, extra: Obj = {}): TaskEvent =>
-    defined({ kind: K.task, ...t.base, taskKind: t.kind, ...(status ? { status } : {}), ...extra }) as TaskEvent
+  /** Records `status` and returns the task's event. */
+  const event = (t: KnownTask, status: TaskStatus, extra: Obj = {}): TaskEvent => {
+    t.status = status
+    return defined({ kind: K.task, ...t.base, taskKind: t.kind, status, ...extra }) as TaskEvent
+  }
 
   function baseOf(f: Obj, taskId: string, type: string): KnownTask['base'] {
     const parent = str(f.parent_task_id)
@@ -80,6 +85,7 @@ export function createTaskMapper(): TaskMapper {
     const t: KnownTask = {
       shown: backgrounded || type === TASK_TYPE.agent || type === TASK_TYPE.workflow,
       kind: kindOf(type),
+      status: TASK_STATUS.running,
       base: baseOf(f, taskId, type),
     }
     known.set(taskId, t)
@@ -98,9 +104,12 @@ export function createTaskMapper(): TaskMapper {
     if (!t) return []
     const patch = obj(f.patch)
     if (patch.is_backgrounded === true) t.shown = true
-    settle(t.base.taskId, asStatus(patch.status))
+    // no or an unknown status (e.g. a backgrounding patch): the task keeps its last one
+    const status = asStatus(patch.status) ?? t.status
+    t.status = status
+    settle(t.base.taskId, status)
     if (!t.shown) return []
-    return [event(t, asStatus(patch.status), { summary: str(patch.error) })]
+    return [event(t, status, { summary: str(patch.error) })]
   }
 
   function progress(f: Obj): ChatEvent[] {
