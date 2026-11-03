@@ -36,6 +36,8 @@ export interface EditorUpstream {
   reply(id: string, input: ReplyInput): Promise<Comment>
   setStatus(id: string, status: CommentStatus): Promise<Comment>
   remove(id: string): Promise<void>
+  /** A pending user reply (the comments service refuses a delivered one). */
+  removeReply(replyId: string): Promise<void>
   /** A worktree's threads were added, edited, replied to, resolved, deleted or delivered. */
   onCommentsChanged(cb: (worktreeId: string) => void): () => void
 }
@@ -72,6 +74,7 @@ export function createUpstream(ctx: MainContext): EditorUpstream {
     reply: (id, input) => comments.reply(id, input),
     setStatus: (id, status) => comments.setStatus(id, status),
     remove: (id) => comments.remove(id),
+    removeReply: (replyId) => comments.removeReply(replyId),
     onCommentsChanged(cb) {
       const d = ctx.events.on(commentsChanged, (p) => cb(p.worktreeId))
       return () => d.dispose()

@@ -26,13 +26,22 @@ export interface ThreadInfo {
 
 const authorOf = (r: EditorThreadReply): string => (r.author === REPLY_AUTHOR.user ? M.author : (r.label ?? M.agent))
 
-/** Pending items carry the Pending label and context (the discard-reply action keys on it). */
-const comment = (body: string, author: string, pending: boolean, createdAt: number): ThreadCommentSpec => ({
-  body,
-  author,
-  ...(pending ? { label: M.pendingLabel } : {}),
-  timestamp: createdAt,
-  contextValue: pending ? COMMENT_CONTEXT.pending : COMMENT_CONTEXT.sent,
+const root = (t: EditorThread): ThreadCommentSpec => ({
+  body: t.body,
+  author: M.author,
+  ...(t.pending ? { label: M.pendingLabel } : {}),
+  timestamp: t.createdAt,
+  contextValue: t.pending ? COMMENT_CONTEXT.pending : COMMENT_CONTEXT.sent,
+})
+
+/** A pending reply carries the Pending label and the context the discard-reply action keys on. */
+const reply = (r: EditorThreadReply): ThreadCommentSpec => ({
+  body: r.body,
+  author: authorOf(r),
+  ...(r.pending ? { label: M.pendingLabel } : {}),
+  timestamp: r.createdAt,
+  contextValue: r.pending ? COMMENT_CONTEXT.pendingReply : COMMENT_CONTEXT.sent,
+  replyId: r.id,
 })
 
 /** `L3 · Open`, `L3–5 · Resolved` (a root not sent yet carries its own Pending label). */
@@ -50,10 +59,7 @@ export function toThreadSpec(folder: string, t: EditorThread): ThreadSpec {
     startLine: t.lineStart - 1,
     endLine: t.lineEnd - 1,
     label: threadLabel(t),
-    comments: [
-      comment(t.body, M.author, t.pending, t.createdAt),
-      ...t.replies.map((r) => comment(r.body, authorOf(r), r.pending, r.createdAt)),
-    ],
+    comments: [root(t), ...t.replies.map(reply)],
     resolved,
     contextValue: resolved ? THREAD_CONTEXT.resolved : THREAD_CONTEXT.open,
   }

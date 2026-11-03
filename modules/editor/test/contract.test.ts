@@ -39,6 +39,7 @@ describe('contract', () => {
         'reply',
         'setStatus',
         'deleteThread',
+        'removeReply',
         'send',
       ]),
     )

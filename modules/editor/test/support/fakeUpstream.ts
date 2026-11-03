@@ -7,7 +7,7 @@ import type { EditorUpstream, WorktreeRef } from '../../src/main/upstream'
 export interface FakeUpstream extends EditorUpstream {
   drafts: CommentInput[]
   sends: string[]
-  /** `reply`, `setStatus` and `remove` calls, in order. */
+  /** `reply`, `setStatus`, `remove` and `removeReply` calls, in order. */
   actions: unknown[][]
   selected: string[]
   sendResult: SendResult
@@ -69,6 +69,7 @@ export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[]
       return { id } as Comment
     },
     remove: async (id) => void up.actions.push(['remove', id]),
+    removeReply: async (replyId) => void up.actions.push(['removeReply', replyId]),
     onCommentsChanged: (cb) => {
       commentsCbs.add(cb)
       return () => commentsCbs.delete(cb)

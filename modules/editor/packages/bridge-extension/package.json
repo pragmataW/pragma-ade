@@ -96,6 +96,11 @@
         "command": "pragma.thread.discard",
         "title": "Discard",
         "icon": "$(close)"
+      },
+      {
+        "command": "pragma.reply.discard",
+        "title": "Discard reply",
+        "icon": "$(close)"
       }
     ],
     "menus": {
@@ -171,6 +176,10 @@
         {
           "command": "pragma.thread.discard",
           "when": "false"
+        },
+        {
+          "command": "pragma.reply.discard",
+          "when": "false"
         }
       ],
       "comments/commentThread/title": [
@@ -193,6 +202,13 @@
           "command": "pragma.thread.discard",
           "group": "inline@1",
           "when": "commentController == pragma-review && commentThread == pragma-thread-unsent"
+        }
+      ],
+      "comments/comment/title": [
+        {
+          "command": "pragma.reply.discard",
+          "group": "inline@1",
+          "when": "commentController == pragma-review && comment == pragma-reply-pending"
         }
       ]
     }

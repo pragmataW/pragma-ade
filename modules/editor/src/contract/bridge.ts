@@ -109,6 +109,8 @@ const threadRef = z.object({ threadId: z.string().min(1) })
 /** A user reply from the workbench; `send` also sends the worktree's review round. */
 export const EditorThreadReplyInputSchema = threadRef.extend({ body: z.string().min(1), send: z.boolean() })
 export const EditorThreadStatusInputSchema = threadRef.extend({ status: z.enum(COMMENT_STATUSES) })
+/** A pending user reply of one of the client's threads, discarded before a Send delivers it. */
+export const EditorReplyRefSchema = threadRef.extend({ replyId: z.string().min(1) })
 export const EditorOpenFileMsgSchema = z.object({
   path: z.string(),
   line: line().optional(),
@@ -148,6 +150,7 @@ export type EditorThread = z.infer<typeof EditorThreadSchema>
 export type EditorThreads = z.infer<typeof EditorThreadsSchema>
 export type EditorThreadReplyInput = z.infer<typeof EditorThreadReplyInputSchema>
 export type EditorThreadStatusInput = z.infer<typeof EditorThreadStatusInputSchema>
+export type EditorReplyRef = z.infer<typeof EditorReplyRefSchema>
 export type EditorOpenFileMsg = z.infer<typeof EditorOpenFileMsgSchema>
 export type DiffRefs = z.infer<typeof DiffRefsSchema>
 export type EditorOpenDiffMsg = z.infer<typeof EditorOpenDiffMsgSchema>
@@ -169,6 +172,7 @@ export const editorBridge = defineBridgeNamespace({
     reply: { input: EditorThreadReplyInputSchema, output: EditorCommentReplySchema },
     setStatus: { input: EditorThreadStatusInputSchema, output: z.null() },
     deleteThread: { input: threadRef, output: z.null() },
+    removeReply: { input: EditorReplyRefSchema, output: z.null() },
     /** Sends every pending item of the client's worktree (one review round). */
     send: { input: z.object({}), output: EditorSendReplySchema },
   },

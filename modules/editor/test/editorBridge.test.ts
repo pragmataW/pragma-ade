@@ -293,6 +293,24 @@ describe('EditorBridge', () => {
     expect(up.sends).toEqual([])
   })
 
+  it('removeReply discards a reply of a thread of this worktree only', async () => {
+    const { up, ext } = await setup()
+    up.stored = [
+      stored({ id: 't1', replies: [aReply({ id: 'r1' })] }),
+      stored({ id: 'o1', worktreeId: 'w2', replies: [aReply({ id: 'r2' })] }),
+    ]
+    const e = await ext('/work/one')
+    await e.hello()
+    expect(await e.client.request(editorBridge, 'removeReply', { threadId: 't1', replyId: 'r1' })).toBeNull()
+    await expect(e.client.request(editorBridge, 'removeReply', { threadId: 'o1', replyId: 'r2' })).rejects.toThrow(
+      'This review thread is not in this worktree',
+    )
+    await expect(e.client.request(editorBridge, 'removeReply', { threadId: 't1', replyId: 'r2' })).rejects.toThrow(
+      'This review thread is not in this worktree',
+    )
+    expect(up.actions).toEqual([['removeReply', 'r1']])
+  })
+
   it('testRequest resolves on matching testResponse, ignores other requestIds', async () => {
     const { bridge, ext } = await setup()
     const e = await ext('/work/one')

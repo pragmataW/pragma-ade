@@ -43,6 +43,14 @@ export interface ThreadCommentSpec {
   timestamp: number
   /** `COMMENT_CONTEXT.*`. */
   contextValue: string
+  /** The Pragma reply id; absent on the root. */
+  replyId?: string
+}
+
+/** The Pragma ids behind a drawn reply (comment title actions get them). */
+export interface CommentRef {
+  threadId: string
+  replyId: string
 }
 
 /** A stored review thread: root and replies, replyable, Resolved / Unresolved. */
@@ -121,6 +129,8 @@ export interface VscodeApi extends GitPort {
   registerReplyCommand(id: string, handler: (reply: { thread: ThreadLike; text: string }) => unknown): Disposable
   /** Thread title actions: the handler gets the Pragma id of the thread the action was clicked on, and the thread. */
   registerThreadCommand(id: string, handler: (threadId: string | undefined, thread: ThreadLike) => unknown): Disposable
+  /** Comment title actions: the handler gets the Pragma ids of the reply the action was clicked on. */
+  registerCommentCommand(id: string, handler: (ref: CommentRef | undefined) => unknown): Disposable
   /** Full text lines and language of a document. */
   readDocument(uri: ThreadLike['uri']): Promise<{ lines: string[]; languageId: string }>
   diagnostics(absPath: string): DiagnosticInfo[]
@@ -136,6 +146,8 @@ export interface VscodeApi extends GitPort {
 
 /** Drawn thread → its Pragma id (the comment commands get VS Code's thread object). */
 const threadIds = new WeakMap<vscode.CommentThread, string>()
+/** Drawn reply → its Pragma ids (comment title commands get VS Code's comment object). */
+const commentRefs = new WeakMap<vscode.Comment, CommentRef>()
 
 const toThread = (vs: typeof vscode, t: vscode.CommentThread, author: string): ThreadLike => ({
   id: threadIds.get(t),
@@ -166,15 +178,20 @@ function tabInfo(vs: typeof vscode, tab: vscode.Tab): TabInfo {
 
 const zeroBased = (n: number | undefined): number => Math.max(0, (n ?? 1) - 1)
 
-const toComments = (vs: typeof vscode, spec: ThreadSpec): vscode.Comment[] =>
-  spec.comments.map((c) => ({
-    body: c.body,
-    label: c.label,
-    mode: vs.CommentMode.Preview,
-    author: { name: c.author },
-    timestamp: new Date(c.timestamp),
-    contextValue: c.contextValue,
-  }))
+function toComments(vs: typeof vscode, spec: ThreadSpec): vscode.Comment[] {
+  return spec.comments.map((c) => {
+    const comment: vscode.Comment = {
+      body: c.body,
+      label: c.label,
+      mode: vs.CommentMode.Preview,
+      author: { name: c.author },
+      timestamp: new Date(c.timestamp),
+      contextValue: c.contextValue,
+    }
+    if (c.replyId) commentRefs.set(comment, { threadId: spec.id, replyId: c.replyId })
+    return comment
+  })
+}
 
 /** Writes everything but the uri; the collapse follows a status change only (the user's own toggle stays). */
 function applySpec(vs: typeof vscode, t: vscode.CommentThread, spec: ThreadSpec, statusChanged: boolean): void {
@@ -260,6 +277,8 @@ export function createVscodeApi(vs: typeof vscode, ctx: vscode.ExtensionContext)
       vs.commands.registerCommand(id, (thread: vscode.CommentThread) =>
         handler(threadIds.get(thread), toThread(vs, thread, COMMENT_MESSAGES.author)),
       ),
+    registerCommentCommand: (id, handler) =>
+      vs.commands.registerCommand(id, (comment: vscode.Comment) => handler(commentRefs.get(comment))),
     async readDocument(uri) {
       const doc = await vs.workspace.openTextDocument(vs.Uri.file(uri.fsPath))
       return { lines: doc.getText().split(/\r?\n/), languageId: doc.languageId }

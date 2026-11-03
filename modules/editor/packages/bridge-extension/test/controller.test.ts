@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { EditorComment, EditorCommentReply, EditorThread } from '@pragma/module-editor/contract'
 import { describe, expect, it } from 'vitest'
 import { type CommentConnection, ReviewController } from '../src/comments/controller'
+import { toThreadSpec } from '../src/comments/threads'
 import { COMMANDS, COMMENT_CONTEXT, CONTROLLER, THREAD_CONTEXT } from '../src/constants'
 import { fakeApi, fakeThread } from './fakes/vscode'
 
@@ -120,33 +121,21 @@ describe('ReviewController', () => {
     expect(controller.ranges({ scheme: 'untitled', fsPath: 'Untitled-1', lineCount: 3 })).toEqual([])
   })
 
-  it('draws each thread with its replies, authors and Pending labels on 0-based lines of the absolute file', () => {
+  it('draws each thread as its spec (toThreadSpec) on 0-based lines of the absolute file', () => {
     const { api, controller } = setup({ status: 'sent', commentId: 'c' })
-    const replies = [
-      { id: 'r1', author: 'agent', label: 'Claude', body: 'Done.', pending: false, createdAt: 2_000 },
-      { id: 'r2', author: 'agent', label: null, body: 'Also.', pending: false, createdAt: 3_000 },
-      { id: 'r3', author: 'user', label: null, body: 'Thanks.', pending: true, createdAt: 4_000 },
-    ] as const
-    controller.showThreads([draft('a', { lineStart: 2, lineEnd: 4, pending: false, replies: [...replies] })])
-    expect(api.threads).toEqual([
-      {
-        id: 'a',
-        path: '/work/repo/src/bad.ts',
-        startLine: 1,
-        endLine: 3,
-        label: 'L2–4 · Open',
-        comments: [
-          { body: 'note a', author: 'You', timestamp: 1_000, contextValue: COMMENT_CONTEXT.sent },
-          { body: 'Done.', author: 'Claude', timestamp: 2_000, contextValue: COMMENT_CONTEXT.sent },
-          { body: 'Also.', author: 'Agent', timestamp: 3_000, contextValue: COMMENT_CONTEXT.sent },
-          { body: 'Thanks.', author: 'You', label: 'Pending', timestamp: 4_000, contextValue: COMMENT_CONTEXT.pending },
-        ],
-        resolved: false,
-        contextValue: THREAD_CONTEXT.open,
-        disposed: false,
-        updates: 0,
-      },
-    ])
+    const reply = {
+      id: 'r1',
+      author: 'agent',
+      label: 'Claude',
+      body: 'Done.',
+      pending: false,
+      createdAt: 2_000,
+    } as const
+    const thread = draft('a', { lineStart: 2, lineEnd: 4, pending: false, replies: [reply] })
+    controller.showThreads([thread])
+    expect(api.threads).toEqual([{ ...toThreadSpec(FOLDER, thread), disposed: false, updates: 0 }])
+    expect(api.threads[0]).toMatchObject({ path: '/work/repo/src/bad.ts', startLine: 1, endLine: 3 })
+    expect(api.threads[0]?.comments.map((c) => c.author)).toEqual(['You', 'Claude'])
     expect(controller.threads()[0]).toMatchObject({ id: 'a', path: 'src/bad.ts', startLine: 1, status: 'open' })
   })
 
@@ -232,6 +221,15 @@ describe('ReviewController', () => {
     for (const m of title) expect(m.when).toMatch(/commentThread (==|=~) \/?\^?pragma-thread-/)
   })
 
+  it('discarding a pending reply asks the app to remove it; an unknown comment only warns', async () => {
+    const { api, calls } = setup({ status: 'sent', commentId: 'c' })
+    await api.commentCommands.get(COMMANDS.discardReply)?.({ threadId: 'a', replyId: 'r3' })
+    expect(calls).toEqual([['removeReply', { threadId: 'a', replyId: 'r3' }]])
+    await api.commentCommands.get(COMMANDS.discardReply)?.(undefined)
+    expect(calls).toHaveLength(1)
+    expect(api.warnings).toHaveLength(1)
+  })
+
   it('manifest command ids match constants', () => {
     const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'))
     const ids = pkg.contributes.commands.map((c: { command: string }) => c.command).sort()
@@ -264,6 +262,9 @@ describe('ReviewController', () => {
       [COMMANDS.reopen, `${controller} && commentThread == ${THREAD_CONTEXT.resolved}`],
       [COMMANDS.deleteThread, `${controller} && commentThread =~ /^pragma-thread-(open|resolved)$/`],
       [COMMANDS.discard, `${controller} && commentThread == ${THREAD_CONTEXT.unsent}`],
+    ])
+    expect(when('comments/comment/title')).toEqual([
+      [COMMANDS.discardReply, `${controller} && comment == ${COMMENT_CONTEXT.pendingReply}`],
     ])
     expect(menus.commandPalette.map((m: { command: string }) => m.command).sort()).toEqual(ids)
   })

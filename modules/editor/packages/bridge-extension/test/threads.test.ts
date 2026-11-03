@@ -41,9 +41,16 @@ describe('toThreadSpec', () => {
     )
     expect(spec.comments).toEqual([
       { body: 'Fix it', author: 'You', label: 'Pending', timestamp: 1_000, contextValue: COMMENT_CONTEXT.pending },
-      { body: 'Done.', author: 'Claude', timestamp: 2_000, contextValue: COMMENT_CONTEXT.sent },
-      { body: 'Also.', author: 'Agent', timestamp: 3_000, contextValue: COMMENT_CONTEXT.sent },
-      { body: 'Thanks.', author: 'You', label: 'Pending', timestamp: 4_000, contextValue: COMMENT_CONTEXT.pending },
+      { body: 'Done.', author: 'Claude', timestamp: 2_000, contextValue: COMMENT_CONTEXT.sent, replyId: 'r1' },
+      { body: 'Also.', author: 'Agent', timestamp: 3_000, contextValue: COMMENT_CONTEXT.sent, replyId: 'r2' },
+      {
+        body: 'Thanks.',
+        author: 'You',
+        label: 'Pending',
+        timestamp: 4_000,
+        contextValue: COMMENT_CONTEXT.pendingReply,
+        replyId: 'r3',
+      },
     ])
     expect(spec).toMatchObject({ path: '/w/src/a.ts', startLine: 2, endLine: 2, contextValue: THREAD_CONTEXT.open })
   })

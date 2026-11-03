@@ -83,6 +83,11 @@ export class EditorBridge {
         await this.#up.remove(p.threadId)
         return null
       },
+      removeReply: async (p, ctx) => {
+        await this.#ownThread(p.threadId, ctx, p.replyId)
+        await this.#up.removeReply(p.replyId)
+        return null
+      },
       send: (_p, ctx) => this.#send(ctx),
     })
     const offClient = this.#up.bridge.onClient(CLIENT_EVENT.disconnected, (c) => this.#forget(c.clientId))
@@ -221,12 +226,16 @@ export class EditorBridge {
     return null
   }
 
-  /** The client's worktree when `threadId` is one of its threads; throws otherwise (a client acts only on its own). */
-  async #ownThread(threadId: string, ctx: BridgeRequestContext): Promise<string> {
+  /**
+   * The client's worktree when `threadId` is one of its threads (and `replyId`, if given, one of that thread's
+   * replies); throws otherwise (a client acts only on its own).
+   */
+  async #ownThread(threadId: string, ctx: BridgeRequestContext, replyId?: string): Promise<string> {
     const worktreeId = await this.#worktreeFor(this.#folderOfClient.get(ctx.clientId))
     if (!worktreeId) throw new Error(NOT_A_WORKTREE)
-    const threads = await this.#up.listThreads(worktreeId)
-    if (!threads.some((c) => c.id === threadId)) throw new Error(NOT_THIS_WORKTREE)
+    const thread = (await this.#up.listThreads(worktreeId)).find((c) => c.id === threadId)
+    if (!thread || (replyId !== undefined && !thread.replies.some((r) => r.id === replyId)))
+      throw new Error(NOT_THIS_WORKTREE)
     return worktreeId
   }
 

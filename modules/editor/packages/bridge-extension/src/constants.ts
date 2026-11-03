@@ -166,6 +166,8 @@ export const COMMANDS = {
   deleteThread: 'pragma.thread.delete',
   /** Removes a composer whose comment could not be stored ("Not sent"). */
   discard: 'pragma.thread.discard',
+  /** Discards a pending user reply before a Send delivers it. */
+  discardReply: 'pragma.reply.discard',
 } as const
 export const CONTROLLER = {
   id: 'pragma-review',
@@ -196,8 +198,12 @@ export const THREAD_CONTEXT = {
   resolved: 'pragma-thread-resolved',
   unsent: 'pragma-thread-unsent',
 } as const
-/** `Comment.contextValue` of a drawn comment: not delivered by a Send yet, or delivered / from the agent. */
-export const COMMENT_CONTEXT = { pending: 'pragma-comment-pending', sent: 'pragma-comment' } as const
+/** `Comment.contextValue`: a root or a user reply no Send delivered yet (the reply can be discarded), or delivered. */
+export const COMMENT_CONTEXT = {
+  pending: 'pragma-comment-pending',
+  pendingReply: 'pragma-reply-pending',
+  sent: 'pragma-comment',
+} as const
 /** Thread header text, as Git Changes writes a location: `L3` / `L3–5`, then the status and Pending. */
 export const THREAD_LABEL = { line: 'L', range: '–', sep: ' · ', open: 'Open', resolved: 'Resolved' } as const
 export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const

@@ -12,6 +12,7 @@ import { COMMANDS, CONTROLLER, FILE_SCHEME, COMMENT_MESSAGES as M, THREADS_MESSA
 import { isInsideFolder } from '../handlers/openFile'
 import type {
   CommentControllerHandle,
+  CommentRef,
   Disposable,
   DocumentInfo,
   ThreadHandle,
@@ -89,6 +90,9 @@ export class ReviewController {
       api.registerThreadCommand(COMMANDS.reopen, (id) => this.setStatus(id, THREAD_STATUS.open)),
       api.registerThreadCommand(COMMANDS.deleteThread, (id) => this.deleteThread(id)),
       api.registerThreadCommand(COMMANDS.discard, (_id, thread) => thread.dispose()),
+      api.registerCommentCommand(COMMANDS.discardReply, (ref) =>
+        this.#threadRequest(ref?.threadId, () => this.#conn.request('removeReply', ref as CommentRef)),
+      ),
     )
     this.#draw()
   }
