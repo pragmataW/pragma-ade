@@ -92,6 +92,7 @@
     "reply": "Reply",
     "replyPlaceholder": "Reply to the agent…",
     "replySubmit": "Reply",
+    "replyAndSend": "Reply and send",
     "replyCancel": "Cancel",
     "discardReply": "Discard reply",
     "expand_one": "Show thread ({{count}} reply)",

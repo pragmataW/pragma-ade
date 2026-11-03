@@ -47,14 +47,14 @@ export function CommentComposer(props: CommentComposerProps) {
             </PrimaryButton>
           ) : (
             <>
-              <SecondaryButton data-testid={T.composerAddDraft} disabled={c.disabled} onClick={() => void c.addDraft()}>
-                {t('comments:composer.addDraft')}
-              </SecondaryButton>
               {c.canSendNow ? (
-                <PrimaryButton data-testid={T.composerSendNow} disabled={c.disabled} onClick={() => void c.sendNow()}>
+                <SecondaryButton data-testid={T.composerSendNow} disabled={c.disabled} onClick={() => void c.sendNow()}>
                   {t('comments:composer.sendNow')}
-                </PrimaryButton>
+                </SecondaryButton>
               ) : null}
+              <PrimaryButton data-testid={T.composerAddDraft} disabled={c.disabled} onClick={() => void c.addDraft()}>
+                {t('comments:composer.addDraft')}
+              </PrimaryButton>
             </>
           )}
         </div>

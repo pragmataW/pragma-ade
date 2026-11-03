@@ -34,6 +34,7 @@ export const COMMENTS_TESTIDS = {
   replyOpen: 'comment-reply-open',
   replyInput: 'comment-reply-input',
   replySubmit: 'comment-reply-submit',
+  replySubmitAndSend: 'comment-reply-submit-send',
   replyCancel: 'comment-reply-cancel',
   threadActions: 'comment-thread-actions',
   threadMore: 'comment-thread-more',

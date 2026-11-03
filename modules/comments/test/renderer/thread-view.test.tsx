@@ -97,6 +97,26 @@ test('no reply box until Reply is clicked; Esc and Cancel close it; a sent reply
   expect(r.fakeIpc.callsOn(commentsIpc.reply.channel)).toEqual([{ id: 't5', body: 'On it' }])
 })
 
+test('Reply and send stores the reply, then sends the worktree round; buttons read Cancel · Reply and send · Reply', async () => {
+  r = mountRenderer()
+  r.fakeIpc.respond(commentsIpc.reply, () => aReply())
+  r.fakeIpc.respond(commentsIpc.send, () => ({ status: 'sent', sessionId: 's1', count: 1 }))
+  const thread = aThread({ id: 't6' })
+  renderUi(<ThreadView comment={thread} />)
+  fireEvent.click(screen.getByTestId(T.replyOpen))
+  const buttons = [T.replyCancel, T.replySubmitAndSend, T.replySubmit].map((id) => screen.getByTestId(id))
+  expect(buttons.map((b) => b.textContent)).toEqual([
+    en.thread.replyCancel,
+    en.thread.replyAndSend,
+    en.thread.replySubmit,
+  ])
+  fireEvent.change(screen.getByTestId(T.replyInput), { target: { value: 'Go' } })
+  fireEvent.click(screen.getByTestId(T.replySubmitAndSend))
+  await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toHaveLength(1))
+  expect(r.fakeIpc.callsOn(commentsIpc.reply.channel)).toEqual([{ id: 't6', body: 'Go' }])
+  expect(r.fakeIpc.callsOn(commentsIpc.send.channel)[0]).toMatchObject({ worktreeId: thread.worktreeId })
+})
+
 const MARKDOWN = [
   'Done: **renamed** it.',
   '',

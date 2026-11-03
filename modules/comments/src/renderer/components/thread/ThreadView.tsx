@@ -10,12 +10,15 @@ import {
   type Comment,
   isPendingRoot,
   REPLY_AUTHOR,
+  SEND_STATUS,
   COMMENTS_TESTIDS as T,
   type ThreadLink,
   type ThreadViewProps,
 } from '../../../contract'
 import { GHOST, SIZE_XS } from '../../lib/buttons'
 import { useNarrow } from '../../lib/use-narrow'
+import { useCommentsStore } from '../../store'
+import { useSendFlow } from '../../use-send-flow'
 import { AuthorLine } from './AuthorBadge'
 import { DeleteConfirm, DeleteFailed } from './DeleteConfirm'
 import { ReplyBox } from './ReplyBox'
@@ -101,13 +104,20 @@ function ToggleButton({ open, count, onClick }: { open: boolean; count: number; 
   )
 }
 
-function ReplyArea({ api }: { api: ThreadActionsApi }) {
+function ReplyArea({ api, worktreeId }: { api: ThreadActionsApi; worktreeId: string }) {
   const t = useT()
+  const flow = useSendFlow()
   const [replying, setReplying] = useState(false)
+  /** Same as the editor's "Reply and send": store the reply, then deliver the worktree's pending round. */
+  const replyAndSend = async (body: string) => {
+    await api.reply(body)
+    const result = await flow.send({ worktreeId })
+    if (result?.status === SEND_STATUS.failed) useCommentsStore.getState().showError(result.errorKey)
+  }
   if (replying)
     return (
       <div className="ml-[7px] border-[var(--bd2)] border-l-2 pl-3">
-        <ReplyBox onSubmit={api.reply} onClose={() => setReplying(false)} />
+        <ReplyBox onSubmit={api.reply} onSubmitAndSend={replyAndSend} onClose={() => setReplying(false)} />
       </div>
     )
   return (
@@ -203,7 +213,7 @@ export function ThreadView(props: ThreadViewProps) {
         <ThreadBody body={comment.body} preview={!open} />
       </div>
       {open ? <ReplyList replies={comment.replies} onDiscard={api.removeReply} /> : null}
-      {open ? <ReplyArea api={api} /> : null}
+      {open ? <ReplyArea api={api} worktreeId={comment.worktreeId} /> : null}
       {comment.status === COMMENT_STATUS.resolved ? (
         <ToggleButton open={open} count={comment.replies.length} onClick={() => setOpen(!open)} />
       ) : null}
