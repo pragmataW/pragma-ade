@@ -45,7 +45,8 @@ function UserMark() {
 
 /**
  * Who wrote an item and when: a mark (user glyph, or the agent's monogram), "You" or the agent's profile label
- * ("Agent" when unknown), the relative time and Pending while unsent.
+ * ("Agent" when unknown), the relative time and Pending while unsent. In a narrow card the time and Pending wrap onto
+ * a second line rather than cutting the author's name.
  */
 export function AuthorLine(p: {
   author: CommentReply['author']
@@ -58,9 +59,9 @@ export function AuthorLine(p: {
   const user = p.author === REPLY_AUTHOR.user
   const label = user ? t('comments:thread.you') : (p.authorLabel ?? t('comments:thread.agent'))
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
       {user ? <UserMark /> : <Monogram letters={initials(label)} size={AUTHOR_MARK_PX} />}
-      <span data-testid={p.testId} className="min-w-0 truncate font-semibold text-[12px] text-foreground">
+      <span data-testid={p.testId} className="min-w-0 max-w-full truncate font-semibold text-[12px] text-foreground">
         {label}
       </span>
       <TimeAgo ts={p.createdAt} />
