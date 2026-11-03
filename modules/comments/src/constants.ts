@@ -1,5 +1,7 @@
 /** Module-internal constants (§9). Values other modules need live in `./contract`. */
 
+import type { CSSProperties } from 'react'
+
 export const COMMENTS_MODULE_ID = 'comments'
 
 // Limits
@@ -63,6 +65,14 @@ export const AUTHOR_MARK_PX = 16
 export const MONOGRAM_MAX_LETTERS = 2
 /** Below this width (px) a thread's secondary actions (Edit, links, Delete) collapse into its "…" menu. */
 export const THREAD_NARROW_PX = 360
+
+/**
+ * Right gutter keeping the drawer header's actions (Clear resolved) clear of the Windows/Linux window-controls
+ * overlay: the frameless window draws min/max/close over the top-right corner. `env()` falls back to 0 on macOS.
+ */
+export const WINDOW_CONTROLS_GUTTER: CSSProperties = {
+  paddingRight: 'calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw))',
+}
 
 // Other modules' commands (optional: links show only while `commands.has`). Ids, not contracts: git-changes already
 // depends on comments, so importing its contract would be a cycle.

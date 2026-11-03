@@ -3,7 +3,7 @@ import { EmptyState } from '@pragma/ui'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
 import { ChevronDown, ChevronRight, CircleCheck } from '@pragma/ui/icons'
 import { useState } from 'react'
-import { BUTTON_TYPE, EMPTY_ICONS } from '../../constants'
+import { BUTTON_TYPE, EMPTY_ICONS, WINDOW_CONTROLS_GUTTER } from '../../constants'
 import { COMMENT_STATUS, type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
 import { clearResolved } from '../clear-resolved'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
@@ -154,7 +154,10 @@ export function CommentsDrawer() {
         className="w-[440px] max-w-[calc(100vw-24px)] gap-0 bg-[var(--pn)] p-0 sm:max-w-[440px]"
         onEscapeKeyDown={keepOpenWhileTyping}
       >
-        <SheetHeader className="flex-row items-center gap-2.5 border-[var(--bd)] border-b px-4 py-2.5">
+        <SheetHeader
+          className="flex-row items-center gap-2.5 border-[var(--bd)] border-b px-4 py-2.5"
+          style={WINDOW_CONTROLS_GUTTER}
+        >
           <SheetTitle className="shrink-0 font-semibold text-[15px]">{t('comments:drawer.title')}</SheetTitle>
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
           {worktreeId ? <HeaderActions worktreeId={worktreeId} /> : null}

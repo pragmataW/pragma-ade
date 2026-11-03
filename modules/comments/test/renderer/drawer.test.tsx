@@ -188,6 +188,12 @@ describe('CommentsDrawer', () => {
     expect(screen.queryByTestId(T.clearResolved)).toBeNull()
   })
 
+  test('the header keeps a right gutter for the Windows/Linux window-controls overlay', async () => {
+    await open({ threads: [draftA()] })
+    const header = screen.getByText(en.drawer.title).parentElement as HTMLElement
+    expect(header.getAttribute('style')).toContain('env(titlebar-area-width')
+  })
+
   test('delete asks inline, then calls comments.remove', async () => {
     await open({ threads: [draftA()] })
     fireEvent.click(screen.getByTestId(T.rowDelete))
