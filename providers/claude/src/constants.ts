@@ -34,3 +34,18 @@ export const CLAUDE_INHERITED_ENV = [
 const KIB = 1024
 const TRANSCRIPT_HEAD_KIB = 64
 export const TRANSCRIPT_HEAD_BYTES = TRANSCRIPT_HEAD_KIB * KIB
+
+/** `pragma ask`: one headless, read-only question (`claude -p`; the prompt goes on stdin). */
+export const ASK_ARGS = [
+  '-p',
+  '--output-format',
+  'json',
+  '--no-session-persistence',
+  '--permission-mode',
+  'plan',
+  '--disallowedTools',
+  'Edit,Write,NotebookEdit',
+] as const
+export const MODEL_FLAG = '--model'
+/** At most this much of stderr/stdout goes into a failure message. */
+export const STDERR_TAIL_CHARS = 2000
