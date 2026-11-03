@@ -9,6 +9,7 @@ export {
   defaultChatUi,
   documentAttachmentsExtension,
   fileMentionExtension,
+  formatCount,
   imageAttachmentsExtension,
   McpStatus,
   ModelPicker,

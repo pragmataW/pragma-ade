@@ -52,6 +52,8 @@ export const PLAN_MAX_H_PX = 420
 /** Indent per nesting level in the task tree. */
 export const TASK_INDENT_PX = 12
 export const MARK_PX = 14
+/** Numbers and times in the kit use the app's locale (English in v1), not the system one. */
+export const FORMAT_LOCALE = 'en-US'
 export const ELAPSED_TICK_MS = 1000
 export const MS_PER_SECOND = 1000
 export const SECONDS_PER_MINUTE = 60
