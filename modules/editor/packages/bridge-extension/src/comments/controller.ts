@@ -49,9 +49,9 @@ function successMessage(reply: EditorCommentReply): string | null {
 const sameSpec = (a: ThreadSpec, b: ThreadSpec): boolean => JSON.stringify(a) === JSON.stringify(b)
 
 /**
- * The `pragma-review` comment controller: every line of worktree files, Send to Agent / Add to Review / Cancel for a
- * new comment, and the worktree's review threads (editor and new-side diff comments, the same threads Git Changes and
- * the drawer show) with replies, Reply / Reply and Send, Resolve / Reopen / Delete.
+ * The `pragma-review` comment controller: every line of worktree files, Add to drafts / Send now / Cancel for a new
+ * comment, and the worktree's review threads (editor and new-side diff comments, the same threads Git Changes and the
+ * drawer show) with replies, Reply / Reply and send / Cancel, Resolve / Reopen / Delete.
  */
 export class ReviewController {
   readonly #api: VscodeApi
@@ -84,6 +84,7 @@ export class ReviewController {
       api.registerReplyCommand(COMMANDS.cancel, (r) => r.thread.dispose()),
       api.registerReplyCommand(COMMANDS.reply, (r) => this.handleReply(r, false)),
       api.registerReplyCommand(COMMANDS.replyAndSend, (r) => this.handleReply(r, true)),
+      api.registerReplyCommand(COMMANDS.replyCancel, () => undefined),
       api.registerThreadCommand(COMMANDS.resolve, (id) => this.setStatus(id, THREAD_STATUS.resolved)),
       api.registerThreadCommand(COMMANDS.reopen, (id) => this.setStatus(id, THREAD_STATUS.open)),
       api.registerThreadCommand(COMMANDS.deleteThread, (id) => this.deleteThread(id)),

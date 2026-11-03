@@ -143,6 +143,8 @@ export const COMMANDS = {
   cancel: 'pragma.comment.cancel',
   reply: 'pragma.thread.reply',
   replyAndSend: 'pragma.thread.replyAndSend',
+  /** Closes the reply box (the workbench collapses it after any form action). */
+  replyCancel: 'pragma.thread.replyCancel',
   resolve: 'pragma.thread.resolve',
   reopen: 'pragma.thread.reopen',
   deleteThread: 'pragma.thread.delete',
@@ -162,7 +164,7 @@ export const PLAINTEXT = 'plaintext'
 export const COMMENT_MESSAGES = {
   empty: 'Comment is empty',
   outside: 'Only files in this worktree can be commented',
-  drafted: 'Added to review',
+  drafted: 'Added to drafts',
   sent: 'Sent to agent',
   needsUserAction: 'Choose an agent in Pragma',
   notSentLabel: 'Not sent',

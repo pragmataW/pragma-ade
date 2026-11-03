@@ -52,7 +52,7 @@ function setup(reply: EditorCommentReply | Error) {
 describe('ReviewController', () => {
   it.each([
     ['send', COMMANDS.sendToAgent, { status: 'sent', commentId: 'c1' }, 'Sent to agent', true],
-    ['draft', COMMANDS.addToReview, { status: 'drafted', commentId: 'c1' }, 'Added to review', true],
+    ['draft', COMMANDS.addToReview, { status: 'drafted', commentId: 'c1' }, 'Added to drafts', true],
     ['send', COMMANDS.sendToAgent, { status: 'needsUserAction', commentId: 'c1' }, 'Choose an agent in Pragma', true],
     ['send', COMMANDS.sendToAgent, { status: 'failed', message: 'comments:errors.deliveryFailed' }, null, false],
     ['send', COMMANDS.sendToAgent, new Error('offline'), null, false],
@@ -92,6 +92,15 @@ describe('ReviewController', () => {
     expect(t.isDisposed()).toBe(false)
     await api.threadCommands.get(COMMANDS.discard)?.(undefined, t.thread)
     expect(t.isDisposed()).toBe(true)
+  })
+
+  it('cancelling a reply sends nothing and keeps the thread (the workbench collapses the reply box)', async () => {
+    const { api, calls } = setup({ status: 'drafted', commentId: 'a' })
+    const t = fakeThread(FILE, 0, 0)
+    expect(api.commands.has(COMMANDS.replyCancel)).toBe(true)
+    await api.commands.get(COMMANDS.replyCancel)?.({ thread: { ...t.thread, id: 'a' }, text: 'half' })
+    expect(calls).toEqual([])
+    expect(t.isDisposed()).toBe(false)
   })
 
   it('cancel disposes the thread', async () => {
@@ -230,12 +239,25 @@ describe('ReviewController', () => {
     const controller = `commentController == ${CONTROLLER.id}`
     const menus = pkg.contributes.menus
     const when = (key: string) => menus[key].map((m: { command: string; when: string }) => [m.command, m.when])
+    // The first form action is the primary button and the Ctrl+Enter default (the app's ⌘Enter adds a draft).
     expect(when('comments/commentThread/context')).toEqual([
-      [COMMANDS.sendToAgent, `${controller} && commentThreadIsEmpty`],
       [COMMANDS.addToReview, `${controller} && commentThreadIsEmpty`],
+      [COMMANDS.sendToAgent, `${controller} && commentThreadIsEmpty`],
       [COMMANDS.cancel, `${controller} && commentThreadIsEmpty`],
-      [COMMANDS.replyAndSend, `${controller} && !commentThreadIsEmpty`],
       [COMMANDS.reply, `${controller} && !commentThreadIsEmpty`],
+      [COMMANDS.replyAndSend, `${controller} && !commentThreadIsEmpty`],
+      [COMMANDS.replyCancel, `${controller} && !commentThreadIsEmpty`],
+    ])
+    const title = (id: string) => pkg.contributes.commands.find((c: { command: string }) => c.command === id)?.title
+    expect([COMMANDS.addToReview, COMMANDS.sendToAgent, COMMANDS.cancel].map(title)).toEqual([
+      'Add to drafts',
+      'Send now',
+      'Cancel',
+    ])
+    expect([COMMANDS.reply, COMMANDS.replyAndSend, COMMANDS.replyCancel].map(title)).toEqual([
+      'Reply',
+      'Reply and send',
+      'Cancel',
     ])
     expect(when('comments/commentThread/title')).toEqual([
       [COMMANDS.resolve, `${controller} && commentThread == ${THREAD_CONTEXT.open}`],

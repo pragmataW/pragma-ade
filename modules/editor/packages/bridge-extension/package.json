@@ -3,7 +3,7 @@
   "displayName": "Pragma Bridge",
   "description": "Connects the Pragma ADE editor to the app: line comments to agents, open file at line, theme sync.",
   "publisher": "pragma",
-  "version": "0.9.3",
+  "version": "0.10.0",
   "private": true,
   "license": "MIT",
   "repository": "local:pragma-ade/modules/editor/packages/bridge-extension",
@@ -33,11 +33,11 @@
     "commands": [
       {
         "command": "pragma.comment.sendToAgent",
-        "title": "Send to Agent"
+        "title": "Send now"
       },
       {
         "command": "pragma.comment.addToReview",
-        "title": "Add to Review"
+        "title": "Add to drafts"
       },
       {
         "command": "pragma.comment.cancel",
@@ -49,7 +49,11 @@
       },
       {
         "command": "pragma.thread.replyAndSend",
-        "title": "Reply and Send to Agent"
+        "title": "Reply and send"
+      },
+      {
+        "command": "pragma.thread.replyCancel",
+        "title": "Cancel"
       },
       {
         "command": "pragma.thread.resolve",
@@ -75,12 +79,12 @@
     "menus": {
       "comments/commentThread/context": [
         {
-          "command": "pragma.comment.sendToAgent",
+          "command": "pragma.comment.addToReview",
           "group": "inline@1",
           "when": "commentController == pragma-review && commentThreadIsEmpty"
         },
         {
-          "command": "pragma.comment.addToReview",
+          "command": "pragma.comment.sendToAgent",
           "group": "inline@2",
           "when": "commentController == pragma-review && commentThreadIsEmpty"
         },
@@ -90,13 +94,18 @@
           "when": "commentController == pragma-review && commentThreadIsEmpty"
         },
         {
-          "command": "pragma.thread.replyAndSend",
+          "command": "pragma.thread.reply",
           "group": "inline@1",
           "when": "commentController == pragma-review && !commentThreadIsEmpty"
         },
         {
-          "command": "pragma.thread.reply",
+          "command": "pragma.thread.replyAndSend",
           "group": "inline@2",
+          "when": "commentController == pragma-review && !commentThreadIsEmpty"
+        },
+        {
+          "command": "pragma.thread.replyCancel",
+          "group": "inline@3",
           "when": "commentController == pragma-review && !commentThreadIsEmpty"
         }
       ],
@@ -119,6 +128,10 @@
         },
         {
           "command": "pragma.thread.replyAndSend",
+          "when": "false"
+        },
+        {
+          "command": "pragma.thread.replyCancel",
           "when": "false"
         },
         {
