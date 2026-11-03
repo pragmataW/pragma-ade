@@ -22,6 +22,8 @@ const draft = (id: string): Comment => ({
   lineEnd: 12,
   diffSide: 'new',
   body: `comment ${id}`,
+  status: 'open',
+  replies: [],
   createdAt: 0,
   updatedAt: 0,
 })

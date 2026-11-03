@@ -1,5 +1,6 @@
 import type { TestBridgeServer } from '@pragma/module-bridge/testing'
 import type { Comment } from '@pragma/module-comments/contract'
+import { aThread } from '@pragma/module-comments/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { type EditorLanguageStatus, editorBridge, normalizeFolderKey } from '../src/contract'
 import { EditorBridge } from '../src/main/bridge/editorBridge'
@@ -45,18 +46,21 @@ const comment = (action: 'send' | 'draft') => ({
 })
 
 /** A stored draft: an editor comment on `src/bad.ts:1` of w1 unless overridden. */
-const stored = (o: Partial<Comment>): Comment => ({
-  id: 'c',
-  worktreeId: 'w1',
-  source: 'editor',
-  filePath: 'src/bad.ts',
-  lineStart: 1,
-  snippet: 'x',
-  body: 'Pending note',
-  createdAt: 1,
-  updatedAt: 1,
-  ...o,
-})
+const stored = (o: Partial<Comment>): Comment =>
+  aThread({
+    id: 'c',
+    worktreeId: 'w1',
+    source: 'editor',
+    filePath: 'src/bad.ts',
+    lineStart: 1,
+    lineEnd: undefined,
+    snippet: 'x',
+    language: undefined,
+    body: 'Pending note',
+    createdAt: 1,
+    updatedAt: 1,
+    ...o,
+  })
 
 describe('EditorBridge', () => {
   it('hello marks folder ready and replies with theme and worktreeId', async () => {

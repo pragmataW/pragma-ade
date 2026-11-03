@@ -1,21 +1,25 @@
 import type { Comment } from '@pragma/module-comments/contract'
+import { aThread } from '@pragma/module-comments/testing'
 import { describe, expect, it } from 'vitest'
 import { toAnnotations } from '../src/renderer/diff/annotations'
 import { draftCounts, toAnnotationSide, toDiffSide } from '../src/renderer/lib/comments'
 
-const comment = (id: string, over: Partial<Comment>): Comment => ({
-  id,
-  worktreeId: 'w',
-  source: 'diff',
-  filePath: 'a.ts',
-  lineStart: 1,
-  lineEnd: 2,
-  diffSide: 'new',
-  body: 'b',
-  createdAt: 0,
-  updatedAt: 0,
-  ...over,
-})
+const comment = (id: string, over: Partial<Comment>): Comment =>
+  aThread({
+    id,
+    worktreeId: 'w',
+    source: 'diff',
+    filePath: 'a.ts',
+    lineStart: 1,
+    lineEnd: 2,
+    diffSide: 'new',
+    snippet: undefined,
+    language: undefined,
+    body: 'b',
+    createdAt: 0,
+    updatedAt: 0,
+    ...over,
+  })
 
 describe('diff annotations', () => {
   it('comments of this file on both sides, then the composer last', () => {

@@ -30,6 +30,8 @@ const draft: Comment = {
   diffSide: 'new',
   snippet: 'const a = 1',
   body: 'rename this',
+  status: 'open',
+  replies: [],
   createdAt: 0,
   updatedAt: 0,
 }

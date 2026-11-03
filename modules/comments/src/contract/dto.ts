@@ -8,6 +8,18 @@ export type CommentSource = (typeof COMMENT_SOURCES)[number]
 export const DIFF_SIDE = { old: 'old', new: 'new' } as const
 export const DIFF_SIDES = [DIFF_SIDE.old, DIFF_SIDE.new] as const
 export type DiffSide = (typeof DIFF_SIDES)[number]
+/** A review thread is open until the user or the agent resolves it. */
+export const COMMENT_STATUS = { open: 'open', resolved: 'resolved' } as const
+export const COMMENT_STATUSES = [COMMENT_STATUS.open, COMMENT_STATUS.resolved] as const
+export type CommentStatus = (typeof COMMENT_STATUSES)[number]
+/** `list` filters: one status or every thread. */
+export const COMMENT_STATUS_FILTER = { ...COMMENT_STATUS, all: 'all' } as const
+export const COMMENT_STATUS_FILTERS = [COMMENT_STATUS.open, COMMENT_STATUS.resolved, COMMENT_STATUS_FILTER.all] as const
+export type CommentStatusFilter = (typeof COMMENT_STATUS_FILTERS)[number]
+/** Who wrote a reply: the user (any surface) or an agent (through the CLI). */
+export const REPLY_AUTHOR = { user: 'user', agent: 'agent' } as const
+export const REPLY_AUTHORS = [REPLY_AUTHOR.user, REPLY_AUTHOR.agent] as const
+export type ReplyAuthor = (typeof REPLY_AUTHORS)[number]
 
 const SLASH = '/'
 const toLf = (s: string): string => s.replace(CRLF_RE, NEWLINE)
@@ -82,9 +94,39 @@ export const CommentPatchSchema = z.object({
 })
 export type CommentPatch = z.input<typeof CommentPatchSchema>
 
-/** A stored comment, always a draft (a delivered comment is deleted); timestamps are epoch ms. */
+/** What a reply needs; `sessionId` / `authorLabel` name the agent session (CLI replies). */
+export const ReplyInputSchema = z.object({
+  body: body(),
+  author: z.enum(REPLY_AUTHORS),
+  sessionId: z.string().min(1).optional(),
+  authorLabel: z.string().min(1).optional(),
+})
+export type ReplyInput = z.input<typeof ReplyInputSchema>
+
+/** One reply of a thread. `round` is the review round that delivered it; absent = pending (a user reply not sent yet). */
+export const CommentReplySchema = z.object({
+  id: z.string(),
+  commentId: z.string(),
+  author: z.enum(REPLY_AUTHORS),
+  body: z.string(),
+  sessionId: z.string().optional(),
+  authorLabel: z.string().optional(),
+  round: z.number().int().optional(),
+  createdAt: z.number(),
+})
+export type CommentReply = z.infer<typeof CommentReplySchema>
+
+/**
+ * A stored comment = the root of a review thread, with its replies (oldest first). `round` is the review round that
+ * delivered the root; absent = pending (not sent yet). Delivered threads are kept until deleted or cleared as
+ * resolved. Timestamps are epoch ms.
+ */
 export const CommentSchema = CommentInputBaseSchema.extend({
   id: z.string(),
+  status: z.enum(COMMENT_STATUSES),
+  round: z.number().int().optional(),
+  resolvedAt: z.number().optional(),
+  replies: z.array(CommentReplySchema),
   createdAt: z.number(),
   updatedAt: z.number(),
 })
