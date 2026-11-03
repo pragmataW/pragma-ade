@@ -21,12 +21,12 @@ body,
 
 /* Shell layout changes (animateLayout): panes glide and resize instead of jumping. */
 ::view-transition-group(*) {
-  animation-duration: 220ms;
-  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  animation-duration: var(--motion-duration-slow);
+  animation-timing-function: var(--motion-ease-standard);
 }
 ::view-transition-old(*),
 ::view-transition-new(*) {
-  animation-duration: 160ms;
+  animation-duration: var(--motion-duration-base);
   height: 100%;
   object-fit: fill;
 }

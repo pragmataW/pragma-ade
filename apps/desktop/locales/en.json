@@ -5,8 +5,8 @@
     "commandPalette": "Command palette",
     "openSettings": "Open settings",
     "toggleSidebar": "Toggle sidebar",
-    "toggleRightPanel": "Toggle right panel",
-    "maximizeRightPanel": "Maximize right panel",
+    "toggleRightPanel": "Toggle panel",
+    "maximizeRightPanel": "Maximize panel",
     "swapSidePanels": "Swap sidebar and panel sides",
     "moveDockLeft": "Move panel to the left",
     "moveDockRight": "Move panel to the right",
@@ -31,7 +31,12 @@
     "search": "Search or run a command",
     "paletteShortcut": "⌘K",
     "toggleSidebar": "Toggle sidebar",
-    "toggleRightPanel": "Toggle right panel",
+    "togglePanel": {
+      "left": "Toggle left panel",
+      "right": "Toggle right panel",
+      "top": "Toggle top panel",
+      "bottom": "Toggle bottom panel"
+    },
     "maximizeRightPanel": "Maximize panel"
   },
   "sidebar": { "settings": "Settings" },

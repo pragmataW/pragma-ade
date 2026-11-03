@@ -61,3 +61,19 @@ it.each(DENSITIES)('density.css matches DENSITY_METRICS (%s)', (density) => {
     'text-base': `${m.textPx}px`,
   })
 })
+
+describe('motion tokens', () => {
+  const text = css('tokens.css')
+  const durations = ['motion-duration-fast', 'motion-duration-base', 'motion-duration-slow']
+  it('declares durations (at most 200ms) and easings on :root', () => {
+    const root = block(text, ':root')
+    for (const name of durations) expect(Number.parseFloat(root[name] ?? '')).toBeLessThanOrEqual(200)
+    expect(root['motion-ease-standard']).toMatch(/^cubic-bezier/)
+    expect(root['motion-ease-emphasized']).toMatch(/^cubic-bezier/)
+  })
+  it('reduced motion makes every duration effectively instant', () => {
+    const reduced = text.slice(text.indexOf('@media (prefers-reduced-motion: reduce)'))
+    const root = block(reduced, ':root')
+    for (const name of durations) expect(Number.parseFloat(root[name] ?? '')).toBeLessThan(1)
+  })
+})

@@ -51,3 +51,13 @@ export function swapSides(l: DockLayout): DockLayout {
 export const isVerticalDock = (p: DockPosition): boolean => p === DOCK.top || p === DOCK.bottom
 /** The dock comes before the center (left of it, or above it). */
 export const dockLeads = (p: DockPosition): boolean => p === DOCK.left || p === DOCK.top
+
+/** The lucide panel icon for a panel on `edge`, so toggles draw the panel where it actually sits. */
+export const panelIcon = (edge: DockPosition | SidebarSide): string => `panel-${edge}`
+
+const DockPositionSchema = z.enum(DOCK_POSITIONS)
+/** A drop target id (dnd-kit `over.id`) as the dock position it stands for, or `null` for anything else. */
+export function asDockPosition(id: unknown): DockPosition | null {
+  const parsed = DockPositionSchema.safeParse(id)
+  return parsed.success ? parsed.data : null
+}

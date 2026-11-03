@@ -1,6 +1,7 @@
 import { CoreCommands, ShellTestIds as T } from '@pragma/sdk'
 import { useRendererHost, useT } from '@pragma/sdk/renderer'
 import { Icon } from '@pragma/ui/components/icon'
+import { TabIndicator } from '@pragma/ui/components/tab-indicator'
 import { cn } from '@pragma/ui/lib/utils'
 import { useStore } from 'zustand'
 import { NAV_ICON_PX } from '../constants'
@@ -10,7 +11,7 @@ import { IconButton } from './IconButton'
 import { PlainButton } from './PlainButton'
 
 /**
- * Right dock tabs: icon only (name in tooltip + aria-label), accent underline when active,
+ * Right dock tabs: icon only (name in tooltip + aria-label), accent underline under the active tab (it slides),
  * count badge as a pill over the icon (ui-notes, user decision 2026-11-02).
  */
 export function RightTabStrip() {
@@ -20,7 +21,7 @@ export function RightTabStrip() {
   const maximized = useShell((s) => s.rightMaximized)
   return (
     <div className="flex h-[var(--tabstrip-h)] shrink-0 items-stretch border-b border-[var(--bd)] bg-[var(--pn)] pr-1">
-      <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto" role="tablist">
+      <div className="relative flex min-w-0 flex-1 items-stretch overflow-x-auto" role="tablist">
         {tabs.map((tab) => {
           const name = t(tab.titleKey)
           const badge = badges[tab.id]
@@ -34,9 +35,9 @@ export function RightTabStrip() {
               data-testid={T.rightTab(tab.id)}
               onClick={() => host.registries.activateRightTab(tab.id)}
               className={cn(
-                'flex items-center justify-center border-b-2 px-3 text-[var(--mu)] hover:text-[var(--tx)]',
+                'flex items-center justify-center border-transparent border-b-2 px-3 text-[var(--mu)] hover:text-[var(--tx)]',
                 badge !== undefined && 'pr-5',
-                tab.id === activeTab ? 'border-[var(--ac)] text-[var(--tx)]' : 'border-transparent',
+                tab.id === activeTab && 'text-[var(--tx)]',
               )}
             >
               <span className="relative flex">
@@ -53,6 +54,7 @@ export function RightTabStrip() {
             </PlainButton>
           )
         })}
+        <TabIndicator />
       </div>
       <div className="flex items-center gap-0.5">
         <DockControls />

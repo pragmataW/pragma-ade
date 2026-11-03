@@ -50,6 +50,24 @@
   --radius-dialog: 12px;
   --font-ui: "Inter Variable", Inter, system-ui, sans-serif;
   --font-code: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  /* Motion: every transition and animation reads these, so reduced motion turns them all off in one place. */
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 160ms;
+  --motion-duration-slow: 200ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+}
+
+/*
+ * Reduced motion: effectively instant. Not 0s, so `animationend` / `transitionend` still fire and exit animations
+ * (Radix Presence) unmount on time; overlays never linger over native views.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0.01ms;
+    --motion-duration-base: 0.01ms;
+    --motion-duration-slow: 0.01ms;
+  }
 }
 
 :root[data-theme="light"] {

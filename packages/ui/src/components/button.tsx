@@ -25,5 +25,5 @@ const densitySize = cva('', {
 export type ButtonProps = ComponentProps<typeof VendorButton>
 
 export function Button({ className, size, ...props }: ButtonProps) {
-  return <VendorButton size={size} className={cn(densitySize({ size }), className)} {...props} />
+  return <VendorButton size={size} className={cn('motion-press', densitySize({ size }), className)} {...props} />
 }

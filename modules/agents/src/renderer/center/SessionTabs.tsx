@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@pragma/ui/components/dropdown-menu'
 import { Icon } from '@pragma/ui/components/icon'
+import { TabIndicator } from '@pragma/ui/components/tab-indicator'
 import { copyText } from '@pragma/ui/lib/clipboard'
 import { LAYOUT } from '@pragma/ui/tokens'
 import { ICON_SM, ICONS, MARK_TAB } from '../../constants'
@@ -43,7 +44,7 @@ function SessionTab({ session, active }: { session: AgentSession; active: boolea
       data-session-id={session.id}
       data-status={session.status}
       className={cn(
-        'group relative flex h-full max-w-[260px] cursor-default items-center gap-2 border-r border-bd px-3 text-[12.5px]',
+        'motion-colors group relative flex h-full max-w-[260px] cursor-default items-center gap-2 border-r border-bd px-3 text-[12.5px]',
         active ? 'bg-bg text-tx' : 'text-mu hover:bg-hv',
         ended && !active && 'opacity-60',
       )}
@@ -53,7 +54,6 @@ function SessionTab({ session, active }: { session: AgentSession; active: boolea
         if (SELECT_KEYS.has(e.key)) select()
       }}
     >
-      {active ? <span className="absolute inset-x-0 top-0 h-[2px] bg-ac" /> : null}
       <ProviderMark providerId={session.providerId} size={MARK_TAB} />
       <span className="truncate" title={label}>
         {label}
@@ -129,10 +129,11 @@ export function SessionTabs({
       style={{ height: LAYOUT.tabStrip }}
       className="flex shrink-0 items-stretch border-b border-bd bg-pn"
     >
-      <div className="flex min-w-0 items-stretch overflow-x-auto">
+      <div className="relative flex min-w-0 items-stretch overflow-x-auto">
         {sessions.map((s) => (
           <SessionTab key={s.id} session={s} active={s.id === active?.id} />
         ))}
+        <TabIndicator edge="top" />
       </div>
       <PlainButton
         aria-label={t('agents:tabs.new')}
