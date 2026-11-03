@@ -1,6 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Icon } from '@pragma/ui/components/icon'
+import { TabIndicator } from '@pragma/ui/components/tab-indicator'
 import { type KeyboardEvent, useState } from 'react'
 import { TAB_ICON_PX } from '../../constants'
 import {
@@ -55,8 +56,8 @@ function TabButton({ tab, active }: { tab: TerminalTab; active: boolean }) {
       onKeyDown={(e) => e.key === ENTER && activateTab(tab.id)}
       onDoubleClick={() => setEditing(true)}
       className={cn(
-        'group flex h-full shrink-0 cursor-default items-center gap-1.5 border-b-2 pr-1 pl-3 text-[12px]',
-        active ? 'border-ac text-tx' : 'border-transparent text-mu hover:text-tx',
+        'motion-colors group flex h-full shrink-0 cursor-default items-center gap-1.5 border-transparent border-b-2 pr-1 pl-3 text-[12px]',
+        active ? 'text-tx' : 'text-mu hover:text-tx',
       )}
     >
       <Icon name="square-terminal" size={TAB_ICON_PX} />
@@ -107,10 +108,11 @@ export function TabStrip({ layout }: { layout: WorktreeTerminalLayout }) {
   const activeTab = layout.tabs.find((tab) => tab.id === layout.activeTabId)
   return (
     <div className="flex h-8 shrink-0 items-stretch border-b border-bd bg-pn">
-      <div role="tablist" className="flex min-w-0 flex-1 items-stretch overflow-x-auto">
+      <div role="tablist" className="relative flex min-w-0 flex-1 items-stretch overflow-x-auto">
         {layout.tabs.map((tab) => (
           <TabButton key={tab.id} tab={tab} active={tab.id === layout.activeTabId} />
         ))}
+        <TabIndicator />
       </div>
       <div className="flex items-center gap-0.5 px-1">
         <ControlButton

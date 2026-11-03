@@ -1,6 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Icon } from '@pragma/ui/components/icon'
+import { TabIndicator } from '@pragma/ui/components/tab-indicator'
 import { useShallow } from 'zustand/react/shallow'
 import { FAVICON_PX, ICONS, TAB_STRIP_PX } from '../constants'
 import { BROWSER_DATA_ATTRS as A, BrowserIpc, type BrowserTabState, BROWSER_TEST_IDS as T } from '../contract'
@@ -25,10 +26,8 @@ function TabItem({ tab, active }: { tab: BrowserTabState; active: boolean }) {
       onMouseDown={() => send(BrowserIpc.activateTab, { tabId: tab.id })}
       onKeyDown={(e) => e.key === ENTER && send(BrowserIpc.activateTab, { tabId: tab.id })}
       className={cn(
-        'flex h-full min-w-0 max-w-[180px] cursor-default items-center gap-1.5 border-r border-[var(--bd)] pr-0.5 pl-2 text-[12px]',
-        active
-          ? 'bg-[var(--el)] text-[var(--tx)] shadow-[inset_0_2px_0_var(--ac)]'
-          : 'text-[var(--mu)] hover:bg-[var(--hv)]',
+        'motion-colors flex h-full min-w-0 max-w-[180px] cursor-default items-center gap-1.5 border-r border-[var(--bd)] pr-0.5 pl-2 text-[12px]',
+        active ? 'bg-[var(--el)] text-[var(--tx)]' : 'text-[var(--mu)] hover:bg-[var(--hv)]',
       )}
     >
       {/* The shell CSP (img-src 'self' data:) blocks remote favicons, so tabs show a generic globe. */}
@@ -54,11 +53,12 @@ export function TabStrip() {
       role="tablist"
       data-testid={T.tabStrip}
       style={{ height: TAB_STRIP_PX }}
-      className="flex shrink-0 items-stretch overflow-x-auto border-b border-[var(--bd)] bg-[var(--sb)]"
+      className="relative flex shrink-0 items-stretch overflow-x-auto border-b border-[var(--bd)] bg-[var(--sb)]"
     >
       {tabs.map((tab) => (
         <TabItem key={tab.id} tab={tab} active={tab.id === current?.id} />
       ))}
+      <TabIndicator edge="top" />
       <ToolButton
         icon={ICONS.add}
         label={t('browser:tabs.new')}
