@@ -24,7 +24,7 @@ import {
   SIZE_SM,
   VARIANT_GHOST,
 } from './constants'
-import { type ChatSlotProps, useChatHost } from './kit'
+import { CHAT_RESPONSIVE, type ChatSlotProps, useChatHost } from './kit'
 import { useOpenProviderSettings } from './use-open-settings'
 
 const OTHER_GROUP = ''
@@ -82,15 +82,22 @@ export function OpencodeModelPicker({ session }: ChatSlotProps) {
           data-testid={OPENCODE_CHAT_TESTIDS.modelPicker}
           aria-label={t(d.labelKey)}
           title={current?.description ? `${current.description} · ${current.label ?? ''}` : t(d.labelKey)}
-          className={cn('gap-1 px-2 text-[12px]', current?.warn ? 'text-warn' : 'text-mu')}
+          className={cn('min-w-0 shrink gap-1 px-2 text-[12px]', current?.warn ? 'text-warn' : 'text-mu')}
         >
           {current?.warn ? (
             <TriangleAlert size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden />
           ) : (
             <Cpu size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden />
           )}
-          <span className="max-w-44 truncate">{current?.label ?? t(MODEL_I18N.none)}</span>
-          <ChevronDown size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="opacity-60" />
+          <span className={cn('max-w-44', CHAT_RESPONSIVE.compactLabel, CHAT_RESPONSIVE.label)}>
+            {current?.label ?? t(MODEL_I18N.none)}
+          </span>
+          <ChevronDown
+            size={ICON_PX}
+            strokeWidth={ICON_STROKE}
+            aria-hidden
+            className={cn('opacity-60', CHAT_RESPONSIVE.wideOnly)}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent align={ALIGN_START} className="w-80 p-0">

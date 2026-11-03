@@ -29,6 +29,9 @@ export const READ_PREVIEW_LINES = 20
 export const QUEUE_CHIP_CHARS = 60
 export const MENTION_DEBOUNCE_MS = 120
 export const ROW_ESTIMATE_PX = 64
+/** Space kept under the last row for the working line, which overlays the transcript bottom (no layout shift). */
+export const LIST_PADDING_END_PX = 36
+export const LIST_PADDING_START_PX = 8
 /** Until the scroller is measured (first paint, tests). */
 export const INITIAL_RECT = { width: 740, height: 800 } as const
 export const ICON_PX = 14
@@ -57,6 +60,8 @@ export const MARK_PX = 14
 export const TASKS_PANEL = { defaultWidth: 380, minWidth: 300, maxWidth: 640, keyStep: 24 } as const
 /** Below this transcript width the panel overlays it instead of docking. */
 export const TASKS_PANEL_MIN_CHAT_PX = 480
+/** Below this chat width the overlaid panel takes the whole width (a sliver of transcript beside it is unusable). */
+export const TASKS_PANEL_FULL_BELOW_PX = 560
 /** "Show in chat" highlight and the indicator's new-task pulse. */
 export const TASK_FLASH_MS = 1600
 /** Longer prompts are clamped in the task detail ("Show more"). */
@@ -140,3 +145,90 @@ export const KEY_ESCAPE = 'Escape'
 export const FENCE_OPEN_RE = /^ {0,3}(?<fence>`{3,}|~{3,})(?<info>[^`]*)$/
 export const FENCE_CLOSE_RE = /^ {0,3}(?<fence>`{3,}|~{3,})\s*$/
 export const CODE_SEGMENT = 'code'
+
+// Rich Markdown: tables, Mermaid diagrams, ASCII diagrams, code frames
+export const MERMAID_LANG = 'mermaid'
+/** How a fence renders (`data-variant` of its frame). */
+export const CODE_KIND = { code: 'code', ascii: 'ascii', mermaid: MERMAID_LANG } as const
+export const MERMAID_STATUS = { pending: 'pending', ready: 'ready', failed: 'failed' } as const
+export const MERMAID_VIEW = { diagram: 'diagram', source: 'source' } as const
+export const SIZE_ICON = 'icon'
+export const CHECK_STROKE = 3
+export const MD_CELL_SEPARATOR = ' | '
+/** Fences without a language (or plain-text ones) keep their exact monospace layout (ASCII/box diagrams). */
+export const ASCII_LANGS = ['', 'text', 'txt', 'plain', 'plaintext', 'ascii', 'diagram'] as const
+/** Box-drawing and block elements: such a plain fence is labelled as a diagram. */
+export const BOX_DRAWING_RE = /[─-▟]/
+/** A table cell that reads as a number (`1,024`, `-3.5`, `12%`, `$40`, `250ms`, `1.2k`). */
+export const NUMERIC_CELL_RE = /^[-+−]?[$€£¥]?\d[\d,_.]*\s?(?:%|[kKmMbB]|ms|s|x|×)?$/
+/** A GFM table row (pipe-led). */
+export const TABLE_ROW_RE = /^\s{0,3}\|/
+/** A GFM table delimiter row (`| --- | :---: |`). */
+export const TABLE_DELIMITER_RE = /^\s{0,3}\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/
+export const CSV_SEPARATOR = ','
+export const CSV_NEEDS_QUOTES_RE = /[",\r\n]/
+export const CSV_QUOTE_RE = /"/g
+export const MD_PIPE_RE = /\|/g
+export const CELL_BREAK_RE = /\s*\n\s*/g
+/** A table taller than this scrolls with a sticky header. */
+export const TABLE_MAX_HEIGHT_PX = 420
+/** Scroll slack before an edge counts as reached (sub-pixel widths). */
+export const SCROLL_EDGE_SLACK_PX = 2
+export const MERMAID_ID_PREFIX = 'chat-mermaid-'
+export const MERMAID_ZOOM = { min: 0.5, max: 3, step: 0.25 } as const
+export const MERMAID_FONT_SIZE = '13px'
+/** Sequence diagrams default to 16px text in 150×65 boxes; match the chat's compact type scale instead. */
+export const MERMAID_SEQUENCE = {
+  actorFontSize: 13,
+  messageFontSize: 12.5,
+  noteFontSize: 12,
+  width: 120,
+  height: 36,
+  actorMargin: 40,
+  boxMargin: 8,
+  messageMargin: 30,
+  mirrorActors: false,
+} as const
+export const MERMAID_THEME = 'base'
+export const MERMAID_SECURITY = 'strict'
+export const FONT_UI_VAR = '--font-ui'
+/** Mermaid `base` theme variable → app colour token (hex values, read at render time). */
+export const MERMAID_THEME_TOKENS = {
+  background: '--bg',
+  mainBkg: '--el',
+  primaryColor: '--el',
+  primaryTextColor: '--tx',
+  primaryBorderColor: '--bd2',
+  secondaryColor: '--acs',
+  secondaryTextColor: '--tx',
+  secondaryBorderColor: '--ac',
+  tertiaryColor: '--pn',
+  tertiaryTextColor: '--tx',
+  tertiaryBorderColor: '--bd',
+  nodeBorder: '--bd2',
+  nodeTextColor: '--tx',
+  textColor: '--tx',
+  titleColor: '--tx',
+  lineColor: '--mu',
+  edgeLabelBackground: '--pn',
+  clusterBkg: '--pn',
+  clusterBorder: '--bd2',
+  actorBkg: '--el',
+  actorBorder: '--bd2',
+  actorTextColor: '--tx',
+  actorLineColor: '--bd2',
+  signalColor: '--mu',
+  signalTextColor: '--tx',
+  labelBoxBkgColor: '--el',
+  labelBoxBorderColor: '--bd2',
+  labelTextColor: '--tx',
+  loopTextColor: '--mu',
+  noteBkgColor: '--acs',
+  noteTextColor: '--tx',
+  noteBorderColor: '--ac',
+  activationBkgColor: '--acs',
+  activationBorderColor: '--ac',
+  sequenceNumberColor: '--acfg',
+  errorBkgColor: '--el',
+  errorTextColor: '--err',
+} as const

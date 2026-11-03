@@ -16,6 +16,7 @@ import {
   POINTER_UP,
   SIZE_ICON_XS,
   TASKS_PANEL,
+  TASKS_PANEL_FULL_BELOW_PX,
   TASKS_PANEL_MIN_CHAT_PX,
   VARIANT_GHOST,
 } from '../../../constants'
@@ -216,7 +217,7 @@ function Frame({
       className={cn(
         'flex min-h-0 max-w-full shrink-0 flex-col border-l border-bd bg-pn',
         overlay
-          ? 'absolute inset-y-0 right-0 z-20 shadow-xl animate-in fade-in slide-in-from-right-4 duration-150'
+          ? 'absolute inset-y-0 right-0 z-20 shadow-xl animate-in fade-in slide-in-from-right-4 duration-150 motion-reduce:animate-none'
           : 'relative',
       )}
     >
@@ -230,10 +231,11 @@ function Frame({
  * Docked while even the narrowest panel leaves the chat its minimum width (resizing then never flips the mode; the
  * docked width gives way to the chat), else an overlay at the chosen width.
  */
-function placement(layout: ChatLayoutApi | null, width: number): { overlay: boolean; width: number } {
+export function placement(layout: ChatLayoutApi | null, width: number): { overlay: boolean; width: number } {
   const body = layout?.bodyWidth ?? 0
   if (!layout?.overlayHost || body <= 0) return { overlay: false, width }
-  if (body - TASKS_PANEL.minWidth < TASKS_PANEL_MIN_CHAT_PX) return { overlay: true, width }
+  if (body - TASKS_PANEL.minWidth < TASKS_PANEL_MIN_CHAT_PX)
+    return { overlay: true, width: body < TASKS_PANEL_FULL_BELOW_PX ? body : width }
   return { overlay: false, width: Math.min(width, body - TASKS_PANEL_MIN_CHAT_PX) }
 }
 

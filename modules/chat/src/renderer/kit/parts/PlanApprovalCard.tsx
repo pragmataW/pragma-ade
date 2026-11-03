@@ -108,8 +108,8 @@ export function PlanApprovalCard({ item, session }: ChatPartProps<PlanItem>) {
         ) : (
           <>
             {modes.length > 0 ? (
-              <span className="mr-auto flex items-center gap-2 text-[12px] text-mu">
-                {t('chat:plan.continueIn')}
+              <span className="mr-auto flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-mu">
+                <span className="whitespace-nowrap">{t('chat:plan.continueIn')}</span>
                 <Segmented
                   value={String(mode)}
                   onChange={(v) => setMode(modes.find((m) => String(m.value) === v)?.value)}

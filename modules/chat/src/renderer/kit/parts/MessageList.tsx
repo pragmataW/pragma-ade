@@ -11,6 +11,8 @@ import {
   ICON_STROKE,
   INITIAL_RECT,
   LIST_OVERSCAN,
+  LIST_PADDING_END_PX,
+  LIST_PADDING_START_PX,
   ROW_ESTIMATE_PX,
   SIZE_SM,
   VARIANT_OUTLINE,
@@ -65,6 +67,8 @@ export function MessageList(props: MessageListProps) {
     overscan: LIST_OVERSCAN,
     getItemKey: (i) => rows[i]?.key ?? i,
     initialRect: INITIAL_RECT,
+    paddingStart: LIST_PADDING_START_PX,
+    paddingEnd: LIST_PADDING_END_PX,
   })
   useImperativeHandle(
     props.handle,
@@ -93,7 +97,7 @@ export function MessageList(props: MessageListProps) {
           ref={scroller}
           onScroll={onScroll}
           data-testid={CHAT_TESTIDS.messageList}
-          className="h-full overflow-y-auto"
+          className="h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable]"
         >
           <div className="relative mx-auto w-full max-w-[740px]" style={{ height: virtualizer.getTotalSize() }}>
             {virtualizer.getVirtualItems().map((v) => {
@@ -105,7 +109,7 @@ export function MessageList(props: MessageListProps) {
                   data-index={v.index}
                   {...{ [CHAT_ROW_ATTR]: v.index }}
                   ref={virtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full px-4 py-1.5"
+                  className="absolute top-0 left-0 w-full px-3 py-1.5 @min-[480px]/chat:px-4"
                   style={{ transform: `translateY(${v.start}px)` }}
                 >
                   <ChatRowView row={row} session={props.session} turnHeader={turnHeader} />
@@ -119,7 +123,7 @@ export function MessageList(props: MessageListProps) {
             size={SIZE_SM}
             variant={VARIANT_OUTLINE}
             data-testid={CHAT_TESTIDS.jumpToLatest}
-            className="absolute bottom-2 left-1/2 -translate-x-1/2 gap-1 bg-el"
+            className="absolute bottom-10 left-1/2 z-[6] -translate-x-1/2 gap-1 bg-el shadow-sm"
             onClick={() => virtualizer.scrollToIndex(rows.length - 1, { align: ALIGN_END })}
           >
             <ArrowDown size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden />

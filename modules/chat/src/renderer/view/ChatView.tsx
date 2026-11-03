@@ -79,12 +79,12 @@ function ChatLayout({ api, definition }: { api: ChatSessionApi; definition: Chat
       <ChatPartsProvider value={partsValue}>
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Esc interrupts (menus stop it first); Mod+F opens the find bar */}
         <div
-          className="flex h-full min-h-0 flex-col bg-bg"
+          className="@container/chat flex h-full min-h-0 flex-col bg-bg"
           onKeyDown={(e) => onEscape(e, api)}
           onKeyDownCapture={search.onViewKeyDown}
         >
           {definition.header?.length ? (
-            <div className="flex h-8 shrink-0 items-center justify-end gap-3 border-b border-bd bg-pn px-3">
+            <div className="flex h-8 min-w-0 shrink-0 items-center justify-end gap-2 overflow-hidden border-bd border-b bg-pn px-2 @min-[480px]/chat:gap-3 @min-[480px]/chat:px-3">
               <SlotRow slots={definition.header} session={api} />
             </div>
           ) : null}
@@ -101,13 +101,16 @@ function ChatLayout({ api, definition }: { api: ChatSessionApi; definition: Chat
                   handle={list}
                 />
               </div>
-              <div className="mx-auto flex w-full max-w-[740px] flex-col gap-1 px-4 pb-3">
+              <div className="relative mx-auto flex w-full max-w-[740px] flex-col gap-1 px-3 pb-3 @min-[480px]/chat:px-4">
+                {/* over the transcript's reserved bottom padding: showing it never moves the list or the composer */}
+                <div className="pointer-events-none absolute inset-x-3 bottom-full z-[5] empty:hidden bg-gradient-to-t from-bg via-bg/85 to-transparent pt-2 @min-[480px]/chat:inset-x-4 [&>*]:pointer-events-auto">
+                  <WorkingLine session={api} />
+                </div>
                 {definition.banners?.length ? (
                   <div className="flex flex-col gap-1">
                     <SlotRow slots={definition.banners} session={api} />
                   </div>
                 ) : null}
-                <WorkingLine session={api} />
                 <Composer
                   session={api}
                   extensions={definition.composerExtensions}

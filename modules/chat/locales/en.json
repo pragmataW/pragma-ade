@@ -118,7 +118,8 @@
     "jumpToLatest": "Jump to latest"
   },
   "tool": {
-    "group": "{{count}} tool calls",
+    "group_one": "{{count}} tool call",
+    "group_other": "{{count}} tool calls",
     "status": {
       "pending": "Pending",
       "running": "Running",
@@ -254,5 +255,21 @@
   },
   "commands": {
     "toggleTasks": "Chat: Toggle the Tasks panel"
+  },
+  "markdown": {
+    "markdown": "Markdown",
+    "csv": "CSV",
+    "copyMarkdown": "Copy table as Markdown",
+    "copyCsv": "Copy table as CSV",
+    "diagram": "Diagram",
+    "source": "Source",
+    "text": "text",
+    "copySource": "Copy diagram source",
+    "expand": "Expand diagram",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Reset zoom",
+    "close": "Close",
+    "renderFailed": "This diagram could not be rendered, so its source is shown."
   }
 }

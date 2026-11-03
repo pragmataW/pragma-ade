@@ -4,6 +4,7 @@ import { Button } from '@pragma/ui/components/button'
 import { Square } from '@pragma/ui/icons'
 import { ICON_PX, ICON_STROKE, SIZE_SM, VARIANT_OUTLINE } from '../../../constants'
 import { CHAT_TESTIDS, type ChatSessionStatus, type ChatSlotProps } from '../../../contract'
+import { CHAT_RESPONSIVE } from '../responsive'
 
 const BUSY = new Set<ChatSessionStatus>([SESSION_STATUS.working, SESSION_STATUS.waiting])
 export const isBusy = (status: ChatSessionStatus): boolean => BUSY.has(status)
@@ -17,11 +18,12 @@ export function StopButton({ session }: ChatSlotProps) {
       variant={VARIANT_OUTLINE}
       size={SIZE_SM}
       data-testid={CHAT_TESTIDS.stop}
+      title={t('chat:composer.stop')}
       onClick={() => void session.interrupt()}
-      className="gap-1 px-2 text-[12px]"
+      className="shrink-0 gap-1 px-2 text-[12px]"
     >
-      <Square size={ICON_PX} strokeWidth={ICON_STROKE} className="fill-current" />
-      {t('chat:composer.stop')}
+      <Square size={ICON_PX} strokeWidth={ICON_STROKE} className="fill-current" aria-hidden />
+      <span className={CHAT_RESPONSIVE.label}>{t('chat:composer.stop')}</span>
     </Button>
   )
 }

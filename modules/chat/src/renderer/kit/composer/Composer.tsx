@@ -10,6 +10,7 @@ import {
   type ComposerApi,
   type ComposerExtension,
 } from '../../../contract'
+import { CHAT_RESPONSIVE } from '../responsive'
 import { ComposerChips } from './ComposerChips'
 import { QueueChips } from './QueueChips'
 import { useComposer } from './use-composer'
@@ -81,16 +82,25 @@ export function Composer({
         className="field-sizing-content block max-h-60 min-h-12 w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] text-tx outline-none placeholder:text-fa"
       />
       {c.notice ? <div className="px-3 text-[11.5px] text-warn">{t(c.notice)}</div> : null}
-      <div className="flex min-h-9 flex-wrap items-center gap-1 px-1.5 py-0.5">
-        <ExtensionAreas extensions={extensions} api={c.api} area="toolbar" />
-        <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">
+      {/* one row at every width: labels collapse to icons (container queries) instead of wrapping */}
+      <div className="flex h-10 min-w-0 items-center gap-0.5 px-1.5 @min-[480px]/chat:gap-1">
+        <div className="flex shrink-0 items-center">
+          <ExtensionAreas extensions={extensions} api={c.api} area="toolbar" />
+        </div>
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-0.5 @min-[480px]/chat:gap-1">
           {toolbar.map((Slot, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: slot components have no identity of their own
             <Slot key={i} session={session} />
           ))}
-          <Button size={SIZE_SM} data-testid={CHAT_TESTIDS.send} onClick={() => void c.send()} className="gap-1 px-2.5">
-            <SendHorizontal size={ICON_PX} strokeWidth={ICON_STROKE} />
-            {t('chat:composer.send')}
+          <Button
+            size={SIZE_SM}
+            data-testid={CHAT_TESTIDS.send}
+            title={t('chat:composer.send')}
+            onClick={() => void c.send()}
+            className="shrink-0 gap-1 px-2.5 @max-[479px]/chat:px-2"
+          >
+            <SendHorizontal size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden />
+            <span className={CHAT_RESPONSIVE.label}>{t('chat:composer.send')}</span>
           </Button>
         </div>
       </div>
