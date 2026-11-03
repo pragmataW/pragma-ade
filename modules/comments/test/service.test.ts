@@ -1,6 +1,7 @@
 import { describe, expect, it, test } from 'vitest'
 import { COMMENTS_EVENTS, COMMENTS_IPC_EVENTS, type DeliveryRequest } from '../src/contract'
 import { DeliveryRegistry } from '../src/main/delivery-registry'
+import { formatComments } from '../src/main/format'
 import { createCommentsRepository } from '../src/main/repository'
 import { createCommentsService } from '../src/main/service'
 import type { SessionRef } from '../src/main/upstream'
@@ -132,7 +133,7 @@ describe('send', () => {
     const r = await service.send(ids(cs).reverse())
     expect(r).toMatchObject({ status: 'sent', sessionId: 's1' })
     expect(delivered).toHaveLength(1)
-    expect(delivered[0]?.text).toBe(service.format(cs))
+    expect(delivered[0]?.text).toBe(formatComments(cs))
     expect(delivered[0]).toMatchObject({ sessionId: 's1', worktreeId: WT, mode: 'terminal', ptyId: 'pty-s1' })
     expect(await service.listThreads(WT)).toEqual([])
     const sentAt = r.status === 'sent' ? r.sentAt : -1

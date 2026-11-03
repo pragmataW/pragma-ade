@@ -30,6 +30,11 @@ export interface SendOptions {
   promptUser?: boolean
 }
 
+/** What a thread's text marks: entries delivered in `round` are flagged as new. */
+export interface ThreadFormatOptions {
+  round: number
+}
+
 export interface ListThreadsFilter {
   /** Default `all`. */
   status?: CommentStatusFilter
@@ -71,7 +76,8 @@ export interface CommentsService {
   /** Delivers to the next agent session started in the worktree (one pending entry per worktree). */
   sendOnNextSession(worktreeId: string, commentIds: string[]): Promise<{ pendingId: string }>
   cancelPending(worktreeId: string): void
-  format(comments: Comment[]): string
+  /** Fixed-English text of the threads for an agent (CLI output), blank-line separated. */
+  format(threads: Comment[], opts: ThreadFormatOptions): string
   /** Returns unregister; a duplicate mode throws. */
   registerDeliveryTarget(mode: string, deliver: DeliverFn): () => void
 }

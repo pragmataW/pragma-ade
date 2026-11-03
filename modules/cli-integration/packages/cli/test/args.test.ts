@@ -11,7 +11,11 @@ const COMMAND_LINES = [
   'pragma task create --title <t> [--description-file <path>] [--column <name>] [--priority <p>] [--labels a,b] [--project <id>]',
   'pragma task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]',
   'pragma task move <id> --column <name>',
-  'pragma comments list [--worktree <id>]',
+  'pragma comments list [--worktree <id>] [--status <open|resolved|all>]',
+  'pragma comments show <id>',
+  'pragma comments reply <id> [--body <text>] [--file <path|->]',
+  'pragma comments resolve <id> [--body <text>]',
+  'pragma comments reopen <id>',
   'pragma handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
 ]
 
@@ -32,6 +36,11 @@ describe('parseCli', () => {
     [['agent', 'profiles'], 'profileList', {}],
     [['task', 'list', '--column', 'Review'], 'taskList', { column: 'Review' }],
     [['comments', 'list', '--worktree', 'w1'], 'commentsList', { worktree: 'w1' }],
+    [['comments', 'list', '--status', 'all'], 'commentsList', { status: 'all' }],
+    [['comments', 'reply', 'c1', '--body', 'Done.'], 'commentsReply', { body: 'Done.' }],
+    [['comments', 'reply', 'c1', '--file', '-'], 'commentsReply', { file: '-' }],
+    [['comments', 'resolve', 'c1', '--body', 'Fixed.'], 'commentsResolve', { body: 'Fixed.' }],
+    [['comments', 'reopen', 'c1'], 'commentsReopen', {}],
     [['handoff', '--to', 'oc', '--file', '-'], 'handoff', { to: 'oc', file: '-' }],
   ])('maps %j to %s', (argv, method, options) => {
     expect(parseCli(argv)).toMatchObject({ kind: 'call', method, json: false, options })
@@ -40,6 +49,10 @@ describe('parseCli', () => {
   it('parses task update with positional id', () => {
     const cmd = parseCli(['task', 'update', '42', '--title', 'x'])
     expect(cmd).toMatchObject({ method: 'taskUpdate', positionals: ['42'], options: { title: 'x' } })
+  })
+
+  it('comments show takes the thread id as positional', () => {
+    expect(parseCli(['comments', 'show', 'abc'])).toMatchObject({ method: 'commentsShow', positionals: ['abc'] })
   })
 
   it('labels split on comma and trimmed', () => {
@@ -67,7 +80,10 @@ describe('parseCli', () => {
       ['task', 'create', '--title', 't', '--priority', 'p1'],
       /--priority must be one of: none, low, medium, high, urgent/,
     ],
-    [['comments', 'list', '--status', 'sent'], /Unknown option '--status'/],
+    [['comments', 'list', '--status', 'bogus'], /--status must be one of: open, resolved, all/],
+    [['comments', 'reply', 'c1'], /--body or --file is required/],
+    [['comments', 'reply', 'c1', '--body', 'a', '--file', 'b'], /--body cannot be combined with --file/],
+    [['comments', 'resolve'], /<id> is required/],
     [['nope'], /Unknown command 'nope'/],
     [['worktree'], /Unknown or missing subcommand for 'worktree'. Expected one of: list, create/],
     [['task', 'create', '--title'], /--title/],

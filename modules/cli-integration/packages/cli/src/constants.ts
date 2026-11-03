@@ -21,7 +21,19 @@ export const NOT_RUNNING_HINTS = {
 export const CONNECT_TIMEOUT_MS = 3000
 /** handoff may create a worktree and start an agent. */
 export const RESPONSE_TIMEOUT_MS = 120_000
-export const COMMENT_PREVIEW_CHARS = 60
+const ALL_STATUS = 'all'
+const statusWord = (status: string): string => (status === ALL_STATUS ? '' : `${status} `)
+/** `comments list` header: `Review round 2 · 3 open threads`. */
+export const THREADS_HEADER = (round: number, count: number, status: string): string =>
+  `Review round ${round} · ${count} ${statusWord(status)}${count === 1 ? 'thread' : 'threads'}`
+/** `comments list` with nothing to show. */
+export const NO_THREADS = (status: string): string => `No ${statusWord(status)}review threads.`
+/** One confirmation line per thread action. */
+export const COMMENT_ACTION_TEXT = {
+  commentsReply: (id: string) => `Replied to ${id}.`,
+  commentsResolve: (id: string) => `Resolved ${id}.`,
+  commentsReopen: (id: string) => `Reopened ${id}.`,
+} as const
 export const COLUMN_GAP = '  '
 export const MAIN_MARK = ' *'
 export const EMPTY_CELL = '-'

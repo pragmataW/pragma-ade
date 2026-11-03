@@ -2,7 +2,6 @@ import {
   CLI_ERROR,
   CLI_LOCAL_ERROR,
   CLI_METHOD,
-  type CliComment,
   type CliMethod,
   type CliResult,
   type CliTranscript,
@@ -15,7 +14,7 @@ import { AppError } from './client'
 import { NotRunningError } from './connection'
 import {
   COLUMN_GAP,
-  COMMENT_PREVIEW_CHARS,
+  COMMENT_ACTION_TEXT,
   DETACHED,
   EMPTY_CELL,
   ERROR_PREFIX,
@@ -23,7 +22,9 @@ import {
   JSON_INDENT,
   MAIN_MARK,
   NEWLINE,
+  NO_THREADS,
   NOT_RUNNING_TEXT,
+  THREADS_HEADER,
   USAGE_FOOTER,
   YES_NO,
 } from './constants'
@@ -38,15 +39,12 @@ export interface FormattedError {
 
 const LIST_JOIN = ', '
 const KEY_VALUE = ': '
-const RANGE = '-'
-const LOCATION_SEP = ':'
 const ID = 'ID'
 const HEADERS = {
   worktrees: [ID, 'BRANCH', 'PATH'],
   sessions: [ID, 'PROFILE', 'STATUS', 'PROVIDER SESSION', 'TITLE'],
   profiles: [ID, 'NAME', 'PROVIDER', 'ENABLED', 'DEFAULT'],
   tasks: [ID, 'KEY', 'COLUMN', 'PRIORITY', 'TITLE'],
-  comments: [ID, 'LOCATION', 'BODY'],
   candidates: [ID, 'NAME', 'PROVIDER'],
 } as const
 
@@ -69,14 +67,6 @@ const cell = (v: unknown): string => {
 const yesNo = (b: boolean): string => (b ? YES_NO.yes : YES_NO.no)
 const branchCell = (w: CliWorktree): string => (w.branch ?? DETACHED) + (w.isMain ? MAIN_MARK : '')
 
-function location(c: CliComment): string {
-  if (!c.filePath) return c.source
-  if (c.lineStart === null) return c.filePath
-  const end = c.lineEnd !== null && c.lineEnd !== c.lineStart ? `${RANGE}${c.lineEnd}` : ''
-  return `${c.filePath}${LOCATION_SEP}${c.lineStart}${end}`
-}
-const preview = (body: string): string => (body.split(NEWLINE)[0] ?? '').slice(0, COMMENT_PREVIEW_CHARS)
-
 /** `key: value` lines for a single object. */
 const keyValues = (o: Record<string, unknown>): string =>
   Object.entries(o)
@@ -97,6 +87,12 @@ const transcriptText = (t: CliTranscript): string =>
 function locateText(r: CliResult<'sessionLocate'>): string {
   const pragma = r.pragmaSessionId ? keyValues({ pragma: r.pragmaSessionId }) : ''
   return pragma + r.transcripts.map(transcriptText).join(NEWLINE) + NEWLINE + HANDOFF_HINT
+}
+
+function commentsListText(r: CliResult<'commentsList'>): string {
+  if (r.comments.length === 0) return NO_THREADS(r.status) + NEWLINE
+  const blocks = r.comments.map((c) => c.text)
+  return [THREADS_HEADER(r.round, r.comments.length, r.status), ...blocks].join(NEWLINE + NEWLINE) + NEWLINE
 }
 
 function humanResult(method: CliMethod, result: unknown): string {
@@ -129,13 +125,14 @@ function humanResult(method: CliMethod, result: unknown): string {
         r.tasks.map((t) => [String(t.id), t.key, t.column, t.priority, t.title]),
       )
     }
-    case CLI_METHOD.commentsList: {
-      const r = result as CliResult<'commentsList'>
-      return formatTable(
-        HEADERS.comments,
-        r.comments.map((c) => [c.id, location(c), preview(c.body)]),
-      )
-    }
+    case CLI_METHOD.commentsList:
+      return commentsListText(result as CliResult<'commentsList'>)
+    case CLI_METHOD.commentsShow:
+      return (result as CliResult<'commentsShow'>).text + NEWLINE
+    case CLI_METHOD.commentsReply:
+    case CLI_METHOD.commentsResolve:
+    case CLI_METHOD.commentsReopen:
+      return COMMENT_ACTION_TEXT[method]((result as CliResult<typeof method>).id) + NEWLINE
     case CLI_METHOD.handoff: {
       const { session, worktree } = result as CliResult<'handoff'>
       const branch = worktree.branch ?? DETACHED

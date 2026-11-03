@@ -17,7 +17,17 @@ import type {
   UpdateTaskPatch,
 } from '@pragma/module-board/contract'
 import { BoardError } from '@pragma/module-board/contract'
-import type { Comment, CommentsService } from '@pragma/module-comments/contract'
+import {
+  COMMENT_STATUS_FILTER,
+  type Comment,
+  type CommentStatusFilter,
+  CommentsError,
+  type CommentsService,
+  type ReplyInput,
+  SEND_ERROR,
+  visibleToAgent,
+} from '@pragma/module-comments/contract'
+import { aReply, aThread } from '@pragma/module-comments/testing'
 import type { CreateWorktreeInput, Project, ProjectsService, Worktree } from '@pragma/module-projects/contract'
 import type { Logger } from '@pragma/sdk'
 import type { SessionTranscriptLocation, SessionTranscriptQuery } from '../../src/contract'
@@ -109,22 +119,59 @@ export function fakeAgents(o: { profiles?: AgentProfile[]; sessions?: AgentSessi
   return Object.assign(service, { state })
 }
 
+/** A delivered (round 1) open editor thread on `a.ts` in `w1`. */
 export const aComment = (id: string, over: Partial<Comment> = {}): Comment =>
-  ({
+  aThread({
     id,
     worktreeId: 'w1',
     source: 'editor',
     filePath: 'a.ts',
+    lineStart: undefined,
+    lineEnd: undefined,
+    snippet: undefined,
     body: id,
+    round: 1,
     createdAt: NOW,
     updatedAt: NOW,
     ...over,
-  }) as Comment
-
-export function fakeComments(comments: Comment[] = []) {
-  return asService<CommentsService>({
-    listThreads: async (worktreeId) => comments.filter((c) => c.worktreeId === worktreeId),
   })
+
+const matchesStatus = (c: Comment, status: CommentStatusFilter | undefined) =>
+  status === undefined || status === COMMENT_STATUS_FILTER.all || c.status === status
+
+/** In-memory threads; `format` renders `text:<id>` per thread; mutations are recorded in `calls`. */
+export function fakeComments(comments: Comment[] = [], round = 1) {
+  const calls: [string, ...unknown[]][] = []
+  const find = (id: string) => {
+    const c = comments.find((x) => x.id === id)
+    if (!c) throw new CommentsError(SEND_ERROR.notFound)
+    return c
+  }
+  const addReply = (c: Comment, input: ReplyInput) =>
+    c.replies.push(aReply({ ...input, commentId: c.id, round: input.author === 'agent' ? round : undefined }))
+  const service = asService<CommentsService>({
+    listThreads: async (worktreeId, filter = {}) =>
+      comments
+        .filter((c) => c.worktreeId === worktreeId && matchesStatus(c, filter.status))
+        .flatMap((c) => (filter.deliveredOnly ? (visibleToAgent(c) ?? []) : [c])),
+    getThread: async (id) => find(id),
+    async reply(id, input) {
+      calls.push(['reply', id, input])
+      const c = find(id)
+      addReply(c, input)
+      return c
+    },
+    async setStatus(id, status, input) {
+      calls.push(['setStatus', id, status, input])
+      const c = find(id)
+      if (input) addReply(c, input)
+      c.status = status
+      return c
+    },
+    round: async () => round,
+    format: (threads, opts) => threads.map((t) => `text:${t.id}@${opts.round}`).join('\n\n'),
+  })
+  return Object.assign(service, { calls })
 }
 
 const COLUMNS = ['Backlog', 'Todo', 'In Progress', 'Review', 'Done']

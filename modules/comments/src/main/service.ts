@@ -26,7 +26,7 @@ import {
   visibleToAgent,
 } from '../contract'
 import type { DeliveryRegistry } from './delivery-registry'
-import { formatComments } from './format'
+import { formatComments, formatThreads } from './format'
 import { PendingDeliveries, type PendingOptions } from './pending'
 import type { CommentsRepository } from './repository'
 import { type CommentsUpstream, isRunning, type SessionRef, toTargetSession } from './upstream'
@@ -223,7 +223,7 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
     },
     sendOnNextSession: async (worktreeId, commentIds) => ({ pendingId: pending.add(worktreeId, commentIds) }),
     cancelPending: (worktreeId) => pending.cancel(worktreeId),
-    format: (comments) => formatComments(comments),
+    format: (threads, opts) => formatThreads(threads, opts),
     registerDeliveryTarget: (mode, deliver) => registry.register(mode, deliver),
     setPendingOptions: (opts) => pending.setOptions(opts),
     dispose() {

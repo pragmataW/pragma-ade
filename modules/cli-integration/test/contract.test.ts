@@ -1,6 +1,8 @@
 import { PRIORITIES } from '@pragma/module-board/contract'
+import { COMMENT_STATUS_FILTERS } from '@pragma/module-comments/contract'
 import { describe, expect, it } from 'vitest'
 import {
+  CLI_COMMENT_STATUS_FILTERS,
   CLI_METHODS,
   CLI_PRIORITIES,
   cliIntegrationSettingsSchema,
@@ -50,6 +52,18 @@ describe('cli bridge contract', () => {
 
   it('cli priorities equal the board priorities', () => {
     expect([...CLI_PRIORITIES]).toEqual([...PRIORITIES])
+  })
+
+  it('cli comment status filters equal the comments filters', () => {
+    expect([...CLI_COMMENT_STATUS_FILTERS]).toEqual([...COMMENT_STATUS_FILTERS])
+  })
+
+  it('commentsReply takes exactly one of body and document', () => {
+    const reply = (extra: object) => cliRequestSchemas.commentsReply.safeParse({ context, commentId: 'c', ...extra })
+    expect(reply({ body: 'a' }).success).toBe(true)
+    expect(reply({ document: 'a' }).success).toBe(true)
+    expect(reply({}).success).toBe(false)
+    expect(reply({ body: 'a', document: 'b' }).success).toBe(false)
   })
 
   it('settings defaults round-trip', () => {

@@ -36,6 +36,14 @@ const TASK_REF_FIELD = 'taskId'
 /** Methods whose positional `<id>` is a session id (Pragma or provider). */
 const SESSION_REF_METHODS = new Set<CliMethod>([CLI_METHOD.sessionLocate])
 const SESSION_REF_FIELD = 'sessionId'
+/** Methods whose positional `<id>` is a review thread id. */
+const COMMENT_REF_METHODS = new Set<CliMethod>([
+  CLI_METHOD.commentsShow,
+  CLI_METHOD.commentsReply,
+  CLI_METHOD.commentsResolve,
+  CLI_METHOD.commentsReopen,
+])
+const COMMENT_REF_FIELD = 'commentId'
 const SAME_WORKTREE_FIELD = 'sameWorktree'
 const STDIN_LABEL = 'stdin'
 
@@ -82,6 +90,7 @@ export async function buildRequest(cmd: CallCommand, io: RequestIo): Promise<{ m
   }
   if (TASK_REF_METHODS.has(cmd.method)) payload[TASK_REF_FIELD] = cmd.positionals[0]
   if (SESSION_REF_METHODS.has(cmd.method) && cmd.positionals[0]) payload[SESSION_REF_FIELD] = cmd.positionals[0]
+  if (COMMENT_REF_METHODS.has(cmd.method)) payload[COMMENT_REF_FIELD] = cmd.positionals[0]
   if (cmd.method === CLI_METHOD.handoff) payload[SAME_WORKTREE_FIELD] = payload[SAME_WORKTREE_FIELD] === true
   return { method: cmd.method, payload }
 }

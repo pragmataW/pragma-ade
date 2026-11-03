@@ -1,5 +1,10 @@
 import { type ParseArgsConfig, parseArgs } from 'node:util'
-import { CLI_METHOD, CLI_PRIORITIES, type CliMethod } from '@pragma/module-cli-integration/contract'
+import {
+  CLI_COMMENT_STATUS_FILTERS,
+  CLI_METHOD,
+  CLI_PRIORITIES,
+  type CliMethod,
+} from '@pragma/module-cli-integration/contract'
 import { CLI_NAME, GLOBAL_HELP, HELP_FLAGS, LIST_SEPARATOR, VERSION_FLAG } from './constants'
 
 export type OptionValue = string | boolean | string[]
@@ -41,7 +46,11 @@ const COMMAND_TABLE: readonly (readonly [string, CliMethod])[] = [
   ],
   ['task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]', CLI_METHOD.taskUpdate],
   ['task move <id> --column <name>', CLI_METHOD.taskMove],
-  ['comments list [--worktree <id>]', CLI_METHOD.commentsList],
+  ['comments list [--worktree <id>] [--status <open|resolved|all>]', CLI_METHOD.commentsList],
+  ['comments show <id>', CLI_METHOD.commentsShow],
+  ['comments reply <id> [--body <text>] [--file <path|->]', CLI_METHOD.commentsReply],
+  ['comments resolve <id> [--body <text>]', CLI_METHOD.commentsResolve],
+  ['comments reopen <id>', CLI_METHOD.commentsReopen],
   [
     'handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
     CLI_METHOD.handoff,
@@ -54,9 +63,17 @@ const OPTION_RE = /(?<optional>\[)?--(?<name>[a-z][a-z-]*)(?<value> [^\s\]]+)?\]
 const WORD_RE = /^[a-z]+$/
 const POSITIONAL_RE = /^<([a-z]+)>$/
 const LIST_OPTIONS = new Set(['labels'])
-const CHOICES: Record<string, readonly string[]> = { priority: CLI_PRIORITIES }
+const CHOICES: Record<string, readonly string[]> = { priority: CLI_PRIORITIES, status: CLI_COMMENT_STATUS_FILTERS }
 /** Option pairs that exclude each other: `[a, b]` → "--a cannot be combined with --b". */
-const EXCLUSIVE: readonly (readonly [string, string])[] = [['branch', 'same-worktree']]
+const EXCLUSIVE: readonly (readonly [string, string])[] = [
+  ['branch', 'same-worktree'],
+  ['body', 'file'],
+]
+/** Commands that need one of these options: "--a or --b is required." */
+const ONE_OF_REQUIRED: Partial<Record<CliMethod, readonly string[]>> = {
+  [CLI_METHOD.commentsReply]: ['body', 'file'],
+}
+const OR_JOIN = ' or --'
 const STRING_TYPE = 'string'
 const BOOLEAN_TYPE = 'boolean'
 const JSON_FLAG = 'json'
@@ -151,6 +168,9 @@ function collectOptions(spec: CommandSpec, values: Record<string, unknown>): Rec
   for (const [a, b] of EXCLUSIVE)
     if (options[a] !== undefined && options[b] !== undefined)
       throw new UsageError(`--${a} cannot be combined with --${b}.`)
+  const oneOf = ONE_OF_REQUIRED[spec.method]
+  if (oneOf && !oneOf.some((o) => options[o] !== undefined))
+    throw new UsageError(`--${oneOf.join(OR_JOIN)} is required.`)
   return options
 }
 

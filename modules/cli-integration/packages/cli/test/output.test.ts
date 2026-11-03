@@ -30,12 +30,22 @@ const comment = {
   id: 'c1',
   worktreeId: 'w1',
   source: 'editor',
+  status: 'open',
   filePath: 'src/a.ts',
   lineStart: 3,
   lineEnd: 5,
-  body: 'Rename this\nsecond line',
+  diffSide: null,
+  snippet: null,
+  selector: null,
+  url: null,
+  body: 'Rename this',
+  round: 1,
+  resolvedAt: null,
+  replies: [],
   createdAt: 1,
+  text: '[open] c1 `src/a.ts:3-5` (editor)\n   User: Rename this',
 }
+const list = (comments: unknown[], status = 'open') => ({ worktreeId: 'w1', round: 2, status, comments })
 
 const TABLES: [CliMethod, unknown, string[]][] = [
   ['worktreeList', { projectId: 'p1', worktrees: [worktree] }, ['ID', 'BRANCH', 'PATH', 'main *', '/repo']],
@@ -46,7 +56,6 @@ const TABLES: [CliMethod, unknown, string[]][] = [
     ['NAME', 'PROVIDER', 'ENABLED', 'DEFAULT', 'yes', 'no'],
   ],
   ['taskList', { projectId: 'p1', tasks: [task] }, ['COLUMN', 'PRIORITY', '42', 'PRA-42', 'Review', 'Fix login']],
-  ['commentsList', { worktreeId: 'w1', comments: [comment] }, ['LOCATION', 'BODY', 'src/a.ts:3-5', 'Rename this']],
   ['taskCreate', task, ['title: Fix login', 'labels: ui', 'worktreeId: -']],
   [
     'handoff',
@@ -66,8 +75,28 @@ describe('formatResult', () => {
     expect(formatResult('profileList', result, true)).toBe(`${JSON.stringify({ ok: true, result }, null, 2)}\n`)
   })
 
-  it('comment body shows only the first line', () => {
-    expect(formatResult('commentsList', { worktreeId: 'w1', comments: [comment] }, false)).not.toContain('second')
+  it('comments list prints a header and every thread text', () => {
+    expect(formatResult('commentsList', list([comment, { ...comment, id: 'c2', text: 'second' }]), false)).toBe(
+      `Review round 2 · 2 open threads\n\n${comment.text}\n\nsecond\n`,
+    )
+    expect(formatResult('commentsList', list([comment], 'all'), false)).toContain('Review round 2 · 1 thread\n')
+  })
+
+  it.each([
+    ['open', 'No open review threads.\n'],
+    ['resolved', 'No resolved review threads.\n'],
+    ['all', 'No review threads.\n'],
+  ])('empty %s list', (status, text) => {
+    expect(formatResult('commentsList', list([], status), false)).toBe(text)
+  })
+
+  it.each([
+    ['commentsShow', `${comment.text}\n`],
+    ['commentsReply', 'Replied to c1.\n'],
+    ['commentsResolve', 'Resolved c1.\n'],
+    ['commentsReopen', 'Reopened c1.\n'],
+  ] as const)('%s prints one line', (method, text) => {
+    expect(formatResult(method, comment, false)).toBe(text)
   })
 })
 

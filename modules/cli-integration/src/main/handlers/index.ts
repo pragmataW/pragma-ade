@@ -1,6 +1,7 @@
 import type { CliMethod } from '../../contract'
 import type { CliHandler } from '../lib/define-cli-handler'
 import { agentHandlers } from './agent'
+import { commentThreadHandlers } from './comment-threads'
 import { commentsHandlers } from './comments'
 import { handoffHandlers } from './handoff'
 import { sessionHandlers } from './session'
@@ -19,5 +20,6 @@ export function createCliHandlers(deps: CliHandlerDeps): Record<CliMethod, CliHa
     ...taskHandlers(deps),
     ...handoffHandlers(deps),
     ...sessionHandlers(deps),
+    ...commentThreadHandlers(deps),
   }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, test } from 'vitest'
-import { formatComments, languageFromPath } from '../src/main/format'
+import { formatComments, formatThread, formatThreads, languageFromPath } from '../src/main/format'
+import { aReply, aThread } from '../src/testing'
 import { makeBrowserInput, makeElement, makeInput } from './factories'
 
 const lines = (n: number) => Array.from({ length: n }, (_, i) => `line ${i + 1}`).join('\n')
@@ -145,3 +146,54 @@ it.each([
   ['Makefile', undefined],
   [undefined, undefined],
 ])('languageFromPath(%s) = %s', (path, lang) => expect(languageFromPath(path)).toBe(lang))
+
+describe('formatThread', () => {
+  const thread = aThread({
+    id: 't1',
+    filePath: 'src/a.ts',
+    lineStart: 3,
+    lineEnd: 5,
+    diffSide: 'old',
+    snippet: 'x()',
+    body: 'Why?\nExplain.',
+    round: 1,
+    replies: [
+      aReply({ author: 'agent', authorLabel: 'Claude', body: 'Because.', round: 1 }),
+      aReply({ author: 'agent', body: 'Also.', round: 1 }),
+      aReply({ author: 'user', body: 'Not convinced.', round: 2 }),
+    ],
+  })
+
+  test('header, snippet, root and replies in order; new items of the round are marked', () => {
+    expect(formatThread(thread, { round: 2 })).toBe(
+      [
+        '[open] t1 `src/a.ts:3-5` (diff, old version)',
+        '   ```ts',
+        '   x()',
+        '   ```',
+        '   User: Why?',
+        '     Explain.',
+        '   Claude: Because.',
+        '   Agent: Also.',
+        '   User (new in round 2): Not convinced.',
+      ].join('\n'),
+    )
+  })
+
+  test('the root is marked new in its own round; resolved status and browser source in the header', () => {
+    const out = formatThread(
+      aThread({ ...makeBrowserInput(), id: 't2', status: 'resolved', round: 3, body: 'Blue.' }),
+      { round: 3 },
+    )
+    expect(out.split('\n')[0]).toBe('[resolved] t2 Browser element `button` on http://localhost:5173/ (browser)')
+    expect(out).toContain('   User (new in round 3): Blue.')
+  })
+
+  test('formatThreads separates threads with a blank line', () => {
+    const a = aThread({ id: 'a', round: 1 })
+    const b = aThread({ id: 'b', round: 1 })
+    expect(formatThreads([a, b], { round: 1 })).toBe(
+      `${formatThread(a, { round: 1 })}\n\n${formatThread(b, { round: 1 })}`,
+    )
+  })
+})
