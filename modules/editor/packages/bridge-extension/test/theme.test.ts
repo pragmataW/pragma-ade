@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { PALETTE_COLOR_MAP } from '../src/constants'
 import { applyTheme, newerThemesOnly, nextCustomizations } from '../src/handlers/theme'
 import { LatestQueue } from '../src/latestQueue'
 import { paletteToColorCustomizations } from '../src/palette'
@@ -30,6 +33,33 @@ describe('palette and theme', () => {
     expect(out['titleBar.inactiveBackground']).toBe('#16120f')
     expect(out['titleBar.activeBackground']).toBe('#16120f')
     expect(out['list.inactiveSelectionBackground']).toBe('#30271f')
+  })
+
+  it('the comment widget follows the palette: card frame, range, reply input, Pending and Resolved colours', () => {
+    const out = paletteToColorCustomizations({
+      bg: '#101010',
+      bd: '#202020',
+      acs: '#303030',
+      warn: '#e3b341',
+      ok: '#3fb950',
+    })
+    expect(out['editorCommentsWidget.replyInputBackground']).toBe('#101010')
+    expect(out['editorCommentsWidget.resolvedBorder']).toBe('#202020')
+    expect(out['editorCommentsWidget.unresolvedBorder']).toBe('#202020')
+    expect(out['editorCommentsWidget.rangeBackground']).toBe('#303030')
+    expect(out['pragma.comment.pendingBorder']).toBe('#e3b341')
+    expect(out['pragma.comment.resolvedForeground']).toBe('#3fb950')
+    expect(paletteToColorCustomizations({ bg: '#101010' })['pragma.comment.pendingBorder']).toBeUndefined()
+  })
+
+  it('every pragma.* colour the palette writes is contributed by the manifest', () => {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'))
+    const contributed = pkg.contributes.colors.map((c: { id: string }) => c.id)
+    const written = Object.values(PALETTE_COLOR_MAP)
+      .flat()
+      .filter((id) => id.startsWith('pragma.'))
+    expect(written.length).toBeGreaterThan(0)
+    expect(contributed).toEqual(expect.arrayContaining(written))
   })
 
   it('applyTheme switches theme only when different', async () => {

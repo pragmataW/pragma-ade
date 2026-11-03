@@ -80,7 +80,13 @@ export const DIFF_TITLE = {
 export const OUTSIDE_FOLDER_WARNING = 'Pragma: the file is outside this worktree and was not opened: '
 /** ui-notes palette token → workbench color ids (`workbench.colorCustomizations`). */
 export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
-  bg: ['editor.background', 'tab.activeBackground', 'editorGutter.background', 'breadcrumb.background'],
+  bg: [
+    'editor.background',
+    'tab.activeBackground',
+    'editorGutter.background',
+    'breadcrumb.background',
+    'editorCommentsWidget.replyInputBackground',
+  ],
   // Inactive variants too: the workbench is unfocused whenever the app's own UI has focus.
   sb: [
     'sideBar.background',
@@ -103,6 +109,9 @@ export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
     'activityBar.border',
     'statusBar.border',
     'commandCenter.border',
+    // The comment widget's frame: a neutral card border like the app's threads (the header shows the status).
+    'editorCommentsWidget.resolvedBorder',
+    'editorCommentsWidget.unresolvedBorder',
   ],
   bd2: ['input.border'],
   tx: [
@@ -135,7 +144,14 @@ export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
   ],
   acfg: ['button.foreground', 'badge.foreground', 'activityBarBadge.foreground', 'statusBarItem.remoteForeground'],
   act: ['textLink.foreground'],
-  acs: ['editor.selectionHighlightBackground'],
+  acs: [
+    'editor.selectionHighlightBackground',
+    'editorCommentsWidget.rangeBackground',
+    'editorCommentsWidget.rangeActiveBackground',
+  ],
+  // Shared status tokens → colours the manifest contributes for the comment widget skin.
+  warn: ['pragma.comment.pendingBorder'],
+  ok: ['pragma.comment.resolvedForeground'],
 }
 export const COMMANDS = {
   sendToAgent: 'pragma.comment.sendToAgent',
