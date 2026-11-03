@@ -154,7 +154,7 @@ export function CommentsDrawer() {
         className="w-[440px] max-w-[calc(100vw-24px)] gap-0 bg-[var(--pn)] p-0 sm:max-w-[440px]"
         onEscapeKeyDown={keepOpenWhileTyping}
       >
-        <SheetHeader className="flex-row items-center gap-2.5 border-[var(--bd)] border-b py-2.5 pr-12 pl-4">
+        <SheetHeader className="flex-row items-center gap-2.5 border-[var(--bd)] border-b px-4 py-2.5">
           <SheetTitle className="shrink-0 font-semibold text-[15px]">{t('comments:drawer.title')}</SheetTitle>
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
           {worktreeId ? <HeaderActions worktreeId={worktreeId} /> : null}
