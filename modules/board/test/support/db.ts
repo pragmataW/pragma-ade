@@ -9,7 +9,7 @@ const DB_FILE = 'board.db'
 export interface TestDb {
   opened: OpenedDatabase
   file: string
-  /** Closes the connection and opens the same file again (migrations are recorded, so none re-run). */
+  /** Closes the connection and opens the same file again with every migration (recorded ones do not re-run). */
   reopen(): Promise<OpenedDatabase>
 }
 
@@ -18,20 +18,25 @@ afterEach(() => {
   for (const c of cleanups.splice(0)) c()
 })
 
-async function migrate(file: string): Promise<OpenedDatabase> {
+/** Applies the first `count` migrations (by name), or all of them. */
+async function migrate(file: string, count?: number): Promise<OpenedDatabase> {
   const record = await loadModuleRecord(MODULE_DIR)
+  const migrations = [...record.migrations].sort((a, b) => a.name.localeCompare(b.name)).slice(0, count)
   const opened = openDatabase(file)
-  const applied = applyMigrations(opened.sqlite, [{ module: record.manifest.id, migrations: record.migrations }])
+  const applied = applyMigrations(opened.sqlite, [{ module: record.manifest.id, migrations }])
   if (applied.failed) throw applied.failed.error
   return opened
 }
 
-/** A temp SQLite file with this module's migrations, closed and removed after the test. */
-export async function openTestDb(): Promise<TestDb> {
+/**
+ * A temp SQLite file with this module's migrations, closed and removed after the test.
+ * `migrations` limits the first open to the oldest N, so `reopen()` exercises the upgrade path.
+ */
+export async function openTestDb(opts: { migrations?: number } = {}): Promise<TestDb> {
   const dir = createTempUserData()
   const file = join(dir.path, DB_FILE)
   const state: TestDb = {
-    opened: await migrate(file),
+    opened: await migrate(file, opts.migrations),
     file,
     async reopen() {
       state.opened.close()

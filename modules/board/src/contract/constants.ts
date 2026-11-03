@@ -40,7 +40,7 @@ export const BRANCH_CHECK_REASON = keyedEnum(BRANCH_CHECK_REASONS)
 /** Discriminator of every `{ ok: true | false }` union. */
 export const RESULT_TAG = 'ok'
 
-export const LIMITS = { titleMax: 500, descriptionMax: 100_000, nameMax: 60 } as const
+export const LIMITS = { titleMax: 500, descriptionMax: 100_000, nameMax: 60, columnDescriptionMax: 2000 } as const
 
 /** IPC request channels (`board.<action>`). */
 export const BOARD_CHANNELS = {

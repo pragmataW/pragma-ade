@@ -7,7 +7,7 @@ const NAME = 'name'
 const SORT_ORDER = 'sort_order'
 const CREATED_AT = 'created_at'
 
-/** Drizzle view of `migrations/0901_board.sql`. */
+/** Drizzle view of migrations 0901 + 0902. */
 export const boardBoards = sqliteTable('board_boards', {
   id: integer(ID).primaryKey({ autoIncrement: true }),
   projectId: text('project_id').unique(),
@@ -22,6 +22,7 @@ export const boardColumns = sqliteTable('board_columns', {
   boardId: integer(BOARD_ID).notNull(),
   name: text(NAME).notNull(),
   sortOrder: text(SORT_ORDER).notNull(),
+  description: text('description').notNull().default(''),
 })
 
 export const boardLabels = sqliteTable('board_labels', {
@@ -58,6 +59,7 @@ export const boardTaskSessions = sqliteTable(
 
 export type BoardRow = typeof boardBoards.$inferSelect
 export type ColumnRow = typeof boardColumns.$inferSelect
+export type ColumnInsert = Omit<typeof boardColumns.$inferInsert, 'id'>
 export type LabelRow = typeof boardLabels.$inferSelect
 export type TaskRow = typeof boardTasks.$inferSelect
 export type TaskInsert = typeof boardTasks.$inferInsert

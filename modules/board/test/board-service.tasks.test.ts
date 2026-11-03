@@ -24,6 +24,7 @@ describe('boards', () => {
     const second = await h.service.getBoard('p1')
     expect(second.columns.map((c) => c.id)).toEqual(first.columns.map((c) => c.id))
     expect(first.board.keyPrefix).toBe('PRA')
+    expect(first.columns.map((c) => c.description)).toEqual(DEFAULT_COLUMN_NAMES.map(() => ''))
   })
 
   it('gives a second project with the same prefix a unique one', async () => {

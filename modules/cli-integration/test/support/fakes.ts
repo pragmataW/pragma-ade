@@ -128,6 +128,9 @@ export function fakeComments(comments: Comment[] = []) {
 }
 
 const COLUMNS = ['Backlog', 'Todo', 'In Progress', 'Review', 'Done']
+/** Only Review carries a description in the fake board. */
+export const REVIEW_DESCRIPTION = 'Finished work waiting for my review. Never move to Done yourself.'
+const COLUMN_DESCRIPTIONS: Record<string, string> = { Review: REVIEW_DESCRIPTION }
 
 export const aTask = (id: number, over: Partial<TaskDto> = {}): TaskDto => ({
   id,
@@ -159,7 +162,13 @@ export function fakeBoard(tasks: TaskDto[] = []) {
   let section: BoardSection = {
     board: { id: 1, projectId: 'p1', name: 'p1', keyPrefix: 'P1' },
     projectName: 'p1',
-    columns: COLUMNS.map((name, i) => ({ id: i + 1, boardId: 1, name, sortKey: String(i) })),
+    columns: COLUMNS.map((name, i) => ({
+      id: i + 1,
+      boardId: 1,
+      name,
+      sortKey: String(i),
+      description: COLUMN_DESCRIPTIONS[name] ?? '',
+    })),
     labels: [{ id: 1, boardId: 1, name: 'ui', color: 'blue' }],
   }
   const columnId = (ref: ColumnRef): number => {

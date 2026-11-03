@@ -37,6 +37,8 @@ export const LabelIdSchema = intId
 export type LabelId = z.infer<typeof LabelIdSchema>
 
 export const NameSchema = z.string().trim().min(1).max(LIMITS.nameMax)
+/** A column's optional guidance for people and agents; '' = none. */
+export const ColumnDescriptionSchema = z.string().trim().max(LIMITS.columnDescriptionMax)
 /** number = column id; string = column name (trimmed, case-insensitive, within the task's board). */
 export const ColumnRefSchema = z.union([ColumnIdSchema, NameSchema])
 export type ColumnRef = z.infer<typeof ColumnRefSchema>
@@ -70,6 +72,8 @@ export const ColumnDtoSchema = z.object({
   boardId: BoardIdSchema,
   name: z.string(),
   sortKey: z.string(),
+  /** Plain text, '' when unset. */
+  description: z.string(),
 })
 export type ColumnDto = z.infer<typeof ColumnDtoSchema>
 export const LabelDtoSchema = z.object({
