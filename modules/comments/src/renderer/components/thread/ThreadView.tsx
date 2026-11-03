@@ -145,7 +145,7 @@ function Header(p: ThreadViewProps & { narrow: boolean; api: ThreadActionsApi; o
   const { comment } = p
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-      <div className="flex min-w-0 flex-1 basis-24 items-center gap-1.5">
+      <div className="flex min-w-0 flex-1 basis-12 items-center gap-1.5">
         {p.leading}
         <Location label={p.locationLabel} link={p.links?.[0]} />
       </div>
