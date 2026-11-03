@@ -6,6 +6,7 @@ import { createFileSearch } from './file-search'
 import { registerChatIpc } from './ipc-handlers'
 import { ChatSessionRegistry } from './registry'
 import { ComposerInbox, createChatService, ResumeFallbacks, StartGuards } from './service'
+import type { SessionOptionsStore } from './session-options-store'
 import { createStatusReporter } from './status-reporter'
 import { SupportCache } from './support-cache'
 import { checkChatSupport } from './support-check'
@@ -16,6 +17,7 @@ export interface ChatMainDeps {
   settings(): ChatSettings
   ipc: Pick<MainIpcApi, 'handle' | 'publish'>
   provideService(service: ChatService): void
+  optionsStore?: SessionOptionsStore
   log: Pick<Logger, 'info' | 'warn'>
 }
 
@@ -41,6 +43,7 @@ export function activateChat(d: ChatMainDeps): ChatMain {
     statusReporter: createStatusReporter(d.agents),
     startGuard: (s) => guards.check(s),
     onResumeFallback: fallbacks.notify,
+    ...(d.optionsStore ? { optionsStore: d.optionsStore } : {}),
     log: d.log,
   })
   const disposeMode = d.agents.registerModeHandler(CHAT_MODE, {

@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 import { type ChatEventEnvelope, type ChatSettings, chatSettingsDefaults } from '../../src/contract'
 import { ChatSessionController } from '../../src/main/controller'
 import { ChatSessionRegistry } from '../../src/main/registry'
+import { SessionOptionsStore } from '../../src/main/session-options-store'
 import { createStatusReporter } from '../../src/main/status-reporter'
 import { SupportCache } from '../../src/main/support-cache'
 import {
@@ -24,6 +25,8 @@ export function harness(
   const published: ChatEventEnvelope[] = []
   const exits: (number | null)[] = []
   const supportCache = new SupportCache()
+  /** Shared by every controller and registry of this harness (survives a "restart": a new registry). */
+  const optionsStore = new SessionOptionsStore()
   const deps = {
     agents,
     resolveCapability: () => (opts.noCapability ? undefined : fake.capability),
@@ -31,6 +34,7 @@ export function harness(
     publish: (env: ChatEventEnvelope) => void published.push(env),
     supportCache,
     statusReporter: createStatusReporter(agents),
+    optionsStore,
     log: silent,
   }
   const session = [...agents.sessions.values()][0]
@@ -59,6 +63,7 @@ export function harness(
     published,
     exits,
     supportCache,
+    optionsStore,
     deps,
     session,
     profile,

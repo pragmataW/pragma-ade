@@ -6,6 +6,7 @@ import {
   type ChatCapability,
   type ChatEvent,
   type ChatEventEnvelope,
+  type ChatOptionDescriptor,
   type ChatOptionValue,
   type ChatPermissionDecision,
   type ChatResumeFallbackListener,
@@ -38,6 +39,7 @@ import {
 } from '../contract'
 import type { ChatAgentsApi } from './agents-adapter'
 import { acceptedInput, attachmentRefs, runSessionAction } from './session-actions'
+import type { SessionOptionsStore } from './session-options-store'
 import type { StatusReporter } from './status-reporter'
 import type { SupportCache } from './support-cache'
 
@@ -53,6 +55,8 @@ export interface ControllerDeps {
   startGuard?: ChatStartGuard
   /** A resume found no conversation and a fresh session was started instead. */
   onResumeFallback?: ChatResumeFallbackListener
+  /** The last options and the user's choices, kept across chat process restarts and app restarts. */
+  optionsStore?: SessionOptionsStore
   log: Pick<Logger, 'info' | 'warn'>
   now?: () => number
 }
@@ -95,12 +99,14 @@ export class ChatSessionController {
   #closeRequested = false
   #queue: QueuedInput[] = []
   #pendingDispatch: ChatUserInput | null = null
-  #pendingOptions: Record<string, ChatOptionValue> = {}
+  /** Values the user chose (kept current by later `options` events): `initialOptions` of every (re)start. */
+  #chosen: Record<string, ChatOptionValue>
   #externalSessionId: string | undefined
 
   constructor(deps: ControllerDeps) {
     this.#d = deps
     this.#now = deps.now ?? Date.now
+    this.#chosen = deps.optionsStore?.get(deps.sessionId)?.chosen ?? {}
   }
 
   get sessionId(): string {
@@ -113,7 +119,9 @@ export class ChatSessionController {
     status: ChatSessionStatus,
     meta: { providerId: string; externalSessionId?: string },
   ) {
-    this.#transcript = reduceEvents(history, this.#now())
+    const saved = this.#d.optionsStore?.get(this.#d.sessionId)?.options
+    const restored = saved?.length && !history.some((e) => e.kind === K.options)
+    this.#transcript = reduceEvents(restored ? [...history, { kind: K.options, options: saved }] : history, this.#now())
     this.#seq = this.#transcript.lastSeq
     this.#status = status
     this.#providerId = meta.providerId
@@ -135,6 +143,7 @@ export class ChatSessionController {
     const env: ChatEventEnvelope = { sessionId: this.#d.sessionId, seq: ++this.#seq, at: this.#now(), event }
     this.#transcript = reduceTranscript(this.#transcript, env)
     if (event.kind === K.sessionInfo && event.externalSessionId) this.#followExternalSession(event.externalSessionId)
+    if (event.kind === K.options) this.#saveOptions(event.options)
     const next = nextStatus(this.#status, event, { pendingInteractions: this.#transcript.pendingInteractions })
     const changed = next !== this.#status
     this.#status = next
@@ -156,6 +165,20 @@ export class ChatSessionController {
     this.#d.agents
       .updateSession(this.#d.sessionId, { externalSessionId: id })
       .catch((e: unknown) => this.#d.log.warn(`chat ${this.#d.sessionId}: externalSessionId write failed`, e))
+  }
+
+  /** Chosen keys follow the agent (e.g. plan mode left after an approved plan); unknown keys keep their value. */
+  #saveOptions(options: ChatOptionDescriptor[]): void {
+    const current = new Map(options.map((o) => [o.key, o.current]))
+    this.#chosen = Object.fromEntries(
+      Object.entries(this.#chosen).map(([k, v]) => [k, current.has(k) ? (current.get(k) as ChatOptionValue) : v]),
+    )
+    this.#d.optionsStore?.set(this.#d.sessionId, { options, chosen: this.#chosen })
+  }
+
+  #choose(key: string, value: ChatOptionValue): void {
+    this.#chosen = { ...this.#chosen, [key]: value }
+    this.#saveOptions(this.#transcript.info.options)
   }
 
   #persistStatus(): void {
@@ -224,7 +247,7 @@ export class ChatSessionController {
       worktreePath: req.worktree.path,
       env,
       resumeExternalSessionId: resume?.externalSessionId,
-      initialOptions: { ...this.#pendingOptions },
+      initialOptions: { ...this.#chosen },
       startupTimeoutMs: this.#d.settings().startupTimeoutMs,
       emit: (e) => {
         if (generation === this.#generation) this.#emit(e)
@@ -255,7 +278,6 @@ export class ChatSessionController {
 
   async #ready(handle: ChatSessionHandle, req: ModeStartRequest): Promise<void> {
     this.#handle = handle
-    this.#pendingOptions = {}
     this.#d.supportCache.clear(req.profile)
     if (this.#closeRequested) return handle.close()
     const actions = supportedActions(handle)
@@ -398,12 +420,19 @@ export class ChatSessionController {
     return runSessionAction(this.#handle, a, (e) => this.#emit(e))
   }
 
-  /** Live: the adapter applies it. Dormant: kept and passed as `initialOptions` on resume. */
+  /**
+   * Live: the adapter applies it. Dormant: shown at once. Either way the choice is kept and passed as
+   * `initialOptions` whenever the chat process (re)starts.
+   */
   async setOption(key: string, value: ChatOptionValue): Promise<void> {
-    if (this.#handle) return this.#handle.setOption(key, value)
+    const handle = this.#handle
+    if (handle) {
+      await handle.setOption(key, value)
+      return this.#choose(key, value)
+    }
     const d = this.#transcript.info.options.find((o) => o.key === key)
     if (!d || !validateOptionValue(d, value)) throw new InvalidChatOptionError(`invalid option ${key}`)
-    this.#pendingOptions = { ...this.#pendingOptions, [key]: value }
+    this.#chosen = { ...this.#chosen, [key]: value }
     this.#emit({ kind: K.options, options: withCurrent(this.#transcript.info.options, key, value) })
   }
 
