@@ -43,6 +43,9 @@ export const INITIAL_RECT = { width: 740, height: 800 } as const
 export const ICON_PX = 14
 export const SMALL_ICON_PX = 12
 export const LARGE_ICON_PX = 16
+export const EMPTY_CHAT_ICON = 'messages-square'
+/** Lucide icons of the Tasks panel's empty states. */
+export const TASK_EMPTY_ICONS = { empty: 'list-tree', noMatch: 'search-x' } as const
 /** Tool-call input fields the kit renders (task prompt, todo list). */
 export const TASK_PROMPT_FIELD = 'prompt'
 export const TODO_INPUT_FIELD = 'todos'

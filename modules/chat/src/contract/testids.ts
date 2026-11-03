@@ -52,6 +52,7 @@ export const CHAT_TESTIDS = {
   statusbarContext: 'chat-statusbar-context',
   turnHeader: 'chat-turn-header',
   messageList: 'chat-message-list',
+  emptyTranscript: 'chat-empty-transcript',
   settingsDefaultMode: 'chat-settings-default-mode',
   settingsStartupTimeout: 'chat-settings-startup-timeout',
   permissionMode: 'chat-permission-mode',

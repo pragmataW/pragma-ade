@@ -1,7 +1,6 @@
 import { useT } from '@pragma/sdk/renderer'
-import { cn } from '@pragma/ui'
-import { ListTree, SearchX } from '@pragma/ui/icons'
-import { BUTTON_TYPE, ICON_PX, ICON_STROKE, LARGE_ICON_PX, META_SEPARATOR, TASK_INDENT_PX } from '../../../constants'
+import { cn, EmptyState } from '@pragma/ui'
+import { BUTTON_TYPE, ICON_PX, META_SEPARATOR, TASK_EMPTY_ICONS, TASK_INDENT_PX } from '../../../constants'
 import { CHAT_DATA_ATTRS, CHAT_TESTIDS, TASK_KIND } from '../../../contract'
 import { SECTION_LABEL } from '../parts/lib/tone'
 import { useNow } from '../parts/lib/use-now'
@@ -91,18 +90,13 @@ export function TaskList({ sections, onSelect }: { sections: TaskSection[]; onSe
 /** No tasks at all (with a hint), or none matching the filter. */
 export function TaskListEmpty({ filtered }: { filtered: boolean }) {
   const t = useT()
-  const Icon = filtered ? SearchX : ListTree
   return (
-    <div data-testid={CHAT_TESTIDS.tasksEmpty} className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <span className="flex size-9 items-center justify-center rounded-full border border-bd bg-el text-mu">
-        <Icon size={LARGE_ICON_PX} strokeWidth={ICON_STROKE} aria-hidden />
-      </span>
-      <p className="text-[12.5px] font-semibold text-tx">
-        {t(filtered ? 'chat:tasks.noMatch' : 'chat:tasks.empty.title')}
-      </p>
-      {filtered ? null : (
-        <p className="max-w-[240px] text-[12px] leading-[1.5] text-mu">{t('chat:tasks.empty.hint')}</p>
-      )}
-    </div>
+    <EmptyState
+      testId={CHAT_TESTIDS.tasksEmpty}
+      compact
+      icon={filtered ? TASK_EMPTY_ICONS.noMatch : TASK_EMPTY_ICONS.empty}
+      title={t(filtered ? 'chat:tasks.noMatch' : 'chat:tasks.empty.title')}
+      description={filtered ? undefined : t('chat:tasks.empty.hint')}
+    />
   )
 }
