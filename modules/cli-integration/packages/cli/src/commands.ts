@@ -23,6 +23,7 @@ const RENAMED: Record<string, string> = {
   project: 'projectId',
   task: 'taskId',
   'same-worktree': 'sameWorktree',
+  timeout: 'timeoutSeconds',
 }
 /** Flags that name a file whose contents become the field (`-` = stdin). */
 const FILE_FIELDS: Record<string, string> = {

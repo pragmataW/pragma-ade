@@ -4,6 +4,7 @@ import type { CommentsService } from '@pragma/module-comments/contract'
 import type { ProjectsService } from '@pragma/module-projects/contract'
 import type { Logger } from '@pragma/sdk'
 import type { CliRequest, CliResult } from '../../contract'
+import type { AskJobs } from '../ask/jobs'
 import type { ProfileNamer } from '../resolve-profile'
 import type { TranscriptLocator } from '../session-transcripts'
 
@@ -16,4 +17,5 @@ export interface CliHandlerDeps {
   handoff: (req: CliRequest<'handoff'>) => Promise<CliResult<'handoff'>>
   log: Logger
   transcripts: TranscriptLocator
+  asks: AskJobs
 }

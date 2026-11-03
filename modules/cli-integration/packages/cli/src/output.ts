@@ -1,4 +1,5 @@
 import {
+  ASK_STATE,
   CLI_ERROR,
   CLI_LOCAL_ERROR,
   CLI_METHOD,
@@ -10,6 +11,7 @@ import {
   type CliWorktree,
   EXIT_CODES,
   type ExitCode,
+  MAX_DOCUMENT_BYTES,
 } from '@pragma/module-cli-integration/contract'
 import { UsageError } from './args'
 import { AppError } from './client'
@@ -39,6 +41,13 @@ export interface FormattedError {
   text: string
   exitCode: ExitCode
   stream: typeof STDOUT | typeof STDERR
+}
+
+/** `pragma ask`: the answer alone, so agents can read stdout as-is. */
+function answerText(result: CliResult<'ask'>): string {
+  if (result.status !== ASK_STATE.answered) return ''
+  const text = result.text.endsWith(NEWLINE) ? result.text : `${result.text}${NEWLINE}`
+  return result.truncated ? `${text}${NEWLINE}[answer truncated at ${MAX_DOCUMENT_BYTES} bytes]${NEWLINE}` : text
 }
 
 const LIST_JOIN = ', '
@@ -180,6 +189,9 @@ function humanResult(method: CliMethod, result: unknown): string {
       return taskDetailText(result as CliTaskDetail)
     case CLI_METHOD.sessionLocate:
       return locateText(result as CliResult<'sessionLocate'>)
+    case CLI_METHOD.ask:
+    case CLI_METHOD.askWait:
+      return answerText(result as CliResult<'ask'>)
     case CLI_METHOD.worktreeCreate:
     case CLI_METHOD.agentSpawn:
     case CLI_METHOD.taskCreate:

@@ -17,10 +17,10 @@ import { makeSkillsFixture } from './support/skills'
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 
 describe('skills installer', () => {
-  it('reads both sources with sha256', async () => {
+  it('reads every source with sha256', async () => {
     const f = makeSkillsFixture()
     const sources = await readSkillSources(f.skillsDir)
-    expect(sources.map((s) => s.skillId)).toEqual(['board', 'handoff', 'pragma-cli'])
+    expect(sources.map((s) => s.skillId)).toEqual(['ask', 'board', 'handoff', 'pragma-cli'])
     for (const s of sources) expect(s.hash).toBe(sha(s.content))
   })
 
@@ -28,9 +28,11 @@ describe('skills installer', () => {
     const f = makeSkillsFixture()
     const targets = planSkillTargets(f.providers, f.home, {})
     expect(targets.map((t) => [t.providerId, t.skillId, t.dir])).toEqual([
+      ['alpha', 'ask', join(f.home, '.alpha', 'skills', 'pragma-ask')],
       ['alpha', 'board', join(f.home, '.alpha', 'skills', 'pragma-board')],
       ['alpha', 'handoff', join(f.home, '.alpha', 'skills', 'pragma-handoff')],
       ['alpha', 'pragma-cli', join(f.home, '.alpha', 'skills', 'pragma-cli')],
+      ['beta', 'ask', join(f.home, '.beta', 'skills', 'pragma-ask')],
       ['beta', 'board', join(f.home, '.beta', 'skills', 'pragma-board')],
       ['beta', 'handoff', join(f.home, '.beta', 'skills', 'pragma-handoff')],
       ['beta', 'pragma-cli', join(f.home, '.beta', 'skills', 'pragma-cli')],
@@ -46,7 +48,9 @@ describe('skills installer', () => {
     expect(await skillTargetStatus(target, sources, f.registryPath)).toMatchObject({ state: SKILL_STATE.missing })
     await installSkills([target], sources, '1.0.0', f.registryPath)
     expect(await skillTargetStatus(target, sources, f.registryPath)).toMatchObject({ state: SKILL_STATE.current })
-    expect(readFileSync(join(target.dir, SKILL_FILE), 'utf8')).toBe(sources[0]?.content)
+    expect(readFileSync(join(target.dir, SKILL_FILE), 'utf8')).toBe(
+      sources.find((s) => s.skillId === target.skillId)?.content,
+    )
   })
 
   it('source changed → outdated', async () => {
@@ -57,9 +61,11 @@ describe('skills installer', () => {
     const sources = await readSkillSources(f.skillsDir)
     const states = await Promise.all(targets.map((t) => skillTargetStatus(t, sources, f.registryPath)))
     expect(states.map((s) => [s.skillId, s.state])).toEqual([
+      ['ask', 'current'],
       ['board', 'current'],
       ['handoff', 'outdated'],
       ['pragma-cli', 'current'],
+      ['ask', 'current'],
       ['board', 'current'],
       ['handoff', 'outdated'],
       ['pragma-cli', 'current'],

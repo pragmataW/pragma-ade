@@ -1,5 +1,6 @@
-import type { CliMethod } from '@pragma/module-cli-integration/contract'
+import { CLI_METHOD, type CliMethod } from '@pragma/module-cli-integration/contract'
 import { COMMAND_KIND, helpText, type ParsedCommand, parseCli } from './args'
+import { type AskPayload, callAsk } from './ask'
 import { type CallOptions, callBridge } from './client'
 import { buildRequest, type RequestIo } from './commands'
 import { type BridgeEndpoint, resolveBridgeEndpoint } from './connection'
@@ -37,7 +38,10 @@ async function execute(cmd: ParsedCommand, io: CliIo, deps: CliDeps): Promise<vo
     case COMMAND_KIND.call: {
       const { method, payload } = await buildRequest(cmd, io)
       const endpoint = await deps.resolve(io.env, { home: io.home, platform: io.platform })
-      const result = await deps.call(endpoint, method, payload)
+      const result =
+        method === CLI_METHOD.ask
+          ? await callAsk(deps.call, endpoint, payload as AskPayload)
+          : await deps.call(endpoint, method, payload)
       return io.stdout(formatResult(method, result, cmd.json))
     }
     default: {

@@ -4,7 +4,8 @@ description: >-
   Use Pragma ADE's `pragma` CLI to list and create worktrees, list and start agent sessions,
   manage board tasks, read review comments, and find a session's local transcript. Use when working inside Pragma ADE and the user
   mentions worktrees, agents, the task board or review comments, or asks to hand work to
-  another agent (then use pragma-handoff).
+  another agent (then use pragma-handoff) or explicitly asks to consult another agent (then
+  use pragma-ask).
 ---
 
 # Pragma CLI
@@ -35,6 +36,7 @@ Prefer `--json`: every command then prints one JSON document,
 | `pragma handoff --to <profile> --file <path\|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]` | Hand off to another agent |
 | `pragma session locate <id>` | Where a session's full transcript is stored (Pragma, Claude or OpenCode session id) |
 | `pragma session current` | The same for your own session (`PRAGMA_SESSION_ID`) |
+| `pragma ask --to <profile> (--prompt <text> \| --prompt-file <path\|->) [--timeout <seconds>]` | Ask another agent and wait for its answer (only when the user asks; see pragma-ask) |
 
 - `--worktree` and `--project` default to the current worktree (`PRAGMA_WORKTREE_ID`, else
   the directory you are in).
@@ -61,9 +63,10 @@ session id is also in the environment: Claude Code sets `CLAUDE_CODE_SESSION_ID`
 
 - `0` ok
 - `1` the app reported an error (`error.code`: invalid_argument, not_found, ambiguous,
-  module_unavailable, conflict, internal)
+  module_unavailable, conflict, internal, timeout)
 - `2` usage error (bad flags)
 - `3` Pragma ADE is not running or cannot be reached; ask the user to open the app
 
-For handoffs (giving the work to another agent), use the pragma-handoff skill. To work through
-the board's tasks column by column, use the pragma-board skill.
+For handoffs (giving the work to another agent), use the pragma-handoff skill. To consult
+another agent when the user asks for it, use the pragma-ask skill. To work through the board's
+tasks column by column, use the pragma-board skill.

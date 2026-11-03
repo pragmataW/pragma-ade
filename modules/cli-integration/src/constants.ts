@@ -1,6 +1,6 @@
 /** Main/renderer-only constants (§9.2); literals shared with the CLI live in `contract/constants.ts`. */
 import { SETTINGS_PAGE_ORDER as SDK_SETTINGS_PAGE_ORDER } from '@pragma/sdk'
-import { CLI_MODULE_ID } from './contract/constants'
+import { ASK_REQUEST_TIMEOUT_MS, CLI_MODULE_ID } from './contract/constants'
 
 /** Install registry of skills we wrote (`<module data>/installed-skills.json`), never inside skill dirs. */
 export const REGISTRY_FILE = 'installed-skills.json'
@@ -32,3 +32,21 @@ export const POWERSHELL = {
 } as const
 /** lucide icon of Settings › Command line. */
 export const SETTINGS_PAGE_ICON = 'square-terminal'
+
+/** `pragma ask`: the provider capability and the headless runner (§9.2). */
+export const ASK_CAPABILITY = 'ask'
+/** SIGTERM first, SIGKILL after this. */
+export const ASK_KILL_GRACE_MS = 5000
+const KIB = 1024
+const MIB = KIB * KIB
+const ASK_MAX_STDOUT_MIB = 8
+const ASK_MAX_STDERR_KIB = 64
+/** Raw stdout above this kills the child (the answer is cut to `MAX_DOCUMENT_BYTES` later). */
+export const ASK_MAX_STDOUT_BYTES = ASK_MAX_STDOUT_MIB * MIB
+/** Only the last this-many bytes of stderr are kept (for error messages). */
+export const ASK_MAX_STDERR_BYTES = ASK_MAX_STDERR_KIB * KIB
+export const TASKKILL = { exe: 'taskkill', args: ['/T', '/F', '/PID'] } as const
+export const ASK_MAX_CONCURRENT = 4
+export const ASK_TEMP_PREFIX = 'ask-'
+/** A question nobody polled for this long is aborted (the CLI went away). */
+export const ASK_ABANDON_MS = 2 * ASK_REQUEST_TIMEOUT_MS

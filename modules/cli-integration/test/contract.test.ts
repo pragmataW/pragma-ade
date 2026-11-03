@@ -1,8 +1,10 @@
 import { PRIORITIES } from '@pragma/module-board/contract'
 import { describe, expect, it } from 'vitest'
 import {
+  ASK_MAX_TIMEOUT_SECONDS,
   CLI_METHODS,
   CLI_PRIORITIES,
+  cliErrorSchema,
   cliIntegrationSettingsSchema,
   cliRequestSchemas,
   cliResultSchemas,
@@ -60,5 +62,39 @@ describe('cli bridge contract', () => {
   it('settings defaults round-trip', () => {
     const value = { installDir: null, skillUpdatePromptedHash: null }
     expect(cliIntegrationSettingsSchema.parse(value)).toEqual(value)
+  })
+
+  it('errors may carry the timeout code', () => {
+    expect(cliErrorSchema.safeParse({ code: 'timeout', message: 'slow' }).success).toBe(true)
+  })
+
+  it.each([
+    ['at the limit', 'a'.repeat(MAX_DOCUMENT_BYTES), true],
+    ['over the limit', 'a'.repeat(MAX_DOCUMENT_BYTES + 1), false],
+  ])('ask prompt limit: %s', (_name, prompt, ok) => {
+    expect(cliRequestSchemas.ask.safeParse({ context, to: 'oc', prompt }).success).toBe(ok)
+  })
+
+  it.each([
+    [1, true],
+    [ASK_MAX_TIMEOUT_SECONDS, true],
+    [0, false],
+    [ASK_MAX_TIMEOUT_SECONDS + 1, false],
+  ])('ask timeoutSeconds %s', (timeoutSeconds, ok) => {
+    expect(cliRequestSchemas.ask.safeParse({ context, to: 'oc', prompt: 'q', timeoutSeconds }).success).toBe(ok)
+  })
+
+  it('both ask result variants parse', () => {
+    expect(cliResultSchemas.ask.safeParse({ status: 'pending', askId: 'a' }).success).toBe(true)
+    const answered = {
+      status: 'answered',
+      askId: 'a',
+      profile: { id: 'oc', name: 'OpenCode', providerId: 'opencode' },
+      text: '42',
+      truncated: false,
+      durationMs: 1,
+    }
+    expect(cliResultSchemas.askWait.safeParse(answered).success).toBe(true)
+    expect(cliResultSchemas.askWait.safeParse({ ...answered, text: undefined }).success).toBe(false)
   })
 })

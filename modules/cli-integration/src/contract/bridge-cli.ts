@@ -1,5 +1,5 @@
 import { z } from '@pragma/sdk'
-import { MAX_DOCUMENT_BYTES } from './constants'
+import { ASK_DEFAULT_TIMEOUT_SECONDS, ASK_MAX_TIMEOUT_SECONDS, MAX_DOCUMENT_BYTES } from './constants'
 import { sessionTranscriptLocationSchema } from './session-transcript-capability'
 
 /** Bridge namespace served by this module; wire types are `cli.<method>`. */
@@ -19,10 +19,16 @@ export const CLI_METHODS = [
   'sessionLocate',
   'taskColumns',
   'taskShow',
+  'ask',
+  'askWait',
 ] as const
 export type CliMethod = (typeof CLI_METHODS)[number]
 /** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
 export const CLI_METHOD = Object.fromEntries(CLI_METHODS.map((m) => [m, m])) as { readonly [K in CliMethod]: K }
+/** States of a `pragma ask` long-poll (`ask` / `askWait` answer one of these). */
+export const ASK_STATUS = ['pending', 'answered'] as const
+export type AskStatus = (typeof ASK_STATUS)[number]
+export const ASK_STATE = Object.fromEntries(ASK_STATUS.map((s) => [s, s])) as { readonly [K in AskStatus]: K }
 /** Liveness probe the CLI sends (short timeout) before the real request; not a user command. */
 export const CLI_PING_METHOD = 'ping'
 
@@ -36,6 +42,7 @@ export const CLI_ERROR_CODES = [
   'module_unavailable',
   'conflict',
   'internal',
+  'timeout',
 ] as const
 export type CliErrorCode = (typeof CLI_ERROR_CODES)[number]
 /** `{ not_found: 'not_found', … }` so code names error codes instead of repeating literals. */
@@ -158,6 +165,20 @@ export const cliSessionLocateResultSchema = z.object({
 })
 export type CliSessionLocateResult = z.infer<typeof cliSessionLocateResultSchema>
 
+/** `ask` / `askWait`: still running (poll again with `askWait`) or the consulted agent's answer. */
+export const cliAskResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal(ASK_STATE.pending), askId: id }),
+  z.object({
+    status: z.literal(ASK_STATE.answered),
+    askId: id,
+    profile: cliProfileSchema.pick({ id: true, name: true, providerId: true }),
+    text: z.string(),
+    truncated: z.boolean(),
+    durationMs: z.number().int().nonnegative(),
+  }),
+])
+export type CliAskResult = z.infer<typeof cliAskResultSchema>
+
 const UPDATE_FIELDS = ['title', 'description', 'priority', 'labels'] as const
 const NEEDS_UPDATE_FIELD = `pass at least one of ${UPDATE_FIELDS.join(', ')}`
 
@@ -202,6 +223,13 @@ export const cliRequestSchemas = {
   sessionLocate: withContext({ sessionId: id.optional() }),
   taskColumns: withContext({ projectId: id.optional() }),
   taskShow: withContext({ taskId: taskRefSchema }),
+  /** One question to another profile's provider, answered headlessly in the caller's worktree. */
+  ask: withContext({
+    to: text,
+    prompt: documentText,
+    timeoutSeconds: z.number().int().min(1).max(ASK_MAX_TIMEOUT_SECONDS).default(ASK_DEFAULT_TIMEOUT_SECONDS),
+  }),
+  askWait: withContext({ askId: id }),
 } satisfies Record<CliMethod, z.ZodType>
 
 export const cliResultSchemas = {
@@ -219,6 +247,8 @@ export const cliResultSchemas = {
   sessionLocate: cliSessionLocateResultSchema,
   taskColumns: z.object({ projectId: id, columns: z.array(cliColumnSchema) }),
   taskShow: cliTaskDetailSchema,
+  ask: cliAskResultSchema,
+  askWait: cliAskResultSchema,
 } satisfies Record<CliMethod, z.ZodType>
 
 export type CliRequest<M extends CliMethod> = z.infer<(typeof cliRequestSchemas)[M]>

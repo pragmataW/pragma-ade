@@ -5,7 +5,7 @@ description: >-
   Pragma ADE's `pragma` CLI, in a new worktree or the same one. Use when the user says
   "hand off", "handoff", "handover", "give this to another agent", "let OpenCode/Claude
   continue", "devret", or asks to move the work to another agent or worktree. Not for asking
-  another agent something and waiting for the answer.
+  another agent something and waiting for the answer (use pragma-ask).
 license: MIT. Portions adapted from stablyai/orca (Copyright (c) 2026 Lovecast Inc.).
 ---
 
@@ -13,7 +13,8 @@ license: MIT. Portions adapted from stablyai/orca (Copyright (c) 2026 Lovecast I
 
 A handoff transfers ownership of the current task to another agent. After a successful
 handoff you stop working on the task. If the user wants the result back ("have another
-agent review this and tell me"), this is not a handoff: say so and ask how to proceed.
+agent review this and tell me"), this is not a handoff: use pragma-ask if the user asked to
+consult another agent, otherwise ask how to proceed.
 
 ## Before you start
 
