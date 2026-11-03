@@ -113,3 +113,8 @@ export const VARIANT_OUTLINE = 'outline'
 export const VARIANT_GHOST = 'ghost'
 export const SIZE_SM = 'sm'
 export const SIZE_ICON_SM = 'icon-sm'
+export const SIZE_XS = 'xs'
+export const SIZE_ICON_XS = 'icon-xs'
+export const VARIANT_LINK = 'link'
+/** Icon size inside an inline comment card's actions. */
+export const COMMENT_ICON_PX = 12

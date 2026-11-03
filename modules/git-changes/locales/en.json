@@ -98,7 +98,12 @@
     "lines": "L{{start}}–{{end}}",
     "line": "L{{start}}",
     "pending": "Pending",
-    "edit": "Edit"
+    "edit": "Edit",
+    "delete": "Delete comment",
+    "confirmDelete": "Delete this comment?",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteFailed": "The comment could not be deleted"
   },
   "review": {
     "pending_one": "{{count}} pending comment · {{file}}",
