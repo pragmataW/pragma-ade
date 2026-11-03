@@ -5,10 +5,11 @@ import {
   CommentsServiceToken,
   CommentsSettingsSchema,
   CommentsUiServiceToken,
+  commentContextOf,
   type SendResult,
   SendResultSchema,
 } from '../src/contract'
-import { makeInput } from './factories'
+import { makeComment, makeInput } from './factories'
 
 describe('CommentInputSchema', () => {
   test('normalises CRLF, backslashes and trims body', () => {
@@ -22,6 +23,12 @@ describe('CommentInputSchema', () => {
     ['diff without filePath', { filePath: undefined }],
     ['browser without element', { source: 'browser' as const, element: undefined }],
   ])('rejects %s', (_n, o) => expect(() => CommentInputSchema.parse(makeInput(o))).toThrow())
+})
+
+test('commentContextOf keeps the anchor and drops body, ids and timestamps', () => {
+  const c = makeComment({ diffSide: 'new' })
+  const { source, filePath, lineStart, lineEnd, snippet, language } = c
+  expect(commentContextOf(c)).toEqual({ source, filePath, lineStart, lineEnd, diffSide: 'new', snippet, language })
 })
 
 test('settings default', () => expect(CommentsSettingsSchema.parse({})).toEqual({ submitAfterPaste: true }))

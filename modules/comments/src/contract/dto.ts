@@ -89,3 +89,9 @@ export const CommentSchema = CommentInputBaseSchema.extend({
   updatedAt: z.number(),
 })
 export type Comment = z.infer<typeof CommentSchema>
+
+/** A stored comment's anchor, as the composer's `context` (to reopen it in edit mode where it was written). */
+export function commentContextOf(c: Comment): CommentContext {
+  const { source, filePath, lineStart, lineEnd, diffSide, snippet, language, element } = c
+  return { source, filePath, lineStart, lineEnd, diffSide, snippet, language, element }
+}
