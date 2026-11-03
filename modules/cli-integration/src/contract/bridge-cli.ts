@@ -34,6 +34,7 @@ export const CLI_ERROR_CODES = [
   'module_unavailable',
   'conflict',
   'internal',
+  'timeout',
 ] as const
 export type CliErrorCode = (typeof CLI_ERROR_CODES)[number]
 /** `{ not_found: 'not_found', … }` so code names error codes instead of repeating literals. */

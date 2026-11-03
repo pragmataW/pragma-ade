@@ -46,3 +46,5 @@ export const ASK_MAX_STDOUT_BYTES = ASK_MAX_STDOUT_MIB * MIB
 /** Only the last this-many bytes of stderr are kept (for error messages). */
 export const ASK_MAX_STDERR_BYTES = ASK_MAX_STDERR_KIB * KIB
 export const TASKKILL = { exe: 'taskkill', args: ['/T', '/F', '/PID'] } as const
+export const ASK_MAX_CONCURRENT = 4
+export const ASK_TEMP_PREFIX = 'ask-'

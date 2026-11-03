@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CLI_METHODS,
   CLI_PRIORITIES,
+  cliErrorSchema,
   cliIntegrationSettingsSchema,
   cliRequestSchemas,
   cliResultSchemas,
@@ -55,5 +56,9 @@ describe('cli bridge contract', () => {
   it('settings defaults round-trip', () => {
     const value = { installDir: null, skillUpdatePromptedHash: null }
     expect(cliIntegrationSettingsSchema.parse(value)).toEqual(value)
+  })
+
+  it('errors may carry the timeout code', () => {
+    expect(cliErrorSchema.safeParse({ code: 'timeout', message: 'slow' }).success).toBe(true)
   })
 })

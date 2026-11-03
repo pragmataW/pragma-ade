@@ -11,18 +11,24 @@ export interface RunAskOptions {
   killGraceMs?: number
 }
 
-export type RunAskOutcome =
-  | ({ kind: 'exited' } & AskOutput)
-  | { kind: 'timedOut' }
-  | { kind: 'aborted' }
-  | { kind: 'tooLarge' }
-  | { kind: 'spawnFailed'; message: string }
+/** How a run ended (named access, one source). */
+export const ASK_OUTCOME = {
+  exited: 'exited',
+  timedOut: 'timedOut',
+  aborted: 'aborted',
+  tooLarge: 'tooLarge',
+  spawnFailed: 'spawnFailed',
+} as const
+const O = ASK_OUTCOME
 
-type StopKind = 'timedOut' | 'aborted' | 'tooLarge'
-const STOP = { timedOut: 'timedOut', aborted: 'aborted', tooLarge: 'tooLarge' } as const satisfies Record<
-  StopKind,
-  StopKind
->
+export type RunAskOutcome =
+  | ({ kind: typeof O.exited } & AskOutput)
+  | { kind: typeof O.timedOut }
+  | { kind: typeof O.aborted }
+  | { kind: typeof O.tooLarge }
+  | { kind: typeof O.spawnFailed; message: string }
+
+type StopKind = typeof O.timedOut | typeof O.aborted | typeof O.tooLarge
 const SIGTERM = 'SIGTERM'
 const SIGKILL = 'SIGKILL'
 const PIPE = 'pipe'
@@ -60,8 +66,8 @@ function collect(child: ChildProcess, maxOut: number, maxErr: number, onOverflow
 
 /** The timeout and abort triggers; returns the cleanup. */
 function armTimers(o: RunAskOptions, stop: (kind: StopKind) => void): () => void {
-  const timer = setTimeout(() => stop(STOP.timedOut), o.timeoutMs)
-  const onAbort = () => stop(STOP.aborted)
+  const timer = setTimeout(() => stop(O.timedOut), o.timeoutMs)
+  const onAbort = () => stop(O.aborted)
   o.signal?.addEventListener(ABORT_EVENT, onAbort, { once: true })
   return () => {
     clearTimeout(timer)
@@ -90,7 +96,7 @@ function startChild(spec: AskSpec, cwd: string): ChildProcess {
  */
 export async function runAskProcess(spec: AskSpec, o: RunAskOptions): Promise<RunAskOutcome> {
   const valid = askSpecSchema.parse(spec)
-  if (o.signal?.aborted) return { kind: STOP.aborted }
+  if (o.signal?.aborted) return { kind: O.aborted }
   return new Promise((resolve) => {
     const child = startChild(valid, o.cwd)
     let stopped: StopKind | null = null
@@ -102,7 +108,7 @@ export async function runAskProcess(spec: AskSpec, o: RunAskOptions): Promise<Ru
       killTimer = setTimeout(() => killTree(child, SIGKILL), o.killGraceMs ?? ASK_KILL_GRACE_MS)
     }
     const io = collect(child, o.maxStdoutBytes ?? ASK_MAX_STDOUT_BYTES, o.maxStderrBytes ?? ASK_MAX_STDERR_BYTES, () =>
-      stop(STOP.tooLarge),
+      stop(O.tooLarge),
     )
     const disarm = armTimers(o, stop)
     const finish = (outcome: RunAskOutcome) => {
@@ -113,11 +119,11 @@ export async function runAskProcess(spec: AskSpec, o: RunAskOptions): Promise<Ru
     // leftovers in the group (helpers that keep our pipes open) go with the leader
     child.once(EVENT.exit, () => killTree(child, SIGTERM))
     child.once(EVENT.error, (e) => {
-      if (child.pid === undefined) finish({ kind: 'spawnFailed', message: e.message })
+      if (child.pid === undefined) finish({ kind: O.spawnFailed, message: e.message })
     })
     child.once(EVENT.close, (code: number | null) =>
       finish(
-        stopped ? { kind: stopped } : { kind: 'exited', exitCode: code, stdout: io.stdout(), stderr: io.stderr() },
+        stopped ? { kind: stopped } : { kind: O.exited, exitCode: code, stdout: io.stdout(), stderr: io.stderr() },
       ),
     )
   })
