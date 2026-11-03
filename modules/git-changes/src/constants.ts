@@ -83,6 +83,22 @@ export const TREE_FALLBACK_HEIGHT_PX = 600
 export const TREE_ICON_PX = 14
 export const ROW_ACTION_ICON_PX = 13
 export const DIFF_ICON_PX = 14
+export const FILTER_ICON_PX = 12
+export const EMPTY_ICON_PX = 18
+/**
+ * File filter (fuzzy path match): points per matched character, bonuses for a match at a word start (`/ - _ .`,
+ * camelCase), inside the basename, at the basename's start and right after the previous match; a gap costs `gap`.
+ */
+export const FILTER_SCORE = {
+  match: 16,
+  boundary: 10,
+  basename: 6,
+  basenameStart: 12,
+  consecutive: 12,
+  gap: 4,
+} as const
+/** Prepared (segmented, folded) paths kept in memory before the cache starts over. */
+export const FILTER_CACHE_MAX = 20_000
 /** Repeated UI attribute values. */
 export const BUTTON_TYPE = 'button'
 export const ROLE_ALERT = 'alert'
