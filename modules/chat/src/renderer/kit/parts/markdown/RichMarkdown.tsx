@@ -53,7 +53,8 @@ const STREAMING_COMPONENTS: MarkdownComponents = { ...BASE, code: StreamingCode 
 
 /** Prose rhythm (headings, lists, quotes, rules, inline code) on top of Tailwind's reset. */
 export const PROSE_CLASS = cn(
-  'min-w-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-2',
+  // long unbroken tokens (URLs, hashes) wrap; `break-word` keeps tables' and code's min-content, so those still scroll
+  'min-w-0 wrap-break-word [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-2',
   '[&_h1]:mt-5 [&_h1]:mb-2 [&_h1]:font-semibold [&_h1]:text-[17px] [&_h1]:leading-snug [&_h1]:tracking-[-0.01em]',
   '[&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:border-bd [&_h2]:border-b [&_h2]:pb-1 [&_h2]:font-semibold [&_h2]:text-[15px] [&_h2]:leading-snug',
   '[&_h3]:mt-4 [&_h3]:mb-1.5 [&_h3]:font-semibold [&_h3]:text-[13.5px]',

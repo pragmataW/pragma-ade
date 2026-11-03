@@ -16,7 +16,7 @@ import { ReviewBar } from './comments/ReviewBar'
 import { type DiffReview, useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { HunkBar } from './diff/HunkBar'
-import { EmptyState } from './EmptyState'
+import { EMPTY_KINDS, EmptyState } from './EmptyState'
 import { FilterBar, NoMatches } from './filter/FilterBar'
 import { type FileFilter, filterFiles } from './filter/filter-files'
 import { type ParsedQuery, parseQuery } from './filter/match'
@@ -36,7 +36,6 @@ import type { RowHandlers } from './tree/RowActions'
 import { useChangeList } from './use-changes'
 
 const [TREE] = VIEW_MODES
-const EMPTY_KINDS = { noWorktree: 'noWorktree', loading: 'loading', failed: 'failed', noChanges: 'noChanges' } as const
 const NO_FILES: ChangedFile[] = []
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
 
@@ -109,7 +108,6 @@ function FileListPane(props: {
   scm: ScmActions
   filterRef: RefObject<HTMLInputElement | null>
 }) {
-  const t = useT()
   const { worktreeId, view, filter } = props
   const store = useGitChangesStore.getState()
   const setFilter = (text: string) => store.setFilter(worktreeId, text)
@@ -130,7 +128,7 @@ function FileListPane(props: {
       />
       <div className="flex min-h-0 flex-1 flex-col">
         {props.files.length === 0 ? (
-          <EmptyState kind={EMPTY_KINDS.noChanges} text={t('git-changes:empty.noChanges')} />
+          <EmptyState kind={EMPTY_KINDS.noChanges} />
         ) : filter.active && filter.visible.length === 0 ? (
           <NoMatches query={view.filter} onReset={reset} />
         ) : (
@@ -233,7 +231,6 @@ function DiffPane(props: {
 }
 
 function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
-  const t = useT()
   const settings = useModuleSettings<GitChangesSettings>()
   const view = useWorktreeView(worktreeId)
   const store = useGitChangesStore.getState()
@@ -307,7 +304,6 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
         failed={current.error !== undefined}
         noBase={current.data !== undefined && !okList}
         empty={files.length === 0 && stashes.length === 0}
-        t={t}
       >
         <SplitPane
           left={
@@ -347,26 +343,17 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   )
 }
 
-function Body(props: {
-  loading: boolean
-  failed: boolean
-  noBase: boolean
-  empty: boolean
-  t: ReturnType<typeof useT>
-  children: ReactNode
-}) {
-  const { t } = props
-  if (props.failed) return <EmptyState kind={EMPTY_KINDS.failed} text={t('git-changes:errors.loadFailed')} />
-  if (props.loading) return <EmptyState kind={EMPTY_KINDS.loading} text={t('git-changes:empty.loading')} />
+function Body(props: { loading: boolean; failed: boolean; noBase: boolean; empty: boolean; children: ReactNode }) {
+  if (props.failed) return <EmptyState kind={EMPTY_KINDS.failed} />
+  if (props.loading) return <EmptyState kind={EMPTY_KINDS.loading} />
   if (props.noBase) return null
-  if (props.empty) return <EmptyState kind={EMPTY_KINDS.noChanges} text={t('git-changes:empty.noChanges')} />
+  if (props.empty) return <EmptyState kind={EMPTY_KINDS.noChanges} />
   return props.children
 }
 
 /** The Git Changes right tab: toolbar, file tree, diff and review bar of the active worktree. */
 export function GitChangesPanel(_props: { tabId: string }) {
-  const t = useT()
   const active = useActiveWorktree()
-  if (!active) return <EmptyState kind={EMPTY_KINDS.noWorktree} text={t('git-changes:empty.noWorktree')} />
+  if (!active) return <EmptyState kind={EMPTY_KINDS.noWorktree} />
   return <WorktreeChanges key={active.id} worktreeId={active.id} />
 }

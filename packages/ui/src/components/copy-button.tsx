@@ -1,6 +1,6 @@
 import { Check, Copy } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { COPIED_FEEDBACK_MS } from '../constants/ui'
+import { BUTTON_TYPE, COPIED_FEEDBACK_MS } from '../constants/ui'
 import { copyText } from '../lib/clipboard'
 import { Button } from './button'
 
@@ -25,7 +25,7 @@ export function CopyButton({
   const current = copied ? copiedLabel : label
   return (
     <Button
-      type="button"
+      type={BUTTON_TYPE}
       variant="ghost"
       size="icon"
       className={className}

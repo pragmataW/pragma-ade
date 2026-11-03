@@ -76,7 +76,7 @@ function ReplyArea({ api }: { api: ReturnType<typeof threadActions> }) {
  * One review thread (the same on every surface): head (host's leading icon and location, status, Pending, actions),
  * the root body, the replies with author badges, and a reply box. A resolved thread starts collapsed.
  */
-export function ThreadView({ comment, leading, locationLabel, onEdit, surface, className }: ThreadViewProps) {
+export function ThreadView({ comment, leading, locationLabel, onEdit, onDelete, surface, className }: ThreadViewProps) {
   const [open, setOpen] = useState(comment.status !== COMMENT_STATUS.resolved)
   const api = threadActions(comment.id)
   const card = surface !== COMPOSER_SURFACE.plain
@@ -97,7 +97,7 @@ export function ThreadView({ comment, leading, locationLabel, onEdit, surface, c
         <StatusBadge comment={comment} />
         {isPendingRoot(comment) ? <PendingBadge /> : null}
         <span className="ml-auto" />
-        <ThreadActions comment={comment} api={api} onEdit={onEdit} />
+        <ThreadActions comment={comment} api={api} onEdit={onEdit} onDelete={onDelete} />
       </div>
       <p className={cn('whitespace-pre-wrap break-words', !open && 'line-clamp-2 text-muted-foreground')}>
         {comment.body}

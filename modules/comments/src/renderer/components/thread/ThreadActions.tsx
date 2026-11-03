@@ -34,7 +34,12 @@ function Action({ spec }: { spec: ActionSpec }) {
 }
 
 /** Edit (pending root only, when the host offers it), Resolve / Reopen, Delete thread. */
-export function ThreadActions(p: { comment: Comment; api: ThreadActionsApi; onEdit?: () => void }) {
+export function ThreadActions(p: {
+  comment: Comment
+  api: ThreadActionsApi
+  onEdit?: () => void
+  onDelete?: () => void
+}) {
   const resolved = p.comment.status === COMMENT_STATUS.resolved
   const specs: ActionSpec[] = [
     ...(p.onEdit && isPendingRoot(p.comment)
@@ -58,7 +63,7 @@ export function ThreadActions(p: { comment: Comment; api: ThreadActionsApi; onEd
       testId: T.rowDelete,
       labelKey: 'comments:row.delete',
       Icon: Trash2,
-      onClick: () => void p.api.remove(),
+      onClick: p.onDelete ?? (() => void p.api.remove()),
       className: 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
     },
   ]

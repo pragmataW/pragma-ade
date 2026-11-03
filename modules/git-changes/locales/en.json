@@ -40,10 +40,14 @@
     "loadFailed": "Could not load the changes"
   },
   "empty": {
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to see its changes",
     "noChanges": "No changes",
+    "noChangesHint": "The working tree is clean. Edits, new files and deletions in this worktree show up here.",
     "loading": "Loading changes…",
-    "noMatches": "No changed files match “{{query}}”"
+    "failedHint": "Git could not read this worktree. Check that the folder still exists and is a repository.",
+    "noMatches": "No changed files match “{{query}}”",
+    "noMatchesHint": "Try fewer characters or another part of the path."
   },
   "filter": {
     "placeholder": "Filter files",
@@ -92,7 +96,11 @@
   },
   "comments": {
     "lines": "L{{start}}–{{end}}",
-    "line": "L{{start}}"
+    "line": "L{{start}}",
+    "confirmDelete": "Delete this comment?",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteFailed": "The comment could not be deleted"
   },
   "review": {
     "pending_one": "{{count}} unsent item · {{file}}",

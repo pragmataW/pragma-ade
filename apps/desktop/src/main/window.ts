@@ -14,12 +14,7 @@ const DID_FINISH_LOAD = 'did-finish-load'
  * The single app window: sandboxed renderer, no navigation away from the app, no popups.
  * `hidden` (E2E runs) never shows the window and keeps it painting at full speed while hidden.
  */
-export function createMainWindow(opts: {
-  title: string
-  theme: ThemeState
-  hidden?: boolean
-  reducedTransparency?: boolean
-}): BrowserWindow {
+export function createMainWindow(opts: { title: string; theme: ThemeState; hidden?: boolean }): BrowserWindow {
   const hidden = opts.hidden === true
   const isMac = process.platform === DARWIN
   const win = new BrowserWindow({
@@ -29,7 +24,7 @@ export function createMainWindow(opts: {
     minHeight: WINDOW.minHeight,
     title: opts.title,
     show: false,
-    ...windowChromeOptions(process.platform, opts.theme, opts.reducedTransparency),
+    ...windowChromeOptions(process.platform, opts.theme),
     // macOS takes the Dock icon from the app bundle; Linux and Windows use the window icon.
     ...(isMac ? {} : { icon: appIcon }),
     webPreferences: {

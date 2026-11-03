@@ -10,7 +10,7 @@ import {
   type WorktreeRowSlotProps,
 } from '../../contract'
 import { sidebarAction } from '../lib/actions'
-import { worktreeDragProps } from '../lib/folder-actions'
+import { useWorktreeDrag } from '../lib/folder-actions'
 import { useProjects, useRuntime } from '../lib/runtime'
 import { PlainButton } from './PlainButton'
 import { TreeItem } from './TreeItem'
@@ -45,6 +45,7 @@ export function WorktreeRow({ worktree, level = TREE_LEVEL.root }: { worktree: W
     [A.main]: String(worktree.isMain),
     [A.active]: String(active),
   }
+  const drag = useWorktreeDrag(worktree)
   const select = () => void sidebarAction(runtime, projectsIpc.selectWorktree, { worktreeId: worktree.id })
   return (
     <TreeItem
@@ -52,7 +53,7 @@ export function WorktreeRow({ worktree, level = TREE_LEVEL.root }: { worktree: W
       {...attrs}
       level={level}
       aria-selected={active}
-      {...worktreeDragProps(worktree.id)}
+      {...drag}
       className={rowVariants({ active })}
     >
       <PlainButton onClick={select} className={contentVariants({ level })}>

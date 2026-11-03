@@ -9,6 +9,7 @@ import { TaskTree } from '../../../src/renderer/kit/parts/TaskTree'
 import { ToolCallCard } from '../../../src/renderer/kit/parts/ToolCallCard'
 import { makeTranscript, stubSessionApi } from '../../../testing'
 import { renderChat, renderPart } from '../support'
+import { expectClampToggle, HUGE_TEXT } from './long-text'
 import { actions, childText, result, task, taskCall, text, tool } from './samples'
 
 const rowKeys = (events: ChatEvent[], parts = defaultChatUi.parts) =>
@@ -26,6 +27,16 @@ describe('TaskCard', () => {
     expect(card).toHaveTextContent('12.3K tokens')
     expect(screen.getByTestId(CHAT_TESTIDS.taskToggle)).toHaveAttribute('aria-expanded', 'false')
   })
+
+  it.each([undefined, 'backgrounded'])(
+    'a missing or unknown status (%s) reads a neutral label, never a raw key',
+    (s) => {
+      renderPart(TaskCard, [task({ status: s as never })])
+      const card = screen.getByTestId(CHAT_TESTIDS.part(EVENT_KIND.task))
+      expect(card).not.toHaveTextContent('task.status')
+      expect(card).toHaveTextContent('Unknown')
+    },
+  )
 
   it('expanding renders the nested transcript (by task id and tool call id) with the provider parts', async () => {
     renderPart(
@@ -49,6 +60,13 @@ describe('TaskCard', () => {
     expect(screen.getByText('Done')).toBeInTheDocument()
     await userEvent.click(screen.getByTestId(CHAT_TESTIDS.taskToggle))
     expect(screen.getByText('No output yet')).toBeInTheDocument()
+  })
+
+  it('a very long summary is clamped with "Show more"; a very long name truncates beside the description', async () => {
+    const name = `agent-${'n'.repeat(500)}`
+    renderPart(TaskCard, [task({ status: 'completed', name, summary: HUGE_TEXT })])
+    await expectClampToggle(screen.getByTestId(CHAT_TESTIDS.taskSummary), HUGE_TEXT, userEvent.setup(), false)
+    expect(screen.getByText(name)).toHaveClass('min-w-0', 'truncate')
   })
 
   it('Stop appears only for a live task when the session offers stopTask, and calls the action', async () => {

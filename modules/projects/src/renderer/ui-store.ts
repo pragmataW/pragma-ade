@@ -18,8 +18,13 @@ export interface UiState {
   /** Worktree whose remove dialog is open. */
   removeFor: string | null
   folderDialog: FolderDialogState | null
+  /**
+   * The worktree row being dragged (drag data is unreadable during `dragover`, so drop targets check the
+   * project here: rows only move within their own project).
+   */
+  dragging: { worktreeId: string; projectId: string } | null
 }
 export type UiStore = StoreApi<UiState>
 
 export const createUiStore = (): UiStore =>
-  createStore<UiState>(() => ({ error: null, createFor: null, removeFor: null, folderDialog: null }))
+  createStore<UiState>(() => ({ error: null, createFor: null, removeFor: null, folderDialog: null, dragging: null }))

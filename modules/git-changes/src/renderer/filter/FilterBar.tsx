@@ -1,8 +1,8 @@
 import { useT } from '@pragma/sdk/renderer'
-import { cn } from '@pragma/ui'
-import { Search, SearchX, X } from '@pragma/ui/icons'
+import { cn, EmptyState } from '@pragma/ui'
+import { Search, X } from '@pragma/ui/icons'
 import type { KeyboardEvent, Ref } from 'react'
-import { BUTTON_TYPE, EMPTY_ICON_PX, FILTER_ICON_PX } from '../../constants'
+import { BUTTON_TYPE, EMPTY_ICONS, FILTER_ICON_PX } from '../../constants'
 import { GitChangesTestIds as T } from '../../contract'
 import type { FileFilter } from './filter-files'
 
@@ -96,21 +96,13 @@ export function FilterBar({ value, filter, onChange, onSubmit, inputRef }: Filte
 export function NoMatches({ query, onReset }: { query: string; onReset(): void }) {
   const t = useT()
   return (
-    <div
-      data-testid={T.empty}
+    <EmptyState
+      testId={T.empty}
       data-kind={NO_MATCHES_KIND}
-      className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground text-sm"
-    >
-      <SearchX size={EMPTY_ICON_PX} className="text-[var(--fa)]" aria-hidden />
-      <span className="max-w-full break-words">{t('git-changes:empty.noMatches', { query: query.trim() })}</span>
-      <button
-        type={BUTTON_TYPE}
-        data-testid={T.filterReset}
-        onClick={onReset}
-        className="rounded px-1.5 text-[12px] text-[var(--act)] hover:bg-[var(--hv)]"
-      >
-        {t('git-changes:filter.reset')}
-      </button>
-    </div>
+      icon={EMPTY_ICONS.noMatches}
+      title={<span className="break-words">{t('git-changes:empty.noMatches', { query: query.trim() })}</span>}
+      description={t('git-changes:empty.noMatchesHint')}
+      secondaryAction={{ label: t('git-changes:filter.reset'), onClick: onReset, testId: T.filterReset }}
+    />
   )
 }

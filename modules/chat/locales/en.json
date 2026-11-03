@@ -44,7 +44,8 @@
       "completed": "Done",
       "failed": "Failed",
       "killed": "Stopped",
-      "paused": "Paused"
+      "paused": "Paused",
+      "unknown": "Unknown"
     },
     "kind": {
       "workflow": "Workflow"
@@ -116,7 +117,11 @@
     "tokens": "{{input}} in · {{output}} out"
   },
   "list": {
-    "jumpToLatest": "Jump to latest"
+    "jumpToLatest": "Jump to latest",
+    "empty": {
+      "title": "Start the conversation",
+      "hint": "Send the agent a message below. Type / for commands and @ to mention files."
+    }
   },
   "tool": {
     "group_one": "{{count}} tool call",

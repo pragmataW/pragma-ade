@@ -24,8 +24,7 @@
       "vscode": "VS Code",
       "dark-brown": "Dark Brown",
       "amber": "Amber",
-      "indigo": "Indigo",
-      "glass": "Glass"
+      "indigo": "Indigo"
     },
     "selected": "Selected",
     "density": "Density",
@@ -36,6 +35,7 @@
   },
   "shortcuts": {
     "empty": "No shortcuts registered",
+    "emptyHint": "Modules list their keyboard shortcuts here once they register them.",
     "scope": {
       "app": "App",
       "global": "Global"

@@ -28,14 +28,15 @@ import { useTasksPanelMounted, useTasksPanelStore } from '../tasks/store'
 import { useTaskMetaParts } from '../tasks/TaskMeta'
 import { useTaskReveal } from '../tasks/use-task-reveal'
 import { ChildTranscript } from './ChatRows'
-import { isLiveTask, TASK_ICONS, TASK_TONE } from './lib/task-visual'
+import { ClampedText } from './lib/ClampedText'
+import { isLiveTask, TASK_ICONS, TASK_NAME_CLASS, taskStatusLabelKey, taskTone } from './lib/task-visual'
 import { PILL, TONE_BADGE } from './lib/tone'
 
 /** "Running" pill in the task's tone (spinning ring while it runs). */
 export function TaskStatusPill({ item }: { item: TaskItem }) {
   const t = useT()
   return (
-    <span className={cn(PILL, TONE_BADGE[TASK_TONE[item.status]])}>
+    <span className={cn(PILL, TONE_BADGE[taskTone(item.status)])}>
       {item.status === TASK_STATUS.running ? (
         <LoaderCircle
           size={SMALL_ICON_PX}
@@ -44,7 +45,7 @@ export function TaskStatusPill({ item }: { item: TaskItem }) {
           className="animate-spin motion-reduce:animate-none"
         />
       ) : null}
-      {t(`chat:task.status.${item.status}`)}
+      {t(taskStatusLabelKey(item.status))}
     </span>
   )
 }
@@ -142,7 +143,7 @@ export function TaskCard({ item, session }: ChatPartProps<TaskItem>) {
             className={cn('shrink-0 text-mu transition-transform', open && 'rotate-90')}
           />
           <Icon size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="shrink-0 text-act" />
-          <span className="shrink-0 font-semibold text-tx">{item.name}</span>
+          <span className={TASK_NAME_CLASS}>{item.name}</span>
           {workflow ? <span className="shrink-0 text-[11px] text-mu">{t('chat:task.kind.workflow')}</span> : null}
           <span className="min-w-0 flex-1 truncate text-mu">{item.description ?? ''}</span>
         </button>
@@ -152,7 +153,11 @@ export function TaskCard({ item, session }: ChatPartProps<TaskItem>) {
         <TaskStopButton item={item} session={session} />
       </div>
       {item.summary ? (
-        <p className="border-t border-bd px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-tx">{item.summary}</p>
+        <ClampedText
+          text={item.summary}
+          testId={CHAT_TESTIDS.taskSummary}
+          className="border-t border-bd px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-tx"
+        />
       ) : null}
       {open ? (
         <div className="border-t border-bd py-2 pr-2.5 pl-4">

@@ -2,6 +2,7 @@ import { CoreIpc, type Rect, ShellTestIds as T } from '@pragma/sdk'
 import { ErrorBoundary, type RightTab, useRendererHost } from '@pragma/sdk/renderer'
 import { useCallback, useRef } from 'react'
 import { useStore } from 'zustand'
+import { EMPTY_ICONS } from '../constants'
 import { useShell } from '../lib/shell-context'
 import { useElementBounds } from '../lib/use-element-bounds'
 import { EmptyState } from './EmptyState'
@@ -36,7 +37,14 @@ export function RightPanel() {
     <div className="flex h-full flex-col bg-[var(--pn)]">
       <RightTabStrip />
       <div className="min-h-0 flex-1">
-        {tabs.length === 0 && <EmptyState textKey="core:right.welcome" testId={T.rightPanelWelcome} />}
+        {tabs.length === 0 && (
+          <EmptyState
+            textKey="core:right.welcome"
+            descriptionKey="core:right.welcomeHint"
+            icon={EMPTY_ICONS.right}
+            testId={T.rightPanelWelcome}
+          />
+        )}
         {tabs.map((tab) => (
           <TabContent key={tab.id} tab={tab} visible={!hidden && tab.id === activeTab} />
         ))}

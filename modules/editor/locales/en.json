@@ -13,6 +13,7 @@
     "verifying": "Verifying download…",
     "extracting": "Installing editor…",
     "starting": "Starting editor…",
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to open its files.",
     "retry": "Retry",
     "redownload": "Re-download",

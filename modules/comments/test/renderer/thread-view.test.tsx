@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
-import { COMMENTS_TESTIDS as T } from '../../src/contract'
+import { afterEach, expect, test, vi } from 'vitest'
+import { commentsIpc, COMMENTS_TESTIDS as T } from '../../src/contract'
 import { ThreadView } from '../../src/renderer/components/thread/ThreadView'
 import { aReply, aThread } from '../../src/testing'
 import { type MountedRenderer, mountRenderer } from '../fakes'
@@ -33,4 +33,13 @@ test('an open thread is expanded, has no toggle and shows its location; Edit nee
   expect(screen.queryByTestId(T.threadToggle)).toBeNull()
   expect(screen.queryByTestId(T.rowEdit)).toBeNull()
   expect(screen.getByTestId(T.threadStatus)).toHaveTextContent(en.thread.open)
+})
+
+test("Delete runs the host's delete flow instead of deleting at once", () => {
+  r = mountRenderer()
+  const onDelete = vi.fn()
+  renderUi(<ThreadView comment={aThread({ id: 't3' })} onDelete={onDelete} />)
+  fireEvent.click(screen.getByTestId(T.rowDelete))
+  expect(onDelete).toHaveBeenCalledOnce()
+  expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([])
 })

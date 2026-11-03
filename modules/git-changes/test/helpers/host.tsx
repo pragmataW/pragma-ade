@@ -183,14 +183,19 @@ export const aWorktree = (over: Partial<Worktree> = {}): Worktree => ({
   ...over,
 })
 
-/** Stands in for 05's ThreadView: location, root body and the host's Edit (05 hides it once the root was sent). */
-const FakeThread: CommentsUiService['ThreadView'] = ({ comment, locationLabel, onEdit }) => (
+/** Stands in for 05's ThreadView: location, root body, the host's Edit (05 hides it once the root was sent) and Delete. */
+const FakeThread: CommentsUiService['ThreadView'] = ({ comment, locationLabel, onEdit, onDelete }) => (
   <div data-testid="fake-thread">
     <span>{locationLabel}</span>
     <p>{comment.body}</p>
     {onEdit ? (
       <button type="button" onClick={onEdit}>
         Edit
+      </button>
+    ) : null}
+    {onDelete ? (
+      <button type="button" onClick={onDelete}>
+        Delete thread
       </button>
     ) : null}
   </div>

@@ -9,6 +9,7 @@ import { PROJECTS_DATA_ATTRS as A, type Project, projectsIpc, PROJECTS_TESTIDS a
 import { sidebarAction } from '../lib/actions'
 import { useWorktreeDrop } from '../lib/folder-actions'
 import { groupByFolder } from '../lib/folders'
+import { MOTION_CLASSES as MOTION } from '../lib/motion'
 import { useProjects, useRuntime } from '../lib/runtime'
 import { useErrorText } from '../lib/use-error-text'
 import { filterWorktrees, selectFoldersOf } from '../store'
@@ -17,8 +18,11 @@ import { PlainButton } from './PlainButton'
 import { ProjectMenu } from './ProjectMenu'
 import { WorktreeRow } from './WorktreeRow'
 
-const treeVariants = cva('flex flex-col rounded-[var(--radius-button)]', {
-  variants: { over: { true: 'ring-1 ring-[var(--ac)]', false: '' } },
+/** The project's root drop zone (header, root rows, the area below): accent ring and tint while a row is over it. */
+const rootZoneVariants = cva(`rounded-[var(--radius-button)] transition-[box-shadow,background-color] ${MOTION}`, {
+  variants: {
+    over: { true: 'bg-[color-mix(in_srgb,var(--ac)_8%,transparent)] ring-1 ring-[var(--ac)]', false: '' },
+  },
 })
 
 function NewWorktreeRow({ projectId }: { projectId: string }) {
@@ -54,18 +58,11 @@ function useProjectTree(project: Project, query: string) {
   }, [all, folders, project, query])
 }
 
-/** Folders first, then the worktrees at the root; dropping a row outside every folder moves it to the root. */
+/** Folders first, then the worktrees at the root. */
 function WorktreeTree({ project, query }: { project: Project; query: string }) {
   const { filtering, views, root } = useProjectTree(project, query)
-  const drop = useWorktreeDrop(project.id, null)
   return (
-    <div
-      role="tree"
-      aria-label={project.name}
-      data-testid={T.worktreeTree}
-      {...drop.props}
-      className={treeVariants({ over: drop.over })}
-    >
+    <div role="tree" aria-label={project.name} data-testid={T.worktreeTree} className="flex flex-col">
       {views.map(({ view, shown }) => (
         <FolderNode key={view.folder.id} projectId={project.id} view={view} shown={shown} filtering={filtering} />
       ))}
@@ -79,11 +76,13 @@ function WorktreeTree({ project, query }: { project: Project; query: string }) {
 /**
  * A collapsible, sortable project with its folders and worktrees; clicking the header also re-syncs from
  * git. With a filter `query`, only matching worktrees show and a project without matches is hidden.
+ * The whole group outside its folders is the root drop zone: a row dropped there leaves its folder.
  */
 export function ProjectGroup({ project, query }: { project: Project; query: string }) {
   const runtime = useRuntime()
   const [collapsed, setCollapsed] = useState(false)
   const { filtering, empty } = useProjectTree(project, query)
+  const drop = useWorktreeDrop(project.id, null)
   const error = useProjects((s) => s.projectErrors[project.id])
   const errorText = useErrorText()
   const sortable = useSortable({ id: project.id })
@@ -97,7 +96,9 @@ export function ProjectGroup({ project, query }: { project: Project; query: stri
       ref={sortable.setNodeRef}
       style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }}
       data-testid={T.projectGroup}
-      {...{ [A.projectName]: project.name }}
+      {...{ [A.projectName]: project.name, [A.dropTarget]: String(drop.over) }}
+      {...drop.props}
+      className={rootZoneVariants({ over: drop.over })}
     >
       <div className="group flex h-[var(--row-h)] items-center gap-1 rounded-[var(--radius-button)] pr-1 hover:bg-hv">
         <PlainButton

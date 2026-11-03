@@ -134,7 +134,12 @@ export const EXIT_EVENT = 'exit'
 export const BYTES_PER_MB = 1_048_576
 export const PERCENT = 100
 export const MB_FRACTION_DIGITS = 1
-export const RENDERER_ICONS = { spinner: 'loader-circle', error: 'circle-alert', check: 'check' } as const
+export const RENDERER_ICONS = {
+  spinner: 'loader-circle',
+  error: 'circle-alert',
+  check: 'check',
+  noWorktree: 'folder-open',
+} as const
 export const STATUS_ICON_PX = 16
 /** Error keys whose fix may be a fresh download (Re-download is offered). */
 export const REDOWNLOAD_ERROR_KEYS = ['editor:errors.checksumMismatch', 'editor:errors.invalidArchive'] as const

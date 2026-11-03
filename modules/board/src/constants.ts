@@ -32,6 +32,13 @@ export const LAST_SCOPE_STORAGE_KEY = 'pragma.board.lastScope'
 export const SIDEBAR_ENTRY_ID = 'board.sidebar'
 export const SIDEBAR_ENTRY_ORDER = 100
 export const VIEW_ICON = 'kanban'
+/** Lucide icons of the board's empty states. */
+export const EMPTY_ICONS = {
+  noProjects: 'folder-plus',
+  noTasks: 'square-kanban',
+  noMatches: 'search-x',
+  add: 'plus',
+} as const
 export const SETTINGS_ICON = 'kanban'
 /** The header's Back control, the Settings view's icon. */
 export const BACK_ICON = 'arrow-left'

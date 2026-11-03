@@ -3,7 +3,7 @@ import { cn } from '@pragma/ui'
 import { Button } from '@pragma/ui/components/button'
 import { CopyButton } from '@pragma/ui/components/copy-button'
 import { ArrowDown, ArrowLeft, ChevronRight, LocateFixed } from '@pragma/ui/icons'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import {
   BUTTON_TYPE,
   ICON_PX,
@@ -12,7 +12,6 @@ import {
   META_SEPARATOR,
   SIZE_ICON_XS,
   SIZE_SM,
-  TASK_PROMPT_CLAMP_CHARS,
   VARIANT_GHOST,
   VARIANT_OUTLINE,
 } from '../../../constants'
@@ -26,6 +25,7 @@ import {
 } from '../../../contract'
 import { useChatHost } from '../../host-adapter'
 import { ChildTranscript } from '../parts/ChatRows'
+import { ClampedText } from '../parts/lib/ClampedText'
 import { isLiveTask } from '../parts/lib/task-visual'
 import { SECTION_LABEL } from '../parts/lib/tone'
 import { useNow } from '../parts/lib/use-now'
@@ -48,31 +48,8 @@ function Section({ title, children, testId }: { title: string; children: ReactNo
 function TaskResultText({ text }: { text: string }) {
   const host = useChatHost()
   return (
-    <div className="text-[12.5px] leading-[1.55] text-tx">
+    <div className="min-w-0 text-[12.5px] leading-[1.55] text-tx">
       <RichMarkdown text={text} onLinkClick={(href) => host.openExternal(href)} />
-    </div>
-  )
-}
-
-/** The prompt, clamped to a few lines with "Show more". */
-function Prompt({ text }: { text: string }) {
-  const t = useT()
-  const long = text.length > TASK_PROMPT_CLAMP_CHARS
-  const [full, setFull] = useState(false)
-  return (
-    <div className="rounded-md border border-bd bg-bg px-2.5 py-2 text-[12px] leading-[1.55] text-tx">
-      <p className={full || !long ? 'whitespace-pre-wrap break-words' : 'line-clamp-4 whitespace-pre-wrap break-words'}>
-        {text}
-      </p>
-      {long ? (
-        <button
-          type={BUTTON_TYPE}
-          onClick={() => setFull((f) => !f)}
-          className="mt-1 text-[11.5px] text-act hover:underline"
-        >
-          {t(full ? 'chat:tasks.showLess' : 'chat:tasks.showMore')}
-        </button>
-      ) : null}
     </div>
   )
 }
@@ -140,10 +117,10 @@ function SubtaskChips({ node, onSelect }: { node: TaskNode; onSelect(id: string)
             key={c.task.id}
             type={BUTTON_TYPE}
             onClick={() => onSelect(c.task.id)}
-            className="inline-flex h-6 items-center gap-1 rounded-md border border-bd bg-el px-1.5 text-[11.5px] text-tx hover:bg-hv"
+            className="inline-flex h-6 min-w-0 max-w-full items-center gap-1 rounded-md border border-bd bg-el px-1.5 text-[11.5px] text-tx hover:bg-hv"
           >
             <TaskKindIcon task={c.task} size={ICON_PX} />
-            {c.task.name}
+            <span className="min-w-0 truncate">{c.task.name}</span>
             <ChevronRight size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="text-fa" />
           </button>
         ))}
@@ -166,7 +143,7 @@ function DetailHeader({ node, parent, session, onBack, onSelect, onShowInChat }:
   const { task } = node
   const output = taskResult(session.transcript, task) ?? task.summary ?? childText(session.transcript, task)
   return (
-    <div className="flex flex-col gap-1.5 border-b border-bd px-3 pt-2 pb-2.5">
+    <div className="flex shrink-0 flex-col gap-1.5 border-b border-bd px-3 pt-2 pb-2.5">
       <div className="flex h-7 items-center gap-1">
         <Button
           variant={VARIANT_GHOST}
@@ -227,7 +204,14 @@ function TitleBlock({ task }: { task: TaskItem }) {
         <h3 className="min-w-0 truncate text-[15px] font-semibold text-tx">{task.name}</h3>
         <TaskStatusPill item={task} />
       </div>
-      {task.description ? <p className="text-[12.5px] leading-[1.5] text-tx">{task.description}</p> : null}
+      {task.description ? (
+        <ClampedText
+          text={task.description}
+          bounded
+          testId={CHAT_TESTIDS.taskDetailDescription}
+          className="text-[12.5px] leading-[1.5] text-tx"
+        />
+      ) : null}
       {meta.length > 0 ? <p className="text-[11.5px] tabular-nums text-mu">{meta.join(META_SEPARATOR)}</p> : null}
     </>
   )
@@ -244,25 +228,34 @@ export function TaskDetail(props: TaskDetailProps) {
   return (
     <div data-testid={CHAT_TESTIDS.taskDetail} data-item-id={task.id} className="flex min-h-0 flex-1 flex-col">
       <DetailHeader {...props} />
-      <div className="flex shrink-0 flex-col gap-3 px-3 pt-2.5">
+      {/* bounded and scrolling: a very long prompt or summary never squeezes the activity or pushes out the result */}
+      <div
+        data-testid={CHAT_TESTIDS.taskDetailInfo}
+        className="flex max-h-[45%] min-h-0 shrink-0 flex-col gap-3 overflow-y-auto px-3 pt-2.5 empty:hidden"
+      >
         {prompt ? (
           <Section title={t('chat:tasks.prompt')}>
-            <Prompt text={prompt} />
+            <ClampedText
+              text={prompt}
+              bounded
+              testId={CHAT_TESTIDS.taskDetailPrompt}
+              className="rounded-md border border-bd bg-bg px-2.5 py-2 text-[12px] leading-[1.55] text-tx"
+            />
           </Section>
         ) : null}
         {task.summary && task.summary !== result ? (
           <Section title={t('chat:tasks.summary')}>
-            <p className="text-[12.5px] leading-[1.5] text-tx">{task.summary}</p>
+            <ClampedText text={task.summary} bounded className="text-[12.5px] leading-[1.5] text-tx" />
           </Section>
         ) : null}
         <SubtaskChips node={node} onSelect={props.onSelect} />
-        <h4 className={SECTION_LABEL}>{t('chat:tasks.activity')}</h4>
       </div>
+      <h4 className={cn(SECTION_LABEL, 'shrink-0 px-3 pt-3')}>{t('chat:tasks.activity')}</h4>
       <Activity task={task} session={session} />
       {finished && result ? (
         <div
           data-testid={CHAT_TESTIDS.taskDetailResult}
-          className="max-h-[40%] shrink-0 overflow-y-auto border-t border-bd bg-el px-3 py-2.5"
+          className="max-h-[40%] min-h-0 shrink-0 overflow-y-auto border-t border-bd bg-el px-3 py-2.5"
         >
           <h4 className={cn(SECTION_LABEL, 'mb-1 text-ok')}>{t('chat:tasks.result')}</h4>
           <TaskResultText text={result} />

@@ -14,7 +14,8 @@ import {
   stubChatHost,
   TEST_SESSION_ID,
 } from '../../../testing'
-import { actions, childText, task } from '../parts/samples'
+import { expectClampToggle, HUGE_TEXT, HUGE_TOKEN } from '../parts/long-text'
+import { actions, childText, result, task, taskCall } from '../parts/samples'
 import { renderChat } from '../support'
 import { TASKS_SCENARIO } from './fixture'
 
@@ -247,5 +248,48 @@ describe('TaskCard "Open in panel"', () => {
     const card = within(screen.getByTestId(ID.messageList)).getByTestId(ID.part('task'))
     await user.click(within(card).getByTestId(ID.taskOpenInPanel))
     expect(screen.getByTestId(ID.taskDetail)).toHaveAttribute('data-item-id', 'task1')
+  })
+})
+
+describe('TasksPanel with very long agent output', () => {
+  const NAME = `helper-${'n'.repeat(400)}`
+  const LONG: ChatEvent[] = [
+    taskCall({ toolCallId: 'tcL', input: { subagent_type: 'Explore', prompt: HUGE_TEXT } }),
+    task({
+      taskId: 'big',
+      toolCallId: 'tcL',
+      name: NAME,
+      description: HUGE_TOKEN,
+      summary: HUGE_TEXT,
+      status: 'completed',
+    }),
+    childText('cL', `${HUGE_TEXT}\n\n${HUGE_TOKEN}`, 'tcL'),
+    result('tcL', `${HUGE_TEXT}\nend`),
+  ]
+
+  it('list rows stay one line: a long name truncates, the description too', async () => {
+    const { user } = await renderTasksChat(LONG)
+    const row = within(await openPanel(user)).getByTestId(ID.tasksRow)
+    expect(within(row).getByText(NAME)).toHaveClass('min-w-0', 'truncate')
+    expect(within(row).getByText(HUGE_TOKEN)).toHaveClass('min-w-0', 'truncate')
+  })
+
+  it('the detail keeps its size: header fixed, long texts clamped, the activity and the result scroll', async () => {
+    const { user } = await renderTasksChat(LONG)
+    act(() => useTasksPanelStore.getState().openTask(TEST_SESSION_ID, 'big'))
+    expect(panel()).toHaveClass('flex', 'min-h-0', 'flex-col')
+    expect(screen.getByTestId(ID.taskDetail)).toHaveClass('min-h-0', 'flex-1')
+    expect(screen.getByTestId(ID.taskDetailBack).closest('.shrink-0')).not.toBeNull()
+    const info = screen.getByTestId(ID.taskDetailInfo)
+    expect(info).toHaveClass('min-h-0', 'max-h-[45%]', 'overflow-y-auto')
+    await expectClampToggle(screen.getByTestId(ID.taskDetailPrompt), HUGE_TEXT, user, true)
+    await expectClampToggle(screen.getByTestId(ID.taskDetailDescription), HUGE_TOKEN, user, true)
+    // the prompt and the summary (it differs from the result)
+    const clamped = [...info.querySelectorAll('p[data-clamped]')].map((p) => p.textContent)
+    expect(clamped).toEqual([HUGE_TEXT, HUGE_TEXT])
+    const activity = screen.getByTestId(ID.taskDetailTranscript)
+    expect(activity).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
+    expect(activity.querySelector('.wrap-break-word')).not.toBeNull()
+    expect(screen.getByTestId(ID.taskDetailResult)).toHaveClass('min-h-0', 'max-h-[40%]', 'overflow-y-auto')
   })
 })

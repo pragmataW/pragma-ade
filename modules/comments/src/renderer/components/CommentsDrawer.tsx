@@ -1,7 +1,9 @@
 import { useT } from '@pragma/sdk/renderer'
+import { EmptyState } from '@pragma/ui'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
 import { ChevronDown, ChevronRight } from '@pragma/ui/icons'
 import { useState } from 'react'
+import { EMPTY_ICONS } from '../../constants'
 import { COMMENT_STATUS, type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
 import { clearResolved } from '../clear-resolved'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
@@ -16,8 +18,9 @@ const keepOpenWhileTyping = (e: KeyboardEvent) => {
   if (e.target instanceof HTMLTextAreaElement) e.preventDefault()
 }
 
-function Empty({ children }: { children: string }) {
-  return <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">{children}</p>
+function Empty({ icon, titleKey, descriptionKey }: { icon: string; titleKey: string; descriptionKey: string }) {
+  const t = useT()
+  return <EmptyState icon={icon} title={t(titleKey)} description={t(descriptionKey)} />
 }
 
 function ErrorLine() {
@@ -92,7 +95,6 @@ function ResolvedSection({ threads }: { threads: Comment[] }) {
 
 /** The worktree's open threads, then a collapsed "Resolved (n)" section. */
 function ThreadsList() {
-  const t = useT()
   const threads = useCommentsStore((s) => s.threads)
   const open = threads.filter((c) => c.status === COMMENT_STATUS.open)
   const resolved = threads.filter((c) => c.status === COMMENT_STATUS.resolved)
@@ -104,7 +106,13 @@ function ThreadsList() {
         ))}
         <ResolvedSection threads={resolved} />
       </ul>
-      {threads.length ? null : <Empty>{t('comments:drawer.emptyThreads')}</Empty>}
+      {threads.length ? null : (
+        <Empty
+          icon={EMPTY_ICONS.noThreads}
+          titleKey="comments:drawer.emptyThreadsTitle"
+          descriptionKey="comments:drawer.emptyThreads"
+        />
+      )}
       <SendFooter />
     </div>
   )
@@ -151,7 +159,15 @@ export function CommentsDrawer() {
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
           {worktreeId ? <HeaderActions worktreeId={worktreeId} /> : null}
         </SheetHeader>
-        {worktreeId ? <ThreadsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
+        {worktreeId ? (
+          <ThreadsList />
+        ) : (
+          <Empty
+            icon={EMPTY_ICONS.noWorktree}
+            titleKey="comments:drawer.noWorktreeTitle"
+            descriptionKey="comments:drawer.noWorktree"
+          />
+        )}
       </SheetContent>
     </Sheet>
   )

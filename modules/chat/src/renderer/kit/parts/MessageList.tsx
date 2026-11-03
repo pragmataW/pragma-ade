@@ -1,4 +1,5 @@
 import { useT } from '@pragma/sdk/renderer'
+import { EmptyState } from '@pragma/ui'
 import { Button } from '@pragma/ui/components/button'
 import { ArrowDown } from '@pragma/ui/icons'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -7,6 +8,7 @@ import {
   ALIGN_CENTER,
   ALIGN_END,
   CHAT_ROW_ATTR,
+  EMPTY_CHAT_ICON,
   ICON_PX,
   ICON_STROKE,
   INITIAL_RECT,
@@ -118,6 +120,16 @@ export function MessageList(props: MessageListProps) {
             })}
           </div>
         </div>
+        {rows.length === 0 ? (
+          <div className="pointer-events-none absolute inset-0 flex">
+            <EmptyState
+              testId={CHAT_TESTIDS.emptyTranscript}
+              icon={EMPTY_CHAT_ICON}
+              title={t('chat:list.empty.title')}
+              description={t('chat:list.empty.hint')}
+            />
+          </div>
+        ) : null}
         {atBottom ? null : (
           <Button
             size={SIZE_SM}

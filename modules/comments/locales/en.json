@@ -11,8 +11,10 @@
   "drawer": {
     "title": "Comments",
     "description": "Review comments for the agents in this worktree.",
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to see its comments.",
-    "emptyThreads": "No review threads. Add comments from the editor, the diff or the browser.",
+    "emptyThreadsTitle": "No review threads",
+    "emptyThreads": "Add comments from the editor, the diff or the browser, then send them to an agent from here.",
     "sendPending_one": "Send {{count}} pending item",
     "sendPending_other": "Send {{count}} pending items",
     "nothingToSend": "Nothing to send",

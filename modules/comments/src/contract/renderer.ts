@@ -42,6 +42,8 @@ export interface ThreadViewProps {
   locationLabel?: string
   /** The host's edit flow; the Edit action shows only while the root is pending. */
   onEdit?: () => void
+  /** The host's delete flow (e.g. an inline confirm); default deletes the thread at once. */
+  onDelete?: () => void
   /** Default `card`: own `el` card; `plain` for hosts that are the card. */
   surface?: ComposerSurface
   className?: string

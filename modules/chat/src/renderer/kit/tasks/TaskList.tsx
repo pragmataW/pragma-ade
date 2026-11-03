@@ -1,8 +1,8 @@
 import { useT } from '@pragma/sdk/renderer'
-import { cn } from '@pragma/ui'
-import { ListTree, SearchX } from '@pragma/ui/icons'
-import { BUTTON_TYPE, ICON_PX, ICON_STROKE, LARGE_ICON_PX, META_SEPARATOR, TASK_INDENT_PX } from '../../../constants'
+import { cn, EmptyState } from '@pragma/ui'
+import { BUTTON_TYPE, ICON_PX, META_SEPARATOR, TASK_EMPTY_ICONS, TASK_INDENT_PX } from '../../../constants'
 import { CHAT_DATA_ATTRS, CHAT_TESTIDS, TASK_KIND } from '../../../contract'
+import { TASK_NAME_CLASS } from '../parts/lib/task-visual'
 import { SECTION_LABEL } from '../parts/lib/tone'
 import { useNow } from '../parts/lib/use-now'
 import { TaskStatusPill } from '../parts/TaskCard'
@@ -43,7 +43,7 @@ function Row({ row, now, onSelect }: { row: TaskRow; now: number; onSelect(): vo
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5">
           <span className="flex min-w-0 items-center gap-1.5 text-[12.5px]">
             <TaskKindIcon task={task} size={ICON_PX} />
-            <span className="shrink-0 font-semibold text-tx">{task.name}</span>
+            <span className={TASK_NAME_CLASS}>{task.name}</span>
             {task.taskKind === TASK_KIND.workflow ? (
               <span className="shrink-0 text-[11px] text-act">{t('chat:task.kind.workflow')}</span>
             ) : null}
@@ -91,18 +91,13 @@ export function TaskList({ sections, onSelect }: { sections: TaskSection[]; onSe
 /** No tasks at all (with a hint), or none matching the filter. */
 export function TaskListEmpty({ filtered }: { filtered: boolean }) {
   const t = useT()
-  const Icon = filtered ? SearchX : ListTree
   return (
-    <div data-testid={CHAT_TESTIDS.tasksEmpty} className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <span className="flex size-9 items-center justify-center rounded-full border border-bd bg-el text-mu">
-        <Icon size={LARGE_ICON_PX} strokeWidth={ICON_STROKE} aria-hidden />
-      </span>
-      <p className="text-[12.5px] font-semibold text-tx">
-        {t(filtered ? 'chat:tasks.noMatch' : 'chat:tasks.empty.title')}
-      </p>
-      {filtered ? null : (
-        <p className="max-w-[240px] text-[12px] leading-[1.5] text-mu">{t('chat:tasks.empty.hint')}</p>
-      )}
-    </div>
+    <EmptyState
+      testId={CHAT_TESTIDS.tasksEmpty}
+      compact
+      icon={filtered ? TASK_EMPTY_ICONS.noMatch : TASK_EMPTY_ICONS.empty}
+      title={t(filtered ? 'chat:tasks.noMatch' : 'chat:tasks.empty.title')}
+      description={filtered ? undefined : t('chat:tasks.empty.hint')}
+    />
   )
 }
