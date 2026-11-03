@@ -30,7 +30,7 @@ export interface EditorUpstream {
   addDraft(i: CommentInput): Promise<Comment>
   /** No target: the comments module asks the user when needed. */
   send(commentIds: string[]): Promise<SendResult>
-  listDrafts(worktreeId: string): Promise<Comment[]>
+  listThreads(worktreeId: string): Promise<Comment[]>
   /** A worktree's drafts were added, edited, deleted or delivered. */
   onCommentsChanged(cb: (worktreeId: string) => void): () => void
 }
@@ -63,7 +63,7 @@ export function createUpstream(ctx: MainContext): EditorUpstream {
     bridge,
     addDraft: (i) => comments.addDraft(i),
     send: (ids) => comments.send(ids),
-    listDrafts: (worktreeId) => comments.listDrafts(worktreeId),
+    listThreads: (worktreeId) => comments.listThreads(worktreeId),
     onCommentsChanged(cb) {
       const d = ctx.events.on(commentsChanged, (p) => cb(p.worktreeId))
       return () => d.dispose()

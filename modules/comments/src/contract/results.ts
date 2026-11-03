@@ -26,6 +26,7 @@ export const SEND_ERROR_KEYS = [
   'alreadySending',
   'empty',
   'agentNotReady',
+  'alreadyDelivered',
 ] as const
 export type SendErrorKey = (typeof SEND_ERROR_KEYS)[number]
 /** `{ notFound: 'notFound', … }` so code names the keys instead of repeating literals (§9). */

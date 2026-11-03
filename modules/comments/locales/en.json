@@ -68,6 +68,7 @@
     "deliveryFailed": "Could not deliver the comments.",
     "alreadySending": "These comments are already being sent.",
     "empty": "Select at least one comment.",
-    "agentNotReady": "The agent is not ready to receive multi-line text yet. Try again in a moment."
+    "agentNotReady": "The agent is not ready to receive multi-line text yet. Try again in a moment.",
+    "alreadyDelivered": "This comment was already sent. Add a reply instead."
   }
 }

@@ -26,7 +26,7 @@ const NO_COMMENTS: Comment[] = []
 /** The worktree's diff drafts (05 deletes delivered comments), reloaded on `comments.changed` for that worktree. */
 export function useDiffComments(worktreeId: string): Comment[] {
   const loaded = useKeyedLatest(worktreeId, async () => {
-    const drafts = await getRendererCtx().ipc.invoke(commentsIpc.listDrafts, { worktreeId })
+    const { threads: drafts } = await getRendererCtx().ipc.invoke(commentsIpc.list, { worktreeId })
     return drafts.filter((c) => c.source === COMMENT_SOURCE.diff)
   })
   const { reload } = loaded

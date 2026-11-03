@@ -90,7 +90,7 @@ export const useCommentsStore: UseBoundStore<StoreApi<CommentsState>> = create<C
     const worktreeId = get().activeWorktreeId
     if (!worktreeId) return
     const { ipc } = runtime()
-    const drafts = await ipc.invoke(commentsIpc.listDrafts, { worktreeId })
+    const { threads: drafts } = await ipc.invoke(commentsIpc.list, { worktreeId })
     if (get().activeWorktreeId !== worktreeId) return
     set((s) => ({
       drafts,

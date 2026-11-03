@@ -123,7 +123,7 @@ export const aComment = (id: string, over: Partial<Comment> = {}): Comment =>
 
 export function fakeComments(comments: Comment[] = []) {
   return asService<CommentsService>({
-    listDrafts: async (worktreeId) => comments.filter((c) => c.worktreeId === worktreeId),
+    listThreads: async (worktreeId) => comments.filter((c) => c.worktreeId === worktreeId),
   })
 }
 

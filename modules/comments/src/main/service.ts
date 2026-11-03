@@ -6,15 +6,24 @@ import {
   type CommentsService,
   type CommentsSettings,
   commentCreated,
+  commentReplied,
   commentSent,
+  commentStatusChanged,
   commentsChanged,
   commentsIpcEvents,
+  isPendingReply,
+  isPendingRoot,
+  type ListThreadsFilter,
+  REPLY_AUTHOR,
+  type ReplyInput,
+  ReplyInputSchema,
   SEND_ERROR,
   SEND_STATUS,
   type SendErrorKey,
   type SendResult,
   TARGET_KIND,
   type TargetResolution,
+  visibleToAgent,
 } from '../contract'
 import type { DeliveryRegistry } from './delivery-registry'
 import { formatComments } from './format'
@@ -89,6 +98,21 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
     return c
   }
 
+  /** Stores a reply: agent replies carry the current round (never pending), user replies wait for a Send. */
+  const insertReply = (thread: Comment, input: ReplyInput) => {
+    const parsed = ReplyInputSchema.parse(input)
+    const round = parsed.author === REPLY_AUTHOR.agent ? repo.currentRound(thread.worktreeId) : undefined
+    const reply = repo.insertReply({ ...parsed, commentId: thread.id, round, createdAt: now() })
+    events.emit(commentReplied, { comment: getOrThrow(thread.id), reply })
+    return reply
+  }
+
+  function listThreads(worktreeId: string, filter: ListThreadsFilter = {}): Comment[] {
+    const threads = repo.list(worktreeId, filter.status)
+    if (!filter.deliveredOnly) return threads
+    return threads.flatMap((c) => visibleToAgent(c) ?? [])
+  }
+
   async function deliverTo(batch: Batch, sessionId: string): Promise<SendResult> {
     const session = await upstream.getSession(sessionId)
     if (!session || !isRunning(session)) return failed(SEND_ERROR.sessionNotRunning)
@@ -143,7 +167,7 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
       return comment
     },
     async update(id, patch) {
-      getOrThrow(id)
+      if (!isPendingRoot(getOrThrow(id))) throw new CommentsError(SEND_ERROR.alreadyDelivered)
       const updated = repo.update(id, patch, now())
       if (!updated) throw new CommentsError(SEND_ERROR.notFound)
       notifyChanged(updated.worktreeId)
@@ -154,7 +178,37 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
       repo.remove(id)
       notifyChanged(c.worktreeId)
     },
-    listDrafts: async (worktreeId) => repo.list(worktreeId),
+    listThreads: async (worktreeId, filter) => listThreads(worktreeId, filter),
+    getThread: async (id) => getOrThrow(id),
+    async reply(id, input) {
+      const thread = getOrThrow(id)
+      const reply = insertReply(thread, input)
+      if (reply.author === REPLY_AUTHOR.user) repo.reopen([id], now())
+      notifyChanged(thread.worktreeId)
+      return getOrThrow(id)
+    },
+    async removeReply(replyId) {
+      const reply = repo.getReply(replyId)
+      if (!reply) throw new CommentsError(SEND_ERROR.notFound)
+      if (!isPendingReply(reply)) throw new CommentsError(SEND_ERROR.alreadyDelivered)
+      const thread = getOrThrow(reply.commentId)
+      repo.removeReply(replyId)
+      notifyChanged(thread.worktreeId)
+    },
+    async setStatus(id, status, reply) {
+      const thread = getOrThrow(id)
+      if (reply) insertReply(thread, reply)
+      const comment = repo.setStatus(id, status, now()) ?? getOrThrow(id)
+      events.emit(commentStatusChanged, { comment })
+      notifyChanged(thread.worktreeId)
+      return comment
+    },
+    async clearResolved(worktreeId) {
+      const ids = repo.clearResolved(worktreeId)
+      if (ids.length) notifyChanged(worktreeId)
+      return ids.length
+    },
+    round: async (worktreeId) => repo.currentRound(worktreeId),
     resolveTarget: (worktreeId, preferredSessionId) => resolveFor(upstream, worktreeId, preferredSessionId),
     async send(commentIds, targetSessionId, opts) {
       const ids = [...new Set(commentIds)]

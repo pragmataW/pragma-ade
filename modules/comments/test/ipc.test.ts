@@ -48,3 +48,27 @@ test('test hook createDraft fills defaults and goes through addDraft', async () 
   hooks.setPendingOptions({ readyQuietMs: 5 })
   expect(calls[1]).toEqual(['setPendingOptions', [{ readyQuietMs: 5 }]])
 })
+
+test('thread channels map to the service (user replies, statuses, clear resolved, list)', async () => {
+  const ipc = createFakeIpc()
+  const { service, calls } = recordingService()
+  registerCommentsIpc(ipc, service)
+  await ipc.invoke(commentsIpc.reply, { id: 'c1', body: 'Why?' })
+  await ipc.invoke(commentsIpc.removeReply, { replyId: 'r1' })
+  await ipc.invoke(commentsIpc.setStatus, { id: 'c1', status: 'resolved' })
+  await ipc.invoke(commentsIpc.list, { worktreeId: WT, status: 'open' })
+  expect(calls.slice(0, 4)).toEqual([
+    ['reply', ['c1', { author: 'user', body: 'Why?' }]],
+    ['removeReply', ['r1']],
+    ['setStatus', ['c1', 'resolved']],
+    ['listThreads', [WT, { status: 'open' }]],
+  ])
+  expect(calls[4]).toEqual(['round', [WT]])
+})
+
+test('comments.clearResolved returns the count', async () => {
+  const ipc = createFakeIpc()
+  const service = { clearResolved: async () => 2 } as unknown as CommentsService
+  registerCommentsIpc(ipc, service)
+  expect(await ipc.invoke(commentsIpc.clearResolved, { worktreeId: WT })).toEqual({ count: 2 })
+})

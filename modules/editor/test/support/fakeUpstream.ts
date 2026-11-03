@@ -11,7 +11,7 @@ export interface FakeUpstream extends EditorUpstream {
   sendResult: SendResult
   worktrees: WorktreeRef[]
   active: string | null
-  /** What `listDrafts` answers (filtered by worktree). */
+  /** What `listThreads` answers (filtered by worktree). */
   stored: Comment[]
   emitSelected(id: string | null): void
   emitRemoved(id: string): void
@@ -56,7 +56,7 @@ export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[]
       up.sends.push(ids)
       return up.sendResult
     },
-    listDrafts: async (worktreeId) => up.stored.filter((c) => c.worktreeId === worktreeId),
+    listThreads: async (worktreeId) => up.stored.filter((c) => c.worktreeId === worktreeId),
     onCommentsChanged: (cb) => {
       commentsCbs.add(cb)
       return () => commentsCbs.delete(cb)

@@ -11,7 +11,7 @@ export function commentsHandlers(deps: CliHandlerDeps): Record<'commentsList', C
     commentsList: defineCliHandler(CLI_METHOD.commentsList, async (req) => {
       const comments = requireService(deps.comments, COMMENTS_MODULE_ID)
       const worktree = await resolveWorktree(deps.projects, req.worktreeId, req.context)
-      return { worktreeId: worktree.id, comments: (await comments.listDrafts(worktree.id)).map(toCliComment) }
+      return { worktreeId: worktree.id, comments: (await comments.listThreads(worktree.id)).map(toCliComment) }
     }),
   }
 }

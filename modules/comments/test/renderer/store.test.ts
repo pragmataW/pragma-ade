@@ -25,11 +25,11 @@ describe('store', () => {
     const m = mount()
     m.init()
     await flush()
-    const before = m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).length
+    const before = m.fakeIpc.callsOn(commentsIpc.list.channel).length
     m.fakeIpc.emit(commentsIpcEvents.changed, { worktreeId: OTHER_WT })
     m.fakeIpc.emit(commentsIpcEvents.changed, { worktreeId: WT })
     await flush()
-    expect(m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).length).toBe(before + 1)
+    expect(m.fakeIpc.callsOn(commentsIpc.list.channel).length).toBe(before + 1)
   })
 
   test('active worktree change clears selection and reloads', async () => {
@@ -42,7 +42,7 @@ describe('store', () => {
     expect(state().selection.size).toBe(0)
     await flush()
     expect(state().activeWorktreeId).toBe(OTHER_WT)
-    expect(m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).at(-1)).toEqual({ worktreeId: OTHER_WT })
+    expect(m.fakeIpc.callsOn(commentsIpc.list.channel).at(-1)).toEqual({ worktreeId: OTHER_WT })
   })
 
   test('loaded drafts start selected; an unticked one stays unticked across reloads', async () => {

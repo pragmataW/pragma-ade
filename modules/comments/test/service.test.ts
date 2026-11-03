@@ -61,7 +61,7 @@ describe('drafts', () => {
       [COMMENTS_EVENTS.changed, { worktreeId: WT }],
     ])
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toEqual([{ worktreeId: WT }])
-    expect(await service.listDrafts(WT)).toEqual([c])
+    expect(await service.listThreads(WT)).toEqual([c])
   })
 
   test('update, remove, send and worktree removal emit comment.changed on the main bus', async () => {
@@ -81,14 +81,14 @@ describe('drafts', () => {
   test('addDraft rejects invalid input and stores nothing', async () => {
     const { service } = setup()
     await expect(service.addDraft(makeInput({ body: '  ' }))).rejects.toThrow()
-    expect(await service.listDrafts(WT)).toEqual([])
+    expect(await service.listThreads(WT)).toEqual([])
   })
 
   test('update edits a draft; once sent (deleted) update/remove throw notFound', async () => {
     const { service, drafts, ids } = setup()
     const [c] = await drafts(1)
     expect((await service.update(c?.id as string, { body: 'edited' })).body).toBe('edited')
-    await service.send(ids(await service.listDrafts(WT)))
+    await service.send(ids(await service.listThreads(WT)))
     await expect(service.update(c?.id as string, { body: 'x' })).rejects.toMatchObject({ key: 'notFound' })
     await expect(service.remove(c?.id as string)).rejects.toMatchObject({ key: 'notFound' })
     await expect(service.remove('missing')).rejects.toMatchObject({ key: 'notFound' })
@@ -98,7 +98,7 @@ describe('drafts', () => {
     const { service, drafts, upstream } = setup()
     const [c] = await drafts(1)
     await service.remove(c?.id as string)
-    expect(await service.listDrafts(WT)).toEqual([])
+    expect(await service.listThreads(WT)).toEqual([])
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toHaveLength(2)
   })
 })
@@ -134,7 +134,7 @@ describe('send', () => {
     expect(delivered).toHaveLength(1)
     expect(delivered[0]?.text).toBe(service.format(cs))
     expect(delivered[0]).toMatchObject({ sessionId: 's1', worktreeId: WT, mode: 'terminal', ptyId: 'pty-s1' })
-    expect(await service.listDrafts(WT)).toEqual([])
+    expect(await service.listThreads(WT)).toEqual([])
     const sentAt = r.status === 'sent' ? r.sentAt : -1
     expect(emitted.filter(([name]) => name === COMMENTS_EVENTS.sent).at(-1)).toEqual([
       COMMENTS_EVENTS.sent,
@@ -158,7 +158,7 @@ describe('send', () => {
     await service.send(commentIds, undefined, { promptUser: false })
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.sendRequested)).toHaveLength(1)
     expect(delivered).toEqual([])
-    expect(ids(await service.listDrafts(WT))).toEqual(commentIds)
+    expect(ids(await service.listThreads(WT))).toEqual(commentIds)
   })
 
   test('only the delivered comments are deleted; the rest stay drafts', async () => {
@@ -166,7 +166,7 @@ describe('send', () => {
     const [a, b] = await drafts(2)
     const before = upstream.publishedOn(COMMENTS_IPC_EVENTS.changed).length
     await service.send([a?.id as string])
-    expect(await service.listDrafts(WT)).toEqual([b])
+    expect(await service.listThreads(WT)).toEqual([b])
     expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toHaveLength(before + 1)
   })
 
@@ -174,7 +174,7 @@ describe('send', () => {
     const { service, drafts, ids } = setup([])
     const cs = await drafts(1)
     expect(await service.send(ids(cs))).toEqual({ status: 'noSession' })
-    expect(await service.listDrafts(WT)).toEqual(cs)
+    expect(await service.listThreads(WT)).toEqual(cs)
   })
 
   test('target exited → sessionNotRunning, drafts unchanged', async () => {
@@ -184,7 +184,7 @@ describe('send', () => {
     target.status = 'exited'
     expect(await service.send(ids(cs), 'a')).toMatchObject({ status: 'failed', errorKey: 'sessionNotRunning' })
     expect(delivered).toEqual([])
-    expect(await service.listDrafts(WT)).toEqual(cs)
+    expect(await service.listThreads(WT)).toEqual(cs)
   })
 
   it.each([
@@ -242,7 +242,7 @@ describe('send', () => {
       errorKey: 'deliveryFailed',
       message: expect.stringContaining('pty gone'),
     })
-    expect(await service.listDrafts(WT)).toEqual(cs)
+    expect(await service.listThreads(WT)).toEqual(cs)
   })
 
   test('chat-mode session without a chat target → noDeliveryTarget', async () => {
@@ -252,3 +252,90 @@ describe('send', () => {
 })
 
 type Ctx = ReturnType<typeof setup>
+
+describe('threads', () => {
+  const agent = { author: 'agent', sessionId: 's1', authorLabel: 'Claude' } as const
+
+  test('a user reply is pending and reopens a resolved thread', async () => {
+    const { service, drafts, emitted } = setup()
+    const [c] = await drafts(1)
+    const id = c?.id as string
+    await service.setStatus(id, 'resolved')
+    const t = await service.reply(id, { author: 'user', body: 'Not yet.' })
+    expect(t.status).toBe('open')
+    expect(t.replies).toMatchObject([{ author: 'user', body: 'Not yet.', round: undefined }])
+    expect(emitted.some(([n]) => n === COMMENTS_EVENTS.replied)).toBe(true)
+  })
+
+  test('an agent reply carries the current round, sessionId and authorLabel', async () => {
+    const { service, repo, drafts } = setup()
+    const [c] = await drafts(1)
+    repo.markDelivered(WT, { commentIds: [c?.id as string], replyIds: [] }, 1)
+    const t = await service.reply(c?.id as string, { ...agent, body: 'Done.' })
+    expect(t.replies).toMatchObject([{ author: 'agent', round: 1, sessionId: 's1', authorLabel: 'Claude' }])
+  })
+
+  test('reply on a missing thread → notFound', async () => {
+    const { service } = setup()
+    await expect(service.reply('nope', { author: 'user', body: 'x' })).rejects.toMatchObject({ key: 'notFound' })
+  })
+
+  test('setStatus resolves and reopens, emits the main event and comments.changed', async () => {
+    const { service, drafts, emitted, upstream } = setup()
+    const [c] = await drafts(1)
+    const before = upstream.publishedOn(COMMENTS_IPC_EVENTS.changed).length
+    const resolved = await service.setStatus(c?.id as string, 'resolved', { ...agent, body: 'Fixed.' })
+    expect(resolved).toMatchObject({ status: 'resolved', resolvedAt: expect.any(Number) })
+    expect(resolved.replies.map((r) => r.body)).toEqual(['Fixed.'])
+    expect((await service.setStatus(c?.id as string, 'open')).status).toBe('open')
+    expect(emitted.filter(([n]) => n === COMMENTS_EVENTS.statusChanged)).toHaveLength(2)
+    expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toHaveLength(before + 2)
+    await expect(service.setStatus('nope', 'open')).rejects.toMatchObject({ key: 'notFound' })
+  })
+
+  test('update of a delivered root → alreadyDelivered; getThread finds it', async () => {
+    const { service, repo, drafts } = setup()
+    const [c] = await drafts(1)
+    repo.markDelivered(WT, { commentIds: [c?.id as string], replyIds: [] }, 1)
+    await expect(service.update(c?.id as string, { body: 'x' })).rejects.toMatchObject({ key: 'alreadyDelivered' })
+    expect((await service.getThread(c?.id as string)).round).toBe(1)
+    await expect(service.getThread('nope')).rejects.toMatchObject({ key: 'notFound' })
+  })
+
+  test('clearResolved deletes resolved threads, returns the count and notifies', async () => {
+    const { service, drafts, upstream } = setup()
+    const [a, b] = await drafts(2)
+    await service.setStatus(a?.id as string, 'resolved')
+    const before = upstream.publishedOn(COMMENTS_IPC_EVENTS.changed).length
+    expect(await service.clearResolved(WT)).toBe(1)
+    expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.changed)).toHaveLength(before + 1)
+    expect((await service.listThreads(WT)).map((c) => c.id)).toEqual([b?.id])
+    expect(await service.clearResolved(WT)).toBe(0)
+  })
+
+  test('removeReply removes only a pending user reply', async () => {
+    const { service, repo, drafts } = setup()
+    const [c] = await drafts(1)
+    const id = c?.id as string
+    const [mine] = (await service.reply(id, { author: 'user', body: 'Mine.' })).replies
+    const t = await service.reply(id, { ...agent, body: 'Theirs.' })
+    await expect(service.removeReply(t.replies[1]?.id as string)).rejects.toMatchObject({ key: 'alreadyDelivered' })
+    await service.removeReply(mine?.id as string)
+    expect((await service.getThread(id)).replies.map((r) => r.body)).toEqual(['Theirs.'])
+    await expect(service.removeReply('nope')).rejects.toMatchObject({ key: 'notFound' })
+    expect(repo.currentRound(WT)).toBe(0)
+  })
+
+  test('listThreads filters by status and deliveredOnly hides pending items', async () => {
+    const x = setup()
+    const [a, b] = await x.drafts(2)
+    x.repo.markDelivered(WT, { commentIds: [a?.id as string], replyIds: [] }, 1)
+    await x.service.reply(a?.id as string, { author: 'user', body: 'Later.' })
+    await x.service.setStatus(b?.id as string, 'resolved')
+    expect((await x.service.listThreads(WT, { status: 'open' })).map((c) => c.id)).toEqual([a?.id])
+    expect((await x.service.listThreads(WT, { status: 'resolved' })).map((c) => c.id)).toEqual([b?.id])
+    const visible = await x.service.listThreads(WT, { deliveredOnly: true })
+    expect(visible.map((c) => [c.id, c.replies.length])).toEqual([[a?.id, 0]])
+    expect(await x.service.round(WT)).toBe(1)
+  })
+})

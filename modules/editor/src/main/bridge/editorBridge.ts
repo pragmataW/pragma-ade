@@ -219,7 +219,7 @@ export class EditorBridge {
   }
 
   async #draftsOf(worktreeId: string | undefined): Promise<EditorDrafts> {
-    return worktreeId ? toEditorDrafts(await this.#up.listDrafts(worktreeId)) : { comments: [] }
+    return worktreeId ? toEditorDrafts(await this.#up.listThreads(worktreeId)) : { comments: [] }
   }
 
   /** Every client showing `worktreeId` gets its drafts; a client that went away in between is skipped. */
