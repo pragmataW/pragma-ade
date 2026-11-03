@@ -108,32 +108,10 @@ describe('CommentCard Edit', () => {
 })
 
 describe('CommentCard Delete', () => {
-  const removes = () => h?.callsOn(COMMENTS_CHANNELS.remove)
-
-  it("the thread's Delete asks inline first; Delete removes only this comment through 05, never the drawer", async () => {
-    const openDrawer = await mountCard()
-    await userEvent.click(await screen.findByRole('button', { name: DELETE }))
-    expect(removes()).toEqual([])
-    expect(screen.getByTestId(T.commentCard)).toHaveTextContent('Delete this comment?')
-    await userEvent.click(screen.getByTestId(T.commentDeleteConfirm))
-    await waitFor(() => expect(removes()).toEqual([{ id: 'c1' }]))
-    expect(openDrawer).not.toHaveBeenCalled()
-  })
-
-  it('Cancel leaves the comment alone and hides the question', async () => {
+  it("leaves Delete to 05's thread (its own inline confirm): the card passes no delete flow of its own", async () => {
     await mountCard()
-    await userEvent.click(await screen.findByRole('button', { name: DELETE }))
-    await userEvent.click(screen.getByTestId(T.commentDeleteCancel))
-    expect(removes()).toEqual([])
-    expect(screen.getByTestId(T.commentCard)).not.toHaveTextContent('Delete this comment?')
-  })
-
-  it('a failed delete shows an error on the card', async () => {
-    await mountCard(() => {
-      throw new Error('db locked')
-    })
-    await userEvent.click(await screen.findByRole('button', { name: DELETE }))
-    await userEvent.click(screen.getByTestId(T.commentDeleteConfirm))
-    expect(await screen.findByRole('alert')).toHaveTextContent('The comment could not be deleted')
+    await screen.findByTestId('fake-thread')
+    expect(screen.queryByRole('button', { name: DELETE })).toBeNull()
+    expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([])
   })
 })

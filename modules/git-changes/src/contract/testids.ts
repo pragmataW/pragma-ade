@@ -31,8 +31,6 @@ export const GitChangesTestIds = {
   reviewDiscard: 'gc-review-discard',
   reviewClearResolved: 'gc-review-clear-resolved',
   commentCard: 'gc-comment-card',
-  commentDeleteConfirm: 'gc-comment-delete-confirm',
-  commentDeleteCancel: 'gc-comment-delete-cancel',
   /** Source Control: commit box, split Commit button and its menu, Sync, the "…" menu and its items. */
   commitMessage: 'gc-commit-message',
   commitButton: 'gc-commit-button',

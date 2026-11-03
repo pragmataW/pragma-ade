@@ -96,11 +96,7 @@
   },
   "comments": {
     "lines": "L{{start}}–{{end}}",
-    "line": "L{{start}}",
-    "confirmDelete": "Delete this comment?",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "deleteFailed": "The comment could not be deleted"
+    "line": "L{{start}}"
   },
   "review": {
     "pending_one": "{{count}} unsent item · {{file}}",
