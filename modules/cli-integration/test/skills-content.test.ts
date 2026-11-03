@@ -85,4 +85,30 @@ describe('skills', () => {
   it('pragma-cli has a Review threads section', () => {
     expect(read('pragma-cli').body).toContain('## Review threads')
   })
+
+  it.each(['Review round', 'yorumlara bak', "review'ı ele al", 'pragma-cli'])(
+    'review description mentions %s',
+    (text) => {
+      expect(read('review').data.description).toContain(text)
+    },
+  )
+
+  it.each([
+    'pragma comments list',
+    'pragma comments show',
+    'pragma comments resolve',
+    'pragma comments reply',
+    'Do not reply to every thread',
+    'Never resolve',
+    'never delete',
+    'leave it open',
+    'summary',
+  ])('review body contains %s', (text) => {
+    expect(read('review').body).toContain(text)
+  })
+
+  it('pragma-cli points at pragma-review for review rounds', () => {
+    expect(read('pragma-cli').data.description).toContain('pragma-review')
+    expect(read('pragma-cli').body).toContain('pragma-review')
+  })
 })

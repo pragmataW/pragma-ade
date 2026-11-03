@@ -20,7 +20,7 @@ describe('skills installer', () => {
   it('reads every source with sha256', async () => {
     const f = makeSkillsFixture()
     const sources = await readSkillSources(f.skillsDir)
-    expect(sources.map((s) => s.skillId)).toEqual(['ask', 'board', 'handoff', 'pragma-cli'])
+    expect(sources.map((s) => s.skillId)).toEqual(['ask', 'board', 'handoff', 'pragma-cli', 'review'])
     for (const s of sources) expect(s.hash).toBe(sha(s.content))
   })
 
@@ -32,10 +32,12 @@ describe('skills installer', () => {
       ['alpha', 'board', join(f.home, '.alpha', 'skills', 'pragma-board')],
       ['alpha', 'handoff', join(f.home, '.alpha', 'skills', 'pragma-handoff')],
       ['alpha', 'pragma-cli', join(f.home, '.alpha', 'skills', 'pragma-cli')],
+      ['alpha', 'review', join(f.home, '.alpha', 'skills', 'pragma-review')],
       ['beta', 'ask', join(f.home, '.beta', 'skills', 'pragma-ask')],
       ['beta', 'board', join(f.home, '.beta', 'skills', 'pragma-board')],
       ['beta', 'handoff', join(f.home, '.beta', 'skills', 'pragma-handoff')],
       ['beta', 'pragma-cli', join(f.home, '.beta', 'skills', 'pragma-cli')],
+      ['beta', 'review', join(f.home, '.beta', 'skills', 'pragma-review')],
     ])
     expect(targets[0]?.providerDisplayNameKey).toBe('alpha:module.name')
   })
@@ -65,10 +67,12 @@ describe('skills installer', () => {
       ['board', 'current'],
       ['handoff', 'outdated'],
       ['pragma-cli', 'current'],
+      ['review', 'current'],
       ['ask', 'current'],
       ['board', 'current'],
       ['handoff', 'outdated'],
       ['pragma-cli', 'current'],
+      ['review', 'current'],
     ])
   })
 

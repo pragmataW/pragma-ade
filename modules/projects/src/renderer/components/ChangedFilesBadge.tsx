@@ -16,7 +16,7 @@ export function ChangedFilesBadge({ worktreeId }: WorktreeRowSlotProps) {
       role="status"
       aria-label={label}
       title={label}
-      className="rounded-[var(--radius-chip)] border border-bd2 px-1.5 font-medium text-[10.5px] text-warn leading-4"
+      className="rounded-[var(--radius-chip)] border border-bd2 bg-el px-1.5 font-medium text-[10.5px] text-mu tabular-nums leading-4"
     >
       {NUMBER.format(count)}
     </span>
