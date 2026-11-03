@@ -1,10 +1,14 @@
-import { type Comment, CommentsUiServiceToken, commentContextOf } from '@pragma/module-comments/contract'
+import {
+  type Comment,
+  CommentsUiServiceToken,
+  commentContextOf,
+  DIFF_SIDE,
+  type ThreadLink,
+} from '@pragma/module-comments/contract'
 import { useT } from '@pragma/sdk/renderer'
-import { Button } from '@pragma/ui/components/button'
-import { useState } from 'react'
-import { ROLE_ALERT, SIZE_XS, VARIANT_LINK } from '../../constants'
+import { SquareArrowOutUpRight } from '@pragma/ui/icons'
 import { GitChangesTestIds as T } from '../../contract'
-import { discardThreads } from '../lib/comments'
+import { fileOpener } from '../lib/editor'
 import { getRendererCtx } from '../lib/sdk'
 import { useGitChangesStore, useWorktreeView } from '../store'
 import { DiffCommentComposer } from './DiffCommentComposer'
@@ -19,66 +23,29 @@ function useLinesLabel(c: Pick<Comment, 'lineStart' | 'lineEnd'>): string | unde
     : t('git-changes:comments.lines', { start, end })
 }
 
-const LINK_CLASS = 'h-auto p-0 text-xs'
-
-/** Deletes the thread through 05's IPC. Resolves false on failure. */
-async function deleteThread(comment: Comment): Promise<boolean> {
-  try {
-    await discardThreads([comment])
-    return true
-  } catch (e) {
-    console.warn('git-changes: delete comment failed', e)
-    return false
-  }
-}
-
-/** "Delete this comment?" Delete / Cancel under the thread (like the review bar's Discard). */
-function DeleteConfirm({ onConfirm, onCancel }: { onConfirm(): void; onCancel(): void }) {
-  const t = useT()
-  return (
-    <div className="mt-1 flex items-center justify-end gap-2 text-muted-foreground text-xs">
-      <span>{t('git-changes:comments.confirmDelete')}</span>
-      <Button
-        size={SIZE_XS}
-        variant={VARIANT_LINK}
-        className={`${LINK_CLASS} text-[var(--err)]`}
-        data-testid={T.commentDeleteConfirm}
-        onClick={onConfirm}
-      >
-        {t('git-changes:comments.deleteConfirm')}
-      </Button>
-      <Button
-        size={SIZE_XS}
-        variant={VARIANT_LINK}
-        className={LINK_CLASS}
-        data-testid={T.commentDeleteCancel}
-        onClick={onCancel}
-      >
-        {t('git-changes:comments.deleteCancel')}
-      </Button>
-    </div>
-  )
-}
-
-/** The thread's Delete asks inline first; a failed delete shows an error on the card. */
-function useDeleteFlow(comment: Comment) {
-  const [confirming, setConfirming] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const confirm = async () => {
-    setConfirming(false)
-    setFailed(!(await deleteThread(comment)))
-  }
-  return { confirming, failed, ask: () => setConfirming(true), cancel: () => setConfirming(false), confirm }
+/** "Open in editor at this line" for a thread on the file's current text (not an old-side one). */
+function editorLinks(c: Comment): ThreadLink[] {
+  const open = fileOpener(c.worktreeId)
+  const path = c.filePath
+  if (!open || !path || c.diffSide === DIFF_SIDE.old) return []
+  return [
+    {
+      id: 'editor',
+      labelKey: 'git-changes:comments.openInEditor',
+      icon: SquareArrowOutUpRight,
+      testId: T.commentOpenInEditor,
+      onSelect: () => open(path, c.lineStart),
+    },
+  ]
 }
 
 /**
- * A review thread under its line, drawn by 05's ThreadView (replies, status, reply box). Edit (pending root only)
- * reopens the comment's own composer right here (prefilled, Save/Cancel), not 05's drawer; Delete asks inline first.
+ * A review thread under its line, drawn by 05's ThreadView (replies, status, actions with its own delete confirm,
+ * Reply; its line label links to the editor). Edit (pending root only) reopens the comment's own composer right here (prefilled, Save/Cancel), not 05's
+ * drawer.
  */
 export function CommentCard({ comment }: { comment: Comment }) {
-  const t = useT()
   const label = useLinesLabel(comment)
-  const del = useDeleteFlow(comment)
   const editing = useWorktreeView(comment.worktreeId).editingId === comment.id
   const setEditing = (on: boolean) =>
     useGitChangesStore.getState().editComment(comment.worktreeId, on ? comment.id : null)
@@ -94,13 +61,12 @@ export function CommentCard({ comment }: { comment: Comment }) {
     )
   return (
     <div data-testid={T.commentCard} data-comment-id={comment.id} className="mx-3 my-2">
-      <ThreadView comment={comment} locationLabel={label} onEdit={() => setEditing(true)} onDelete={del.ask} />
-      {del.confirming ? <DeleteConfirm onConfirm={() => void del.confirm()} onCancel={del.cancel} /> : null}
-      {del.failed ? (
-        <p role={ROLE_ALERT} className="mt-1 text-[var(--err)] text-xs">
-          {t('git-changes:comments.deleteFailed')}
-        </p>
-      ) : null}
+      <ThreadView
+        comment={comment}
+        locationLabel={label}
+        links={editorLinks(comment)}
+        onEdit={() => setEditing(true)}
+      />
     </div>
   )
 }

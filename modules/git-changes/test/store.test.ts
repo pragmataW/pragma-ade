@@ -48,6 +48,19 @@ describe('git-changes store', () => {
     expect(view().mode).toBe('uncommitted')
   })
 
+  it('reveal with a focus keeps it (new seq each time) until cleared', () => {
+    const s = useGitChangesStore.getState()
+    s.reveal('w', 'src/app.ts', ['src/app.ts'], { line: 10, side: 'new', commentId: 'c1' })
+    const first = view().focus
+    expect(first).toMatchObject({ line: 10, side: 'new', commentId: 'c1' })
+    s.reveal('w', 'src/app.ts', ['src/app.ts'], { line: 10 })
+    expect(view().focus?.seq).toBeGreaterThan(first?.seq ?? Number.POSITIVE_INFINITY)
+    s.clearFocus('w')
+    expect(view().focus).toBeNull()
+    s.reveal('w', 'src/app.ts', ['src/app.ts'])
+    expect(view().focus).toBeNull()
+  })
+
   it('the file filter is kept per worktree, across mode switches', () => {
     const s = useGitChangesStore.getState()
     s.setFilter('w', 'ödeme')

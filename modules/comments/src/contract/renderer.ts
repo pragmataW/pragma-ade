@@ -33,6 +33,19 @@ export interface CommentComposerProps {
   className?: string
 }
 
+/**
+ * A jump from a thread to where it points (the editor at its line, Git Changes, the browser page). The host builds it
+ * (it knows which commands exist); the thread shows it as an action, and the first link also makes the location label
+ * clickable.
+ */
+export interface ThreadLink {
+  id: string
+  labelKey: string
+  icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>
+  testId: string
+  onSelect(): void
+}
+
 /** One review thread as every surface shows it (`CommentsUiService.ThreadView`). */
 export interface ThreadViewProps {
   comment: Comment
@@ -42,8 +55,10 @@ export interface ThreadViewProps {
   locationLabel?: string
   /** The host's edit flow; the Edit action shows only while the root is pending. */
   onEdit?: () => void
-  /** The host's delete flow (e.g. an inline confirm); default deletes the thread at once. */
+  /** The host's delete flow; default: the thread's own inline "Delete this thread?" confirm. */
   onDelete?: () => void
+  /** Jumps to where the thread points; the first one also makes `locationLabel` a link. */
+  links?: readonly ThreadLink[]
   /** Default `card`: own `el` card; `plain` for hosts that are the card. */
   surface?: ComposerSurface
   className?: string

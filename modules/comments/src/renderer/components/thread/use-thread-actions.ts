@@ -10,7 +10,8 @@ export function threadActions(id: string) {
     reply: (body: string) => ipc().invoke(commentsIpc.reply, { id, body }),
     setStatus: (status: CommentStatus) =>
       ipc().invoke(commentsIpc.setStatus, { id, status }).then(undefined, report('status change')),
-    remove: () => ipc().invoke(commentsIpc.remove, { id }).catch(report('delete')),
+    /** Rejects on failure (the thread shows an alert). */
+    remove: () => ipc().invoke(commentsIpc.remove, { id }),
     removeReply: (replyId: string) => ipc().invoke(commentsIpc.removeReply, { replyId }).catch(report('reply delete')),
   }
 }

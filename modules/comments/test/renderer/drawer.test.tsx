@@ -1,6 +1,12 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, test } from 'vitest'
-import { type Comment, commentsIpc, type SendResult, COMMENTS_TESTIDS as T } from '../../src/contract'
+import {
+  type Comment,
+  commentsIpc,
+  commentsIpcEvents,
+  type SendResult,
+  COMMENTS_TESTIDS as T,
+} from '../../src/contract'
 import { CommentsDrawer } from '../../src/renderer/components/CommentsDrawer'
 import { LaunchSuggestionDialog } from '../../src/renderer/components/LaunchSuggestionDialog'
 import { TargetPickerDialog } from '../../src/renderer/components/TargetPickerDialog'
@@ -41,13 +47,45 @@ const draftB = () =>
   makeComment({ id: 'b1', source: 'editor', filePath: 'b.md', lineStart: 1, lineEnd: 1, body: 'Two' })
 
 describe('CommentsDrawer', () => {
-  test('renders threads with location label and source', async () => {
-    await open({ threads: [draftA(), draftB()] })
-    expect(rows()).toHaveLength(2)
+  test('groups threads by file: the header names the file, each card its lines and source', async () => {
+    const a2 = makeComment({ id: 'a2', source: 'editor', filePath: 'src/a.ts', lineStart: 9, body: 'Third' })
+    await open({ threads: [draftA(), draftB(), a2] })
+    const groups = screen.getAllByTestId(T.drawerGroup)
+    expect(groups.map((g) => g.dataset.path)).toEqual(['src/a.ts', 'b.md'])
+    const header = within(groups[0] as HTMLElement).getByTestId(T.drawerGroupHeader)
+    expect(header).toHaveTextContent('a.ts')
+    expect(header).toHaveTextContent('src/')
+    expect(header).toHaveTextContent('2')
+    expect(
+      within(groups[0] as HTMLElement)
+        .getAllByTestId(T.row)
+        .map((x) => x.dataset.commentId),
+    ).toEqual(['a1', 'a2'])
+    expect(rows()).toHaveLength(3)
     const first = within(rows()[0] as HTMLElement)
-    expect(first.getByText('src/a.ts:3-5')).toBeInTheDocument()
+    expect(first.getByText('L3–5')).toBeInTheDocument()
     expect(first.getByRole('img', { name: en.row.source.diff })).toBeInTheDocument()
-    expect(within(rows()[1] as HTMLElement).getByRole('img', { name: en.row.source.editor })).toBeInTheDocument()
+    expect(within(rows()[2] as HTMLElement).getByRole('img', { name: en.row.source.editor })).toBeInTheDocument()
+  })
+
+  test('the resolved section groups its threads by file too, and live reloads move threads between sections', async () => {
+    await open({ threads: [draftA(), makeComment({ id: 'r1', filePath: 'src/z.ts', status: 'resolved', round: 1 })] })
+    const section = screen.getByTestId(T.resolvedSection)
+    fireEvent.click(within(section).getByRole('button', { name: 'Resolved (1)' }))
+    expect(
+      within(section)
+        .getAllByTestId(T.drawerGroup)
+        .map((g) => g.dataset.path),
+    ).toEqual(['src/z.ts'])
+    r.data.threads = [{ ...draftA(), status: 'resolved', round: 1 }]
+    act(() => r.fakeIpc.emit(commentsIpcEvents.changed, { worktreeId: WT }))
+    await waitFor(() =>
+      expect(
+        within(section)
+          .getAllByTestId(T.row)
+          .map((x) => x.dataset.commentId),
+      ).toEqual(['a1']),
+    )
   })
 
   test('the footer sends every pending item of the worktree; disabled with nothing pending', async () => {
@@ -150,9 +188,11 @@ describe('CommentsDrawer', () => {
     expect(screen.queryByTestId(T.clearResolved)).toBeNull()
   })
 
-  test('delete calls comments.remove', async () => {
+  test('delete asks inline, then calls comments.remove', async () => {
     await open({ threads: [draftA()] })
     fireEvent.click(screen.getByTestId(T.rowDelete))
+    expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([])
+    fireEvent.click(screen.getByTestId(T.threadDeleteConfirm))
     await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([{ id: 'a1' }]))
   })
 

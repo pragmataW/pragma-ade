@@ -1,5 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
+import { BODY_COLLAPSE_LINES } from '../../src/constants'
 import { commentsIpc, COMMENTS_TESTIDS as T } from '../../src/contract'
 import { ThreadView } from '../../src/renderer/components/thread/ThreadView'
 import { aReply, aThread } from '../../src/testing'
@@ -42,4 +43,107 @@ test("Delete runs the host's delete flow instead of deleting at once", () => {
   fireEvent.click(screen.getByTestId(T.rowDelete))
   expect(onDelete).toHaveBeenCalledOnce()
   expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([])
+})
+
+const MINUTE = 60_000
+
+test('the root shows You and a relative time; replies sit in a thread list with author, time and Pending', () => {
+  r = mountRenderer()
+  const now = Date.now()
+  const thread = aThread({
+    id: 't4',
+    round: 1,
+    createdAt: now - 5 * MINUTE,
+    replies: [
+      aReply({ author: 'agent', authorLabel: 'Claude Code', round: 1, body: 'Done.', createdAt: now - 2 * MINUTE }),
+      aReply({ author: 'agent', round: 1, body: 'Also this.', createdAt: now }),
+      aReply({ author: 'user', body: 'Thanks', createdAt: now }),
+    ],
+  })
+  renderUi(<ThreadView comment={thread} />)
+  expect(screen.getByTestId(T.threadAuthor)).toHaveTextContent(en.thread.you)
+  const times = screen.getAllByTestId(T.threadTime)
+  expect(times[0]).toHaveTextContent('5m ago')
+  expect(times[0]).toHaveAttribute('dateTime', new Date(now - 5 * MINUTE).toISOString())
+  const list = screen.getByTestId(T.threadReplies)
+  const replies = within(list).getAllByTestId(T.reply)
+  expect(replies.map((x) => within(x).getByTestId(T.replyAuthor).textContent)).toEqual([
+    'Claude Code',
+    en.thread.agent,
+    en.thread.you,
+  ])
+  expect(within(replies[0] as HTMLElement).getByTestId(T.threadTime)).toHaveTextContent('2m ago')
+  expect(within(replies[1] as HTMLElement).getByTestId(T.threadTime)).toHaveTextContent(en.time.justNow)
+  expect(within(replies[0] as HTMLElement).queryByTestId(T.pendingBadge)).toBeNull()
+  expect(within(replies[2] as HTMLElement).getByTestId(T.pendingBadge)).toBeInTheDocument()
+})
+
+test('no reply box until Reply is clicked; Esc and Cancel close it; a sent reply closes it', async () => {
+  r = mountRenderer()
+  r.fakeIpc.respond(commentsIpc.reply, () => aReply())
+  renderUi(<ThreadView comment={aThread({ id: 't5' })} />)
+  expect(screen.queryByRole('textbox')).toBeNull()
+  fireEvent.click(screen.getByTestId(T.replyOpen))
+  expect(screen.getByTestId(T.replyInput)).toHaveFocus()
+  fireEvent.keyDown(screen.getByTestId(T.replyInput), { key: 'Escape' })
+  expect(screen.queryByTestId(T.replyInput)).toBeNull()
+  fireEvent.click(screen.getByTestId(T.replyOpen))
+  fireEvent.click(screen.getByTestId(T.replyCancel))
+  expect(screen.queryByTestId(T.replyInput)).toBeNull()
+  fireEvent.click(screen.getByTestId(T.replyOpen))
+  fireEvent.change(screen.getByTestId(T.replyInput), { target: { value: 'On it' } })
+  fireEvent.click(screen.getByTestId(T.replySubmit))
+  await waitFor(() => expect(screen.queryByTestId(T.replyInput)).toBeNull())
+  expect(r.fakeIpc.callsOn(commentsIpc.reply.channel)).toEqual([{ id: 't5', body: 'On it' }])
+})
+
+const MARKDOWN = [
+  'Done: **renamed** it.',
+  '',
+  '- first',
+  '- second',
+  '',
+  'Use `appName`.',
+  '',
+  '```ts',
+  'const appName = 1',
+  '```',
+].join('\n')
+
+test('root and agent reply bodies render as markdown; raw HTML stays text', () => {
+  r = mountRenderer()
+  const thread = aThread({
+    id: 'm1',
+    round: 1,
+    body: 'Root with **bold** <b>raw</b>',
+    replies: [aReply({ author: 'agent', authorLabel: 'Claude Code', round: 1, body: MARKDOWN })],
+  })
+  const { container } = renderUi(<ThreadView comment={thread} />)
+  const reply = screen.getByTestId(T.reply)
+  expect(reply.querySelector('strong')).toHaveTextContent('renamed')
+  expect(reply.querySelectorAll('li')).toHaveLength(2)
+  expect(reply.querySelector(':not(pre) > code')).toHaveTextContent('appName')
+  expect(reply.querySelector('pre, .pragma-code')).toHaveTextContent('const appName = 1')
+  const root = screen.getAllByTestId(T.threadBody)[0] as HTMLElement
+  expect(root.querySelector('strong')).toHaveTextContent('bold')
+  expect(container.querySelector('b')).toBeNull()
+})
+
+test('a long reply starts clamped; Show more expands it and Show less clamps it again', () => {
+  r = mountRenderer()
+  const long = Array.from({ length: BODY_COLLAPSE_LINES + 4 }, (_, i) => `line ${i + 1}`).join('\n\n')
+  renderUi(<ThreadView comment={aThread({ id: 'm2', replies: [aReply({ author: 'agent', round: 1, body: long })] })} />)
+  const toggle = screen.getByTestId(T.threadBodyToggle)
+  const body = toggle.parentElement?.querySelector(`[data-testid="${T.threadBody}"]`) as HTMLElement
+  expect(body).toHaveAttribute('data-clamped', 'true')
+  expect(toggle).toHaveTextContent(en.thread.showMore)
+  fireEvent.click(toggle)
+  expect(body).toHaveAttribute('data-clamped', 'false')
+  expect(toggle).toHaveTextContent(en.thread.showLess)
+})
+
+test('a short body has no Show more', () => {
+  r = mountRenderer()
+  renderUi(<ThreadView comment={aThread({ id: 'm3' })} />)
+  expect(screen.queryByTestId(T.threadBodyToggle)).toBeNull()
 })

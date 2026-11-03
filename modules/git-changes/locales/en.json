@@ -97,10 +97,7 @@
   "comments": {
     "lines": "L{{start}}–{{end}}",
     "line": "L{{start}}",
-    "confirmDelete": "Delete this comment?",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "deleteFailed": "The comment could not be deleted"
+    "openInEditor": "Open in editor at this line"
   },
   "review": {
     "pending_one": "{{count}} unsent item · {{file}}",
@@ -109,7 +106,8 @@
     "confirmDiscard": "Discard {{count}} new? Click again",
     "send_one": "Send {{count}} to agent",
     "send_other": "Send {{count}} to agent",
-    "clearResolved": "Clear resolved"
+    "clearResolved": "Clear resolved",
+    "more": "More review actions"
   },
   "scm": {
     "dismiss": "Dismiss",

@@ -20,7 +20,9 @@
     "nothingToSend": "Nothing to send",
     "resolvedSection": "Resolved ({{count}})",
     "round": "Round {{round}}",
-    "clearResolved": "Clear resolved"
+    "clearResolved": "Clear resolved",
+    "groupCount_one": "{{count}} thread",
+    "groupCount_other": "{{count}} threads"
   },
   "row": {
     "edit": "Edit",
@@ -29,7 +31,9 @@
       "editor": "Editor",
       "diff": "Diff",
       "browser": "Browser"
-    }
+    },
+    "line": "L{{start}}",
+    "lines": "L{{start}}–{{end}}"
   },
   "composer": {
     "label": "Comment",
@@ -92,6 +96,29 @@
     "discardReply": "Discard reply",
     "expand_one": "Show thread ({{count}} reply)",
     "expand_other": "Show thread ({{count}} replies)",
-    "collapse": "Hide thread"
+    "collapse": "Hide thread",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "more": "More actions",
+    "confirmDelete": "Delete this thread?",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteFailed": "Could not delete the thread.",
+    "round": "R{{round}}",
+    "roundTitle": "Round {{round}}"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutes_one": "{{count}}m ago",
+    "minutes_other": "{{count}}m ago",
+    "hours_one": "{{count}}h ago",
+    "hours_other": "{{count}}h ago",
+    "days_one": "{{count}}d ago",
+    "days_other": "{{count}}d ago"
+  },
+  "links": {
+    "openInEditor": "Open in editor",
+    "showInGitChanges": "Show in Git Changes",
+    "openPage": "Open page in browser"
   }
 }

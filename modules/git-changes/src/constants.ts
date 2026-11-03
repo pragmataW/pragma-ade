@@ -36,8 +36,14 @@ export const FIND_HIGHLIGHT = { all: 'gc-find', current: 'gc-find-current' } as 
 export const FIND_SCROLL_MARGIN_PX = 48
 /** Rows still changing (a re-render in progress) wait this long before matches are found again. */
 export const FIND_REFIND_DELAY_MS = 30
+/** `gitChanges.reveal` focus: the flash on the revealed card or row, and how long the diff may take to render it. */
+export const FOCUS_FLASH_CLASS = 'gc-focus-flash'
+export const FOCUS_FLASH_MS = 1_200
+export const FOCUS_RETRY_MS = 100
+export const FOCUS_TIMEOUT_MS = 3_000
 export const DIFF_UNSAFE_CSS =
   '[data-line-annotation][data-selected-line],[data-gutter-buffer=annotation][data-selected-line]{--diffs-line-bg:var(--diffs-annotation-bg)}' +
+  '[data-line].gc-focus-flash{--diffs-line-bg:color-mix(in srgb,var(--ac) 22%,var(--diffs-bg));transition:background-color .3s}' +
   '::highlight(gc-find){background-color:color-mix(in srgb,var(--warn) 35%,transparent)}' +
   '::highlight(gc-find-current){background-color:color-mix(in srgb,var(--warn) 80%,transparent);color:var(--bg)}'
 
@@ -53,6 +59,8 @@ export const FILES_TAB_ID = 'files'
  * diff in 06's workbench (user decision 2026-11-02, revised): `editor.openDiff`, not `editor.openFile`.
  */
 export const EDITOR_OPEN_DIFF_COMMAND = 'editor.openDiff'
+/** An inline thread's link: the file itself (not its diff) at the thread's line. */
+export const EDITOR_OPEN_FILE_COMMAND = 'editor.openFile'
 /** `refs.new` of a branch-mode diff (merge-base ↔ HEAD). */
 export const HEAD_REF = 'HEAD'
 export const COMMENTS_OPEN_DRAWER_COMMAND = 'comments.openDrawer'
@@ -115,3 +123,5 @@ export const SIZE_SM = 'sm'
 export const SIZE_ICON_SM = 'icon-sm'
 export const SIZE_XS = 'xs'
 export const VARIANT_LINK = 'link'
+/** Below this width (px) the review bar keeps only its count and Send inline; the rest goes into its "…" menu. */
+export const REVIEW_BAR_NARROW_PX = 420

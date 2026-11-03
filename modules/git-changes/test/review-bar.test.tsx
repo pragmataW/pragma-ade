@@ -4,6 +4,7 @@ import type { IpcContract } from '@pragma/sdk'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { REVIEW_BAR_NARROW_PX } from '../src/constants'
 import { GitChangesTestIds as T } from '../src/contract'
 import { ReviewBar } from '../src/renderer/comments/ReviewBar'
 import { mountPanel, type PanelHarness, WT_ID } from './helpers/host'
@@ -98,5 +99,54 @@ describe('ReviewBar', () => {
   it('renders nothing without pending items or resolved threads', async () => {
     h = await mountPanel({ render: <ReviewBar worktreeId={WT_ID} threads={[delivered('o1')]} fileName="a" /> })
     expect(screen.queryByTestId(T.reviewBar)).toBeNull()
+  })
+})
+
+describe('ReviewBar at a narrow width', () => {
+  /** Every observed element reports this width (jsdom has no layout). */
+  function reportWidth(width: number) {
+    vi.stubGlobal(
+      'ResizeObserver',
+      vi.fn(function (this: unknown, cb: ResizeObserverCallback) {
+        return {
+          observe: (target: Element) => cb([{ target, contentRect: { width } } as never], {} as ResizeObserver),
+          unobserve: () => undefined,
+          disconnect: () => undefined,
+        }
+      }),
+    )
+  }
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('keeps only the count and Send inline; Discard and Clear resolved live in the … menu', async () => {
+    reportWidth(REVIEW_BAR_NARROW_PX - 100)
+    const { clearResolved } = await mountBar()
+    await screen.findByTestId(T.reviewBar)
+    expect(screen.queryByTestId(T.reviewDiscard)).toBeNull()
+    expect(screen.queryByTestId(T.reviewClearResolved)).toBeNull()
+    expect(screen.getByTestId(T.reviewSend)).toBeInTheDocument()
+    await userEvent.click(screen.getByTestId(T.reviewMore))
+    await userEvent.click(await screen.findByTestId(T.reviewClearResolved))
+    await waitFor(() => expect(clearResolved).toHaveBeenCalledWith(WT_ID))
+  })
+
+  it('Discard from the menu asks inline in the bar; a second click discards', async () => {
+    reportWidth(REVIEW_BAR_NARROW_PX - 100)
+    await mountBar()
+    await userEvent.click(await screen.findByTestId(T.reviewMore))
+    await userEvent.click(await screen.findByTestId(T.reviewDiscard))
+    expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([])
+    const confirm = await screen.findByTestId(T.reviewDiscard)
+    expect(confirm).toHaveTextContent('Discard 2 new? Click again')
+    await userEvent.click(confirm)
+    await waitFor(() => expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([{ id: 'c1' }, { id: 'c2' }]))
+  })
+
+  it('at a wide width everything stays inline', async () => {
+    reportWidth(REVIEW_BAR_NARROW_PX + 100)
+    await mountBar()
+    expect(await screen.findByTestId(T.reviewDiscard)).toBeInTheDocument()
+    expect(screen.getByTestId(T.reviewClearResolved)).toBeInTheDocument()
+    expect(screen.queryByTestId(T.reviewMore)).toBeNull()
   })
 })

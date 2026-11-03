@@ -32,6 +32,7 @@ import {
 } from './diff-options'
 import { FindBar, type FindBarHandle } from './FindBar'
 import { Placeholder } from './Placeholder'
+import { useRevealFocus } from './reveal-focus'
 
 export interface DiffViewHandle {
   nextChange(): void
@@ -228,6 +229,7 @@ export function DiffView(props: DiffViewProps) {
   const loaded = useFileContents(worktreeId, mode, file, stash)
   const scroller = useRef<HTMLDivElement>(null)
   const findBar = useRef<FindBarHandle>(null)
+  useRevealFocus(worktreeId, scroller, loaded.data !== undefined && stash === undefined)
   useImperativeHandle(ref, () => ({
     nextChange: () => jump(scroller.current, NEXT),
     prevChange: () => jump(scroller.current, PREV),

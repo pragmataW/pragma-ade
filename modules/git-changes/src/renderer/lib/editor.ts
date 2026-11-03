@@ -1,4 +1,4 @@
-import { EDITOR_OPEN_DIFF_COMMAND, FILES_TAB_ID, HEAD_REF } from '../../constants'
+import { EDITOR_OPEN_DIFF_COMMAND, EDITOR_OPEN_FILE_COMMAND, FILES_TAB_ID, HEAD_REF } from '../../constants'
 import { CHANGE_MODE, type ChangedFile, type ChangeMode } from '../../contract'
 import { getRendererCtx } from './sdk'
 
@@ -32,5 +32,17 @@ export function editorOpener(target: DiffTarget): EditorOpener | null {
       .execute(EDITOR_OPEN_DIFF_COMMAND, openDiffArgs(target, file, line))
       .then(() => ctx.panels.activateRightTab(FILES_TAB_ID))
       .catch((e: unknown) => console.warn('git-changes: open in editor failed', e))
+  }
+}
+
+/** Opens the file itself at `line` in the Files tab; null without 06's `editor.openFile`. */
+export function fileOpener(worktreeId: string): ((path: string, line?: number) => void) | null {
+  const ctx = getRendererCtx()
+  if (!ctx.commands.has(EDITOR_OPEN_FILE_COMMAND)) return null
+  return (path, line) => {
+    void ctx.commands
+      .execute(EDITOR_OPEN_FILE_COMMAND, { worktreeId, path, ...(line ? { line } : {}) })
+      .then(() => ctx.panels.activateRightTab(FILES_TAB_ID))
+      .catch((e: unknown) => console.warn('git-changes: open file failed', e))
   }
 }
