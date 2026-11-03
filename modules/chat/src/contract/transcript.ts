@@ -394,6 +394,29 @@ function applyKeyed(
   return upsert(t, { ...e, id: `${prefix}${e.toolCallId ?? seq}` } as FileEditItem | TodoListItem)
 }
 
+/** An interactive item still waiting for its answer (counted in `pendingInteractions`). */
+function isOpen(i: ChatItem): boolean {
+  if (i.kind === K.permissionRequest) return !i.outcome
+  if (i.kind === K.custom) return i.awaitsResponse && !i.resolved
+  return (i.kind === K.question || i.kind === K.planProposal) && !i.resolved
+}
+
+/** Drops the user message `fromMessageId` and everything after it (rewind), rebuilding the indexes. */
+function applyTruncate(t: ChatTranscript, fromMessageId: string): ChatTranscript {
+  const cut = t.positions[itemKey(K.message, fromMessageId)]
+  if (cut === undefined) return t
+  const items = t.items.slice(0, cut)
+  const positions: ChatTranscript['positions'] = {}
+  let children: ChatTranscript['children'] = {}
+  items.forEach((item, i) => {
+    const key = itemKey(item.kind, item.id)
+    positions[key] = i
+    children = withChild(children, parentOf(item), key)
+  })
+  const dropped = t.items.slice(cut).filter(isOpen).length
+  return { ...t, items, positions, children, pendingInteractions: Math.max(0, t.pendingInteractions - dropped) }
+}
+
 function apply(t: ChatTranscript, e: ChatEvent, seq: number, at: number): ChatTranscript {
   switch (e.kind) {
     case K.sessionInfo:
@@ -454,6 +477,8 @@ function apply(t: ChatTranscript, e: ChatEvent, seq: number, at: number): ChatTr
       const { kind: _kind, ...retry } = e
       return { ...t, retry }
     }
+    case K.transcriptTruncate:
+      return applyTruncate(t, e.fromMessageId)
     default: {
       const never: never = e
       return never
