@@ -32,14 +32,18 @@ function startBadge(ctx: GitChangesRendererContext): void {
   projects.subscribe(update)
 }
 
-/** `gitChanges.reveal {worktreeId, path}`: picks the mode that lists the file, selects it and shows the tab. */
+/**
+ * `gitChanges.reveal {worktreeId, path, line?, side?, commentId?}`: picks the mode that lists the file, selects it,
+ * shows the tab and leaves the line / thread to bring into view to the diff.
+ */
 async function reveal(ctx: GitChangesRendererContext, raw: unknown): Promise<void> {
-  const { worktreeId, path } = RevealArgsSchema.parse(raw)
+  const { worktreeId, path, line, side, commentId } = RevealArgsSchema.parse(raw)
   const list = await ctx.ipc.invoke(listChangesIpc, { worktreeId, mode: CHANGE_MODE.uncommitted }).catch(() => null)
   const files = list?.state === CHANGE_LIST_STATE.ok ? list.files : null
   // The unstaged entry wins over the staged one of the same path (it is what the disk shows).
   const entry = files?.find((f) => f.path === path && !f.staged) ?? files?.find((f) => f.path === path)
-  useGitChangesStore.getState().reveal(worktreeId, entry ? entryKey(entry) : path, files?.map(entryKey) ?? null)
+  const key = entry ? entryKey(entry) : path
+  useGitChangesStore.getState().reveal(worktreeId, key, files?.map(entryKey) ?? null, { line, side, commentId })
   ctx.panels.activateRightTab(TAB_ID)
 }
 

@@ -43,6 +43,21 @@ describe('git-changes renderer module', () => {
     )
   })
 
+  it('gitChanges.reveal takes an optional line, side and thread to focus', async () => {
+    const answer = listsAnswer({ uncommitted: changed(['b.ts']), branch: [] })
+    h = await mountPanel({ answers: { [C.list]: answer } })
+    const args = { worktreeId: WT_ID, path: 'b.ts', line: 3, side: 'new', commentId: 'c9' }
+    await h.host.commands.execute(REVEAL_COMMAND_ID, args)
+    await waitFor(() =>
+      expect(viewOf(useGitChangesStore.getState(), WT_ID).focus).toMatchObject({
+        line: 3,
+        side: 'new',
+        commentId: 'c9',
+      }),
+    )
+    await expect(h.host.commands.execute(REVEAL_COMMAND_ID, { ...args, line: 0 })).rejects.toThrow()
+  })
+
   it('gitChanges.reveal rejects a traversal path', async () => {
     h = await mountPanel()
     await expect(h.host.commands.execute(REVEAL_COMMAND_ID, { worktreeId: WT_ID, path: '../x' })).rejects.toThrow()

@@ -35,3 +35,19 @@
   --diffs-addition-color-override: var(--add-tx);
   --diffs-deletion-color-override: var(--del-tx);
 }
+
+/* gitChanges.reveal: the revealed thread card flashes in the accent (rows: DIFF_UNSAFE_CSS inside the shadow root). */
+.gc-focus-flash {
+  border-radius: var(--radius-card);
+  outline: 2px solid var(--ac);
+  outline-offset: 2px;
+  background: var(--acs);
+  transition:
+    outline-color 0.3s,
+    background-color 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-focus-flash {
+    transition: none;
+  }
+}

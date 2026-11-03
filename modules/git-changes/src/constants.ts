@@ -36,8 +36,14 @@ export const FIND_HIGHLIGHT = { all: 'gc-find', current: 'gc-find-current' } as 
 export const FIND_SCROLL_MARGIN_PX = 48
 /** Rows still changing (a re-render in progress) wait this long before matches are found again. */
 export const FIND_REFIND_DELAY_MS = 30
+/** `gitChanges.reveal` focus: the flash on the revealed card or row, and how long the diff may take to render it. */
+export const FOCUS_FLASH_CLASS = 'gc-focus-flash'
+export const FOCUS_FLASH_MS = 1_200
+export const FOCUS_RETRY_MS = 100
+export const FOCUS_TIMEOUT_MS = 3_000
 export const DIFF_UNSAFE_CSS =
   '[data-line-annotation][data-selected-line],[data-gutter-buffer=annotation][data-selected-line]{--diffs-line-bg:var(--diffs-annotation-bg)}' +
+  '[data-line].gc-focus-flash{--diffs-line-bg:color-mix(in srgb,var(--ac) 22%,var(--diffs-bg));transition:background-color .3s}' +
   '::highlight(gc-find){background-color:color-mix(in srgb,var(--warn) 35%,transparent)}' +
   '::highlight(gc-find-current){background-color:color-mix(in srgb,var(--warn) 80%,transparent);color:var(--bg)}'
 

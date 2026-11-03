@@ -1,6 +1,6 @@
 import type { CommentContext } from '@pragma/module-comments/contract'
 import { create } from 'zustand'
-import { CHANGE_MODE, type ChangedFile, type ChangeMode } from '../contract'
+import { CHANGE_MODE, type ChangedFile, type ChangeMode, type RevealArgs } from '../contract'
 import { entryKey } from './tree/build-tree'
 
 /** What the panel shows for one worktree. */
@@ -17,7 +17,12 @@ export interface WorktreeView {
   stashFile: StashFile | null
   /** The changed-files filter query (kept while the app runs). */
   filter: string
+  /** What `gitChanges.reveal` asked to bring into view; cleared once shown (or given up). */
+  focus: RevealFocus | null
 }
+
+/** A thread card or a line to scroll into view; `seq` tells two reveals of the same target apart. */
+export type RevealFocus = Pick<RevealArgs, 'line' | 'side' | 'commentId'> & { seq: number }
 
 /** A stash (by commit sha) and one of its files (`scm.stashFiles`). */
 export interface StashFile {
@@ -33,6 +38,7 @@ const INITIAL_VIEW: WorktreeView = {
   editingId: null,
   stashFile: null,
   filter: '',
+  focus: null,
 }
 
 /** Closes both inline boxes (new comment and edit) when the diff shows something else. */
@@ -67,7 +73,13 @@ export interface GitChangesState {
   /** `files` in display order. */
   reconcile(worktreeId: string, files: readonly ChangedFile[]): void
   /** `key`: the entry to select (`entryKey`); `uncommittedKeys`: the uncommitted list's keys, null when unknown. */
-  reveal(worktreeId: string, key: string, uncommittedKeys: readonly string[] | null): void
+  reveal(
+    worktreeId: string,
+    key: string,
+    uncommittedKeys: readonly string[] | null,
+    focus?: Omit<RevealFocus, 'seq'>,
+  ): void
+  clearFocus(worktreeId: string): void
   /** Shows a stash's file in the diff pane (null: back to the selected entry). */
   showStashFile(worktreeId: string, stashFile: StashFile | null): void
   setFilter(worktreeId: string, filter: string): void
@@ -80,6 +92,10 @@ export interface GitChangesState {
 
 export const viewOf = (s: Pick<GitChangesState, 'views'>, worktreeId: string): WorktreeView =>
   s.views[worktreeId] ?? INITIAL_VIEW
+
+let focusSeq = 0
+const hasTarget = (f: Omit<RevealFocus, 'seq'> | undefined): f is Omit<RevealFocus, 'seq'> =>
+  f?.commentId !== undefined || f?.line !== undefined
 
 export const useGitChangesStore = create<GitChangesState>()((set) => {
   const patch = (worktreeId: string, fn: (v: WorktreeView) => Partial<WorktreeView>) =>
@@ -105,13 +121,15 @@ export const useGitChangesStore = create<GitChangesState>()((set) => {
         const order = files.map(entryKey)
         return { selectedPath, order, ...(selectedPath === v.selectedPath ? {} : NO_COMPOSER) }
       }),
-    reveal: (id, key, uncommittedKeys) =>
+    reveal: (id, key, uncommittedKeys, focus) =>
       patch(id, (v) => ({
         mode: revealMode(key, uncommittedKeys, v.mode),
         selectedPath: key,
         order: [],
+        focus: hasTarget(focus) ? { ...focus, seq: ++focusSeq } : null,
         ...NO_COMPOSER,
       })),
+    clearFocus: (id) => patch(id, (v) => (v.focus === null ? {} : { focus: null })),
     openComposer: (id, context) => patch(id, () => ({ composer: context, editingId: null })),
     closeComposer: (id) => patch(id, () => ({ composer: null })),
     editComment: (id, commentId) =>

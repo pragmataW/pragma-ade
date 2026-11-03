@@ -67,7 +67,17 @@ export const changesChangedEvent = defineIpcEvent({
 /** `gitChanges.toggleFileList` (renderer): collapses / expands the changed-files list. */
 export const TOGGLE_FILE_LIST_COMMAND_ID = 'gitChanges.toggleFileList'
 
-/** `gitChanges.reveal {worktreeId, path}` (renderer): shows the file in the Git Changes tab. */
+/**
+ * `gitChanges.reveal {worktreeId, path, line?, side?, commentId?}` (renderer): shows the file in the Git Changes tab;
+ * with `commentId` scrolls that thread's card into view, else with `line` (on `side`, default new) that row.
+ */
 export const REVEAL_COMMAND_ID = 'gitChanges.reveal'
-export const RevealArgsSchema = z.object({ worktreeId: z.string().min(1), path: RepoPathSchema })
+export const REVEAL_SIDES = ['old', 'new'] as const
+export const RevealArgsSchema = z.object({
+  worktreeId: z.string().min(1),
+  path: RepoPathSchema,
+  line: z.number().int().min(1).optional(),
+  side: z.enum(REVEAL_SIDES).optional(),
+  commentId: z.string().min(1).optional(),
+})
 export type RevealArgs = z.infer<typeof RevealArgsSchema>
