@@ -11,8 +11,10 @@ import { ProjectsServiceToken } from '@pragma/module-projects/contract'
 import type { NotificationInput, ServiceToken } from '@pragma/sdk'
 import type { MainContext } from '@pragma/sdk/main'
 import { afterEach } from 'vitest'
+import { ASK_CAPABILITY } from '../../src/constants'
 import { CLI_INTEGRATION_SETTINGS_DEFAULTS, type CliIntegrationSettings } from '../../src/contract'
 import mainModule from '../../src/main'
+import type { AskProvider } from '../../src/main/ask/run-ask'
 import type { SkillProvider } from '../../src/main/skills-installer'
 import { fakeAgents, fakeBoard, fakeComments, fakeProjects } from './fakes'
 
@@ -27,7 +29,12 @@ afterEach(async () => {
  * server, temp userData and temp HOME. `without` leaves optional modules out.
  */
 export async function activateModule(
-  o: { without?: ('board' | 'comments')[]; shellPath?: string; skillProviders?: SkillProvider[] } = {},
+  o: {
+    without?: ('board' | 'comments')[]
+    shellPath?: string
+    skillProviders?: SkillProvider[]
+    askProviders?: AskProvider[]
+  } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), 'pragma-cli-module-'))
   const userData = join(root, 'user-data')
@@ -42,6 +49,12 @@ export async function activateModule(
   if (!o.without?.includes('board')) services.push([BoardServiceToken, fakeBoard()])
   if (!o.without?.includes('comments')) services.push([CommentsServiceToken, fakeComments()])
   const skillProviders = o.skillProviders ?? []
+  const askProviders = o.askProviders ?? []
+  /** Only `ask` and `skills` are faked; every other capability is answered as `skills`. */
+  const withCap = (cap: string) =>
+    cap === ASK_CAPABILITY
+      ? askProviders.map((p) => ({ ...p, impl: p.ask as unknown }))
+      : skillProviders.map((p) => ({ ...p, impl: p.skills as unknown }))
   const fake = fakeMainCtx<CliIntegrationSettings>({ settings: CLI_INTEGRATION_SETTINGS_DEFAULTS, services })
   let settings = { ...CLI_INTEGRATION_SETTINGS_DEFAULTS }
   const notifications: NotificationInput[] = []
@@ -63,8 +76,8 @@ export async function activateModule(
     i18n: { t: (key: string) => key },
     testMode: true,
     providers: {
-      providersWith: () => skillProviders,
-      capability: (id: string) => skillProviders.find((p) => p.id === id)?.skills,
+      providersWith: withCap,
+      capability: (id: string, cap: string) => withCap(cap).find((p) => p.id === id)?.impl,
       list: () => skillProviders,
       get: (id: string) => skillProviders.find((p) => p.id === id),
     },

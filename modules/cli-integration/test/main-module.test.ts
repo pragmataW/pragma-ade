@@ -1,10 +1,12 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { makeLaunchContext } from '@pragma/module-agents/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LAUNCH_DECORATOR_ID } from '../src/constants'
-import { cliIntegrationIpc } from '../src/contract'
+import { type AskCapability, cliIntegrationIpc } from '../src/contract'
+import { FAKE_ASK_ENV, type FakeAskRecord, writeFakeAskBin } from '../testing'
+import { aWorktree } from './support/fakes'
 import { activateModule } from './support/module-ctx'
 import { makeSkillsFixture } from './support/skills'
 
@@ -12,12 +14,12 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-/** Activates the module and posts one bridge message to it. */
-async function postCli(type: string, payload: unknown): Promise<Response> {
-  const m = await activateModule()
-  return fetch(`${m.bridge.url}/hook`, {
+/** Posts one bridge message to the module (`m`, else a freshly activated one). */
+async function postCli(type: string, payload: unknown, m?: Awaited<ReturnType<typeof activateModule>>) {
+  const { bridge } = m ?? (await activateModule())
+  return fetch(`${bridge.url}/hook`, {
     method: 'POST',
-    headers: { authorization: `Bearer ${m.bridge.token}`, 'content-type': 'application/json' },
+    headers: { authorization: `Bearer ${bridge.token}`, 'content-type': 'application/json' },
     body: JSON.stringify({ type, payload }),
   })
 }
@@ -47,6 +49,34 @@ describe('cli-integration main module', () => {
     const res = await postCli('cli.askWait', { context: { cwd: '/' }, askId: 'gone' })
     expect(await res.json()).toMatchObject({ payload: { ok: false, error: { code: 'not_found' } } })
   })
+
+  it.skipIf(process.platform === 'win32')(
+    "serves cli.ask: the provider's ask capability answers, run in the caller's worktree",
+    async () => {
+      let bin = ''
+      const record = () => join(dirname(bin), 'record.json')
+      const ask: AskCapability = {
+        buildAsk: async (q) => ({
+          command: bin,
+          args: [],
+          env: { PATH: process.env.PATH ?? '', [FAKE_ASK_ENV.stdout]: '42', [FAKE_ASK_ENV.record]: record() },
+          stdin: q.prompt,
+        }),
+        parseAnswer: (out) => (out.exitCode === 0 ? { ok: true, text: out.stdout } : { ok: false, message: 'x' }),
+      }
+      const m = await activateModule({ askProviders: [{ id: 'prov', ask }] })
+      const wt = realpathSync(m.root)
+      bin = await writeFakeAskBin(wt)
+      m.projects.state.worktrees = [aWorktree('w1', { path: wt })]
+      const res = await postCli('cli.ask', { context: { cwd: '/', worktreeId: 'w1' }, to: 'claude', prompt: 'q?' }, m)
+      expect(await res.json()).toMatchObject({
+        payload: { ok: true, result: { status: 'answered', text: '42', profile: { id: 'claude' } } },
+      })
+      const rec = JSON.parse(readFileSync(record(), 'utf8')) as FakeAskRecord
+      expect(rec.cwd).toBe(wt)
+      expect(rec.stdin).toContain('<question>\nq?\n</question>')
+    },
+  )
 
   it('deactivate unregisters the decorator', async () => {
     const m = await activateModule()
