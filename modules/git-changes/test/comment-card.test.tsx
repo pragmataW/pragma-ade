@@ -1,10 +1,13 @@
 import {
+  COMMENTS_CHANNELS,
   COMPOSER_RESULT,
   type Comment,
   type CommentComposerProps,
   type ComposerResult,
+  commentsIpc,
 } from '@pragma/module-comments/contract'
-import { act, screen } from '@testing-library/react'
+import type { IpcContract } from '@pragma/sdk'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GitChangesTestIds as T } from '../src/contract'
@@ -40,12 +43,14 @@ function RecordingComposer(props: CommentComposerProps) {
   return <div data-testid={COMPOSER_ID} />
 }
 
-async function mountCard() {
+async function mountCard(remove: () => unknown = () => undefined) {
   lastProps = undefined
   const openDrawer = vi.fn()
   h = await mountPanel({
     render: <CommentCard comment={draft} />,
     ui: { CommentComposer: RecordingComposer, openDrawer },
+    commentContracts: [commentsIpc.remove] as IpcContract<unknown, unknown>[],
+    answers: { [COMMENTS_CHANNELS.remove]: remove },
   })
   return openDrawer
 }
@@ -87,5 +92,36 @@ describe('CommentCard Edit', () => {
     expect(viewOf(useGitChangesStore.getState(), WT_ID)).toMatchObject({ composer: null, editingId: 'c1' })
     act(() => s.openComposer(WT_ID, { source: 'diff', filePath: 'src/app.ts', lineStart: 1 }))
     expect(viewOf(useGitChangesStore.getState(), WT_ID).editingId).toBeNull()
+  })
+})
+
+describe('CommentCard Delete', () => {
+  const removes = () => h?.callsOn(COMMENTS_CHANNELS.remove)
+
+  it('the trash button asks inline first; Delete removes only this comment through 05, never the drawer', async () => {
+    const openDrawer = await mountCard()
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete comment' }))
+    expect(removes()).toEqual([])
+    expect(screen.getByTestId(T.commentCard)).toHaveTextContent('Delete this comment?')
+    await userEvent.click(screen.getByTestId(T.commentDeleteConfirm))
+    await waitFor(() => expect(removes()).toEqual([{ id: 'c1' }]))
+    expect(openDrawer).not.toHaveBeenCalled()
+  })
+
+  it('Cancel leaves the comment alone and brings back Edit', async () => {
+    await mountCard()
+    await userEvent.click(await screen.findByTestId(T.commentDelete))
+    await userEvent.click(screen.getByTestId(T.commentDeleteCancel))
+    expect(removes()).toEqual([])
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  })
+
+  it('a failed delete shows an error on the card', async () => {
+    await mountCard(() => {
+      throw new Error('db locked')
+    })
+    await userEvent.click(await screen.findByTestId(T.commentDelete))
+    await userEvent.click(screen.getByTestId(T.commentDeleteConfirm))
+    expect(await screen.findByRole('alert')).toHaveTextContent('The comment could not be deleted')
   })
 })
