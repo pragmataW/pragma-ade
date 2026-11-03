@@ -212,3 +212,11 @@ export function describeClaudeOptions(
     permissionDescriptor(models, state),
   ].filter((d): d is ChatOptionDescriptor => d !== undefined)
 }
+
+/**
+ * `defaultOptions`: what a fresh start of `profile` describes without a CLI to ask (no model list yet), i.e. the
+ * permission picker in the mode the profile's args start in.
+ */
+export function defaultClaudeOptions(profile: ChatSessionContext['profile']): ChatOptionDescriptor[] {
+  return [permissionDescriptor([], initialOptionState({ profile }))]
+}

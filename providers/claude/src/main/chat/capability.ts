@@ -1,6 +1,7 @@
 import { ATTACHMENT_KINDS, type ChatCapability, EVENT_KIND } from '@pragma/module-chat/contract'
 import type { CapabilityContext } from '@pragma/sdk'
 import { loadClaudeHistory } from './history'
+import { defaultClaudeOptions } from './options'
 import { ClaudeChatSession, type ClaudeSessionDeps } from './session'
 import { checkClaudeSupport } from './support'
 
@@ -16,6 +17,7 @@ export function createClaudeChatCapability(
     // messages sent mid-turn go straight to the CLI, which folds them into the running turn itself
     midTurnInput: true,
     checkSupport: (profile) => checkClaudeSupport(profile, (cmd) => capCtx.resolveCommand(cmd)),
+    defaultOptions: defaultClaudeOptions,
     async createSession(ctx) {
       let session: ClaudeChatSession | undefined
       const emit: typeof ctx.emit = (e) => {

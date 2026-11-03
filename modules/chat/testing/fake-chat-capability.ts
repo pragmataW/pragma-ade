@@ -111,6 +111,8 @@ export interface FakeChatCapabilityOptions {
   /** `loadHistory` rejects with it. */
   historyError?: Error
   options?: ChatOptionDescriptor[]
+  /** `defaultOptions` (the toolbar of a dormant session with no saved options). */
+  defaultOptions?: ChatOptionDescriptor[]
   /** `respond` is defined (interactive custom events). */
   interactive?: boolean
   /** Optional action methods the sessions implement. */
@@ -126,6 +128,7 @@ export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
   const capability: ChatCapability = {
     ...(opts.attachmentKinds ? { attachmentKinds: opts.attachmentKinds } : {}),
     ...(opts.midTurnInput ? { midTurnInput: true } : {}),
+    ...(opts.defaultOptions ? { defaultOptions: () => opts.defaultOptions ?? [] } : {}),
     async checkSupport(profile) {
       supportChecks.push(profile)
       return opts.support ?? { ok: true }

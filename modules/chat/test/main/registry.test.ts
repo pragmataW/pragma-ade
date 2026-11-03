@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type ChatEvent, withCurrent } from '../../src/contract'
+import { type ChatEvent, type ChatOptionDescriptor, withCurrent } from '../../src/contract'
 import { FAKE_OPTIONS } from '../../testing'
 import { harness } from './harness'
 
@@ -37,6 +37,47 @@ describe('ChatSessionRegistry', () => {
     await dormant.setOption('fakeMode', 'a')
     await dormant.attach(h.request({ resume: { externalSessionId: 'fake-ext-1' } }))
     expect(h.fake.lastSession().createdWith.initialOptions).toEqual({ fakeMode: 'a' })
+  })
+
+  describe('a dormant session without saved options (created before the options store)', () => {
+    const permission: ChatOptionDescriptor = {
+      key: 'permissionMode',
+      type: 'enum',
+      labelKey: 'chat:option.permissionMode',
+      values: [
+        { value: 'default', label: 'Ask' },
+        { value: 'plan', label: 'Plan' },
+      ],
+      default: 'default',
+      current: 'plan',
+    }
+
+    it("shows the provider's static default options, and a choice made before the start is applied", async () => {
+      const h = harness({ history, defaultOptions: [permission] })
+      h.agents.sessions.set('s1', { ...h.session, status: 'exited', externalSessionId: 'ext-1' })
+      const dormant = await h.registry().open('s1')
+      expect(dormant.snapshot().transcript.info.options).toEqual([permission])
+      await dormant.setOption('permissionMode', 'default')
+      await dormant.attach(h.request({ resume: { externalSessionId: 'ext-1' } }))
+      expect(h.fake.lastSession().createdWith.initialOptions).toEqual({ permissionMode: 'default' })
+    })
+
+    it("shows the profile's last-known options, with the values a fresh start would use", async () => {
+      const h = harness({ history, options: [...FAKE_OPTIONS, permission], defaultOptions: [permission] })
+      const live = h.registry().attach(h.request())
+      await live.whenAttached()
+      await live.setOption('fakeMode', 'b')
+      await live.setOption('permissionMode', 'default')
+      h.agents.sessions.set('s2', { ...h.session, id: 's2', status: 'exited', externalSessionId: 'ext-2' })
+      const { transcript } = (await h.registry().open('s2')).snapshot()
+      expect(transcript.info.options).toEqual([...FAKE_OPTIONS, permission])
+    })
+
+    it('without static defaults or last-known options the toolbar stays empty', async () => {
+      const h = harness({ history })
+      h.agents.sessions.set('s1', { ...h.session, status: 'exited', externalSessionId: 'ext-1' })
+      expect((await h.registry().open('s1')).snapshot().transcript.info.options).toEqual([])
+    })
   })
 
   it('a failed history load still opens the session, with its options and a non-fatal notice', async () => {

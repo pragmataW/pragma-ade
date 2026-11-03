@@ -1,4 +1,5 @@
 import {
+  type AgentProfile,
   type AgentSession,
   isRunningStatus,
   type ModeStartRequest,
@@ -7,10 +8,22 @@ import {
   type StopSignal,
 } from '@pragma/module-agents/contract'
 import { HISTORY_LOAD_FAILED_KEY } from '../constants'
-import { type ChatEvent, ERROR_CODE, EVENT_KIND as K } from '../contract'
+import {
+  type ChatCapability,
+  type ChatEvent,
+  type ChatOptionDescriptor,
+  ERROR_CODE,
+  EVENT_KIND as K,
+} from '../contract'
 import { ChatSessionController, type ChatSnapshot, type ControllerDeps } from './controller'
+import { fallbackOptions } from './session-options-store'
 
 export type RegistryDeps = Omit<ControllerDeps, 'sessionId'>
+
+interface HistorySource {
+  profile: AgentProfile
+  capability: ChatCapability | undefined
+}
 
 export class UnknownChatSessionError extends Error {}
 
@@ -39,7 +52,8 @@ export class ChatSessionRegistry {
     if (existing) return existing
     const session = await this.#d.agents.getSession(id)
     if (!session) throw new UnknownChatSessionError(`unknown chat session ${id}`)
-    const history = await this.#history(session)
+    const source = await this.#source(session)
+    const history = await this.#history(session, source)
     const again = this.#controllers.get(id)
     if (again) return again
     const c = this.#create(id)
@@ -47,19 +61,28 @@ export class ChatSessionRegistry {
     c.initDormant(history, status, {
       providerId: session.providerId,
       ...(session.externalSessionId ? { externalSessionId: session.externalSessionId } : {}),
+      ...(source ? { profileId: source.profile.id, fallbackOptions: this.#fallbackOptions(source) } : {}),
     })
     return c
   }
 
-  async #history(session: AgentSession): Promise<ChatEvent[]> {
-    if (!session.externalSessionId || !session.profileId) return []
-    const profile = await this.#d.agents.getProfile(session.profileId)
-    const capability = profile ? this.#d.resolveCapability(profile) : undefined
+  async #source(session: AgentSession): Promise<HistorySource | undefined> {
+    const profile = session.profileId ? await this.#d.agents.getProfile(session.profileId) : undefined
+    return profile ? { profile, capability: this.#d.resolveCapability(profile) } : undefined
+  }
+
+  /** The profile's last-known options, else (or completed by) the provider's static defaults. */
+  #fallbackOptions({ profile, capability }: HistorySource): ChatOptionDescriptor[] {
+    return fallbackOptions(this.#d.optionsStore?.latest(profile.id), capability?.defaultOptions?.(profile))
+  }
+
+  async #history(session: AgentSession, source: HistorySource | undefined): Promise<ChatEvent[]> {
+    if (!session.externalSessionId || !source?.capability?.loadHistory) return []
     const worktreePath = await this.#d.agents.getWorktreePath(session.worktreeId)
-    if (!profile || !capability?.loadHistory || !worktreePath) return []
+    if (!worktreePath) return []
     try {
-      return await capability.loadHistory({
-        profile,
+      return await source.capability.loadHistory({
+        profile: source.profile,
         worktreePath,
         env: {},
         externalSessionId: session.externalSessionId,
