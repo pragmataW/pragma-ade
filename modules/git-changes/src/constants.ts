@@ -84,7 +84,14 @@ export const TREE_ICON_PX = 14
 export const ROW_ACTION_ICON_PX = 13
 export const DIFF_ICON_PX = 14
 export const FILTER_ICON_PX = 12
-export const EMPTY_ICON_PX = 18
+/** Lucide icons of the panel's empty, loading and failed states. */
+export const EMPTY_ICONS = {
+  noWorktree: 'folder-git-2',
+  loading: 'loader-circle',
+  failed: 'triangle-alert',
+  noChanges: 'git-compare',
+  noMatches: 'search-x',
+} as const
 /**
  * File filter (fuzzy path match): points per matched character, bonuses for a match at a word start (`/ - _ .`,
  * camelCase), inside the basename, at the basename's start and right after the previous match; a gap costs `gap`.
