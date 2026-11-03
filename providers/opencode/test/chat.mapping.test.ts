@@ -89,6 +89,22 @@ describe('prompt input', () => {
     expect(text.slice(4, 13)).toBe('@src/a.ts')
   })
 
+  it('toPrompt: PDF and text documents go inline after the images', () => {
+    const p = toPrompt(
+      {
+        text: 'read these',
+        images: [],
+        files: [
+          { name: 'spec.pdf', mediaType: 'application/pdf', dataBase64: 'UERG' },
+          { name: 'notes.md', mediaType: 'text/markdown', dataBase64: 'IyBh' },
+        ],
+      },
+      '/w',
+      exists,
+    )
+    expect(p.files?.map((f) => f.uri)).toEqual(['data:application/pdf;base64,UERG', 'data:text/markdown;base64,IyBh'])
+  })
+
   it('toPrompt omits files when there are none', () => {
     expect(toPrompt({ text: 'hi', images: [] }, '/w', exists)).toEqual({ text: 'hi' })
   })
@@ -118,14 +134,29 @@ describe('prompt input', () => {
 
 describe('options', () => {
   it('descriptors: model sorted, primary visible agents, effort only with variants', () => {
-    const [model, agent, effort] = buildOptionDescriptors(catalog, {})
+    const [, model, agent, effort] = buildOptionDescriptors(catalog, {})
     expect(model).toMatchObject({ key: 'model', default: 'fakeprov/fake-model', current: 'fakeprov/fake-model' })
     expect(model?.values?.map((v) => v.label)).toEqual(['Fake Model', 'Fake Small'])
     expect(agent).toMatchObject({ key: 'agent', labelKey: 'opencode:chat.option.agent', default: 'build' })
     expect(agent?.values?.map((v) => v.value)).toEqual(['build', 'plan'])
     expect(effort?.values?.map((v) => v.value)).toEqual([null, 'high', 'low'])
     const small = buildOptionDescriptors(catalog, { model: 'fakeprov/fake-small' })
-    expect(small.map((d) => d.key)).toEqual(['model', 'agent'])
+    expect(small.map((d) => d.key)).toEqual(['permissionMode', 'model', 'agent'])
+  })
+
+  it('permission mode: ask (default) or auto-approve (dangerous, asks to confirm, excluded from nothing)', () => {
+    const [permission] = buildOptionDescriptors(catalog, {})
+    expect(permission).toMatchObject({ key: 'permissionMode', default: 'ask', current: 'ask' })
+    expect(permission?.values?.map((v) => [v.value, v.tone, Boolean(v.requiresConfirm), Boolean(v.dangerous)])).toEqual(
+      [
+        ['ask', 'info', false, false],
+        ['auto', 'warn', true, true],
+      ],
+    )
+    const d = buildOptionDescriptors(catalog, {})
+    expect(applyOption({}, 'permissionMode', 'auto', d)).toEqual({ permissionMode: 'auto' })
+    expect(buildOptionDescriptors(catalog, { permissionMode: 'auto' })[0]?.current).toBe('auto')
+    expect(() => applyOption({}, 'permissionMode', 'yolo', d)).toThrow('invalid option permissionMode')
   })
 
   it('applyOption validates and model change clears effort', () => {

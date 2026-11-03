@@ -6,9 +6,13 @@ import type { WireClient } from './client'
 export type HubEvent = Exclude<V2Event, { type: typeof OTHER_EVENT }>
 type Listener = (e: HubEvent) => void
 
-/** The session an event belongs to (`data.sessionID`, or the form's for `form.created`). */
+/**
+ * The session an event is routed to: `data.sessionID`, the form's for `form.created`, and the parent's for a child
+ * `session.created` (the parent tracks its subagents). Undefined = a server-wide event (models, providers, MCP).
+ */
 export function sessionOf(e: HubEvent): string | undefined {
-  const data = e.data as { sessionID?: string; form?: { sessionID?: string } }
+  const data = e.data as { sessionID?: string; parentID?: string; form?: { sessionID?: string } }
+  if (e.type === EV.sessionCreated) return data.parentID
   return data.sessionID ?? data.form?.sessionID
 }
 
@@ -22,6 +26,7 @@ export class EventHub {
   readonly #log: Pick<Logger, 'warn'>
   readonly #listeners = new Map<string, Set<Listener>>()
   readonly #reconnectCbs = new Set<() => void>()
+  readonly #globalCbs = new Set<Listener>()
   readonly #ac = new AbortController()
   #connections = 0
   #closed = false
@@ -55,6 +60,12 @@ export class EventHub {
     }
   }
 
+  /** Server-wide events (no session): model, provider, credential and MCP changes. */
+  onGlobal(cb: Listener): () => void {
+    this.#globalCbs.add(cb)
+    return () => this.#globalCbs.delete(cb)
+  }
+
   onReconnect(cb: () => void): () => void {
     this.#reconnectCbs.add(cb)
     return () => this.#reconnectCbs.delete(cb)
@@ -85,6 +96,7 @@ export class EventHub {
       return
     }
     const sid = sessionOf(e)
+    if (sid === undefined && e.type !== EV.sessionCreated) for (const cb of this.#globalCbs) cb(e)
     for (const cb of (sid && this.#listeners.get(sid)) || []) cb(e)
   }
 

@@ -1,8 +1,5 @@
 {
   "chatUi": {
-    "retry": {
-      "title": "Retrying (attempt {{attempt}})"
-    },
     "form": {
       "submit": "Send answer",
       "cancel": "Skip",
@@ -10,6 +7,59 @@
       "cancelled": "Skipped",
       "custom": "Other…",
       "required": "Required"
+    },
+    "notice": {
+      "reverted": "Rewound",
+      "files_one": "restored {{count}} file: {{files}}",
+      "files_other": "restored {{count}} files: {{files}}",
+      "files_zero": "conversation only, no file changes",
+      "forked": "Continuing in a copy",
+      "forkedFrom": "the original conversation ({{id}}) is unchanged"
+    },
+    "model": {
+      "search": "Search models…",
+      "empty": "No model matches",
+      "other": "Other",
+      "none": "Choose a model",
+      "manage": "Connect providers…"
+    },
+    "message": {
+      "rewind": "Rewind to before this message",
+      "rewindTitle": "Rewind the conversation?",
+      "rewindMessage": "This message and everything after it are removed, and the files OpenCode changed since are restored.",
+      "rewindConfirm": "Rewind",
+      "fork": "Continue in a copy from here"
+    },
+    "error": {
+      "reauthHint": "The provider rejected its saved credential. Reconnect it, or pick another model.",
+      "reauthAction": "Reconnect…"
+    },
+    "connections": {
+      "title": "OpenCode",
+      "heading": "Model providers",
+      "intro": "Connect the providers OpenCode may use. Models of connected providers (and OpenCode's free models) appear in the chat model menu.",
+      "search": "Search providers",
+      "loading": "Loading providers…",
+      "loadFailed": "Could not load the providers: {{message}}",
+      "connected": "Connected",
+      "available": "Available",
+      "more": "{{count}} more providers: search to find them",
+      "notConnected": "Not connected",
+      "free": "Free models",
+      "env": "Env {{name}}",
+      "remove": "Remove {{label}}",
+      "keyLabel": "API key",
+      "keyPlaceholder": "{{name}} API key",
+      "save": "Save key",
+      "cancel": "Cancel",
+      "oauthOpen": "Open sign-in page",
+      "oauthWaiting": "Finish signing in in your browser…",
+      "oauthCode": "Paste the code",
+      "oauthComplete": "Connect",
+      "oauthFailed": "Sign-in did not complete",
+      "notice": {
+        "keyOnly": "API key only: Claude Pro/Max subscriptions are not allowed in third-party apps."
+      }
     }
   }
 }

@@ -5,7 +5,18 @@ type FullClient = ReturnType<typeof OpenCode.make>
 /** The only namespaces the adapter may use (stable 2.x API; `experimental.*` is never touched). */
 export type WireClient = Pick<
   FullClient,
-  'server' | 'session' | 'message' | 'model' | 'agent' | 'command' | 'permission' | 'event'
+  | 'server'
+  | 'session'
+  | 'message'
+  | 'model'
+  | 'agent'
+  | 'command'
+  | 'permission'
+  | 'event'
+  | 'provider'
+  | 'integration'
+  | 'credential'
+  | 'mcp'
 >
 
 /** A 2.x client bound to one server and one location (the worktree, sent as `x-opencode-directory`). */
@@ -23,5 +34,9 @@ export function createWireClient(server: { url: string; authHeader: string }, di
     command: c.command,
     permission: c.permission,
     event: c.event,
+    provider: c.provider,
+    integration: c.integration,
+    credential: c.credential,
+    mcp: c.mcp,
   }
 }

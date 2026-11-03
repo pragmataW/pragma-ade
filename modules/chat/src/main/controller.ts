@@ -335,7 +335,7 @@ export class ChatSessionController {
     })
     if (!midTurn) this.#emit({ kind: K.turnStart, turnId: randomUUID() })
     try {
-      await handle.send({ ...accepted, messageId })
+      await handle.send({ ...accepted, messageId }, { messageId })
     } catch (e) {
       this.#emit({ kind: K.error, code: ERROR_CODE.unknown, message: String(e), fatal: false })
       if (!midTurn) this.#emit({ kind: K.turnEnd, reason: TURN_END_REASON.error })

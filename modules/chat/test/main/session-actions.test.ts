@@ -61,6 +61,7 @@ describe('session actions', () => {
       search: async () => [],
       checkSupport: async () => ({ ok: true }),
       takeInbox: () => [],
+      capability: () => undefined,
     })
     await ipc.invoke(chatIpc.action, { sessionId: h.session.id, action: { action: 'stopTask', taskId: 't9' } })
     expect(h.fake.lastSession().actionCalls).toEqual([['stopTask', 't9']])

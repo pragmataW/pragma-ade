@@ -3,7 +3,16 @@ import { join } from 'node:path'
 
 export const FAKE_DIR = import.meta.dirname
 export const BIN = join(FAKE_DIR, 'bin.mjs')
-export const SCENARIOS = ['basic', 'form-retry', 'long-turn'] as const
+export const SCENARIOS = [
+  'basic',
+  'form-retry',
+  'long-turn',
+  'subagent',
+  'auth-error',
+  'revert',
+  'mcp',
+  'provider-connect',
+] as const
 export type ScenarioName = (typeof SCENARIOS)[number]
 export const scenarioPath = (name: ScenarioName): string => join(FAKE_DIR, 'scenarios', `${name}.json`)
 

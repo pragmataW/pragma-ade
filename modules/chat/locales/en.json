@@ -26,7 +26,8 @@
   "errors": {
     "unsupported": "Chat mode not supported: {{reason}}",
     "respondUnsupported": "This agent cannot answer this kind of request",
-    "actionUnsupported": "This agent does not support this action"
+    "actionUnsupported": "This agent does not support this action",
+    "providerCallUnsupported": "This agent has no settings to change here"
   },
   "permissionMode": {
     "hint": "Permission mode (Shift+Tab to cycle)",

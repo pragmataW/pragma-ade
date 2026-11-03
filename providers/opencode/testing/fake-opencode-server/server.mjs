@@ -30,11 +30,15 @@ const NO_CONTENT = 204
 const BAD_REQUEST = 400
 const UNAUTHORIZED = 401
 const NOT_FOUND = 404
+const CONFLICT = 409
 const UNAVAILABLE = 503
 const SESSION_ROUTE = /^\/api\/session\/([^/]+)(?:\/(.*))?$/
 const REPLY_ROUTE = /^(permission|form)\/([^/]+)\/reply$/
 const FORM_ROUTE = /^form\/([^/]+)$/
 const TEST_ROUTE_PREFIX = '/__test/'
+const INTEGRATION_ROUTE = /^\/api\/integration\/([^/]+)\/(.+)$/
+const CREDENTIAL_ROUTE = /^\/api\/credential\/([^/]+)$/
+const MCP_ROUTE = /^\/api\/experimental\/mcp\/([^/]+)\/(connect|disconnect)$/
 const ATTACHMENT_URI = /^(file:\/\/\/|data:)/
 
 // ── process plumbing ──────────────────────────────────────────────────────
@@ -47,8 +51,16 @@ function log(record) {
   if (file) appendFileSync(file, `${JSON.stringify(record)}\n`)
 }
 
+/** A scenario file; `extends: "<name>"` inherits every top-level field it does not set. */
+function readScenarioFile(file) {
+  const scenario = JSON.parse(readFileSync(file, 'utf8'))
+  if (!scenario.extends) return scenario
+  const { extends: base, ...own } = scenario
+  return { ...readScenarioFile(join(import.meta.dirname, 'scenarios', `${base}.json`)), ...own }
+}
+
 function loadScenario() {
-  return JSON.parse(readFileSync(process.env[ENV.scenario] || DEFAULT_SCENARIO, 'utf8'))
+  return readScenarioFile(process.env[ENV.scenario] || DEFAULT_SCENARIO)
 }
 
 function versionOf(scenario) {
@@ -148,7 +160,18 @@ function createApp({ scenario, password }) {
     const frame = `data: ${JSON.stringify({ id: `evt_${++seq}`, created: Date.now(), type, data })}\n\n`
     for (const res of sse) res.write(frame)
   }
-  const ctx = { scenario, store, broadcast, runs, sse, holdSseUntil: 0 }
+  const copy = (v) => (v ? JSON.parse(JSON.stringify(v)) : undefined)
+  const ctx = {
+    scenario,
+    store,
+    broadcast,
+    runs,
+    sse,
+    holdSseUntil: 0,
+    mcp: copy(scenario.mcp),
+    integrations: copy(scenario.integrations),
+    attempts: new Map(),
+  }
   app.server = createServer((req, res) => {
     readBody(req).then((body) => {
       const url = new URL(req.url ?? '/', 'http://fake')
@@ -218,6 +241,12 @@ function route(ctx, r) {
       return send(res, OK, located(ctx.scenario.agents))
     case 'GET /api/command':
       return send(res, OK, located(ctx.scenario.commands))
+    case 'GET /api/provider':
+      return listRoute(res, ctx.scenario.providers)
+    case 'GET /api/integration':
+      return listRoute(res, ctx.integrations)
+    case 'GET /api/mcp':
+      return listRoute(res, ctx.mcp)
     case 'POST /api/session':
       return send(res, OK, { data: createSession(ctx, r.body ?? {}) })
     case 'GET /api/session/active':
@@ -226,9 +255,96 @@ function route(ctx, r) {
       return openSse(ctx, req, res)
     case 'POST /__test/drop-sse':
       return dropSse(ctx, res)
+    case 'POST /__test/broadcast':
+      if (process.env[ENV.testRoutes] !== '1') return send(res, NOT_FOUND, { error: 'not found' })
+      ctx.broadcast(r.body?.type, r.body?.data ?? {})
+      return send(res, NO_CONTENT)
     default:
+      if (MCP_ROUTE.test(path)) return mcpRoute(ctx, r)
+      if (INTEGRATION_ROUTE.test(path) || CREDENTIAL_ROUTE.test(path)) return integrationRoute(ctx, r)
       return sessionRoute(ctx, r)
   }
+}
+
+/** Adds a saved credential to an integration (then `integration.updated`, like OpenCode). */
+function removeCredential(ctx, r, id) {
+  for (const i of ctx.integrations ?? []) i.connections = i.connections.filter((c) => c.id !== id)
+  ctx.broadcast('credential.updated', {})
+  return send(r.res, NO_CONTENT)
+}
+
+/** An `auto` attempt: pending on the first poll, complete (credential saved) on the next; unknown = expired. */
+function pollAttempt(ctx, integration, attemptID) {
+  const attempt = ctx.attempts.get(attemptID)
+  if (!attempt) return 'expired'
+  attempt.polls += 1
+  if (attempt.polls < 2) return 'pending'
+  ctx.attempts.delete(attemptID)
+  addCredential(ctx, integration, 'oauth')
+  return 'complete'
+}
+
+function addCredential(ctx, integration, method) {
+  const id = newId('cred')
+  integration.connections.push({ type: 'credential', id, label: method === 'key' ? 'API key' : 'OAuth', method })
+  ctx.broadcast('integration.updated', {})
+}
+
+/**
+ * `connect/key` (`bad-key` → 400), `connect/oauth` (an `auto` attempt: pending once, then complete), its `complete` and
+ * cancel, and `DELETE /api/credential/<id>`.
+ */
+function integrationRoute(ctx, r) {
+  const credential = CREDENTIAL_ROUTE.exec(r.path)
+  if (credential && r.req.method === 'DELETE') return removeCredential(ctx, r, credential[1])
+  const [, id, rest = ''] = INTEGRATION_ROUTE.exec(r.path) ?? []
+  const integration = ctx.integrations?.find((i) => i.id === decodeURIComponent(id ?? ''))
+  if (!integration) return send(r.res, NOT_FOUND, { error: 'IntegrationNotFound' })
+  const key = `${r.req.method} ${rest.replace(/\/att_[^/]+/, '/:attempt')}`
+  switch (key) {
+    case 'POST connect/key':
+      if (r.body?.key === 'bad-key')
+        return send(r.res, BAD_REQUEST, { error: 'InvalidKey', message: 'Invalid API key' })
+      addCredential(ctx, integration, 'key')
+      return send(r.res, NO_CONTENT)
+    case 'POST connect/oauth': {
+      const attemptID = newId('att')
+      ctx.attempts.set(attemptID, { polls: 0, integration })
+      const time = { created: Date.now(), expires: Date.now() + 600_000 }
+      const data = {
+        attemptID,
+        url: 'https://example.test/device',
+        instructions: 'Enter code WXYZ-1234',
+        mode: 'auto',
+        time,
+      }
+      return send(r.res, OK, located(data))
+    }
+    case 'GET connect/oauth/:attempt':
+      return send(r.res, OK, located({ status: pollAttempt(ctx, integration, rest.split('/').at(-1)), time: {} }))
+    case 'POST connect/oauth/:attempt/complete':
+      addCredential(ctx, integration, 'oauth')
+      return send(r.res, NO_CONTENT)
+    case 'DELETE connect/oauth/:attempt':
+      return send(r.res, NO_CONTENT)
+    default:
+      return send(r.res, NOT_FOUND, { error: 'not found' })
+  }
+}
+
+/** `POST /api/experimental/mcp/<name>/connect|disconnect`: connected / disabled, then `mcp.status.changed`. */
+function mcpRoute(ctx, r) {
+  const [, name, action] = MCP_ROUTE.exec(r.path)
+  const server = ctx.mcp?.find((m) => m.name === decodeURIComponent(name))
+  if (!server) return send(r.res, NOT_FOUND, { error: 'McpNotFound' })
+  server.status = { status: action === 'connect' ? 'connected' : 'disabled' }
+  ctx.broadcast('mcp.status.changed', { server: server.name })
+  return send(r.res, NO_CONTENT)
+}
+
+/** A scenario list (`providers`, `integrations`); 404 like an older server when the scenario has none. */
+function listRoute(res, list) {
+  return list ? send(res, OK, located(list)) : send(res, NOT_FOUND, { error: 'not found' })
 }
 
 function legacyRoute(res, key) {
@@ -288,9 +404,46 @@ function sessionRoute(ctx, r) {
       return send(r.res, NO_CONTENT)
     case 'GET message':
       return send(r.res, OK, listMessages(session, r.query))
+    case 'POST revert/stage':
+      return stageRevert(ctx, r, session)
+    case 'POST revert/commit':
+      return commitRevert(ctx, r, session)
+    case 'DELETE revert':
+      session.revert = undefined
+      return send(r.res, NO_CONTENT)
+    case 'POST fork':
+      return send(r.res, OK, { data: forkSession(ctx, session, r.body?.before) })
     default:
       return interactionRoute(ctx, r, session, sub)
   }
+}
+
+const messageIndex = (session, id) => session.messages.findIndex((m) => m.id === id)
+
+/** Stages a revert to before the user message `messageID` (the scenario's `revertFiles` are "restored"). */
+function stageRevert(ctx, r, session) {
+  if (messageIndex(session, r.body?.messageID) < 0) return send(r.res, NOT_FOUND, { error: 'MessageNotFound' })
+  session.revert = { messageID: r.body.messageID, files: (ctx.scenario.revertFiles ?? []).map((file) => ({ file })) }
+  return send(r.res, OK, { data: session.revert })
+}
+
+/** Drops the staged message and everything after it. */
+function commitRevert(ctx, r, session) {
+  if (!session.revert) return send(r.res, CONFLICT, { error: 'NothingStaged' })
+  session.messages = session.messages.slice(0, messageIndex(session, session.revert.messageID))
+  session.revert = undefined
+  ctx.store.save()
+  return send(r.res, NO_CONTENT)
+}
+
+/** A copy of the session (up to before message `before`, else all of it). */
+function forkSession(ctx, session, before) {
+  const at = before ? messageIndex(session, before) : -1
+  const messages = at >= 0 ? session.messages.slice(0, at) : [...session.messages]
+  const info = { ...session.info, id: newId('ses'), fork: { sessionID: session.info.id } }
+  ctx.store.data.sessions[info.id] = { info, messages, turns: session.turns }
+  ctx.store.save()
+  return info
 }
 
 function interactionRoute(ctx, r, session, sub) {
@@ -356,7 +509,8 @@ async function runTurn(ctx, session, turn, run) {
   const assistant = { id: amid, type: 'assistant', content: [], time: { created: Date.now() } }
   const fill = (v) => JSON.parse(JSON.stringify(v).replaceAll('$SID', sid).replaceAll('$AMID', amid))
   const emit = (type, data) => {
-    record(assistant, type, data)
+    if (type === 'session.created') registerChild(ctx, data)
+    else if (data.sessionID === sid) record(assistant, type, data)
     ctx.broadcast(type, data)
   }
   emit('session.execution.started', { sessionID: sid })
@@ -375,6 +529,13 @@ async function runTurn(ctx, session, turn, run) {
     emit('session.execution.interrupted', { sessionID: sid, reason: 'user' })
   }
   finishTurn(ctx, session, assistant, outcome)
+}
+
+/** A scripted subagent's child session (so its routes, e.g. interrupt, answer). */
+function registerChild(ctx, data) {
+  const info = { id: data.sessionID, parentID: data.parentID, agent: data.agent, title: data.title ?? '', cost: 0 }
+  ctx.store.data.sessions[info.id] ??= { info, messages: [], turns: 0 }
+  ctx.store.save()
 }
 
 function finishTurn(ctx, session, assistant, outcome) {

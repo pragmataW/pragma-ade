@@ -1,0 +1,27 @@
+{
+  "extends": "basic",
+  "revertFiles": ["src/a.ts"],
+  "turns": [
+    {
+      "steps": [
+        {
+          "emit": {
+            "type": "session.step.started",
+            "data": {
+              "sessionID": "$SID",
+              "assistantMessageID": "$AMID",
+              "model": { "id": "fake-model", "providerID": "fakeprov" }
+            }
+          }
+        },
+        {
+          "emit": {
+            "type": "session.text.ended",
+            "data": { "sessionID": "$SID", "assistantMessageID": "$AMID", "ordinal": 0, "text": "Edited src/a.ts" }
+          }
+        },
+        { "emit": { "type": "session.execution.succeeded", "data": { "sessionID": "$SID" } } }
+      ]
+    }
+  ]
+}

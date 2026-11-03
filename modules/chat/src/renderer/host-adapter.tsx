@@ -4,6 +4,7 @@ import { StatusIcon } from '@pragma/module-agent-status/renderer'
 import { CoreIpc, MODULE_STATE } from '@pragma/sdk'
 import { ProviderIcon, type RendererContext, useRendererContext, useRendererHost } from '@pragma/sdk/renderer'
 import { type ComponentType, createContext, type ReactNode, useContext, useMemo } from 'react'
+import { CHAT_UI_CAPABILITY } from '../constants'
 import { type ChatHost, type ChatSettings, chatIpc, chatIpcEvents, FILE_SEARCH_LIMIT } from '../contract'
 
 function ProviderMark({ providerId, size }: { providerId: string; size?: number }) {
@@ -28,7 +29,8 @@ export function createChatHost(ctx: RendererContext<ChatSettings>, opts: { agent
     confirm: (o) => ctx.dialogs.confirm(o),
     searchFiles: (sessionId, query) => ipc.invoke(chatIpc.searchFiles, { sessionId, query, limit: FILE_SEARCH_LIMIT }),
     checkSupport: (profileId) => ipc.invoke(chatIpc.checkSupport, { profileId }),
-    chatUi: (providerId) => ctx.providers.rendererCapability(providerId, 'chatUi'),
+    providerCall: (providerId, request) => ipc.invoke(chatIpc.providerCall, { providerId, request }),
+    chatUi: (providerId) => ctx.providers.rendererCapability(providerId, CHAT_UI_CAPABILITY),
     providerName: (providerId) => {
       const key = ctx.providers.get(providerId)?.displayNameKey
       return key ? ctx.i18n.t(key) : providerId

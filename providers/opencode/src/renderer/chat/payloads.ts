@@ -5,7 +5,15 @@
  */
 import { z } from '@pragma/sdk'
 
-export const CUSTOM = { form: 'opencode.form', retry: 'opencode.retry' } as const
+export const CUSTOM = { form: 'opencode.form', notice: 'opencode.notice' } as const
+
+/** A session change shown inline: files reverted to before a message, or the chat continued in a fork. */
+export const NOTICE = { reverted: 'reverted', forked: 'forked' } as const
+export const noticePayloadSchema = z.discriminatedUnion('notice', [
+  z.object({ notice: z.literal(NOTICE.reverted), messageId: z.string(), files: z.array(z.string()) }),
+  z.object({ notice: z.literal(NOTICE.forked), from: z.string(), to: z.string() }),
+])
+export type NoticePayload = z.infer<typeof noticePayloadSchema>
 
 const FIELD_TYPES = ['string', 'number', 'integer', 'boolean', 'multiselect', 'external'] as const
 
@@ -46,6 +54,3 @@ export type FormAnswer = z.infer<typeof formAnswerSchema>
 /** What `FormCard` sends through `respond`: an answer, or a skip. */
 export const formCancelSchema = z.object({ cancel: z.literal(true) })
 export const formResponseSchema = z.union([formCancelSchema, formAnswerSchema])
-
-export const retryPayloadSchema = z.object({ attempt: z.number().int(), at: z.number(), message: z.string() })
-export type RetryPayload = z.infer<typeof retryPayloadSchema>

@@ -37,8 +37,12 @@ interface Scenario {
   turns: { steps: ScenarioStep[] }[]
 }
 
-export const readScenario = (name: ScenarioName): Scenario =>
-  JSON.parse(readFileSync(scenarioPath(name), 'utf8')) as Scenario
+/** A scenario with its `extends` base merged in (like the fake does). */
+export function readScenario(name: ScenarioName): Scenario {
+  const raw = JSON.parse(readFileSync(scenarioPath(name), 'utf8')) as Scenario & { extends?: ScenarioName }
+  const { extends: base, ...own } = raw
+  return base ? { ...readScenario(base), ...own } : own
+}
 
 const fill = (v: unknown): unknown =>
   JSON.parse(JSON.stringify(v).replaceAll('$SID', FAKE_SID).replaceAll('$AMID', FAKE_AMID))
@@ -393,4 +397,9 @@ export const fakeUrl = (log: string): string | undefined =>
 /** Drops the fake's SSE streams and refuses reconnects for `holdMs` (events in between are lost). */
 export async function dropSse(log: string, holdMs = 0): Promise<void> {
   await fetch(`${fakeUrl(log)}/__test/drop-sse?holdMs=${holdMs}`, { method: 'POST' })
+}
+
+/** Makes the fake broadcast one SSE event (needs `testRoutes: true`). */
+export async function broadcast(log: string, type: string, data: Record<string, unknown> = {}): Promise<void> {
+  await fetch(`${fakeUrl(log)}/__test/broadcast`, { method: 'POST', body: JSON.stringify({ type, data }) })
 }

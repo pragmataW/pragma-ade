@@ -3,6 +3,7 @@ import {
   type ChatEvent,
   ERROR_CODE,
   EVENT_KIND as K,
+  RATE_LIMIT_STATUS,
   RESPONSE_OUTCOME,
   TEXT_MODE,
   TODO_STATUS,
@@ -11,6 +12,7 @@ import {
 } from '@pragma/module-chat/contract'
 import { CUSTOM } from '../../../renderer/chat/payloads'
 import {
+  AUTH_ERROR_RE,
   CONTENT_TYPES,
   ERROR_TYPE_HINTS,
   EV,
@@ -80,10 +82,10 @@ export function settleTool(t: SettledTool): ChatEvent[] {
   return [result, ...edits, ...todo]
 }
 
-/** `auth` for 401/403 or an Auth* type, `rate_limit` for 429 or a RateLimit* type, else `turn_failed`. */
+/** `auth` for 401/403 or an auth-like type (`provider.auth`, `api_key_expired`), `rate_limit` for 429 or a RateLimit* type, else `turn_failed`. */
 export function errorCodeOf(e: StructuredError): ChatErrorCode {
   if (e.status === HTTP_STATUS.unauthorized || e.status === HTTP_STATUS.forbidden) return ERROR_CODE.auth
-  if (e.type.includes(ERROR_TYPE_HINTS.auth)) return ERROR_CODE.auth
+  if (AUTH_ERROR_RE.test(e.type)) return ERROR_CODE.auth
   if (e.status === HTTP_STATUS.rateLimited || e.type.includes(ERROR_TYPE_HINTS.rateLimit)) return ERROR_CODE.rate_limit
   return ERROR_CODE.turn_failed
 }
@@ -112,6 +114,20 @@ export function usageEvent(
   }
 }
 
+/** Event kinds that carry `parentId` (a subagent's output nests under its spawning tool call). */
+const NESTABLE = new Set<ChatEvent['kind']>([
+  K.textDelta,
+  K.thinking,
+  K.toolCall,
+  K.fileEdit,
+  K.todo,
+  K.permissionRequest,
+  K.error,
+  K.task,
+])
+export const nestUnder = (e: ChatEvent, parentId: string | undefined): ChatEvent =>
+  parentId && NESTABLE.has(e.kind) ? ({ ...e, parentId } as ChatEvent) : e
+
 type TextEvent = V2EventOf<
   typeof EV.textDelta | typeof EV.textEnded | typeof EV.reasoningDelta | typeof EV.reasoningEnded
 >
@@ -119,6 +135,7 @@ type TextEvent = V2EventOf<
 /** Live translation of one session's v2 events into chat events (stateful: tools, last step, pending interactions). */
 export class EventMapper {
   readonly #contextWindow: (ref: ModelRef) => number | undefined
+  readonly #parentId: string | undefined
   readonly #tools = new Map<string, { name: string; input: Record<string, unknown> }>()
   readonly #permissions = new Set<string>()
   readonly #forms = new Set<string>()
@@ -126,10 +143,22 @@ export class EventMapper {
   #lastStep: { tokens: Tokens; model?: ModelRef } | null = null
   #turnActive = false
   #stepFailed = false
+  /** The last step error of the turn (`execution.failed` repeats it: shown once). */
+  #stepError: string | undefined
   #interrupted = false
+  #rateLimited = false
+  readonly #now: () => number
 
-  constructor(o: { contextWindow: (ref: ModelRef) => number | undefined }) {
+  /** `parentId`: this mapper translates a subagent's session; its output nests under that tool call. */
+  constructor(o: { contextWindow: (ref: ModelRef) => number | undefined; parentId?: string; now?: () => number }) {
     this.#contextWindow = o.contextWindow
+    this.#parentId = o.parentId
+    this.#now = o.now ?? Date.now
+  }
+
+  /** The model of the last step (provider auth errors name it). */
+  get model(): ModelRef | undefined {
+    return this.#model
   }
 
   get turnActive(): boolean {
@@ -154,9 +183,20 @@ export class EventMapper {
   }
 
   map(e: HubEvent): ChatEvent[] {
+    return this.#map(e).map((x) => nestUnder(x, this.#parentId))
+  }
+
+  #map(e: HubEvent): ChatEvent[] {
     switch (e.type) {
       case EV.connected:
       case EV.inboxEnqueued:
+      case EV.sessionCreated:
+      case EV.toolProgress:
+      case EV.mcpStatusChanged:
+      case EV.modelUpdated:
+      case EV.providerUpdated:
+      case EV.integrationUpdated:
+      case EV.credentialUpdated:
         return []
       case EV.executionStarted:
         this.#turnActive = true
@@ -197,14 +237,16 @@ export class EventMapper {
       case EV.retryScheduled:
         return [
           {
-            kind: K.custom,
-            type: CUSTOM.retry,
-            data: { attempt: e.data.attempt, at: e.data.at, message: e.data.error.message },
+            kind: K.retry,
+            attempt: Math.max(1, e.data.attempt),
+            delayMs: Math.max(0, Math.round(e.data.at - this.#now())),
+            reason: e.data.error.message,
           },
         ]
       case EV.stepFailed:
         this.#stepFailed = true
-        return [{ kind: K.error, code: errorCodeOf(e.data.error), message: e.data.error.message, fatal: false }]
+        this.#stepError = e.data.error.message
+        return this.#errorEvents(e.data.error)
       case EV.stepEnded:
         this.#lastStep = { tokens: e.data.tokens, model: this.#model }
         return []
@@ -303,13 +345,41 @@ export class EventMapper {
 
   #failed(error: StructuredError): ChatEvent[] {
     if (this.#interrupted) return this.#end(TURN_END_REASON.interrupted)
-    const err: ChatEvent = { kind: K.error, code: errorCodeOf(error), message: error.message, fatal: false }
-    return [err, ...this.#end(TURN_END_REASON.error)]
+    const repeated = error.message === this.#stepError
+    return [...(repeated ? [] : this.#errorEvents(error)), ...this.#end(TURN_END_REASON.error)]
+  }
+
+  /** The error row; a rate limit also raises the kit's banner (with the reset time when OpenCode knows it). */
+  #errorEvents(error: StructuredError): ChatEvent[] {
+    const code = errorCodeOf(error)
+    const err: ChatEvent = { kind: K.error, code, message: error.message, fatal: false }
+    if (code !== ERROR_CODE.rate_limit) return [err]
+    this.#rateLimited = true
+    const resetsAt = error.retryAfterMs === undefined ? undefined : this.#now() + error.retryAfterMs
+    return [
+      err,
+      {
+        kind: K.rateLimit,
+        status: RATE_LIMIT_STATUS.rejected,
+        message: error.message,
+        ...(resetsAt === undefined ? {} : { resetsAt }),
+      },
+    ]
   }
 
   #end(reason: (typeof TURN_END_REASON)[keyof typeof TURN_END_REASON]): ChatEvent[] {
+    const cleared: ChatEvent[] =
+      this.#rateLimited && reason === TURN_END_REASON.completed
+        ? [{ kind: K.rateLimit, status: RATE_LIMIT_STATUS.cleared }]
+        : []
+    if (cleared.length) this.#rateLimited = false
+    return [...cleared, ...this.#endTurn(reason)]
+  }
+
+  #endTurn(reason: (typeof TURN_END_REASON)[keyof typeof TURN_END_REASON]): ChatEvent[] {
     this.#turnActive = false
     this.#stepFailed = false
+    this.#stepError = undefined
     this.#interrupted = false
     this.#permissions.clear()
     this.#forms.clear()

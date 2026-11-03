@@ -9,6 +9,7 @@ import {
   type ChatOptionDescriptor,
   type ChatOptionValue,
   type ChatPermissionDecision,
+  type ChatSendMeta,
   type ChatSessionActionKind,
   type ChatSessionContext,
   type ChatSessionHandle,
@@ -23,6 +24,7 @@ export class FakeChatSession implements ChatSessionHandle {
   readonly externalSessionId: string
   readonly createdWith: ChatSessionContext
   readonly sent: ChatUserInput[] = []
+  readonly sentMeta: ChatSendMeta[] = []
   interrupts = 0
   readonly permissionResponses: { requestId: string; decision: ChatPermissionDecision }[] = []
   readonly responses: { eventId: string; payload: unknown }[] = []
@@ -77,8 +79,9 @@ export class FakeChatSession implements ChatSessionHandle {
     this.emit({ kind: 'options', options: this.#options })
   }
 
-  async send(input: ChatUserInput): Promise<void> {
+  async send(input: ChatUserInput, meta?: ChatSendMeta): Promise<void> {
     this.sent.push(input)
+    if (meta) this.sentMeta.push(meta)
   }
 
   async interrupt(): Promise<void> {

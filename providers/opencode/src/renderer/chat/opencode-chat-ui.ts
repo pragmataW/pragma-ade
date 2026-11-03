@@ -1,5 +1,5 @@
 import { CHAT_OPTION_KEYS, CUSTOM_PART_PREFIX } from '@pragma/module-chat/contract'
-import { Gauge } from '@pragma/ui/icons'
+import { Bot, Gauge } from '@pragma/ui/icons'
 import { AGENT_OPTION } from './constants'
 import { FormCard } from './FormCard'
 import {
@@ -8,26 +8,39 @@ import {
   createOptionPicker,
   defaultChatUi,
   defaultComposerExtensions,
-  ModelPicker,
+  documentAttachmentsExtension,
+  McpStatus,
+  PermissionModePicker,
+  RateLimitBanner,
+  RetryBanner,
   StopButton,
   UsageMeter,
 } from './kit'
+import { NoticeRow } from './NoticeRow'
 import { OpencodeErrorRow } from './OpencodeErrorRow'
+import { OpencodeModelPicker } from './OpencodeModelPicker'
+import { OpencodeUserMessage } from './OpencodeUserMessage'
 import { CUSTOM } from './payloads'
-import { RetryNotice } from './RetryNotice'
+import { opencodeSettingsPage } from './settings/settings-page'
 
-export const AgentPicker = createOptionPicker({ key: AGENT_OPTION })
+export const AgentPicker = createOptionPicker({ key: AGENT_OPTION, icon: Bot })
 export const VariantPicker = createOptionPicker({ key: CHAT_OPTION_KEYS.effort, variant: 'icon', icon: Gauge })
 
-/** OpenCode's chat UI: the kit's core parts plus forms and retries; each line is one feature (remove it to drop it). */
+/**
+ * OpenCode's chat UI: the kit's parts (task cards for subagents, questions, plans) plus forms, rewind/fork notices and
+ * a provider-grouped model menu; each line is one feature (remove it to drop it).
+ */
 export const opencodeChatUi: ChatUiDefinition = {
   parts: {
     ...defaultChatUi.parts,
+    message: OpencodeUserMessage,
     error: OpencodeErrorRow,
     [`${CUSTOM_PART_PREFIX}${CUSTOM.form}`]: FormCard,
-    [`${CUSTOM_PART_PREFIX}${CUSTOM.retry}`]: RetryNotice,
+    [`${CUSTOM_PART_PREFIX}${CUSTOM.notice}`]: NoticeRow,
   },
-  header: [UsageMeter],
-  composerToolbar: [AgentPicker, ModelPicker, VariantPicker, ContextMeter, StopButton],
-  composerExtensions: defaultComposerExtensions,
+  header: [McpStatus, UsageMeter],
+  banners: [RateLimitBanner, RetryBanner],
+  composerToolbar: [PermissionModePicker, AgentPicker, OpencodeModelPicker, VariantPicker, ContextMeter, StopButton],
+  composerExtensions: [...defaultComposerExtensions, documentAttachmentsExtension],
+  settingsPage: opencodeSettingsPage,
 }

@@ -106,6 +106,18 @@ describe('chat main module', () => {
     })
   })
 
+  it('providerCall routes to the provider settings RPC; rejects without one', async () => {
+    const s = setup()
+    s.fake.capability.settingsCall = async (request) => ({ echo: request })
+    expect(await s.ipc.invoke(chatIpc.providerCall, { providerId: 'prov', request: { op: 'list' } })).toEqual({
+      echo: { op: 'list' },
+    })
+    const none = setup({ capability: false })
+    await expect(none.ipc.invoke(chatIpc.providerCall, { providerId: 'prov', request: {} })).rejects.toThrow(
+      'chat:errors.providerCallUnsupported',
+    )
+  })
+
   it('checkSupport reports a disabled profile and a cached startup failure', async () => {
     const s = setup()
     const profile = s.agents.profiles.get('p1')

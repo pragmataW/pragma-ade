@@ -7,6 +7,7 @@ import {
   CHAT_SLOT_ENTRY_ID,
   CHAT_STATUSBAR_ID,
   CHAT_STATUSBAR_ORDER,
+  CHAT_UI_CAPABILITY,
   CHAT_VIEW_ORDER,
 } from '../constants'
 import { CHAT_MODE, CHAT_MODULE_ID, type ChatSettings, chatIpcEvents } from '../contract'
@@ -15,11 +16,13 @@ import { useChatStore } from './session/store'
 import { ChatSettingsPage } from './view/ChatSettingsPage'
 import { ChatSessionView } from './view/ChatView'
 import { LauncherModeOption } from './view/LauncherModeOption'
+import { providerSettingsPages } from './view/ProviderSettingsPage'
 import { StatusbarContext } from './view/StatusbarContext'
 
 export type {
   ChatPartComponent,
   ChatPartProps,
+  ChatProviderSettingsProps,
   ChatSessionApi,
   ChatSlotComponent,
   ChatSlotProps,
@@ -111,5 +114,9 @@ export default defineRendererModule<ChatSettings>({
       icon: CHAT_SETTINGS_ICON,
       component: withChatHost(ChatSettingsPage),
     })
+    const providers = ctx.providers
+      .providersWithRenderer(CHAT_UI_CAPABILITY)
+      .map((p) => ({ id: p.id, chatUi: ctx.providers.rendererCapability(p.id, CHAT_UI_CAPABILITY) }))
+    for (const page of providerSettingsPages(providers, withChatHost)) ctx.settingsPages.register(page)
   },
 })

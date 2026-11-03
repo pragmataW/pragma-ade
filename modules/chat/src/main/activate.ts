@@ -57,6 +57,7 @@ export function activateChat(d: ChatMainDeps): ChatMain {
     search: (path, query, limit) => fileSearch.search(path, query, limit),
     checkSupport: (profileId) => checkChatSupport({ agents: d.agents, resolveCapability, supportCache }, profileId),
     takeInbox: (sessionId) => inbox.take(sessionId),
+    capability: d.capability,
   })
   const service = createChatService({
     registry,

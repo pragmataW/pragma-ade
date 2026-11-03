@@ -99,6 +99,12 @@ export const chatIpc = {
     input: sessionRef,
     output: z.object({ entries: z.array(composerEntrySchema) }),
   }),
+  /** A provider settings page's RPC (`ChatCapability.settingsCall`); rejects when the provider has none. */
+  providerCall: defineIpc({
+    channel: C.providerCall,
+    input: z.object({ providerId: z.string().min(1), request: z.unknown() }),
+    output: z.unknown(),
+  }),
 } as const
 
 /** PRAGMA_TEST only: the live snapshot without dormant loading (null when not loaded). */

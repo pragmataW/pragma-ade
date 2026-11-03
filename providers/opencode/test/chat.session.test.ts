@@ -44,7 +44,7 @@ describe('opencode chat session', () => {
         { name: 'review', description: 'Review changes' },
       ],
     })
-    expect(h.describeOptions().map((d) => d.key)).toEqual(['model', 'agent', 'effort'])
+    expect(h.describeOptions().map((d) => d.key)).toEqual(['permissionMode', 'model', 'agent', 'effort'])
   })
 
   it('streams a full turn; allow_once reaches the server as once', async () => {
@@ -60,6 +60,31 @@ describe('opencode chat session', () => {
     expect(ofKind(s.events, 'permission-resolved')[0]?.outcome).toBe('allowed')
     await h.respondPermission('unknown', 'deny')
     expect(requestsOf(s.h.log, PERMISSION_REPLY_RE)).toHaveLength(1)
+  })
+
+  it('auto-approve mode answers permission requests once without asking; no server switch for the mode', async () => {
+    const s = chatSetup()
+    const h = await s.start()
+    await h.setOption('permissionMode', 'auto')
+    await h.send({ text: 'hi', images: [] })
+    await waitForEvent(s.events, 'turn-end')
+    expect(lastBody(s.h.log, PERMISSION_REPLY_RE)).toEqual({ decision: 'once' })
+    expect(ofKind(s.events, 'permission-resolved')[0]?.outcome).toBe('allowed')
+    expect(requestsOf(s.h.log, /\/session\/[^/]+\/(model|agent)$/)).toEqual([])
+  })
+
+  it('a send during a running turn goes to OpenCode’s inbox with steer delivery (no turn-end of its own)', async () => {
+    const s = chatSetup({ scenario: 'long-turn' })
+    const h = await s.start()
+    await h.send({ text: 'first', images: [] })
+    await until(() => requestsOf(s.h.log, /\/prompt$/).length === 1)
+    await h.send({ text: 'second', images: [] })
+    const bodies = requestsOf(s.h.log, /\/prompt$/).map((r) => r.body as { text: string; delivery?: string })
+    expect(bodies.map((b) => [b.text, b.delivery])).toEqual([
+      ['first', undefined],
+      ['second', 'steer'],
+    ])
+    await h.interrupt()
   })
 
   it('profile command/args/env reach serve; PRAGMA_SESSION_ID stripped; password set', async () => {
@@ -114,7 +139,7 @@ describe('opencode chat session', () => {
     await h.send({ text: 'go', images: [] })
     const form = await formEvent(s.events)
     expect(form).toMatchObject({ eventId: 'frm_1', awaitsResponse: true })
-    expect(ofKind(s.events, 'custom')[0]?.type).toBe(CUSTOM.retry)
+    expect(ofKind(s.events, 'retry')[0]).toMatchObject({ attempt: 1, reason: 'rate limited' })
     await h.respond?.('frm_1', { color: 'red', confirm: true })
     await waitForEvent(s.events, 'turn-end')
     expect(lastBody(s.h.log, FORM_REPLY_RE)).toEqual({ answer: { color: 'red', confirm: true } })
@@ -185,7 +210,7 @@ describe('opencode chat session', () => {
     })
     await h.setOption('model', 'fakeprov/fake-small')
     expect(lastBody(s.h.log, /\/model$/)).toEqual({ model: { providerID: 'fakeprov', id: 'fake-small' } })
-    expect(h.describeOptions().map((d) => d.key)).toEqual(['model', 'agent'])
+    expect(h.describeOptions().map((d) => d.key)).toEqual(['permissionMode', 'model', 'agent'])
     await h.setOption('agent', 'plan')
     expect(lastBody(s.h.log, /\/agent$/)).toEqual({ agent: 'plan' })
     expect(ofKind(s.events, 'options')).toHaveLength(4)

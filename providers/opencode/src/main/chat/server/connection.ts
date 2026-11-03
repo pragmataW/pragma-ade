@@ -1,8 +1,9 @@
 import type { AgentProfile } from '@pragma/module-agents/contract'
 import { ChatStartupError } from '@pragma/module-chat/contract'
 import type { Logger } from '@pragma/sdk'
-import { IDLE_GRACE_ENV, IDLE_GRACE_MS, PROCESS_EXIT_EVENT, REASON, SSE_RECONNECT_MS } from '../constants'
-import { listOf, type ModelInfo, modelInfoSchema } from '../schemas'
+import { EV, IDLE_GRACE_ENV, IDLE_GRACE_MS, PROCESS_EXIT_EVENT, REASON, SSE_RECONNECT_MS } from '../constants'
+import { type ProviderAccess, providerAccess } from '../mapping/model-access'
+import { integrationInfoSchema, listOf, type ModelInfo, modelInfoSchema, providerInfoSchema } from '../schemas'
 import { createWireClient, type WireClient } from '../wire/client'
 import { EventHub } from '../wire/event-hub'
 import { rememberServerPassword } from './passwords'
@@ -17,6 +18,12 @@ export interface OpencodeConnection {
   readonly hub: EventHub
   readonly directory: string
   models(): Promise<ModelInfo[]>
+  /** Usable model providers (cached until a provider, model or credential change). */
+  access(): Promise<ProviderAccess>
+  /** The provider rejected its saved credential: flagged until the credentials change. */
+  markAuthFailed(providerID: string): void
+  /** Models or provider access changed (refetch `models()` / `access()`). */
+  onCatalogChange(cb: () => void): () => void
   stop(): Promise<void>
   onExit(cb: (code: number | null) => void): () => void
 }
@@ -64,6 +71,11 @@ async function openConnection(
     throw e
   })
   let models: Promise<ModelInfo[]> | null = null
+  const catalog = catalogCache(client)
+  hub.onGlobal((e) => {
+    if (e.type === EV.modelUpdated) models = null
+    catalog.changed(e.type)
+  })
   return {
     server,
     client,
@@ -76,8 +88,57 @@ async function openConnection(
       })
       return models
     },
+    access: catalog.access,
+    markAuthFailed: catalog.markAuthFailed,
+    onCatalogChange: catalog.onChange,
     stop,
     onExit: (cb) => server.onExit(cb),
+  }
+}
+
+const CATALOG_EVENTS = new Set<string>([
+  EV.modelUpdated,
+  EV.providerUpdated,
+  EV.integrationUpdated,
+  EV.credentialUpdated,
+])
+const CREDENTIAL_EVENTS = new Set<string>([EV.integrationUpdated, EV.credentialUpdated])
+
+/** Provider access of one server (`provider.list` + `integration.list`, null when the server has neither). */
+function catalogCache(client: Pick<WireClient, 'provider' | 'integration'>) {
+  const authFailed = new Set<string>()
+  const cbs = new Set<() => void>()
+  let access: Promise<ProviderAccess> | null = null
+  const load = async (): Promise<ProviderAccess> => {
+    const [providers, integrations] = await Promise.all([client.provider.list(), client.integration.list()])
+    return providerAccess(
+      listOf(providerInfoSchema).parse(providers).data,
+      listOf(integrationInfoSchema).parse(integrations).data,
+      authFailed,
+    )
+  }
+  const invalidate = () => {
+    access = null
+    for (const cb of cbs) cb()
+  }
+  return {
+    access: (): Promise<ProviderAccess> => {
+      access ??= load().catch(() => null)
+      return access
+    },
+    markAuthFailed: (providerID: string) => {
+      if (authFailed.has(providerID)) return
+      authFailed.add(providerID)
+      invalidate()
+    },
+    onChange: (cb: () => void) => {
+      cbs.add(cb)
+      return () => void cbs.delete(cb)
+    },
+    changed: (type: string) => {
+      if (CREDENTIAL_EVENTS.has(type)) authFailed.clear()
+      if (CATALOG_EVENTS.has(type)) invalidate()
+    },
   }
 }
 
