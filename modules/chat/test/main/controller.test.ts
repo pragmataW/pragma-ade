@@ -128,6 +128,20 @@ describe('ChatSessionController', () => {
     expect(h.fake.lastSession().permissionResponses).toEqual([{ requestId: 'r1', decision: 'allow_once' }])
   })
 
+  it('an event the contract rejects is logged and dropped: never published, never in the transcript, session lives', async () => {
+    const h = harness()
+    const c = await h.attached()
+    const before = h.published.length
+    const bad = { kind: 'task', taskId: 't1', taskKind: 'background', name: 'Bash' } as unknown as ChatEvent
+    expect(() => h.fake.lastSession().emit(bad)).not.toThrow()
+    expect(h.published).toHaveLength(before)
+    expect(c.snapshot().transcript.items.filter((i) => i.kind === 'task')).toEqual([])
+    expect(h.deps.log.warn).toHaveBeenCalledWith(expect.stringContaining('invalid task event'), expect.anything())
+    h.fake.lastSession().emit(permission)
+    expect(h.kinds().at(-1)).toBe('permission-request')
+    expect(h.exits).toEqual([])
+  })
+
   it('externalSessionId persisted after createSession', async () => {
     const h = harness()
     await h.attached()

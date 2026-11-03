@@ -220,10 +220,16 @@ export class ClaudeChatSession implements ChatSessionHandle {
     }
   }
 
+  /** One event the host refuses (e.g. it fails the contract) is logged and skipped: never a process crash. */
   #emit(e: ChatEvent): void {
     if (e.kind === K.turnEnd) this.#turnActive = false
     if (e.kind === K.turnStart) this.#turnActive = true
-    this.#ctx.emit(e)
+    try {
+      this.#ctx.emit(e)
+    } catch (error) {
+      this.#log?.warn(`claude chat ${this.#ctx.sessionId}: ${e.kind} event dropped (${errorMessage(error)})`)
+      return
+    }
     // `system/init` lists names and states only: follow it with the detailed list
     if (e.kind === K.mcpStatus) void this.#refreshMcp()
   }
