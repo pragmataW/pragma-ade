@@ -135,6 +135,8 @@ CURRENT=$(helper current)
 BUMPED=0
 if ((RESUME)) && [[ $SPEC == "$CURRENT" ]]; then
   VERSION=$CURRENT BUMPED=1
+elif [[ $SPEC == "$CURRENT" ]]; then
+  die "the repo is already at $CURRENT; pass --resume $CURRENT to finish that release"
 else
   VERSION=$(helper next "$SPEC")
 fi
