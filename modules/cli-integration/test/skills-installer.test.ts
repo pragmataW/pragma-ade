@@ -17,10 +17,10 @@ import { makeSkillsFixture } from './support/skills'
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 
 describe('skills installer', () => {
-  it('reads both sources with sha256', async () => {
+  it('reads every source with sha256', async () => {
     const f = makeSkillsFixture()
     const sources = await readSkillSources(f.skillsDir)
-    expect(sources.map((s) => s.skillId)).toEqual(['handoff', 'pragma-cli'])
+    expect(sources.map((s) => s.skillId)).toEqual(['ask', 'handoff', 'pragma-cli'])
     for (const s of sources) expect(s.hash).toBe(sha(s.content))
   })
 
@@ -30,8 +30,10 @@ describe('skills installer', () => {
     expect(targets.map((t) => [t.providerId, t.skillId, t.dir])).toEqual([
       ['alpha', 'handoff', join(f.home, '.alpha', 'skills', 'pragma-handoff')],
       ['alpha', 'pragma-cli', join(f.home, '.alpha', 'skills', 'pragma-cli')],
+      ['alpha', 'ask', join(f.home, '.alpha', 'skills', 'pragma-ask')],
       ['beta', 'handoff', join(f.home, '.beta', 'skills', 'pragma-handoff')],
       ['beta', 'pragma-cli', join(f.home, '.beta', 'skills', 'pragma-cli')],
+      ['beta', 'ask', join(f.home, '.beta', 'skills', 'pragma-ask')],
     ])
     expect(targets[0]?.providerDisplayNameKey).toBe('alpha:module.name')
   })
@@ -44,7 +46,9 @@ describe('skills installer', () => {
     expect(await skillTargetStatus(target, sources, f.registryPath)).toMatchObject({ state: SKILL_STATE.missing })
     await installSkills([target], sources, '1.0.0', f.registryPath)
     expect(await skillTargetStatus(target, sources, f.registryPath)).toMatchObject({ state: SKILL_STATE.current })
-    expect(readFileSync(join(target.dir, SKILL_FILE), 'utf8')).toBe(sources[0]?.content)
+    expect(readFileSync(join(target.dir, SKILL_FILE), 'utf8')).toBe(
+      sources.find((s) => s.skillId === target.skillId)?.content,
+    )
   })
 
   it('source changed → outdated', async () => {
@@ -57,8 +61,10 @@ describe('skills installer', () => {
     expect(states.map((s) => [s.skillId, s.state])).toEqual([
       ['handoff', 'outdated'],
       ['pragma-cli', 'current'],
+      ['ask', 'current'],
       ['handoff', 'outdated'],
       ['pragma-cli', 'current'],
+      ['ask', 'current'],
     ])
   })
 

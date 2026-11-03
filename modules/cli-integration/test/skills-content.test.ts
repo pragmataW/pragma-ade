@@ -36,7 +36,24 @@ describe('skills', () => {
     expect(read('handoff').body).toContain(text)
   })
 
-  it.each(['worktree', 'agent', 'task', 'comments', 'handoff', 'session locate', 'session current'])(
+  it.each(['pragma ask --to', 'pragma agent profiles', '--prompt-file', 'blocks', 'NEVER', 'explicitly'])(
+    'ask body contains %s',
+    (text) => {
+      expect(read('ask').body).toContain(text)
+    },
+  )
+
+  it.each(["opencode'a sor", "codex'e danış", 'NEVER', 'pragma-handoff'])('ask description mentions %s', (text) => {
+    expect(read('ask').data.description).toContain(text)
+  })
+
+  it('handoff and pragma-cli point at pragma-ask', () => {
+    expect(read('handoff').data.description).toContain('pragma-ask')
+    expect(read('handoff').body).toContain('pragma-ask')
+    expect(read('pragma-cli').data.description).toContain('pragma-ask')
+  })
+
+  it.each(['worktree', 'agent', 'task', 'comments', 'handoff', 'session locate', 'session current', 'ask'])(
     'pragma-cli mentions `pragma %s`',
     (cmd) => {
       expect(read('pragma-cli').body).toContain(`pragma ${cmd}`)
