@@ -1,4 +1,12 @@
-import { CODE_SEGMENT, FENCE_CLOSE_RE, FENCE_OPEN_RE, LINE_SPLIT_RE, NEWLINE } from '../../constants'
+import {
+  CODE_SEGMENT,
+  FENCE_CLOSE_RE,
+  FENCE_OPEN_RE,
+  INDENTED_RE,
+  LINE_SPLIT_RE,
+  LIST_ITEM_RE,
+  NEWLINE,
+} from '../../constants'
 
 export type MarkdownSegment =
   | { kind: 'prose'; text: string }
@@ -28,6 +36,8 @@ class Splitter {
   readonly out: MarkdownSegment[] = []
   #prose: string[] = []
   #code: OpenFence | null = null
+  /** The prose so far ends inside a list item (an indented fence then belongs to the item, not the top level). */
+  #inList = false
 
   line(line: string): void {
     if (this.#code) {
@@ -35,8 +45,8 @@ class Splitter {
       return
     }
     const open = FENCE_OPEN_RE.exec(line)?.groups
-    if (!open) {
-      this.#prose.push(line)
+    if (!open || (open.indent && this.#inList)) {
+      this.#proseLine(line)
       return
     }
     this.#flushProse()
@@ -47,6 +57,11 @@ class Splitter {
     this.#flushCode(false)
     this.#flushProse()
     return this.out
+  }
+
+  #proseLine(line: string): void {
+    this.#prose.push(line)
+    if (line.trim()) this.#inList = LIST_ITEM_RE.test(line) || (this.#inList && INDENTED_RE.test(line))
   }
 
   #inCode(line: string, code: OpenFence): void {
@@ -64,12 +79,14 @@ class Splitter {
     const text = this.#prose.join(NEWLINE)
     if (text.trim()) this.out.push({ kind: PROSE, text })
     this.#prose = []
+    this.#inList = false
   }
 }
 
 /**
  * Top-level fenced code blocks (``` or ~~~, at most 3 spaces indent) split from the prose around them, so each block
  * can carry its own copy button. An unclosed fence runs to the end (as CommonMark does while a message streams).
+ * An indented fence inside a list item stays in the prose (splitting it out would break the list).
  */
 export function splitFences(md: string): MarkdownSegment[] {
   const s = new Splitter()

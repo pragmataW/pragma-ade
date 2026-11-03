@@ -27,5 +27,22 @@ describe('splitFences', () => {
     ['~~~\ny\n~~~', [{ kind: 'code', code: 'y', lang: '', closed: true }]],
     ['```\nopen', [{ kind: 'code', code: 'open', lang: '', closed: false }]],
     ['````md\n```\ninner\n```\n````', [{ kind: 'code', code: '```\ninner\n```', lang: 'md', closed: true }]],
+    [' ```ts\nx\n```', [{ kind: 'code', code: 'x', lang: 'ts', closed: true }]],
+    [
+      '- a\n```ts\nx\n```',
+      [
+        { kind: 'prose', text: '- a' },
+        { kind: 'code', code: 'x', lang: 'ts', closed: true },
+      ],
+    ],
   ])('%j', (md, segments) => expect(splitFences(md)).toEqual(segments))
+
+  // GPT-style replies (common with OpenCode) put fences inside list items: they stay in the list
+  it.each([
+    '1. step\n   ```yaml\n   a: 1\n   ```\n   more\n2. next',
+    '- item\n\n  ```ts\n  x\n  ```\n- other',
+    '* a\n  continued\n  ```\n  plain\n  ```',
+  ])('keeps the list-item fence of %j in the prose', (md) =>
+    expect(splitFences(md)).toEqual([{ kind: 'prose', text: md }]),
+  )
 })
