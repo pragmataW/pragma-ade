@@ -27,7 +27,7 @@ export const QUICK_TOGGLE_ICONS = { dark: 'moon', light: 'sun' } as const
 
 /** Palette names are i18n keys under `appearance.palettes.<id>`; preview swatches use these tokens. */
 export const PREVIEW_SWATCHES = ['ac', 'tx', 'mu'] as const
-export const PALETTE_ORDER: readonly PaletteId[] = ['vscode', 'dark-brown', 'amber', 'indigo', 'glass']
+export const PALETTE_ORDER: readonly PaletteId[] = ['vscode', 'dark-brown', 'amber', 'indigo']
 export const DENSITY_ORDER: readonly Density[] = ['compact', 'comfortable']
 
 /** Display names of languages come from `Intl.DisplayNames` in the current UI language. */
