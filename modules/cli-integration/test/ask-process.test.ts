@@ -66,7 +66,7 @@ describe.skipIf(!posix)('runAskProcess', () => {
   it('times out and kills the whole process tree', async () => {
     const pidFile = join(dir, 'child.pid')
     const env = { [FAKE_ASK_ENV.sleepMs]: '30000', [FAKE_ASK_ENV.childPidFile]: pidFile }
-    const out = await runAskProcess(spec(env), { cwd: dir, timeoutMs: 800, killGraceMs: 500 })
+    const out = await runAskProcess(spec(env), { cwd: dir, timeoutMs: 2500, killGraceMs: 500 })
     expect(out).toEqual({ kind: 'timedOut' })
     const pid = Number(await readFile(pidFile, 'utf8'))
     expect(await waitFor(() => !alive(pid))).toBe(true)

@@ -274,6 +274,11 @@ export function makeDeps(over: Partial<CliHandlerDeps> = {}): CliHandlerDeps {
     },
     log: silentLog(),
     transcripts: fakeTranscripts(),
+    asks: {
+      start: async () => Promise.reject(new Error('ask not wired in this test')),
+      wait: async () => Promise.reject(new Error('ask not wired in this test')),
+      dispose: () => undefined,
+    },
     ...over,
   }
 }

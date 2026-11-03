@@ -6,6 +6,7 @@ import { BridgeServerToken } from '@pragma/module-bridge/contract'
 import { CommentsServiceToken } from '@pragma/module-comments/contract'
 import { ProjectsServiceToken } from '@pragma/module-projects/contract'
 import { defineMainModule, type MainContext } from '@pragma/sdk/main'
+import { ASK_CAPABILITY } from '../constants'
 import {
   CLI_INTEGRATION_SETTINGS_DEFAULTS,
   CLI_MODULE_ID,
@@ -14,6 +15,8 @@ import {
   type CliIntegrationSettings,
   cliIntegrationSettingsSchema,
 } from '../contract'
+import { createAskJobs } from './ask/jobs'
+import { type AskProvider, runAsk } from './ask/run-ask'
 import { createCliHandlers } from './handlers'
 import { runHandoff } from './handoff'
 import { createCliLaunchDecorator } from './launch-decorator'
@@ -80,6 +83,13 @@ function transcriptLocator(ctx: Ctx): TranscriptLocator {
   }
 }
 
+/** Providers' `ask` capabilities, read per call. */
+const askProviders = (ctx: Ctx) => (): AskProvider[] =>
+  ctx.providers.providersWith(ASK_CAPABILITY).flatMap((d) => {
+    const ask = ctx.providers.capability(d.id, ASK_CAPABILITY)
+    return ask ? [{ id: d.id, ask }] : []
+  })
+
 function registerBridge(ctx: Ctx): void {
   const projects = ctx.services.get(ProjectsServiceToken)
   const agents = ctx.services.get(AgentSessionsServiceToken)
@@ -88,6 +98,17 @@ function registerBridge(ctx: Ctx): void {
   const notifier = createNotifier({ show: showNotification(ctx) })
   const transcripts = transcriptLocator(ctx)
   const handoffDeps = { projects, agents, board, notifier, now: () => new Date(), log: ctx.log, nameOf, transcripts }
+  const askDeps = {
+    projects,
+    agents,
+    nameOf,
+    providers: askProviders(ctx),
+    tempRoot: ctx.paths.temp,
+    log: ctx.log,
+    now: Date.now,
+  }
+  const asks = createAskJobs((input, signal) => runAsk(input, askDeps, signal), { log: ctx.log })
+  disposers.push(() => asks.dispose())
   const handlers = createCliHandlers({
     projects,
     agents,
@@ -97,6 +118,7 @@ function registerBridge(ctx: Ctx): void {
     log: ctx.log,
     transcripts,
     handoff: (req) => runHandoff(req, handoffDeps),
+    asks,
   })
   const ping = () => ({ ok: true, version: ctx.module.version })
   disposers.push(

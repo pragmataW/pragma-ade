@@ -1,5 +1,5 @@
 import { z } from '@pragma/sdk'
-import { MAX_DOCUMENT_BYTES } from './constants'
+import { ASK_DEFAULT_TIMEOUT_SECONDS, ASK_MAX_TIMEOUT_SECONDS, MAX_DOCUMENT_BYTES } from './constants'
 import { sessionTranscriptLocationSchema } from './session-transcript-capability'
 
 /** Bridge namespace served by this module; wire types are `cli.<method>`. */
@@ -17,6 +17,8 @@ export const CLI_METHODS = [
   'commentsList',
   'handoff',
   'sessionLocate',
+  'ask',
+  'askWait',
 ] as const
 export type CliMethod = (typeof CLI_METHODS)[number]
 /** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
@@ -144,6 +146,20 @@ export const cliSessionLocateResultSchema = z.object({
 })
 export type CliSessionLocateResult = z.infer<typeof cliSessionLocateResultSchema>
 
+/** `ask` / `askWait`: still running (poll again with `askWait`) or the consulted agent's answer. */
+export const cliAskResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal(ASK_STATE.pending), askId: id }),
+  z.object({
+    status: z.literal(ASK_STATE.answered),
+    askId: id,
+    profile: cliProfileSchema.pick({ id: true, name: true, providerId: true }),
+    text: z.string(),
+    truncated: z.boolean(),
+    durationMs: z.number().int().nonnegative(),
+  }),
+])
+export type CliAskResult = z.infer<typeof cliAskResultSchema>
+
 const UPDATE_FIELDS = ['title', 'description', 'priority', 'labels'] as const
 const NEEDS_UPDATE_FIELD = `pass at least one of ${UPDATE_FIELDS.join(', ')}`
 
@@ -186,6 +202,13 @@ export const cliRequestSchemas = {
   }),
   /** A Pragma or provider session id; without one, the caller's `PRAGMA_SESSION_ID`. */
   sessionLocate: withContext({ sessionId: id.optional() }),
+  /** One question to another profile's provider, answered headlessly in the caller's worktree. */
+  ask: withContext({
+    to: text,
+    prompt: documentText,
+    timeoutSeconds: z.number().int().min(1).max(ASK_MAX_TIMEOUT_SECONDS).default(ASK_DEFAULT_TIMEOUT_SECONDS),
+  }),
+  askWait: withContext({ askId: id }),
 } satisfies Record<CliMethod, z.ZodType>
 
 export const cliResultSchemas = {
@@ -201,6 +224,8 @@ export const cliResultSchemas = {
   commentsList: z.object({ worktreeId: id, comments: z.array(cliCommentSchema) }),
   handoff: cliHandoffResultSchema,
   sessionLocate: cliSessionLocateResultSchema,
+  ask: cliAskResultSchema,
+  askWait: cliAskResultSchema,
 } satisfies Record<CliMethod, z.ZodType>
 
 export type CliRequest<M extends CliMethod> = z.infer<(typeof cliRequestSchemas)[M]>

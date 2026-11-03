@@ -33,6 +33,16 @@ describe('cli-integration main module', () => {
     })
   })
 
+  it('serves cli.askWait (unknown ids are not found)', async () => {
+    const m = await activateModule()
+    const res = await fetch(`${m.bridge.url}/hook`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${m.bridge.token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'cli.askWait', payload: { context: { cwd: '/' }, askId: 'gone' } }),
+    })
+    expect(await res.json()).toMatchObject({ payload: { ok: false, error: { code: 'not_found' } } })
+  })
+
   it('deactivate unregisters the decorator', async () => {
     const m = await activateModule()
     const { default: mainModule } = await import('../src/main')

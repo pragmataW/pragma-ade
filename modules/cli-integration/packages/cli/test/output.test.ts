@@ -1,4 +1,4 @@
-import type { CliMethod } from '@pragma/module-cli-integration/contract'
+import { type CliMethod, MAX_DOCUMENT_BYTES } from '@pragma/module-cli-integration/contract'
 import { describe, expect, it } from 'vitest'
 import { UsageError } from '../src/args'
 import { AppError } from '../src/client'
@@ -64,6 +64,30 @@ describe('formatResult', () => {
   it('json success envelope', () => {
     const result = { profiles: [] }
     expect(formatResult('profileList', result, true)).toBe(`${JSON.stringify({ ok: true, result }, null, 2)}\n`)
+  })
+
+  const answered = {
+    status: 'answered',
+    askId: 'a1',
+    profile: { id: 'oc', name: 'OpenCode', providerId: 'opencode' },
+    text: 'The answer.',
+    truncated: false,
+    durationMs: 9,
+  }
+
+  it.each(['ask', 'askWait'] as const)('%s prints only the answer text, newline-terminated', (method) => {
+    expect(formatResult(method, answered, false)).toBe('The answer.\n')
+    expect(formatResult(method, { ...answered, text: 'Done.\n' }, false)).toBe('Done.\n')
+  })
+
+  it('a truncated answer says so', () => {
+    expect(formatResult('ask', { ...answered, truncated: true }, false)).toBe(
+      `The answer.\n\n[answer truncated at ${MAX_DOCUMENT_BYTES} bytes]\n`,
+    )
+  })
+
+  it('a pending ask prints nothing', () => {
+    expect(formatResult('ask', { status: 'pending', askId: 'a1' }, false)).toBe('')
   })
 
   it('comment body shows only the first line', () => {

@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { AgentProfile, AgentSessionsService } from '@pragma/module-agents/contract'
 import type { ProjectsService } from '@pragma/module-projects/contract'
@@ -124,6 +124,7 @@ function answerOf(outcome: RunAskOutcome, ask: AskCapability, name: string, time
 }
 
 async function runInTempDir<T>(root: string, fn: (dir: string) => Promise<T>): Promise<T> {
+  await mkdir(root, { recursive: true })
   const dir = await mkdtemp(join(root, ASK_TEMP_PREFIX))
   try {
     return await fn(dir)
