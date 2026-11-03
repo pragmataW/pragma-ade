@@ -19,7 +19,7 @@
     },
     "skills": {
       "heading": "Agent skills",
-      "description": "The pragma-handoff, pragma-ask, pragma-board and pragma-cli skills teach agents to use the pragma command.",
+      "description": "The pragma-handoff, pragma-ask, pragma-board, pragma-cli and pragma-review skills teach agents to use the pragma command.",
       "state": {
         "missing": "Not installed",
         "current": "Up to date",

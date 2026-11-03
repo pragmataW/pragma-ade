@@ -3,8 +3,8 @@ name: pragma-cli
 description: >-
   Use Pragma ADE's `pragma` CLI to list and create worktrees, list and start agent sessions,
   manage board tasks, work through review threads (list, reply, resolve), and find a session's local transcript. Use when working
-  inside Pragma ADE and the user mentions worktrees, agents, the task board or review comments, when a "Review round" message
-  asks you to address review threads, or when the user asks to hand work to another agent (then use pragma-handoff) or
+  inside Pragma ADE and the user mentions worktrees, agents, the task board or review comments (to address a "Review round",
+  use pragma-review), or when the user asks to hand work to another agent (then use pragma-handoff) or
   explicitly asks to consult another agent (then use pragma-ask).
 ---
 
@@ -54,21 +54,13 @@ The user reviews your work in Pragma (editor, diff, browser) and presses Send. Y
 one-line message such as `Review round 2: 3 open review threads in this worktree …`. Each
 comment is a thread; the user may answer your replies in later rounds.
 
-1. `pragma comments list` (add `--json` for structured data). Each thread shows its id,
-   status, source, `file:lines`, the code snippet or browser element, then the user's comment
-   and every reply in order. Items new in this round are marked `(new in round N)`.
-2. Fix what each thread asks for.
-3. `pragma comments reply <id> --body "<what you changed>"`. For long replies write a file
-   and pass `--file <path>`, or `--file -` to read stdin.
-4. `pragma comments resolve <id>` for threads you fully addressed (add `--body` for a short
-   closing note instead of a separate reply).
+Use the pragma-review skill for the full procedure (what to implement, when to ask, when to
+resolve). In short:
 
-- Resolve only what you actually addressed. If you disagree, need input or did only part of
-  it, reply explaining why and leave the thread open.
-- Replying to a resolved thread is fine; use `pragma comments reopen <id>` if it needs more
-  work.
-- Do not re-list the whole review after every fix; `pragma comments show <id>` shows one
-  thread.
+- `pragma comments list` reads the open threads; `pragma comments show <id>` reads one.
+- `pragma comments resolve <id>` closes a thread you addressed (`--body` for a short note).
+- `pragma comments reply <id> --body "<text>"` asks a question or answers one; leave the
+  thread open while you wait. `pragma comments reopen <id>` reopens a resolved thread.
 
 ## Session transcripts
 
@@ -95,4 +87,5 @@ session id is also in the environment: Claude Code sets `CLAUDE_CODE_SESSION_ID`
 
 For handoffs (giving the work to another agent), use the pragma-handoff skill. To consult
 another agent when the user asks for it, use the pragma-ask skill. To work through the board's
-tasks column by column, use the pragma-board skill.
+tasks column by column, use the pragma-board skill. To address review threads, use the
+pragma-review skill.
