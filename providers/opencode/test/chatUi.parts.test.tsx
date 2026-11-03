@@ -1,4 +1,4 @@
-import type { ChatEvent, ChatItem } from '@pragma/module-chat/contract'
+import { CHAT_TESTIDS, type ChatEvent, type ChatItem, type MessageItem } from '@pragma/module-chat/contract'
 import {
   chatTestI18n,
   installJsdomLayout,
@@ -9,15 +9,15 @@ import {
 } from '@pragma/module-chat/testing'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactElement } from 'react'
+import type { ComponentType, ReactElement } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, describe, expect, it } from 'vitest'
 import { OPENCODE_CHAT_TESTIDS as IDS } from '../src/renderer/chat/constants'
-import { ChatHostProvider } from '../src/renderer/chat/kit'
+import { ChatHostProvider, type ChatPartProps } from '../src/renderer/chat/kit'
 import { NoticeRow } from '../src/renderer/chat/NoticeRow'
 import { OpencodeErrorRow } from '../src/renderer/chat/OpencodeErrorRow'
 import { OpencodeModelPicker } from '../src/renderer/chat/OpencodeModelPicker'
-import { OpencodeUserMessage } from '../src/renderer/chat/OpencodeUserMessage'
+import { opencodeChatUi } from '../src/renderer/chat/opencode-chat-ui'
 import { CUSTOM } from '../src/renderer/chat/payloads'
 import { ProvidersPage } from '../src/renderer/chat/settings/ProvidersPage'
 
@@ -109,7 +109,7 @@ describe('NoticeRow', () => {
   })
 })
 
-describe('OpencodeUserMessage', () => {
+describe('user message (kit actions, OpenCode copy)', () => {
   const message: ChatEvent = {
     kind: 'message',
     messageId: 'm1',
@@ -118,18 +118,21 @@ describe('OpencodeUserMessage', () => {
     attachments: [],
     origin: 'live',
   }
-  it('rewind asks first, then runs the action; fork runs at once; hidden without the actions', async () => {
-    const info: ChatEvent = { kind: 'session-info', actions: ['rewind', 'fork'] }
-    const s = stubSessionApi([info, message])
-    const { user, host } = renderUi(<OpencodeUserMessage item={itemOf([message], 'message')} session={s.api} />)
-    await user.click(screen.getByTestId(IDS.rewind))
+  const Message = opencodeChatUi.parts.message as ComponentType<ChatPartProps<MessageItem>>
+  it('offers rewind (confirmed in OpenCode words) and fork', async () => {
+    let asked = ''
+    const host = stubChatHost({
+      confirm: async (o) => {
+        asked = i18n.t(o.messageKey)
+        return true
+      },
+    })
+    const s = stubSessionApi([{ kind: 'session-info', actions: ['rewind', 'fork'] }, message])
+    const { user } = renderUi(<Message item={itemOf([message], 'message')} session={s.api} />, host)
+    await user.click(screen.getByTestId(CHAT_TESTIDS.messageRewind))
     await waitFor(() => expect(s.callsOf('action')[0]?.args).toEqual([{ action: 'rewind', messageId: 'm1' }]))
-    expect(host.calls.some((c) => c.method === 'confirm')).toBe(true)
-    await user.click(screen.getByTestId(IDS.fork))
-    expect(s.callsOf('action')[1]?.args).toEqual([{ action: 'fork', messageId: 'm1' }])
-    cleanup()
-    renderUi(<OpencodeUserMessage item={itemOf([message], 'message')} session={stubSessionApi([message]).api} />)
-    expect(screen.queryByTestId(IDS.rewind)).toBeNull()
+    expect(asked).toMatch(/files OpenCode changed/)
+    expect(screen.getByTestId(CHAT_TESTIDS.messageFork)).toBeInTheDocument()
   })
 })
 

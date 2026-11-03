@@ -6,6 +6,7 @@ export {
   ChatSessionView,
   ContextMeter,
   createOptionPicker,
+  createUserMessage,
   defaultChatUi,
   documentAttachmentsExtension,
   fileMentionExtension,

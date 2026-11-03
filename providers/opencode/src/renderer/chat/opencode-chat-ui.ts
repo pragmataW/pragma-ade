@@ -1,11 +1,12 @@
 import { CHAT_OPTION_KEYS, CUSTOM_PART_PREFIX } from '@pragma/module-chat/contract'
 import { Bot, Gauge } from '@pragma/ui/icons'
-import { AGENT_OPTION } from './constants'
+import { AGENT_OPTION, USER_MESSAGE_I18N } from './constants'
 import { FormCard } from './FormCard'
 import {
   type ChatUiDefinition,
   ContextMeter,
   createOptionPicker,
+  createUserMessage,
   defaultChatUi,
   defaultComposerExtensions,
   documentAttachmentsExtension,
@@ -19,7 +20,6 @@ import {
 import { NoticeRow } from './NoticeRow'
 import { OpencodeErrorRow } from './OpencodeErrorRow'
 import { OpencodeModelPicker } from './OpencodeModelPicker'
-import { OpencodeUserMessage } from './OpencodeUserMessage'
 import { CUSTOM } from './payloads'
 import { opencodeSettingsPage } from './settings/settings-page'
 
@@ -33,7 +33,7 @@ export const VariantPicker = createOptionPicker({ key: CHAT_OPTION_KEYS.effort, 
 export const opencodeChatUi: ChatUiDefinition = {
   parts: {
     ...defaultChatUi.parts,
-    message: OpencodeUserMessage,
+    message: createUserMessage(USER_MESSAGE_I18N),
     error: OpencodeErrorRow,
     [`${CUSTOM_PART_PREFIX}${CUSTOM.form}`]: FormCard,
     [`${CUSTOM_PART_PREFIX}${CUSTOM.notice}`]: NoticeRow,

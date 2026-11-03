@@ -11,6 +11,7 @@ export {
   ChatSessionView,
   ContextMeter,
   createOptionPicker,
+  createUserMessage,
   defaultChatUi,
   defaultComposerExtensions,
   documentAttachmentsExtension,
@@ -21,6 +22,5 @@ export {
   RetryBanner,
   StopButton,
   UsageMeter,
-  UserMessage,
   useChatHost,
 } from '@pragma/module-chat/renderer'

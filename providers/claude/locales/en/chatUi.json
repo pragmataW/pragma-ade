@@ -1,5 +1,11 @@
 {
   "chat": {
-    "compacted": "Conversation compacted ({{tokens}} tokens summarized)"
+    "compacted": "Conversation compacted ({{tokens}} tokens summarized)",
+    "rewind": {
+      "label": "Restore files to before this message",
+      "title": "Restore the files?",
+      "message": "Files Claude changed since this message are restored to how they were before it. The conversation stays as it is.",
+      "confirm": "Restore files"
+    }
   }
 }

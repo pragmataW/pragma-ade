@@ -1,22 +1,28 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const original = { NumberFormat: Intl.NumberFormat, DateTimeFormat: Intl.DateTimeFormat }
+
 afterEach(() => {
-  vi.restoreAllMocks()
+  Object.assign(Intl, original)
   vi.resetModules()
 })
 
-/** Imports the formatters with every `Intl` formatter constructed for a Turkish system locale by default. */
+/** Imports the formatters while every `Intl` formatter defaults to a Turkish system locale. */
 async function formattersUnderTurkishSystemLocale() {
-  const { NumberFormat, DateTimeFormat } = Intl
   const locales: unknown[] = []
-  vi.spyOn(Intl, 'NumberFormat').mockImplementation(((l?: string, o?: Intl.NumberFormatOptions) => {
-    locales.push(l)
-    return new NumberFormat(l ?? 'tr-TR', o)
-  }) as unknown as typeof Intl.NumberFormat)
-  vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(((l?: string, o?: Intl.DateTimeFormatOptions) => {
-    locales.push(l)
-    return new DateTimeFormat(l ?? 'tr-TR', o)
-  }) as unknown as typeof Intl.DateTimeFormat)
+  class TurkishNumbers extends original.NumberFormat {
+    constructor(l?: string, o?: Intl.NumberFormatOptions) {
+      locales.push(l)
+      super(l ?? 'tr-TR', o)
+    }
+  }
+  class TurkishDates extends original.DateTimeFormat {
+    constructor(l?: string, o?: Intl.DateTimeFormatOptions) {
+      locales.push(l)
+      super(l ?? 'tr-TR', o)
+    }
+  }
+  Object.assign(Intl, { NumberFormat: TurkishNumbers, DateTimeFormat: TurkishDates })
   const format = await import('../../src/renderer/kit/parts/lib/format')
   return { format, locales }
 }
@@ -29,6 +35,7 @@ describe('kit number formatting', () => {
     expect(format.formatCount(48_000)).toBe('48,000')
     expect(format.formatUsd(0.0123)).toBe('$0.0123')
     expect(format.formatSeconds(2500)).toBe('2.5')
+    expect(locales.length).toBeGreaterThan(0)
     expect(locales.every((l) => l === 'en-US')).toBe(true)
   })
 })

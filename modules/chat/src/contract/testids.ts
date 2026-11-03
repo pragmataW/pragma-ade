@@ -66,6 +66,8 @@ export const CHAT_TESTIDS = {
   mcpRefresh: 'chat-mcp-refresh',
   rateLimit: 'chat-rate-limit',
   midTurn: 'chat-message-mid-turn',
+  messageRewind: 'chat-message-rewind',
+  messageFork: 'chat-message-fork',
   retry: 'chat-retry',
   attachFile: 'chat-attach-file',
   attachmentFile: 'chat-attachment-file',
