@@ -45,6 +45,7 @@ export function AnchoredPopover({
     <div
       ref={ref}
       role="dialog"
+      data-slot="anchored-popover"
       className="fixed z-50 rounded-[var(--radius-popover)] border border-[var(--bd)] bg-[var(--el)] p-3 text-[var(--tx)] shadow-lg"
       style={{ left: position?.x ?? rect.x, top: position?.y ?? rect.y + rect.height }}
     >
