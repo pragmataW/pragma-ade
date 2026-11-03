@@ -3,6 +3,47 @@
 All notable changes to Pragma ADE are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-11-03
+
+### Added
+
+- **Review threads:** comments from the editor, Git Changes and the browser are now threads that stay after Send. Each
+  thread has replies, an Open / Resolved status and a review round; agents answer with `pragma comments reply` and
+  close finished threads with `pragma comments resolve`. Send delivers one round as a short "Review round N" message
+  instead of pasting every comment. Reply to an agent's answer to start the next round, and use "Clear resolved" when
+  you are done.
+- **Comments drawer:** threads grouped by file, Markdown replies with Show more, a collapsed Resolved section, and links
+  that open the file at the line in the editor, the diff in Git Changes or the page in the browser.
+- **Same comment UI everywhere:** the editor, Git Changes and the browser use the same buttons (Cancel · Send now ·
+  Add to drafts, and Cancel · Reply and send · Reply) and shortcuts (⌘/Ctrl+Enter adds, ⌘/Ctrl+Shift+Enter sends).
+  Thread actions fold into a "…" menu when the panel is narrow.
+- **`pragma ask`:** an agent can consult another agent (Claude Code or OpenCode) and wait for its answer. The consulted
+  agent runs read-only in the same worktree, in the background. The new `pragma-ask` skill uses it only when you ask
+  for it ("ask opencode", "codex'e danış").
+- **Board autopilot:** columns can have a description (column menu › Edit description…) that tells agents when a task
+  belongs there. `pragma task columns` lists the columns with their descriptions and `pragma task show` prints a whole
+  task. The new `pragma-board` skill works the board's tasks and moves each card to the right column.
+- **`pragma-review` skill:** on a review round the agent implements what is asked, resolves those threads without a
+  reply for each, and asks in the thread when a decision is needed.
+- **Collapsible worktree folders** in the sidebar; drag worktrees into folders and back out to the project root.
+- **Designed empty states** in Git Changes, the agents view, the terminal, the browser, the board, Local History, the
+  shortcuts page, chat and the Tasks panel.
+- **Motion:** a sliding indicator under the selected tab, smoother overlays and hover/press feedback, and a dock drop
+  preview that glides between drop zones.
+
+### Changed
+
+- The changed-files count on worktree rows follows the theme.
+
+### Fixed
+
+- Resuming a session in chat shows the conversation so far.
+- Each chat keeps its own unsent draft when you switch chats.
+- The Tasks panel stays contained with very long agent output; an unknown task status no longer looks like an error.
+- An invalid event from the agent no longer ends the chat session.
+- Programs that own the mouse wheel in the terminal scroll one line per wheel step.
+- Panel toggles follow the dock and sidebar position.
+
 ## [0.9.3] - 2026-11-03
 
 ### Added
@@ -124,6 +165,7 @@ First public release. Unsigned builds for macOS (arm64, x64), Linux x64 and Wind
   native modules; a Homebrew cask for macOS.
 - MIT license, app logo and icons.
 
+[0.10.0]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.10.0
 [0.9.3]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.3
 [0.9.2]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.2
 [0.9.1]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.1
