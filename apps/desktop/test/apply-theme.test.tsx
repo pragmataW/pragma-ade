@@ -27,3 +27,21 @@ it.each([
   expect({ ...root.dataset }).toEqual(expected)
   expect(root.style.colorScheme).toBe(expected.theme)
 })
+
+it.each([
+  ['darwin', 'native'],
+  ['linux', 'css'],
+  ['win32', 'css'],
+])('the glass palette on %s gets the %s backdrop', (platform, backdrop) => {
+  const root = document.createElement('html')
+  applyTheme(root, state({ palette: 'glass' }), platform)
+  expect({ ...root.dataset }).toEqual({ theme: 'dark', palette: 'glass', density: 'compact', backdrop })
+})
+
+it('leaving glass drops the backdrop attribute', () => {
+  const root = document.createElement('html')
+  applyTheme(root, state({ palette: 'glass', resolved: 'light' }), 'darwin')
+  applyTheme(root, state({ palette: 'vscode' }), 'darwin')
+  expect(root.dataset.backdrop).toBeUndefined()
+  expect(root.dataset.palette).toBe('vscode')
+})

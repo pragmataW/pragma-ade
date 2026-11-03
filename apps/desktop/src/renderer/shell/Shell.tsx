@@ -137,6 +137,7 @@ export function Shell() {
       id={PANE.center}
       panelRef={centerRef}
       data-testid={T.paneCenter}
+      className="app-pane-center"
       minSize={px(vertical ? LAYOUT.centerMinHeight : LAYOUT.centerMin)}
       collapsible
       collapsedSize={COLLAPSED}
@@ -150,6 +151,7 @@ export function Shell() {
       id={PANE.right}
       panelRef={rightRef}
       data-testid={T.paneRight}
+      className="app-pane-dock"
       data-dock-position={dockPosition}
       defaultSize={px(vertical ? LAYOUT.dockHeight : LAYOUT.rightPanel)}
       minSize={px(vertical ? LAYOUT.dockHeightMin : LAYOUT.rightPanelMin)}
@@ -177,7 +179,7 @@ export function Shell() {
     </Panel>
   )
   return (
-    <div data-testid={T.shellReady} className="flex h-full flex-col bg-[var(--bg)] text-[var(--tx)]">
+    <div data-testid={T.shellReady} className="app-shell flex h-full flex-col bg-[var(--bg)] text-[var(--tx)]">
       <TitleBar />
       <DockDnd>
         <div className="relative min-h-0 flex-1">

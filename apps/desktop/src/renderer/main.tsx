@@ -33,8 +33,9 @@ function wireOverlayGuard(ipc: IpcClient): void {
 async function boot(): Promise<void> {
   const host = await createRendererHost({ records: rendererModules, coreLocales, bridge: window.pragma })
   wireOverlayGuard(host.ipc)
-  applyTheme(document.documentElement, host.theme.get())
-  host.theme.onChange((s) => applyTheme(document.documentElement, s))
+  const { platform } = host.appInfo
+  applyTheme(document.documentElement, host.theme.get(), platform)
+  host.theme.onChange((s) => applyTheme(document.documentElement, s, platform))
   const store = createShellStore(readDockLayout(host.layout))
   registerShellCommands(host, store)
   if (host.appInfo.testMode) installTestApi(host)
