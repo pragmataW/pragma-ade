@@ -29,14 +29,14 @@ import { useTaskMetaParts } from '../tasks/TaskMeta'
 import { useTaskReveal } from '../tasks/use-task-reveal'
 import { ChildTranscript } from './ChatRows'
 import { ClampedText } from './lib/ClampedText'
-import { isLiveTask, TASK_ICONS, TASK_NAME_CLASS, TASK_TONE } from './lib/task-visual'
+import { isLiveTask, TASK_ICONS, TASK_NAME_CLASS, taskStatusLabelKey, taskTone } from './lib/task-visual'
 import { PILL, TONE_BADGE } from './lib/tone'
 
 /** "Running" pill in the task's tone (spinning ring while it runs). */
 export function TaskStatusPill({ item }: { item: TaskItem }) {
   const t = useT()
   return (
-    <span className={cn(PILL, TONE_BADGE[TASK_TONE[item.status]])}>
+    <span className={cn(PILL, TONE_BADGE[taskTone(item.status)])}>
       {item.status === TASK_STATUS.running ? (
         <LoaderCircle
           size={SMALL_ICON_PX}
@@ -45,7 +45,7 @@ export function TaskStatusPill({ item }: { item: TaskItem }) {
           className="animate-spin motion-reduce:animate-none"
         />
       ) : null}
-      {t(`chat:task.status.${item.status}`)}
+      {t(taskStatusLabelKey(item.status))}
     </span>
   )
 }

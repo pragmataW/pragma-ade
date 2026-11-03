@@ -44,7 +44,8 @@
       "completed": "Done",
       "failed": "Failed",
       "killed": "Stopped",
-      "paused": "Paused"
+      "paused": "Paused",
+      "unknown": "Unknown"
     },
     "kind": {
       "workflow": "Workflow"

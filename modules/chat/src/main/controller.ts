@@ -18,6 +18,7 @@ import {
   type ChatStartupError,
   type ChatTranscript,
   type ChatUserInput,
+  chatEventSchema,
   ERROR_CODE,
   emptyTranscript,
   isChatStartupError,
@@ -165,6 +166,16 @@ export class ChatSessionController {
     for (const event of history) this.#d.publish(this.#append(event))
   }
 
+  /**
+   * A provider event the contract rejects is logged and dropped before it reaches the transcript: published, it would
+   * throw back into the provider's event loop and end the whole session.
+   */
+  #emitFromProvider(event: ChatEvent): void {
+    const parsed = chatEventSchema.safeParse(event)
+    if (parsed.success) this.#emit(event)
+    else this.#d.log.warn(`chat ${this.#d.sessionId}: invalid ${event.kind} event dropped`, parsed.error.issues)
+  }
+
   #emit(event: ChatEvent): void {
     const env = this.#append(event)
     if (event.kind === K.sessionInfo && event.externalSessionId) this.#followExternalSession(event.externalSessionId)
@@ -281,7 +292,7 @@ export class ChatSessionController {
       initialOptions: { ...this.#chosen },
       startupTimeoutMs: this.#d.settings().startupTimeoutMs,
       emit: (e) => {
-        if (generation === this.#generation) this.#emit(e)
+        if (generation === this.#generation) this.#emitFromProvider(e)
       },
     })
   }

@@ -1,3 +1,4 @@
+import type { ChatEvent } from '@pragma/module-chat/contract'
 import { describe, expect, it } from 'vitest'
 import {
   FAKE_AGENT_TOOL_ID,
@@ -6,7 +7,7 @@ import {
   FAKE_WORKFLOW_AGENT,
   FAKE_WORKFLOW_TASK_ID,
 } from '../../testing/fake-claude-stream/scenario'
-import { isKind, ofKind, startSession } from './support'
+import { collector, isKind, ofKind, startSession } from './support'
 
 /** A started session after one completed turn of `scenario`. */
 async function turnOf(scenario: Parameters<typeof startSession>[0]) {
@@ -52,6 +53,18 @@ describe('ClaudeChatSession tasks (fake CLI through the real SDK)', () => {
     expect(s.report()?.controlRequests.map((f) => f.request)).toContainEqual(
       expect.objectContaining({ subtype: 'stop_task', task_id: 'bash_bg_1' }),
     )
+  })
+
+  it('an event the host refuses (emit throws) is dropped; the session and its turn go on', async () => {
+    const seen: ChatEvent[] = []
+    const emit = (e: ChatEvent) => {
+      if (e.kind === 'task') throw new Error('invalid task event')
+      seen.push(e)
+    }
+    const s = await startSession('background-task', { ctx: { emit } })
+    await s.send('go')
+    await collector(seen)(isKind('turn-end'))
+    expect(seen.filter((e) => e.kind === 'session-exit' || (e.kind === 'error' && e.fatal))).toEqual([])
   })
 
   it('rate-limit: a warning banner and a retry notice before the answer', async () => {

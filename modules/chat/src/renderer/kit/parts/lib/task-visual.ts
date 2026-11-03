@@ -1,11 +1,11 @@
 import { Bot, Timer, Workflow } from '@pragma/ui/icons'
-import { type CHAT_TASK_KINDS, type CHAT_TASK_STATUSES, CHAT_TONE, TASK_KIND, TASK_STATUS } from '../../../../contract'
+import { type CHAT_TASK_KINDS, CHAT_TASK_STATUSES, CHAT_TONE, TASK_KIND, TASK_STATUS } from '../../../../contract'
 import type { ChatTone } from './tone'
 
 type TaskStatus = (typeof CHAT_TASK_STATUSES)[number]
 type TaskKind = (typeof CHAT_TASK_KINDS)[number]
 
-export const TASK_TONE: Record<TaskStatus, ChatTone> = {
+const TASK_TONE: Record<TaskStatus, ChatTone> = {
   [TASK_STATUS.pending]: CHAT_TONE.neutral,
   [TASK_STATUS.running]: CHAT_TONE.info,
   [TASK_STATUS.completed]: CHAT_TONE.ok,
@@ -13,6 +13,17 @@ export const TASK_TONE: Record<TaskStatus, ChatTone> = {
   [TASK_STATUS.killed]: CHAT_TONE.warn,
   [TASK_STATUS.paused]: CHAT_TONE.neutral,
 }
+
+const KNOWN_STATUSES = new Set<string>(CHAT_TASK_STATUSES)
+const isTaskStatus = (status: string | undefined): status is TaskStatus => KNOWN_STATUSES.has(status ?? '')
+
+/** The i18n key of a task's status label; a missing or unknown status (a newer agent's) reads a neutral one. */
+export const taskStatusLabelKey = (status: string | undefined): string =>
+  isTaskStatus(status) ? `chat:task.status.${status}` : 'chat:task.status.unknown'
+
+/** The tone of a task's status; neutral for a missing or unknown one. */
+export const taskTone = (status: string | undefined): ChatTone =>
+  isTaskStatus(status) ? TASK_TONE[status] : CHAT_TONE.neutral
 
 export const TASK_ICONS: Record<TaskKind, typeof Bot> = {
   [TASK_KIND.subagent]: Bot,

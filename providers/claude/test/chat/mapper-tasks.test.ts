@@ -1,3 +1,4 @@
+import { chatEventSchema } from '@pragma/module-chat/contract'
 import { describe, expect, it } from 'vitest'
 import * as F from './frames'
 
@@ -126,10 +127,42 @@ describe('task frames', () => {
     expect(events).toEqual([
       expect.objectContaining({ taskId: 'bg', taskKind: 'subagent', status: 'running' }),
       expect.objectContaining({ taskId: 'fg', taskKind: 'subagent', status: 'running' }),
-      expect.objectContaining({ taskId: 'fg', taskKind: 'subagent' }),
-      expect.objectContaining({ taskId: 'sh', taskKind: 'background', name: 'Bash', toolCallId: 'toolu_sh' }),
+      expect.objectContaining({ taskId: 'fg', taskKind: 'subagent', status: 'running' }),
+      expect.objectContaining({ taskId: 'sh', taskKind: 'background', name: 'Bash', status: 'running' }),
       expect.objectContaining({ taskId: 'sh', status: 'failed', summary: 'exit 1' }),
     ])
+  })
+
+  describe('task_updated without a usable status keeps the last one (every event stays valid)', () => {
+    const shell = F.taskStarted({ task_id: 'sh', task_type: 'local_bash', subagent_type: undefined })
+    const tasks = (frames: Record<string, unknown>[]) => F.mapAll(frames).filter((e) => e.kind === 'task')
+
+    it('a shell job moving to the background (patch without status) shows as running', () => {
+      const events = tasks([shell, F.taskUpdated({ is_backgrounded: true }, 'sh')])
+      expect(events).toEqual([expect.objectContaining({ taskId: 'sh', status: 'running' })])
+      for (const e of events) expect(chatEventSchema.safeParse(e).success).toBe(true)
+    })
+
+    it('a patch without status or with an unknown one keeps the last status', () => {
+      const events = tasks([
+        F.taskStarted(),
+        F.taskUpdated({ status: 'paused' }),
+        F.taskUpdated({ error: 'still paused' }),
+        F.taskUpdated({ status: 'backgrounded' }),
+      ])
+      expect(events.map((e) => (e.kind === 'task' ? e.status : undefined))).toEqual([
+        'running',
+        'paused',
+        'paused',
+        'paused',
+      ])
+      for (const e of events) expect(chatEventSchema.safeParse(e).success).toBe(true)
+    })
+
+    it('an unknown notification status ends the task as completed', () => {
+      const events = tasks([F.taskStarted(), F.taskNotification({ status: 'vanished' })])
+      expect(events.at(-1)).toMatchObject({ status: 'completed' })
+    })
   })
 
   it.each([
