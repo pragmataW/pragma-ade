@@ -169,6 +169,7 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
       return disposable
     }
   const opened: string[] = []
+  const commandsChanged = listeners<undefined>()
   const ctx = {
     ipc,
     shell: { openExternal: async (url: string) => void opened.push(url) },
@@ -186,8 +187,10 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
     commands: {
       register: (id: string | { id: string }, handler: (args: unknown) => unknown) => {
         commandHandlers.set(typeof id === 'string' ? id : id.id, handler)
+        commandsChanged.emit(undefined)
         return disposable
       },
+      onChange: (cb: () => void) => ({ dispose: commandsChanged.on(cb) }),
       execute: async (id: string, args?: unknown) => {
         executed.push([id, args])
         return commandHandlers.get(id)?.(args)

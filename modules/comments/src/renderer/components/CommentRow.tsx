@@ -9,6 +9,7 @@ import {
   COMMENTS_TESTIDS as T,
 } from '../../contract'
 import { locationLabel } from '../location'
+import { useThreadLinks } from '../use-thread-links'
 import { CommentComposer } from './CommentComposer'
 import { ThreadView } from './thread/ThreadView'
 
@@ -33,6 +34,7 @@ function SourceIcon({ source }: { source: CommentSource }) {
 /** One review thread in the drawer: source icon, location, status, replies; Edit swaps in the composer (pending root). */
 export function CommentRow({ comment }: { comment: Comment }) {
   const [editing, setEditing] = useState(false)
+  const links = useThreadLinks(comment)
   return (
     <li data-testid={T.row} data-comment-id={comment.id} className="border-b px-4 py-2.5">
       {editing ? (
@@ -46,6 +48,7 @@ export function CommentRow({ comment }: { comment: Comment }) {
       ) : (
         <ThreadView
           comment={comment}
+          links={links}
           surface={COMPOSER_SURFACE.plain}
           leading={<SourceIcon source={comment.source} />}
           locationLabel={locationLabel(comment)}

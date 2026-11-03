@@ -63,3 +63,9 @@ export const AUTHOR_MARK_PX = 16
 export const MONOGRAM_MAX_LETTERS = 2
 /** Below this width (px) a thread's secondary actions (Edit, links, Delete) collapse into its "…" menu. */
 export const THREAD_NARROW_PX = 360
+
+// Other modules' commands (optional: links show only while `commands.has`). Ids, not contracts: git-changes already
+// depends on comments, so importing its contract would be a cycle.
+export const EDITOR_OPEN_FILE_COMMAND = 'editor.openFile'
+export const GIT_CHANGES_REVEAL_COMMAND = 'gitChanges.reveal'
+export const BROWSER_OPEN_COMMAND = 'browser.open'
