@@ -29,6 +29,8 @@ export interface TranscriptQuery {
   /** Ask only this provider (the session record names it). */
   providerId?: string
   cwd?: string
+  /** The session profile's env over the app's (a profile may point the CLI at its own data dir). */
+  env?: Readonly<Record<string, string>>
 }
 
 const NO_SESSION_ID =
@@ -40,7 +42,8 @@ export async function findTranscripts(locator: TranscriptLocator, q: TranscriptQ
   const found = await Promise.all(
     providers.map(async (p) => {
       try {
-        const query = { sessionId: q.providerSessionId, home: locator.home, env: locator.env }
+        const env = q.env ? { ...locator.env, ...q.env } : locator.env
+        const query = { sessionId: q.providerSessionId, home: locator.home, env }
         const location = await p.transcript.locateTranscript(q.cwd ? { ...query, cwd: q.cwd } : query)
         return location ? [{ ...location, providerId: p.id, providerSessionId: q.providerSessionId }] : []
       } catch (e) {
@@ -64,11 +67,15 @@ async function pragmaQuery(deps: SessionLookupDeps, id: string): Promise<Transcr
   if (!session) return null
   if (!session.externalSessionId)
     throw new CliError(CLI_ERROR.not_found, `Session '${id}' has not reported a provider session id yet.`)
-  const worktree = await deps.projects.getWorktree(session.worktreeId).catch(() => null)
+  const [worktree, profile] = await Promise.all([
+    deps.projects.getWorktree(session.worktreeId).catch(() => null),
+    session.profileId ? deps.agents.getProfile(session.profileId).catch(() => null) : null,
+  ])
   return {
     providerSessionId: session.externalSessionId,
     providerId: session.providerId,
     ...(worktree ? { cwd: worktree.path } : {}),
+    ...(profile && Object.keys(profile.env).length > 0 ? { env: profile.env } : {}),
   }
 }
 

@@ -1,4 +1,4 @@
-import { aSession } from '@pragma/module-agents/testing'
+import { aProfile, aSession } from '@pragma/module-agents/testing'
 import { describe, expect, it } from 'vitest'
 import { createCliHandlers } from '../src/main/handlers'
 import { aTranscript, aWorktree, fakeAgents, fakeProjects, fakeTranscripts, makeDeps } from './support/fakes'
@@ -70,6 +70,21 @@ describe('cli.sessionLocate', () => {
       ok: false,
       error: { code: 'not_found', message: "No local transcript found for session 'nope'." },
     })
+  })
+
+  it("a Pragma session's profile env (e.g. its own CLAUDE_CONFIG_DIR) is passed to the provider", async () => {
+    const transcripts = fakeTranscripts({ claude: { [CLAUDE_ID]: aTranscript() } })
+    const agents = fakeAgents({
+      profiles: [aProfile({ id: 'work', name: 'Claude work', env: { CLAUDE_CONFIG_DIR: '/home/.claude-work' } })],
+      sessions: [
+        aSession('s1', 1, { worktreeId: 'w1', providerId: 'claude', profileId: 'work', externalSessionId: CLAUDE_ID }),
+      ],
+    })
+    const projects = fakeProjects({ worktrees: [aWorktree('w1', { path: '/repo' })] })
+    const deps = makeDeps({ agents, projects, transcripts: { ...transcripts, env: { SHELL: '/bin/zsh' } } })
+    const res = await createCliHandlers(deps).sessionLocate({ context: { cwd: '/' }, sessionId: 's1' })
+    expect(res).toMatchObject({ ok: true })
+    expect(transcripts.queries[0]?.[1].env).toEqual({ SHELL: '/bin/zsh', CLAUDE_CONFIG_DIR: '/home/.claude-work' })
   })
 
   it('a provider that throws is skipped', async () => {
