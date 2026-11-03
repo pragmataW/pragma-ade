@@ -4,6 +4,7 @@ import { Icon } from '@pragma/ui/components/icon'
 import { Kbd } from '@pragma/ui/components/kbd'
 import type { CSSProperties } from 'react'
 import { SMALL_ICON_PX } from '../constants'
+import { type DockPosition, panelIcon } from '../lib/dock-layout'
 import { useShell } from '../lib/shell-context'
 import { useFullScreen } from '../lib/use-full-screen'
 import { IconButton } from './IconButton'
@@ -22,6 +23,43 @@ function gutter(platform: string, fullScreen: boolean): CSSProperties | undefine
   return fullScreen ? undefined : MAC_GUTTER
 }
 
+/** Toggle label per dock edge: the panel is named by where it sits. */
+const TOGGLE_PANEL_LABEL: Record<DockPosition, string> = {
+  left: 'core:titlebar.togglePanel.left',
+  right: 'core:titlebar.togglePanel.right',
+  top: 'core:titlebar.togglePanel.top',
+  bottom: 'core:titlebar.togglePanel.bottom',
+}
+
+/** Sidebar and dock toggles; their icons follow where each panel is docked. */
+export function PanelToggles() {
+  const t = useT()
+  const host = useRendererHost()
+  const sidebarCollapsed = useShell((s) => s.sidebarCollapsed)
+  const rightCollapsed = useShell((s) => s.rightCollapsed)
+  const sidebarSide = useShell((s) => s.sidebarSide)
+  const dockPosition = useShell((s) => s.dockPosition)
+  const run = (id: string) => () => void host.commands.execute(id)
+  return (
+    <>
+      <IconButton
+        icon={panelIcon(sidebarSide)}
+        label={t('core:titlebar.toggleSidebar')}
+        testId={T.toggleSidebar}
+        pressed={!sidebarCollapsed}
+        onClick={run(CoreCommands.toggleSidebar)}
+      />
+      <IconButton
+        icon={panelIcon(dockPosition)}
+        label={t(TOGGLE_PANEL_LABEL[dockPosition])}
+        testId={T.toggleRightPanel}
+        pressed={!rightCollapsed}
+        onClick={run(CoreCommands.toggleRightPanel)}
+      />
+    </>
+  )
+}
+
 /**
  * 38px title bar: traffic-light gutter, breadcrumb slot, command search, quick actions (ui-notes). The whole bar drags
  * the window (double-click zooms per the OS setting); only interactive controls opt out (`.app-titlebar` in styles.css).
@@ -30,8 +68,6 @@ export function TitleBar() {
   const t = useT()
   const host = useRendererHost()
   const fullScreen = useFullScreen(host)
-  const sidebarCollapsed = useShell((s) => s.sidebarCollapsed)
-  const rightCollapsed = useShell((s) => s.rightCollapsed)
   const run = (id: string) => () => void host.commands.execute(id)
   return (
     <header
@@ -53,20 +89,7 @@ export function TitleBar() {
       </PlainButton>
       <div className="flex flex-1 items-center justify-end gap-1">
         <Slot id={ShellSlots.titlebarRight} />
-        <IconButton
-          icon="panel-left"
-          label={t('core:titlebar.toggleSidebar')}
-          testId={T.toggleSidebar}
-          pressed={!sidebarCollapsed}
-          onClick={run(CoreCommands.toggleSidebar)}
-        />
-        <IconButton
-          icon="panel-right"
-          label={t('core:titlebar.toggleRightPanel')}
-          testId={T.toggleRightPanel}
-          pressed={!rightCollapsed}
-          onClick={run(CoreCommands.toggleRightPanel)}
-        />
+        <PanelToggles />
       </div>
     </header>
   )

@@ -4,6 +4,7 @@ import {
   DOCK_LAYOUT_KEY,
   dockLeads,
   isVerticalDock,
+  panelIcon,
   readDockLayout,
   swapSides,
   writeDockLayout,
@@ -58,4 +59,13 @@ it.each([
 ] as const)('%s: vertical=%s, leads=%s', (p, vertical, leads) => {
   expect(isVerticalDock(p)).toBe(vertical)
   expect(dockLeads(p)).toBe(leads)
+})
+
+it.each([
+  ['left', 'panel-left'],
+  ['right', 'panel-right'],
+  ['top', 'panel-top'],
+  ['bottom', 'panel-bottom'],
+] as const)('a panel on the %s edge draws the %s icon', (edge, icon) => {
+  expect(panelIcon(edge)).toBe(icon)
 })
