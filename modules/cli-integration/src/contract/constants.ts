@@ -21,8 +21,12 @@ export const CLI_BIN_NAME = 'pragma'
 export const CLI_CMD_SHIM_NAME = 'pragma.cmd'
 
 /** Source folder names under `skills/`. */
-export const SKILL_IDS = ['handoff', 'pragma-cli'] as const
+export const SKILL_IDS = ['board', 'handoff', 'pragma-cli'] as const
 export type SkillId = (typeof SKILL_IDS)[number]
 /** Directory (and frontmatter `name`) each skill is installed as. */
-export const SKILL_INSTALL_NAMES: Record<SkillId, string> = { handoff: 'pragma-handoff', 'pragma-cli': 'pragma-cli' }
+export const SKILL_INSTALL_NAMES: Record<SkillId, string> = {
+  board: 'pragma-board',
+  handoff: 'pragma-handoff',
+  'pragma-cli': 'pragma-cli',
+}
 export const SKILL_FILE = 'SKILL.md'

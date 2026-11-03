@@ -65,4 +65,5 @@ session id is also in the environment: Claude Code sets `CLAUDE_CODE_SESSION_ID`
 - `2` usage error (bad flags)
 - `3` Pragma ADE is not running or cannot be reached; ask the user to open the app
 
-For handoffs (giving the work to another agent), use the pragma-handoff skill.
+For handoffs (giving the work to another agent), use the pragma-handoff skill. To work through
+the board's tasks column by column, use the pragma-board skill.
