@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { loadOpencodeHistory } from '../src/main/chat/history-loader'
 import { historyToEvents } from '../src/main/chat/mapping/history'
-import { type Message, messageSchema } from '../src/main/chat/schemas'
+import { type Message, messagePageSchema, messageSchema } from '../src/main/chat/schemas'
+import { CUSTOM } from '../src/renderer/chat/payloads'
 import {
   cleanupAll,
   fakeContextEnv,
@@ -90,6 +91,35 @@ describe('history replay', () => {
   ] as const)('idle %s → turn-end %s', (outcome, reason) => {
     expect(historyToEvents([messageSchema.parse({ id: 'i', type: 'idle', outcome })], win)).toEqual([
       { kind: 'turn-end', reason },
+    ])
+  })
+
+  it('replays opencode 2.2.5 session-message types: switches as notices, injected text hidden, unknown skipped', () => {
+    const at = { time: { created: 1 } }
+    const model = { id: 'gpt-x', providerID: 'openai' }
+    // Shapes of a real session (anonymized): selections, plan-mode reminders, a tool-catalog update, future types.
+    const raw = [
+      { id: 'm0', type: 'model-switched', model, ...at },
+      { id: 'm1', type: 'agent-switched', agent: 'plan', ...at },
+      { id: 'm2', type: 'agent-switched', agent: 'build', previous: 'plan', ...at },
+      { id: 'm3', type: 'synthetic', text: '<system-reminder>\nYou are in Plan mode.\n</system-reminder>', ...at },
+      { id: 'm4', type: 'user', text: 'start a subagent', ...at },
+      { id: 'm5', type: 'assistant', agent: 'build', model, content: [{ type: 'text', text: 'ok' }], ...at },
+      { id: 'm6', type: 'idle', outcome: 'succeeded', ...at },
+      { id: 'm7', type: 'system', text: 'The available tools have changed.', ...at },
+      { id: 'm8', type: 'system', text: 'model-facing', description: 'Tools changed', ...at },
+      { id: 'm9', type: 'model-switched', model: { id: 'gpt-y', providerID: 'openai' }, previous: model, ...at },
+      { id: 'm10', type: 'location-switched', location: { type: 'local' }, ...at },
+      { id: 'm11', type: 'not-yet-invented', ...at },
+    ]
+    const out = historyToEvents(messagePageSchema.parse({ data: raw }).data, win)
+    expect(kinds(out)).toEqual(['custom', 'custom', 'message', 'text-delta', 'turn-end', 'custom', 'custom'])
+    expect(ofKind(out, 'message').map((m) => m.text)).toEqual(['start a subagent'])
+    expect(ofKind(out, 'custom').map((c) => [c.type, c.data])).toEqual([
+      [CUSTOM.notice, { notice: 'agent', agent: 'plan' }],
+      [CUSTOM.notice, { notice: 'agent', agent: 'build' }],
+      [CUSTOM.notice, { notice: 'system', text: 'Tools changed' }],
+      [CUSTOM.notice, { notice: 'model', model: 'gpt-y' }],
     ])
   })
 

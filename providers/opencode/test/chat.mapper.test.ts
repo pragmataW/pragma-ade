@@ -239,6 +239,19 @@ describe('EventMapper', () => {
     expect(usage).toMatchObject({ contextTokens: 3 })
   })
 
+  it('live agent/model selections become the same notices as history (the initial model stays silent)', () => {
+    const gpt = { id: 'gpt-x', providerID: 'openai' }
+    const out = feed(newMapper(), [
+      ev('session.model.selected', { model: gpt }),
+      ev('session.agent.selected', { agent: 'plan', previous: 'build' }),
+      ev('session.model.selected', { model: { id: 'gpt-y', providerID: 'openai' }, previous: gpt }),
+    ])
+    expect(ofKind(out, 'custom').map((c) => c.data)).toEqual([
+      { notice: 'agent', agent: 'plan' },
+      { notice: 'model', model: 'gpt-y' },
+    ])
+  })
+
   it('a tool called without a start event still maps', () => {
     expect(newMapper().map(ev('session.tool.called', { id: 'z', input: { path: 'a' } }))[0]).toMatchObject({
       toolCallId: 'z',

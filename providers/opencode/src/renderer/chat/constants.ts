@@ -37,6 +37,8 @@ export const NOTICE_I18N = {
   files: 'opencode:chatUi.notice.files',
   forked: 'opencode:chatUi.notice.forked',
   forkedFrom: 'opencode:chatUi.notice.forkedFrom',
+  agent: 'opencode:chatUi.notice.agent',
+  model: 'opencode:chatUi.notice.model',
 } as const
 export const MODEL_I18N = {
   search: 'opencode:chatUi.model.search',

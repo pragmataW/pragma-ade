@@ -86,6 +86,8 @@ export const EV = {
   providerUpdated: 'provider.updated',
   integrationUpdated: 'integration.updated',
   credentialUpdated: 'credential.updated',
+  agentSelected: 'session.agent.selected',
+  modelSelected: 'session.model.selected',
 } as const
 /** The SSE `types` filter (`server.connected` always comes). */
 export const CONSUMED_EVENT_TYPES = [
@@ -119,6 +121,8 @@ export const CONSUMED_EVENT_TYPES = [
   EV.providerUpdated,
   EV.integrationUpdated,
   EV.credentialUpdated,
+  EV.agentSelected,
+  EV.modelSelected,
 ] as const
 export const OTHER_EVENT = 'other'
 
@@ -126,7 +130,20 @@ export const PERMISSION_DECISIONS = ['once', 'always', 'reject'] as const
 export const IDLE_OUTCOMES = ['succeeded', 'failed', 'interrupted'] as const
 export const FILE_STATUSES = ['added', 'deleted', 'modified'] as const
 export const OPENCODE_TODO_STATUSES = ['pending', 'in_progress', 'completed', 'cancelled'] as const
-export const MESSAGE_TYPES = { user: 'user', assistant: 'assistant', idle: 'idle' } as const
+/**
+ * The stored session-message types replayed (opencode 2.2.5 `SessionMessage.Info`). `synthetic` (text the server
+ * injects for the model, e.g. plan-mode reminders) is parsed only to be hidden; `location-switched`, `skill`, `shell`,
+ * `compaction` and any later type are skipped.
+ */
+export const MESSAGE_TYPES = {
+  user: 'user',
+  assistant: 'assistant',
+  idle: 'idle',
+  agentSwitched: 'agent-switched',
+  modelSwitched: 'model-switched',
+  synthetic: 'synthetic',
+  system: 'system',
+} as const
 export const CONTENT_TYPES = { text: 'text', reasoning: 'reasoning', tool: 'tool', file: 'file' } as const
 export const TOOL_STATES = { completed: 'completed', error: 'error' } as const
 export const AGENT_MODES = { primary: 'primary', all: 'all' } as const
