@@ -171,4 +171,15 @@ describe('RichMarkdown prose', () => {
     expect(container.querySelectorAll('[data-checked]')).toHaveLength(1)
     expect(container.querySelector('input')).toBeNull()
   })
+
+  it('wraps a very long unbroken token in prose; code keeps its own horizontal scroll', () => {
+    const token = 'x'.repeat(4000)
+    const { container } = show(`see ${token}\n\n${fence('sh', token)}`)
+    const p = container.querySelector('p') as HTMLElement
+    expect(p.closest('.wrap-break-word')).not.toBeNull()
+    expect(p.closest('.min-w-0')).not.toBeNull()
+    const frame = screen.getByTestId(CHAT_TESTIDS.codeFrame)
+    expect([...frame.classList]).toEqual(expect.arrayContaining(['min-w-0', 'overflow-hidden']))
+    expect(frame.querySelector('.overflow-x-auto')).not.toBeNull()
+  })
 })
