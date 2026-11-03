@@ -1,10 +1,16 @@
 import { EventEmitter } from 'node:events'
-import { CoreIpc, type ThemeState } from '@pragma/sdk'
+import { CoreIpc, type PaletteId, type ThemeState } from '@pragma/sdk'
 import { createMemoryTransport, IpcRouter } from '@pragma/sdk/runtime/main'
 import { memoryLogger } from '@pragma/test-support'
 import { palettes } from '@pragma/ui/tokens'
 import { describe, expect, it, vi } from 'vitest'
-import { TITLEBAR_HEIGHT, TRAFFIC_LIGHT_POSITION } from '../src/constants'
+import {
+  TITLEBAR_HEIGHT,
+  TRAFFIC_LIGHT_POSITION,
+  TRANSPARENT_COLOR,
+  WINDOW_VIBRANCY,
+  WINDOW_VISUAL_EFFECT_STATE,
+} from '../src/constants'
 import {
   type ChromeWindow,
   registerWindowHandlers,
@@ -14,13 +20,14 @@ import {
 
 const dark = palettes.vscode.dark
 const light = palettes.vscode.light
-const theme = (resolved: 'dark' | 'light'): ThemeState => ({
+const theme = (resolved: 'dark' | 'light', palette: PaletteId = 'vscode'): ThemeState => ({
   mode: 'system',
-  palette: 'vscode',
+  palette,
   density: 'compact',
   resolved,
-  tokens: { ...(resolved === 'dark' ? dark : light) },
+  tokens: { ...palettes[palette][resolved] },
 })
+const glass = (resolved: 'dark' | 'light' = 'dark'): ThemeState => theme(resolved, 'glass')
 
 describe('windowChromeOptions', () => {
   it('macOS keeps the inset traffic lights and stays fullscreenable', () => {
@@ -46,10 +53,11 @@ class FakeWindow extends EventEmitter implements ChromeWindow {
   fullScreen = false
   setTitleBarOverlay = vi.fn()
   setBackgroundColor = vi.fn()
+  setVibrancy = vi.fn()
   isFullScreen = (): boolean => this.fullScreen
 }
 
-function setup(platform: string) {
+function setup(platform: string, opts: { initial?: ThemeState; reduced?: () => boolean } = {}) {
   const log = memoryLogger()
   const memory = createMemoryTransport()
   const router = new IpcRouter(memory.transport, log)
@@ -57,14 +65,14 @@ function setup(platform: string) {
   vi.spyOn(router, 'publish').mockImplementation((_event, payload) => void published.push(payload as boolean))
   let listener: ((s: ThemeState) => void) | undefined
   const themeApi = {
-    get: () => theme('dark'),
+    get: () => opts.initial ?? theme('dark'),
     onChange: (cb: (s: ThemeState) => void) => {
       listener = cb
       return { dispose: () => (listener = undefined) }
     },
   }
   const win = new FakeWindow()
-  watchWindowChrome(win, { router, theme: themeApi, platform })
+  watchWindowChrome(win, { router, theme: themeApi, platform, reducedTransparency: opts.reduced })
   return { win, published, emitTheme: (s: ThemeState) => listener?.(s), hasListener: () => !!listener }
 }
 
@@ -108,5 +116,62 @@ describe('watchWindowChrome', () => {
     emitTheme(theme('light'))
     expect(win.setTitleBarOverlay).not.toHaveBeenCalled()
     expect(win.setBackgroundColor).toHaveBeenCalledWith(light.bg)
+  })
+})
+
+describe('glass window backdrop', () => {
+  it('macOS opens a glass window with vibrancy behind a transparent background', () => {
+    expect(windowChromeOptions('darwin', glass())).toMatchObject({
+      backgroundColor: TRANSPARENT_COLOR,
+      vibrancy: WINDOW_VIBRANCY,
+      visualEffectState: WINDOW_VISUAL_EFFECT_STATE,
+    })
+  })
+
+  it('reduced transparency keeps a macOS glass window opaque', () => {
+    const options = windowChromeOptions('darwin', glass(), true)
+    expect(options.backgroundColor).toBe(palettes.glass.dark.bg)
+    expect(options).not.toHaveProperty('vibrancy')
+  })
+
+  it.each(['linux', 'win32'])('%s keeps an opaque window and see-through window controls', (platform) => {
+    const options = windowChromeOptions(platform, glass('light'))
+    expect(options).not.toHaveProperty('vibrancy')
+    expect(options.backgroundColor).toBe(palettes.glass.light.bg)
+    expect(options.titleBarOverlay).toMatchObject({ color: TRANSPARENT_COLOR, symbolColor: palettes.glass.light.tx })
+  })
+
+  it('switching to glass and back toggles vibrancy at runtime on macOS', () => {
+    const { win, emitTheme } = setup('darwin')
+    emitTheme(glass())
+    expect(win.setVibrancy).toHaveBeenLastCalledWith(WINDOW_VIBRANCY)
+    expect(win.setBackgroundColor).toHaveBeenLastCalledWith(TRANSPARENT_COLOR)
+    emitTheme(glass('light'))
+    expect(win.setVibrancy).toHaveBeenCalledTimes(1)
+    emitTheme(theme('light'))
+    expect(win.setVibrancy).toHaveBeenLastCalledWith(null)
+    expect(win.setBackgroundColor).toHaveBeenLastCalledWith(light.bg)
+    expect(win.setVibrancy).toHaveBeenCalledTimes(2)
+  })
+
+  it('a window opened in glass leaves its vibrancy alone until the palette changes', () => {
+    const { win, emitTheme } = setup('darwin', { initial: glass() })
+    emitTheme(glass('light'))
+    expect(win.setVibrancy).not.toHaveBeenCalled()
+    expect(win.setBackgroundColor).toHaveBeenLastCalledWith(TRANSPARENT_COLOR)
+  })
+
+  it('reduced transparency never turns vibrancy on', () => {
+    const { win, emitTheme } = setup('darwin', { reduced: () => true })
+    emitTheme(glass())
+    expect(win.setVibrancy).not.toHaveBeenCalled()
+    expect(win.setBackgroundColor).toHaveBeenLastCalledWith(palettes.glass.dark.bg)
+  })
+
+  it('never asks for vibrancy off macOS', () => {
+    const { win, emitTheme } = setup('linux')
+    emitTheme(glass())
+    expect(win.setVibrancy).not.toHaveBeenCalled()
+    expect(win.setTitleBarOverlay).toHaveBeenLastCalledWith(expect.objectContaining({ color: TRANSPARENT_COLOR }))
   })
 })
