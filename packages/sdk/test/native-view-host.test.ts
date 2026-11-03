@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
+
+// The cold-capture case the QA run hit: a page captured right after it loaded took ~300 ms.
+const COLD_CAPTURE_MS = 300
+
 import { CoreIpc } from '../src/common/core-ipc'
 import type { Rect } from '../src/common/shell'
 import { SNAPSHOT_CAPTURE_TIMEOUT_MS, SNAPSHOT_CLEAR_DELAY_MS, SNAPSHOT_PAINT_DELAY_MS } from '../src/constants'
@@ -157,18 +161,28 @@ describe('overlay occlusion', () => {
     expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(0)
   })
 
-  test('snapshot mode waits for the capture', async () => {
+  test.each([
+    ['a hide cover with a capture slower than a frame (fresh page)', MENU_OVER, COLD_CAPTURE_MS],
+    [
+      'snapshot mode, however long the capture takes',
+      { mode: 'snapshot' as const, rect: null },
+      SNAPSHOT_CAPTURE_TIMEOUT_MS * 2,
+    ],
+  ])('%s keeps the view up until its snapshot is ready', async (_l, cover, wait) => {
     vi.useFakeTimers()
     const { host, v, events } = covered()
     let resolve: (s: string) => void = () => undefined
     v.capture.mockImplementation(() => new Promise<string>((r) => (resolve = r)))
-    const done = host.setOcclusion({ covers: [{ mode: 'snapshot', rect: null }] })
-    await vi.advanceTimersByTimeAsync(SNAPSHOT_CAPTURE_TIMEOUT_MS * 2)
+    const done = host.setOcclusion({ covers: [cover] })
+    await vi.advanceTimersByTimeAsync(wait)
+    expect(host.state('a')?.visible).toBe(true)
     resolve('data:late')
-    await vi.advanceTimersByTimeAsync(SNAPSHOT_PAINT_DELAY_MS)
-    await done
-    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toHaveLength(1)
+    await settle(done)
+    expect(events(CoreIpc.nativeViewsSnapshot.channel)).toEqual([
+      { viewId: 'a', bounds: TAB_RECT, dataUrl: 'data:late' },
+    ])
     expect(host.state('a')?.visible).toBe(false)
+    expect(v.visible).toEqual([true, false])
   })
 
   test('closing the overlay while capturing never hides the view nor leaves a snapshot', async () => {
