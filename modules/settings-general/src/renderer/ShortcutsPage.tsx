@@ -1,8 +1,9 @@
 import { useRendererHost, useT } from '@pragma/sdk/renderer'
+import { EmptyState } from '@pragma/ui'
 import { Badge } from '@pragma/ui/components/badge'
 import { Kbd, KbdGroup } from '@pragma/ui/components/kbd'
 import { useEffect, useState } from 'react'
-import { OUTLINE_VARIANT } from '../constants'
+import { EMPTY_SHORTCUTS_ICON, OUTLINE_VARIANT } from '../constants'
 import { TEST_IDS } from '../contract/testids'
 import { acceleratorKeys } from '../lib/accelerator'
 
@@ -16,7 +17,16 @@ export function ShortcutsPage() {
     const sub = shortcuts.onChange(() => setList(shortcuts.list()))
     return () => sub.dispose()
   }, [shortcuts])
-  if (list.length === 0) return <p className="text-[var(--mu)]">{t('settings-general:shortcuts.empty')}</p>
+  if (list.length === 0)
+    return (
+      <EmptyState
+        className="max-w-[720px] rounded-[var(--radius-card)] border border-[var(--bd)] border-dashed"
+        compact
+        icon={EMPTY_SHORTCUTS_ICON}
+        title={t('settings-general:shortcuts.empty')}
+        description={t('settings-general:shortcuts.emptyHint')}
+      />
+    )
   return (
     <ul className="max-w-[720px] divide-y divide-[var(--bd)] rounded-[var(--radius-card)] border border-[var(--bd)]">
       {list.map((s) => (

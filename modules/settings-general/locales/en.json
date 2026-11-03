@@ -35,6 +35,7 @@
   },
   "shortcuts": {
     "empty": "No shortcuts registered",
+    "emptyHint": "Modules list their keyboard shortcuts here once they register them.",
     "scope": {
       "app": "App",
       "global": "Global"
