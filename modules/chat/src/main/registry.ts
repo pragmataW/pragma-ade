@@ -11,6 +11,7 @@ import { HISTORY_LOAD_FAILED_KEY } from '../constants'
 import {
   type ChatCapability,
   type ChatEvent,
+  type ChatHistoryContext,
   type ChatOptionDescriptor,
   ERROR_CODE,
   EVENT_KIND as K,
@@ -80,20 +81,41 @@ export class ChatSessionRegistry {
     if (!session.externalSessionId || !source?.capability?.loadHistory) return []
     const worktreePath = await this.#d.agents.getWorktreePath(session.worktreeId)
     if (!worktreePath) return []
+    return this.#load(session.id, source.capability, {
+      profile: source.profile,
+      worktreePath,
+      env: {},
+      externalSessionId: session.externalSessionId,
+    })
+  }
+
+  /** The provider's transcript of the conversation; never rejects. */
+  async #load(id: string, capability: ChatCapability | undefined, ctx: ChatHistoryContext): Promise<ChatEvent[]> {
+    if (!capability?.loadHistory) return []
     try {
-      return await source.capability.loadHistory({
-        profile: source.profile,
-        worktreePath,
-        env: {},
-        externalSessionId: session.externalSessionId,
-      })
+      return await capability.loadHistory(ctx)
     } catch (e) {
       // Non-fatal: the session still opens (toolbar from its saved options, resume by its external id).
-      this.#d.log.warn(`chat ${session.id}: history load failed`, e)
+      this.#d.log.warn(`chat ${id}: history load failed`, e)
       return [
         { kind: K.error, code: ERROR_CODE.unknown, message: HISTORY_LOAD_FAILED_KEY, detail: String(e), fatal: false },
       ]
     }
+  }
+
+  /**
+   * A resume no controller shows yet (e.g. a terminal session continued in chat, or a start racing the view's
+   * `open`): the conversation so far, else the transcript would hold only the live events.
+   */
+  #resumedHistory(req: ModeStartRequest): Promise<ChatEvent[]> | undefined {
+    const externalSessionId = req.resume?.externalSessionId
+    if (!externalSessionId) return undefined
+    return this.#load(req.session.id, this.#d.resolveCapability(req.profile), {
+      profile: req.profile,
+      worktreePath: req.worktree.path,
+      env: {},
+      externalSessionId,
+    })
   }
 
   async snapshot(id: string): Promise<ChatSnapshot> {
@@ -102,8 +124,9 @@ export class ChatSessionRegistry {
 
   /** Mode-handler `start`: the startup runs in the background (the handshake can take up to the startup timeout). */
   attach(req: ModeStartRequest): ChatSessionController {
-    const c = this.#controllers.get(req.session.id) ?? this.#create(req.session.id)
-    void c.attach(req)
+    const existing = this.#controllers.get(req.session.id)
+    const c = existing ?? this.#create(req.session.id)
+    void c.attach(req, existing ? undefined : this.#resumedHistory(req))
     return c
   }
 

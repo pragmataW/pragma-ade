@@ -95,6 +95,59 @@ describe('ChatSessionRegistry', () => {
     ])
   })
 
+  describe('a resumed start of a session not opened yet (e.g. a terminal session continued in chat)', () => {
+    const resume = { externalSessionId: 'ext-1' }
+
+    it('shows the conversation so far before the live events, and publishes it to an open view', async () => {
+      const h = harness({ history })
+      const c = h.registry().attach(h.request({ resume }))
+      await c.whenAttached()
+      expect(h.fake.historyRequests).toEqual(['ext-1'])
+      const kinds = c.snapshot().transcript.items.map((i) => i.kind)
+      expect(kinds.slice(0, 2)).toEqual(['message', 'text-delta'])
+      expect(h.kinds().slice(0, 2)).toEqual(['message', 'text-delta'])
+      expect(h.fake.lastSession().createdWith.resumeExternalSessionId).toBe('ext-1')
+    })
+
+    it('keeps the history after the resumed process ends (not only "Session ended")', async () => {
+      const h = harness({ history })
+      const c = h.registry().attach(h.request({ resume }))
+      await c.whenAttached()
+      await h.fake.lastSession().close()
+      const kinds = c.snapshot().transcript.items.map((i) => i.kind)
+      expect(kinds).toEqual(expect.arrayContaining(['message', 'text-delta', 'session-exit']))
+    })
+
+    it('an open racing the start returns the controller with the history', async () => {
+      const h = harness({ history })
+      h.agents.sessions.set('s1', { ...h.session, status: 'exited', externalSessionId: 'ext-1' })
+      const r = h.registry()
+      const opening = r.open('s1')
+      const c = r.attach(h.request({ resume }))
+      expect(await opening).toBe(c)
+      await c.whenAttached()
+      expect(c.snapshot().transcript.items.filter((i) => i.kind === 'message')).toHaveLength(1)
+    })
+
+    it('a fresh start (no resume) loads no history', async () => {
+      const h = harness({ history })
+      const c = h.registry().attach(h.request())
+      await c.whenAttached()
+      expect(h.fake.historyRequests).toEqual([])
+    })
+
+    it('a failed history load still starts the session, with a non-fatal notice', async () => {
+      const h = harness({ historyError: new Error('boom') })
+      const c = h.registry().attach(h.request({ resume }))
+      await c.whenAttached()
+      expect(c.snapshot().status).not.toBe('exited')
+      expect(c.snapshot().transcript.items[0]).toMatchObject({
+        kind: 'error',
+        message: 'chat:errors.historyLoadFailed',
+      })
+    })
+  })
+
   it('attach creates a live controller; stop closes it; closeAll closes every controller', async () => {
     const h = harness()
     const r = h.registry()
