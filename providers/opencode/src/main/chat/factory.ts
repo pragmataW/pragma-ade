@@ -44,6 +44,8 @@ export function createOpencodeChat(
   return {
     /** Images, PDFs and text files go to OpenCode inline (data URIs). */
     attachmentKinds: ATTACHMENTS,
+    /** A send during a turn is steered into it (`busyDelivery`); the session acks it once OpenCode takes it in. */
+    midTurnInput: true,
     /** Settings › OpenCode (provider connections). */
     settingsCall: (request) => connections.call(request),
     checkSupport: (profile) => checkOpencodeSupport(profile, capCtx),

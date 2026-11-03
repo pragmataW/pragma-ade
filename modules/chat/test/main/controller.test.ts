@@ -40,6 +40,25 @@ describe('ChatSessionController', () => {
     expect(c.snapshot().transcript.queue).toEqual([])
   })
 
+  it('midTurnInput: one shared turn-end ends the turn (idle, nothing queued); the next send starts a new turn', async () => {
+    const h = harness({ midTurnInput: true })
+    const c = await h.attached()
+    await c.send(input('one'))
+    await c.send(input('two'))
+    h.fake.lastSession().finishTurn()
+    expect(h.statuses().at(-1)).toBe('idle')
+    expect(c.snapshot().transcript.turnActive).toBe(false)
+    expect(c.snapshot().transcript.queue).toEqual([])
+    await c.send(input('three'))
+    expect(h.kinds().filter((k) => k === 'turn-start')).toHaveLength(2)
+    const third = c
+      .snapshot()
+      .transcript.items.filter((i) => i.kind === 'message')
+      .at(-1)
+    expect(third).toMatchObject({ text: 'three' })
+    expect(third).not.toHaveProperty('midTurn')
+  })
+
   it('message-ack clears the mid-turn marker', () => {
     const t = makeTranscript([
       { kind: 'message', messageId: 'm', role: 'user', text: 'x', attachments: [], origin: 'live', midTurn: true },

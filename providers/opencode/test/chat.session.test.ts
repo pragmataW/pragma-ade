@@ -2,12 +2,14 @@ import type { ChatEvent } from '@pragma/module-chat/contract'
 import { makeTranscript } from '@pragma/module-chat/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { PASSWORD_ENV, REASON, SERVE_ARGS } from '../src/main/chat/constants'
+import { createOpencodeChat } from '../src/main/chat/factory'
 import { CUSTOM } from '../src/renderer/chat/payloads'
 import {
   chatSetup,
   cleanupAll,
   dropSse,
   type FakeMode,
+  fakeCapCtx,
   isAlive,
   lastBody,
   ofKind,
@@ -85,6 +87,27 @@ describe('opencode chat session', () => {
       ['second', 'steer'],
     ])
     await h.interrupt()
+  })
+
+  it('the capability takes messages during a turn (the core sends them as mid-turn input, not a queue)', async () => {
+    const cap = createOpencodeChat(fakeCapCtx(), { idleGraceMs: 0 })
+    expect(cap.midTurnInput).toBe(true)
+    await cap.dispose()
+  })
+
+  it('a steered message is acknowledged (message-ack) before the one shared turn-end', async () => {
+    const s = chatSetup({ scenario: 'long-turn' })
+    const h = await s.start()
+    await h.send({ text: 'first', images: [] }, { messageId: 'm1' })
+    await until(() => requestsOf(s.h.log, /\/prompt$/).length === 1)
+    await h.send({ text: 'second', images: [] }, { messageId: 'm2' })
+    expect(ofKind(s.events, 'message-ack')).toEqual([])
+    await h.interrupt()
+    await waitForEvent(s.events, 'turn-end')
+    const kinds = s.events.map((e) => e.kind)
+    expect(ofKind(s.events, 'message-ack').map((e) => e.messageId)).toEqual(['m2'])
+    expect(kinds.indexOf('message-ack')).toBeLessThan(kinds.indexOf('turn-end'))
+    expect(ofKind(s.events, 'turn-end')).toHaveLength(1)
   })
 
   it('profile command/args/env reach serve; PRAGMA_SESSION_ID stripped; password set', async () => {
