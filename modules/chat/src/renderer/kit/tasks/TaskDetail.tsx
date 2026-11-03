@@ -2,7 +2,6 @@ import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { Button } from '@pragma/ui/components/button'
 import { CopyButton } from '@pragma/ui/components/copy-button'
-import { Markdown } from '@pragma/ui/components/markdown'
 import { ArrowDown, ArrowLeft, ChevronRight, LocateFixed } from '@pragma/ui/icons'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -25,11 +24,13 @@ import {
   EVENT_KIND,
   type TaskItem,
 } from '../../../contract'
+import { useChatHost } from '../../host-adapter'
 import { ChildTranscript } from '../parts/ChatRows'
 import { isLiveTask } from '../parts/lib/task-visual'
 import { SECTION_LABEL } from '../parts/lib/tone'
 import { useNow } from '../parts/lib/use-now'
 import { useStickToBottom } from '../parts/lib/useStickToBottom'
+import { RichMarkdown } from '../parts/markdown/RichMarkdown'
 import { TaskStatusPill, TaskStopButton } from '../parts/TaskCard'
 import { type TaskNode, taskPrompt, taskResult } from './model'
 import { TaskKindIcon, useTaskMetaParts } from './TaskMeta'
@@ -40,6 +41,16 @@ function Section({ title, children, testId }: { title: string; children: ReactNo
       <h4 className={SECTION_LABEL}>{title}</h4>
       {children}
     </section>
+  )
+}
+
+/** A finished task's result as rich Markdown (links open externally). */
+function TaskResultText({ text }: { text: string }) {
+  const host = useChatHost()
+  return (
+    <div className="text-[12.5px] leading-[1.55] text-tx">
+      <RichMarkdown text={text} onLinkClick={(href) => host.openExternal(href)} />
+    </div>
   )
 }
 
@@ -254,7 +265,7 @@ export function TaskDetail(props: TaskDetailProps) {
           className="max-h-[40%] shrink-0 overflow-y-auto border-t border-bd bg-el px-3 py-2.5"
         >
           <h4 className={cn(SECTION_LABEL, 'mb-1 text-ok')}>{t('chat:tasks.result')}</h4>
-          <Markdown source={result} className="text-[12.5px] leading-[1.55] text-tx" />
+          <TaskResultText text={result} />
         </div>
       ) : null}
     </div>

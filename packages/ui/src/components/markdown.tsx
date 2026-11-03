@@ -6,6 +6,9 @@ import { LANGUAGE_CLASS, PLAIN_LANG } from '../constants/ui'
 import { cn } from '../lib/utils'
 import { CodeBlock } from './code-block'
 
+/** Element renderers a caller can override (react-markdown `components`). */
+export type MarkdownComponents = Components
+
 const LINK_TARGET = '_blank'
 const LINK_REL = 'noreferrer'
 const TRAILING_NEWLINE = /\n$/
@@ -48,14 +51,21 @@ export function Markdown({
   source,
   className,
   onLinkClick,
+  components: overrides,
 }: {
   source: string
   className?: string
   onLinkClick?: (href: string) => void
+  /** Extra element renderers (e.g. a richer `table`), merged over the defaults. */
+  components?: Components
 }) {
   return (
     <div className={cn('pragma-markdown', className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]} components={components(onLinkClick)}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeSanitize]}
+        components={{ ...components(onLinkClick), ...overrides }}
+      >
         {source}
       </ReactMarkdown>
     </div>

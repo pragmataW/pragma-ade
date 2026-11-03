@@ -1,6 +1,14 @@
 import { CODE_SEGMENT, FENCE_CLOSE_RE, FENCE_OPEN_RE, LINE_SPLIT_RE, NEWLINE } from '../../constants'
 
-export type MarkdownSegment = { kind: 'prose'; text: string } | { kind: 'code'; code: string; lang: string }
+export type MarkdownSegment =
+  | { kind: 'prose'; text: string }
+  | {
+      kind: 'code'
+      code: string
+      lang: string
+      /** False while the fence is still open (streaming): diagrams and highlighting wait for the close. */
+      closed: boolean
+    }
 
 const PROSE = 'prose'
 const WORD_SPLIT_RE = /\s+/
@@ -36,18 +44,19 @@ class Splitter {
   }
 
   end(): MarkdownSegment[] {
-    this.#flushCode()
+    this.#flushCode(false)
     this.#flushProse()
     return this.out
   }
 
   #inCode(line: string, code: OpenFence): void {
-    if (closes(line, code)) this.#flushCode()
+    if (closes(line, code)) this.#flushCode(true)
     else code.lines.push(line)
   }
 
-  #flushCode(): void {
-    if (this.#code) this.out.push({ kind: CODE_SEGMENT, code: this.#code.lines.join(NEWLINE), lang: this.#code.lang })
+  #flushCode(closed: boolean): void {
+    if (this.#code)
+      this.out.push({ kind: CODE_SEGMENT, code: this.#code.lines.join(NEWLINE), lang: this.#code.lang, closed })
     this.#code = null
   }
 
