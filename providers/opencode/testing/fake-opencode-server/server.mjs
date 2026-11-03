@@ -403,6 +403,12 @@ function sessionRoute(ctx, r) {
       session.info.agent = r.body?.agent
       return send(r.res, NO_CONTENT)
     case 'GET message':
+      // Like opencode 2.2.5: a cursor carries its own order, so passing both is rejected.
+      if (r.query.cursor && r.query.order !== undefined)
+        return send(r.res, BAD_REQUEST, {
+          _tag: 'InvalidCursorError',
+          message: 'Cursor cannot be combined with order',
+        })
       return send(r.res, OK, listMessages(session, r.query))
     case 'POST revert/stage':
       return stageRevert(ctx, r, session)
@@ -475,10 +481,12 @@ function prompt(ctx, r, session) {
 
 function listMessages(session, query) {
   const filtered = query.type ? session.messages.filter((m) => m.type === query.type) : session.messages
-  const ordered = query.order === 'desc' ? [...filtered].reverse() : filtered
-  const offset = Number(query.cursor ?? 0)
+  const [cursorOrder, cursorOffset] = query.cursor ? String(query.cursor).split(':') : []
+  const order = cursorOrder ?? query.order ?? 'desc'
+  const ordered = order === 'desc' ? [...filtered].reverse() : filtered
+  const offset = Number(cursorOffset ?? 0)
   const limit = Number(query.limit ?? ordered.length)
-  const next = offset + limit < ordered.length ? String(offset + limit) : null
+  const next = offset + limit < ordered.length ? `${order}:${offset + limit}` : null
   return { data: ordered.slice(offset, offset + limit), cursor: { next, previous: null } }
 }
 

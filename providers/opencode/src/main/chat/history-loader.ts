@@ -10,12 +10,16 @@ import { contextWindowOf } from './mapping/options'
 import { type Message, messagePageSchema } from './schemas'
 import type { ConnectionPool, OpencodeConnection } from './server/connection'
 
-/** Every message of a session, oldest first, following `cursor.next`. */
+/**
+ * Every message of a session, oldest first, following `cursor.next`. A cursor carries its own order, and the server
+ * rejects a request that passes both (`InvalidCursorError`), so `order` goes on the first page only.
+ */
 export async function listAllMessages(conn: OpencodeConnection, sessionID: string): Promise<Message[]> {
   const all: Message[] = []
   let cursor: string | undefined
   do {
-    const raw = await conn.client.message.list({ sessionID, order: ORDER.asc, limit: HISTORY_PAGE, cursor })
+    const paging = cursor ? { cursor } : { order: ORDER.asc }
+    const raw = await conn.client.message.list({ sessionID, limit: HISTORY_PAGE, ...paging })
     const page = messagePageSchema.parse(raw)
     all.push(...page.data)
     cursor = page.cursor?.next ?? undefined
