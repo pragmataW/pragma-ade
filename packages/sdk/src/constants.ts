@@ -27,8 +27,12 @@ export const APP_DIR_NAMES = {
   mainLog: 'main.log',
 } as const
 
-/** Overlay occlusion (§10.2): how long a 'hide'-mode cover waits for a page capture before hiding without one. */
-export const SNAPSHOT_CAPTURE_TIMEOUT_MS = 100
+/**
+ * Overlay occlusion (§10.2): how long a 'hide'-mode cover waits for a page capture before hiding without one. The view
+ * stays up (over the overlay) while it waits: a page that has just loaded can take a few hundred ms to capture, and a
+ * moment of overlay under the view beats a blanked view. Only a hung capture reaches this bound.
+ */
+export const SNAPSHOT_CAPTURE_TIMEOUT_MS = 1000
 /** How long an occlusion snapshot stays under a re-shown native view, so the view has painted before it goes. */
 export const SNAPSHOT_CLEAR_DELAY_MS = 200
 /** How long a freshly published snapshot gets to paint before the native view above it is hidden (~2 frames). */

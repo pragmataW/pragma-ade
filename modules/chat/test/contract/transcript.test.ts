@@ -278,3 +278,35 @@ describe('reduceTranscript: questions, plans and session state', () => {
     )
   })
 })
+
+describe('reduceTranscript: transcript-truncate (rewind)', () => {
+  const msg = (messageId: string): ChatEvent => ({ ...E.message, messageId }) as ChatEvent
+  const rewound = (): ChatEvent[] => [
+    msg('m1'),
+    part('p1', 'first answer', 'snapshot'),
+    msg('m2'),
+    tool('running', { title: 'Task' }),
+    nested('tc1', 'p2'),
+    E['permission-request'],
+    awaiting,
+  ]
+
+  it('drops the message and everything after it, reindexing what is left', () => {
+    const t = makeTranscript([...rewound(), { kind: 'transcript-truncate', fromMessageId: 'm2' }, text('next')])
+    expect(t.items.map((i) => i.id)).toEqual(['m1', 'p1', 'a1:0'])
+    expect(t.positions).toEqual({
+      [itemKey('message', 'm1')]: 0,
+      [itemKey('text-delta', 'p1')]: 1,
+      [itemKey('text-delta', 'a1:0')]: 2,
+    })
+    expect(t.children).toEqual({})
+    expect(t.pendingInteractions).toBe(0)
+  })
+
+  it('an unknown message leaves the transcript as it was', () => {
+    const before = makeTranscript(rewound())
+    const after = makeTranscript([...rewound(), { kind: 'transcript-truncate', fromMessageId: 'nope' }])
+    expect(after.items).toEqual(before.items)
+    expect(after.pendingInteractions).toBe(2)
+  })
+})

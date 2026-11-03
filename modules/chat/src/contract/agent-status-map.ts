@@ -47,6 +47,7 @@ function baseEvent(e: ChatEvent, lastError: string | undefined): AgentStatusEven
     case K.rateLimit:
     case K.retry:
     case K.messageAck:
+    case K.transcriptTruncate:
       return null
     default: {
       const never: never = e

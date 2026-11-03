@@ -87,6 +87,42 @@ describe('cli.sessionLocate', () => {
     expect(transcripts.queries[0]?.[1].env).toEqual({ SHELL: '/bin/zsh', CLAUDE_CONFIG_DIR: '/home/.claude-work' })
   })
 
+  it("a provider session id is also searched with every profile's env (a profile's own config dir)", async () => {
+    const WORK_DIR = '/home/.claude-work'
+    const found = aTranscript({ path: `${WORK_DIR}/projects/x/${CLAUDE_ID}.jsonl` })
+    const queries: Readonly<Record<string, string | undefined>>[] = []
+    const claude = {
+      id: 'claude',
+      transcript: {
+        locateTranscript: async (q: { sessionId: string; env: Readonly<Record<string, string | undefined>> }) => {
+          queries.push(q.env)
+          return q.env.CLAUDE_CONFIG_DIR === WORK_DIR ? found : null
+        },
+      },
+    }
+    const agents = fakeAgents({
+      profiles: [
+        aProfile({ id: 'work', providerId: 'claude', env: { CLAUDE_CONFIG_DIR: WORK_DIR } }),
+        aProfile({ id: 'twin', providerId: 'claude', env: { CLAUDE_CONFIG_DIR: WORK_DIR } }),
+        aProfile({ id: 'plain', providerId: 'claude' }),
+        aProfile({ id: 'oc', providerId: 'opencode', env: { OPENCODE_CONFIG: '/x' } }),
+      ],
+    })
+    const transcripts = { ...fakeTranscripts(), env: { SHELL: '/bin/zsh' }, providers: () => [claude] }
+    const res = await createCliHandlers(makeDeps({ agents, transcripts })).sessionLocate({
+      context: { cwd: '/' },
+      sessionId: CLAUDE_ID,
+    })
+    expect(res).toEqual({
+      ok: true,
+      result: {
+        pragmaSessionId: null,
+        transcripts: [{ ...found, providerId: 'claude', providerSessionId: CLAUDE_ID }],
+      },
+    })
+    expect(queries).toEqual([{ SHELL: '/bin/zsh' }, { SHELL: '/bin/zsh', CLAUDE_CONFIG_DIR: WORK_DIR }])
+  })
+
   it('a provider that throws is skipped', async () => {
     const transcripts = fakeTranscripts({ claude: { [CLAUDE_ID]: aTranscript() } })
     const broken = {

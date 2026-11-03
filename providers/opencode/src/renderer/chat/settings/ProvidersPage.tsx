@@ -16,7 +16,7 @@ import {
   SIZE_ICON_XS,
   VARIANT_GHOST,
 } from '../constants'
-import type { ChatProviderSettingsProps } from '../kit'
+import { type ChatProviderSettingsProps, useChatHost } from '../kit'
 import { ConnectPanel } from './ConnectPanel'
 import { type Call, messageOf, useConnections } from './use-connections'
 
@@ -42,7 +42,17 @@ function ProviderRow({ p, call, onChange }: { p: ProviderConnection; call: Call;
   const t = useT()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const remove = async (credentialID: string) => {
+  const host = useChatHost()
+  const remove = async ({ id: credentialID, label }: ProviderConnection['credentials'][number]) => {
+    const params = { label, name: p.name }
+    const ok = await host.confirm({
+      titleKey: C.removeTitle,
+      messageKey: C.removeMessage,
+      confirmKey: C.removeConfirm,
+      params,
+      destructive: true,
+    })
+    if (!ok) return
     try {
       await call({ op: OP.remove, credentialID })
       onChange()
@@ -80,7 +90,7 @@ function ProviderRow({ p, call, onChange }: { p: ProviderConnection; call: Call;
             data-testid={IDS.providerRemove(c.id)}
             aria-label={t(C.remove, { label: c.label })}
             title={t(C.remove, { label: c.label })}
-            onClick={() => void remove(c.id)}
+            onClick={() => void remove(c)}
             className="size-6 text-mu hover:text-err"
           >
             <Trash2 size={ICON_PX} strokeWidth={ICON_STROKE} />

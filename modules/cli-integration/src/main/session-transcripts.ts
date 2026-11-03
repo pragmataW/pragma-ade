@@ -90,6 +90,24 @@ export async function transcriptsOfPragmaSession(deps: SessionLookupDeps, id: st
   }
 }
 
+const locationKey = (t: CliTranscript): string => JSON.stringify([t.providerId, t.path])
+
+/**
+ * A provider session id Pragma does not know: every provider with the app env, and each provider again with every
+ * distinct env of its profiles (a profile may keep its CLI data in its own dir); one entry per location.
+ */
+async function findTranscriptsAnywhere(deps: SessionLookupDeps, base: TranscriptQuery): Promise<CliTranscript[]> {
+  const profiles = await deps.agents.listProfiles().catch(() => [])
+  const variants = new Map<string, TranscriptQuery>()
+  for (const p of profiles) {
+    if (Object.keys(p.env).length === 0) continue
+    const q = { ...base, providerId: p.providerId, env: p.env }
+    variants.set(JSON.stringify([q.providerId, q.env]), q)
+  }
+  const found = await Promise.all([base, ...variants.values()].map((q) => findTranscripts(deps.locator, q)))
+  return [...new Map(found.flat().map((t) => [locationKey(t), t])).values()]
+}
+
 /** `pragma session locate [<id>]`: a Pragma session id, else a provider session id searched in every provider. */
 export async function locateSession(
   deps: SessionLookupDeps,
@@ -99,7 +117,9 @@ export async function locateSession(
   const id = sessionId ?? context.sessionId
   if (!id) throw new CliError(CLI_ERROR.invalid_argument, NO_SESSION_ID)
   const fromPragma = await pragmaQuery(deps, id)
-  const transcripts = await findTranscripts(deps.locator, fromPragma ?? { providerSessionId: id, cwd: context.cwd })
+  const transcripts = fromPragma
+    ? await findTranscripts(deps.locator, fromPragma)
+    : await findTranscriptsAnywhere(deps, { providerSessionId: id, cwd: context.cwd })
   if (transcripts.length === 0)
     throw new CliError(CLI_ERROR.not_found, `No local transcript found for session '${id}'.`)
   return { pragmaSessionId: fromPragma ? id : null, transcripts }

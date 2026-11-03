@@ -179,7 +179,7 @@ describe('ProvidersPage', () => {
       },
     ],
   }
-  function page(over: (r: { op: string }) => unknown = () => ({ ok: true })) {
+  function page(over: (r: { op: string }) => unknown = () => ({ ok: true }), host: StubChatHost = stubChatHost()) {
     const requests: { op: string }[] = []
     const call = async (r: unknown) => {
       const req = r as { op: string }
@@ -189,7 +189,7 @@ describe('ProvidersPage', () => {
         return { attemptID: 'att_1', url: 'https://x.test', instructions: 'Code AB-12', mode: 'code' }
       return over(req)
     }
-    return { requests, ...renderUi(<ProvidersPage providerId="opencode" call={call} />) }
+    return { requests, ...renderUi(<ProvidersPage providerId="opencode" call={call} />, host) }
   }
 
   it('connected first, the Anthropic key-only notice, key connect and remove', async () => {
@@ -203,6 +203,24 @@ describe('ProvidersPage', () => {
     await user.click(screen.getByTestId(IDS.providerRemove('cred_1')))
     await waitFor(() => expect(requests.map((r) => r.op)).toEqual(['list', 'keyConnect', 'list', 'remove', 'list']))
     expect(requests[1]).toMatchObject({ integrationID: 'anthropic', key: 'sk-ant' })
+  })
+
+  it('removing a credential asks first; cancel keeps it', async () => {
+    const asked: string[] = []
+    let answer = false
+    const host = stubChatHost({
+      confirm: async (o) => {
+        asked.push(i18n.t(o.titleKey, o.params), i18n.t(o.messageKey, o.params))
+        return answer
+      },
+    })
+    const { user, requests } = page(undefined, host)
+    await user.click(await screen.findByTestId(IDS.providerRemove('cred_1')))
+    await waitFor(() => expect(asked).toEqual(['Remove API key?', expect.stringMatching(/saved API key for Fake/)]))
+    expect(requests.map((r) => r.op)).toEqual(['list'])
+    answer = true
+    await user.click(screen.getByTestId(IDS.providerRemove('cred_1')))
+    await waitFor(() => expect(requests.map((r) => r.op)).toEqual(['list', 'remove', 'list']))
   })
 
   it('sign-in opens the browser through the host; a code flow completes with the pasted code', async () => {

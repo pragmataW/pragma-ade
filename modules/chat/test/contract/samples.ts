@@ -76,4 +76,5 @@ export const EVENT_SAMPLES: Record<ChatEventKind, ChatEvent> = {
   'rate-limit': { kind: 'rate-limit', status: 'warning', resetsAt: 1_700_000_000_000, utilization: 0.9 },
   retry: { kind: 'retry', attempt: 2, maxAttempts: 5, delayMs: 2000, reason: 'overloaded' },
   'message-ack': { kind: 'message-ack', messageId: 'm1' },
+  'transcript-truncate': { kind: 'transcript-truncate', fromMessageId: 'm1' },
 }

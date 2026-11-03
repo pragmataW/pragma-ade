@@ -57,6 +57,7 @@ export function nextStatus(
     case K.rateLimit:
     case K.retry:
     case K.messageAck:
+    case K.transcriptTruncate:
       return prev
     default: {
       const never: never = e

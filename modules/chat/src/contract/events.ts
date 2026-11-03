@@ -293,6 +293,11 @@ export const chatEventSchema = z.discriminatedUnion(KIND_KEY, [
   retryEventSchema,
   /** The agent took in the user message `messageId` (clears its mid-turn marker). */
   z.object({ kind: z.literal(K.messageAck), messageId: z.string() }),
+  /**
+   * The conversation was rewound to before the user message `fromMessageId`: that message and every item after it
+   * leave the transcript (what a history reload would show).
+   */
+  z.object({ kind: z.literal(K.transcriptTruncate), fromMessageId: z.string() }),
 ])
 export type ChatEvent = z.infer<typeof chatEventSchema>
 export type ChatEventKind = ChatEvent['kind']

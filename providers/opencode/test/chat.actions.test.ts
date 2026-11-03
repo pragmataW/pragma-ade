@@ -29,6 +29,12 @@ describe('opencode chat session actions', () => {
     expect(staged.messageID).toMatch(/^msg_/)
     expect(requestsOf(s.h.log, /\/revert\/commit$/)).toHaveLength(1)
     expect(notices(s.events)).toEqual([{ notice: 'reverted', messageId: 'chat-msg-1', files: ['src/a.ts'] }])
+    // The live transcript drops the rewound message and its answer before the notice, as a history reload would.
+    const tail = s.events.slice(-2).map((e) => e.kind)
+    expect(tail).toEqual(['transcript-truncate', 'custom'])
+    expect(ofKind(s.events, 'transcript-truncate')).toEqual([
+      { kind: 'transcript-truncate', fromMessageId: 'chat-msg-1' },
+    ])
   })
 
   it('fork continues in a copy: new external id in session-info, later prompts go there', async () => {

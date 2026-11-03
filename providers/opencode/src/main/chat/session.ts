@@ -516,6 +516,7 @@ export class OpencodeChatSession implements ChatSessionHandle {
     )
     await this.#conn.client.session.revert.commit({ sessionID })
     const files = staged.success ? (staged.data.files ?? []).map((f) => f.file) : []
+    this.#emit({ kind: K.transcriptTruncate, fromMessageId: messageId })
     this.#emit({ kind: K.custom, type: CUSTOM.notice, data: { notice: NOTICE.reverted, messageId, files } })
   }
 

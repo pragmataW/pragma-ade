@@ -39,7 +39,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | nul
 
 export const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** The page capture for a cover: 'snapshot' waits for it; 'hide' gives up after a short timeout (null = no image). */
+/** The page capture for a cover: 'snapshot' waits for it; 'hide' gives up only on a hung capture (null = no image). */
 export function captureFor(mode: OverlayGuardMode, shot: Promise<string>): Promise<string | null> {
   return mode === SNAPSHOT_GUARD_MODE ? shot.catch(() => null) : withTimeout(shot, SNAPSHOT_CAPTURE_TIMEOUT_MS)
 }
