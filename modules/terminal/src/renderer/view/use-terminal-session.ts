@@ -15,6 +15,7 @@ import { getRuntime } from '../runtime'
 import { createAttachGate } from './attach-gate'
 import { type ActiveRenderer, loadPreferredRenderer } from './renderer-choice'
 import { VIEW_ACTION, type ViewAction } from './view-state'
+import { installWheelScroll } from './wheel-scroll'
 
 const UNICODE_VERSION = '11'
 
@@ -38,13 +39,15 @@ export interface SessionOptions {
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
-function createTerminal(o: SessionOptions): { term: Terminal; fit: FitAddon } {
-  const { fontFamily, fontSize, scrollback } = o.settings
+function createTerminal(o: SessionOptions, latest: RefObject<SessionOptions>): { term: Terminal; fit: FitAddon } {
+  const { fontFamily, fontSize, scrollback, scrollSensitivity, fastScrollSensitivity } = o.settings
   const term = new Terminal({
     allowProposedApi: true,
     fontFamily,
     fontSize,
     scrollback,
+    scrollSensitivity,
+    fastScrollSensitivity,
     theme: o.theme,
     cursorBlink: true,
   })
@@ -52,6 +55,7 @@ function createTerminal(o: SessionOptions): { term: Terminal; fit: FitAddon } {
   term.loadAddon(fit)
   term.loadAddon(new Unicode11Addon())
   term.unicode.activeVersion = UNICODE_VERSION
+  installWheelScroll(term, () => latest.current.settings)
   return { term, fit }
 }
 
@@ -137,7 +141,7 @@ export function useTerminalSession(o: SessionOptions): RefObject<Terminal | null
     if (!el) return
     const opts = latest.current
     let alive = true
-    const { term, fit } = createTerminal(opts)
+    const { term, fit } = createTerminal(opts, latest)
     term.open(el)
     opts.callbacks.current.onRenderer(loadPreferredRenderer(term, opts.settings.renderer))
     termRef.current = term
@@ -164,5 +168,11 @@ export function useTerminalSession(o: SessionOptions): RefObject<Terminal | null
     term.options.fontFamily = o.settings.fontFamily
     term.options.fontSize = o.settings.fontSize
   }, [o.settings.fontFamily, o.settings.fontSize])
+  useEffect(() => {
+    const term = termRef.current
+    if (!term) return
+    term.options.scrollSensitivity = o.settings.scrollSensitivity
+    term.options.fastScrollSensitivity = o.settings.fastScrollSensitivity
+  }, [o.settings.scrollSensitivity, o.settings.fastScrollSensitivity])
   return termRef
 }
