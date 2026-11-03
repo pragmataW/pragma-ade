@@ -1,6 +1,6 @@
 import { APP_NAME, TEST_MODE_ENABLED, TEST_MODE_ENV } from '@pragma/sdk'
 import { createMainHost } from '@pragma/sdk/runtime/main'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, nativeTheme } from 'electron'
 import { DARWIN, DISPOSE_TIMEOUT_MS, E2E_HEADED_ENABLED, E2E_HEADED_ENV, HIDDEN_ACTIVATION_POLICY } from '../constants'
 import { coreLocales, mainModules } from '../generated/modules.main'
 import { initialDialogStubs, registerShellHandlers } from './app-handlers'
@@ -60,9 +60,10 @@ async function main(): Promise<void> {
       title: host.i18n.t('core:app.title'),
       theme: host.theme.get(),
       hidden: hiddenWindow,
+      reducedTransparency: reducedTransparency(),
     })
     current = win
-    watchWindowChrome(win, { router: host.router, theme: host.theme, platform: process.platform })
+    watchWindowChrome(win, { router: host.router, theme: host.theme, platform: process.platform, reducedTransparency })
     viewContainer?.setWindow(win)
     host.nativeViews.reattachAll()
     installAppShortcutForwarding(win, host.shortcuts, host.commands)
@@ -102,5 +103,7 @@ function disposeWithin(work: Promise<void>, timeoutMs: number, onError: (error: 
 }
 
 const hasWindows = (): boolean => BrowserWindow.getAllWindows().length > 0
+/** The OS accessibility setting; translucent palettes stay opaque (no vibrancy) while it is on. */
+const reducedTransparency = (): boolean => nativeTheme.prefersReducedTransparency
 
 if (primary) void main()

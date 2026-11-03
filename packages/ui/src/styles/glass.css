@@ -1,0 +1,173 @@
+/*
+ * Glass palette (dark + light). The first two blocks are the opaque base colours and mirror src/constants/tokens.ts
+ * (checked by test/tokens.test.ts); the editor, terminals and native views use those values as they are.
+ *
+ * Once the shell has chosen a window backdrop (`data-backdrop`: `native` = macOS vibrancy behind a transparent
+ * window, `css` = a blurred gradient painted here), the glass layer below turns the surface tokens translucent and
+ * adds blur, hairline borders, a soft inner highlight and shadows to chrome and overlays. Content surfaces (`--bg`,
+ * `--pn`) stay nearly opaque so editor text, terminals and diffs keep WCAG AA contrast.
+ */
+
+:root[data-palette="glass"][data-theme="dark"] {
+  --bg: #141821;
+  --sb: #10131b;
+  --pn: #171b25;
+  --el: #1e2230;
+  --hv: #252a3a;
+  --bd: #2a3041;
+  --bd2: #3b4359;
+  --tx: #e6e9f2;
+  --mu: #a8afc4;
+  --fa: #8b93aa;
+  --ac: #7b8cff;
+  --acfg: #0b0e1c;
+  --acs: #272e5a;
+  --act: #a8b3ff;
+}
+
+:root[data-palette="glass"][data-theme="light"] {
+  --bg: #f6f7fb;
+  --sb: #eceff6;
+  --pn: #f2f4f9;
+  --el: #ffffff;
+  --hv: #e4e7f0;
+  --bd: #dbdfea;
+  --bd2: #c5cbdb;
+  --tx: #1a1e2c;
+  --mu: #4d5469;
+  --fa: #5d6478;
+  --ac: #4b57d1;
+  --acfg: #ffffff;
+  --acs: #e1e4fa;
+  --act: #3a44b5;
+}
+
+/* ---- Glass layer: surface opacity per role (reduced transparency sets them all to 100%). ---- */
+
+:root[data-palette="glass"][data-backdrop] {
+  --glass-chrome: 52%;
+  --glass-panel: 74%;
+  --glass-overlay: 72%;
+  --glass-content: 90%;
+  --glass-blur: blur(24px) saturate(170%);
+  --glass-overlay-blur: blur(32px) saturate(180%);
+}
+
+:root[data-palette="glass"][data-theme="dark"][data-backdrop] {
+  --bg: color-mix(in srgb, #141821 var(--glass-content), transparent);
+  --sb: color-mix(in srgb, #10131b var(--glass-chrome), transparent);
+  --pn: color-mix(in srgb, #171b25 var(--glass-panel), transparent);
+  --el: color-mix(in srgb, #1e2230 var(--glass-overlay), transparent);
+  --hv: rgba(255, 255, 255, 0.07);
+  --bd: rgba(255, 255, 255, 0.08);
+  --bd2: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 18px 48px -12px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --glass-backdrop:
+    radial-gradient(1100px 720px at 8% -10%, rgba(123, 140, 255, 0.55), transparent 65%),
+    radial-gradient(900px 640px at 100% 108%, rgba(178, 110, 255, 0.45), transparent 65%),
+    radial-gradient(700px 520px at 70% 30%, rgba(56, 189, 248, 0.22), transparent 70%), #0b0e15;
+}
+
+:root[data-palette="glass"][data-theme="light"][data-backdrop] {
+  --bg: color-mix(in srgb, #f6f7fb var(--glass-content), transparent);
+  --sb: color-mix(in srgb, #eceff6 var(--glass-chrome), transparent);
+  --pn: color-mix(in srgb, #f2f4f9 var(--glass-panel), transparent);
+  --el: color-mix(in srgb, #ffffff var(--glass-overlay), transparent);
+  --hv: rgba(26, 30, 44, 0.06);
+  --bd: rgba(26, 30, 44, 0.1);
+  --bd2: rgba(26, 30, 44, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 18px 48px -14px rgba(30, 36, 70, 0.28), 0 2px 8px rgba(30, 36, 70, 0.1);
+  --glass-backdrop:
+    radial-gradient(1100px 720px at 8% -10%, rgba(75, 87, 209, 0.38), transparent 65%),
+    radial-gradient(900px 640px at 100% 108%, rgba(190, 120, 255, 0.34), transparent 65%),
+    radial-gradient(700px 520px at 70% 30%, rgba(56, 189, 248, 0.22), transparent 70%), #e9ecf5;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-palette="glass"][data-backdrop] {
+    --glass-chrome: 100%;
+    --glass-panel: 100%;
+    --glass-overlay: 100%;
+    --glass-content: 100%;
+    --glass-blur: none;
+    --glass-overlay-blur: none;
+    --glass-backdrop: var(--bg);
+  }
+}
+
+/* ---- What shows behind the glass. ---- */
+
+:root[data-palette="glass"][data-backdrop="native"],
+:root[data-palette="glass"][data-backdrop] body,
+:root[data-palette="glass"][data-backdrop] .app-shell {
+  background: transparent;
+}
+
+:root[data-palette="glass"][data-backdrop="css"] {
+  background: var(--glass-backdrop);
+  background-attachment: fixed;
+}
+
+/* The center holds the editor, terminals and diffs: the most opaque surface, matching the native views' colour. */
+:root[data-palette="glass"][data-backdrop] .app-pane-center {
+  background: var(--bg);
+}
+
+/* ---- Chrome: blur sits on a pseudo-element, so the host never becomes a containing block for fixed children. ---- */
+
+:root[data-palette="glass"][data-backdrop] :is(.app-titlebar, .app-sidebar, .app-statusbar, .app-pane-dock) {
+  position: relative;
+  isolation: isolate;
+}
+
+:root[data-palette="glass"][data-backdrop] :is(.app-titlebar, .app-sidebar, .app-statusbar, .app-pane-dock)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: var(--glass-blur);
+}
+
+:root[data-palette="glass"][data-backdrop] .app-titlebar {
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+:root[data-palette="glass"][data-backdrop] .app-sidebar {
+  box-shadow: inset -1px 0 0 var(--glass-highlight);
+}
+
+/* ---- Overlays: popovers, menus, dialogs, sheets and the command palette. ---- */
+
+:root[data-palette="glass"][data-backdrop]
+  :is(
+    [data-slot="popover-content"],
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="select-content"],
+    [data-slot="dialog-content"],
+    [data-slot="sheet-content"],
+    [data-slot="anchored-popover"]
+  ) {
+  background-color: var(--el);
+  border-color: var(--bd2);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--glass-shadow);
+  backdrop-filter: var(--glass-overlay-blur);
+}
+
+/* The palette's list sits inside the dialog's glass: one layer, not two. */
+:root[data-palette="glass"][data-backdrop] [data-slot="dialog-content"] [data-slot="command"] {
+  background-color: transparent;
+}
+
+/* ---- Settings › Appearance preview card: show the gradient the glass sits on. ---- */
+
+[data-palette="glass"]:not(:root) {
+  background-image:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ac) 35%, transparent), transparent 60%),
+    radial-gradient(110% 90% at 100% 100%, rgba(178, 110, 255, 0.28), transparent 60%);
+}

@@ -1,6 +1,6 @@
 /** Design tokens copied verbatim from docs/design/ui-notes.md ("Color tokens"); the single source of truth (§10.2). */
 
-export const PALETTE_IDS = ['vscode', 'dark-brown', 'amber', 'indigo'] as const
+export const PALETTE_IDS = ['vscode', 'dark-brown', 'amber', 'indigo', 'glass'] as const
 export const THEME_MODES = ['light', 'dark'] as const
 export const DENSITIES = ['compact', 'comfortable'] as const
 export type PaletteId = (typeof PALETTE_IDS)[number]
@@ -206,7 +206,50 @@ export const palettes: Record<PaletteId, Record<ThemeMode, PaletteValues>> = {
       '#4338ca',
     ]),
   },
+  /**
+   * Glass: the opaque base colours. The editor, terminals and native views use these as they are; glass.css lays
+   * translucent versions of the surface tokens over the window backdrop (see TRANSLUCENT_PALETTE_IDS).
+   */
+  glass: {
+    dark: row([
+      '#141821',
+      '#10131b',
+      '#171b25',
+      '#1e2230',
+      '#252a3a',
+      '#2a3041',
+      '#3b4359',
+      '#e6e9f2',
+      '#a8afc4',
+      '#8b93aa',
+      '#7b8cff',
+      '#0b0e1c',
+      '#272e5a',
+      '#a8b3ff',
+    ]),
+    light: row([
+      '#f6f7fb',
+      '#eceff6',
+      '#f2f4f9',
+      '#ffffff',
+      '#e4e7f0',
+      '#dbdfea',
+      '#c5cbdb',
+      '#1a1e2c',
+      '#4d5469',
+      '#5d6478',
+      '#4b57d1',
+      '#ffffff',
+      '#e1e4fa',
+      '#3a44b5',
+    ]),
+  },
 }
+
+/** Palettes whose surfaces are see-through: the window shows a backdrop (macOS vibrancy or a CSS gradient). */
+export const TRANSLUCENT_PALETTE_IDS = ['glass'] as const satisfies readonly PaletteId[]
+const TRANSLUCENT = new Set<PaletteId>(TRANSLUCENT_PALETTE_IDS)
+export const isTranslucentPalette = (id: PaletteId): boolean => TRANSLUCENT.has(id)
 
 export const sharedTokens: Record<ThemeMode, Record<SharedTokenName, string>> = {
   dark: {

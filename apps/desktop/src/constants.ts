@@ -8,6 +8,11 @@ export const WINDOW = { width: 1440, height: 900, minWidth: 1024, minHeight: 640
 export const TRAFFIC_LIGHT_POSITION = { x: 14, y: 12 } as const
 /** Matches `--titlebar-h`; the Windows/Linux window-control overlay is drawn at this height. */
 export const TITLEBAR_HEIGHT = 38
+/** macOS material behind a translucent palette; `followWindow` dims it like native apps when the window is inactive. */
+export const WINDOW_VIBRANCY = 'under-window'
+export const WINDOW_VISUAL_EFFECT_STATE = 'followWindow'
+/** A fully transparent window background (#RRGGBBAA), so the vibrancy (or the CSS backdrop) shows through. */
+export const TRANSPARENT_COLOR = '#00000000'
 export const PRELOAD_FILE = '../preload/index.cjs'
 export const RENDERER_FILE = '../renderer/index.html'
 export const DARWIN = 'darwin'

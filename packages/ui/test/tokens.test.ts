@@ -1,7 +1,16 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DENSITIES, DENSITY_METRICS, PALETTE_IDS, palettes, sharedTokens, THEME_MODES } from '../src/constants/tokens'
+import {
+  DENSITIES,
+  DENSITY_METRICS,
+  isTranslucentPalette,
+  PALETTE_IDS,
+  type PaletteId,
+  palettes,
+  sharedTokens,
+  THEME_MODES,
+} from '../src/constants/tokens'
 
 const styles = join(import.meta.dirname, '../src/styles')
 const css = (file: string) => readFileSync(join(styles, file), 'utf8')
@@ -15,10 +24,12 @@ function block(text: string, selector: string): Record<string, string> {
 }
 
 const combos = PALETTE_IDS.flatMap((p) => THEME_MODES.map((m) => [p, m] as const))
+/** Translucent palettes live in their own stylesheet (base colours first, then the glass layer). */
+const paletteFile = (palette: PaletteId): string => (isTranslucentPalette(palette) ? 'glass.css' : 'tokens.css')
 
 describe('tokens.css matches tokens.ts', () => {
   it.each(combos)('%s / %s', (palette, mode) => {
-    expect(block(css('tokens.css'), `:root[data-palette="${palette}"][data-theme="${mode}"]`)).toEqual(
+    expect(block(css(paletteFile(palette)), `:root[data-palette="${palette}"][data-theme="${mode}"]`)).toEqual(
       palettes[palette][mode],
     )
   })
@@ -75,5 +86,31 @@ describe('motion tokens', () => {
     const reduced = text.slice(text.indexOf('@media (prefers-reduced-motion: reduce)'))
     const root = block(reduced, ':root')
     for (const name of durations) expect(Number.parseFloat(root[name] ?? '')).toBeLessThan(1)
+  })
+})
+
+describe('glass palette', () => {
+  it('is the only translucent palette', () => {
+    expect(PALETTE_IDS.filter(isTranslucentPalette)).toEqual(['glass'])
+  })
+  it('index.css loads glass.css after tokens.css', () => {
+    const index = css('index.css')
+    expect(index.indexOf('./glass.css')).toBeGreaterThan(index.indexOf('./tokens.css'))
+  })
+  it.each(THEME_MODES)('the %s glass layer makes the surfaces translucent once a backdrop is chosen', (mode) => {
+    const layer = block(css('glass.css'), `:root[data-palette="glass"][data-theme="${mode}"][data-backdrop]`)
+    for (const token of ['bg', 'sb', 'pn', 'el'] as const)
+      expect(layer[token]).toContain(`color-mix(in srgb, ${palettes.glass[mode][token]}`)
+  })
+  it('reduced transparency turns every glass surface opaque and drops the blur', () => {
+    const text = css('glass.css')
+    const reduced = text.slice(text.indexOf('@media (prefers-reduced-transparency: reduce)'))
+    expect(block(reduced, ':root[data-palette="glass"][data-backdrop]')).toMatchObject({
+      'glass-chrome': '100%',
+      'glass-panel': '100%',
+      'glass-overlay': '100%',
+      'glass-content': '100%',
+      'glass-blur': 'none',
+    })
   })
 })

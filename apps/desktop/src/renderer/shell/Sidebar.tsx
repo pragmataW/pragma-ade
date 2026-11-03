@@ -9,7 +9,7 @@ export function Sidebar() {
   const t = useT()
   const host = useRendererHost()
   return (
-    <nav className="flex h-full flex-col bg-[var(--sb)]">
+    <nav className="app-sidebar flex h-full flex-col bg-[var(--sb)]">
       <div className="min-h-0 flex-1 overflow-auto">
         <Slot id={ShellSlots.sidebarMain} />
       </div>

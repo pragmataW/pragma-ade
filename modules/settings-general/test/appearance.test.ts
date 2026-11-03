@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { createFakePlatform, createTestModuleHost, loadModuleRecord, type TestModuleHost } from '@pragma/test-support'
+import { palettes } from '@pragma/ui/tokens'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GENERAL_SETTINGS_DEFAULTS, type GeneralSettings, SETTINGS_GENERAL_ID } from '../src/contract'
 import { nextQuickMode, toThemeInput } from '../src/lib/appearance'
@@ -55,6 +56,16 @@ describe('settings-general appearance', () => {
     expect(host.theme.get().resolved).toBe('light')
     platform.setDark(true)
     expect(host.theme.get().resolved).toBe('dark')
+  })
+
+  it('a stored glass palette is restored and resolves to Glass Dark or Glass Light with the OS', async () => {
+    const { host, platform } = await start({
+      settings: { [SETTINGS_GENERAL_ID]: { appearance: { mode: 'system', palette: 'glass' } } },
+    })
+    expect(section()?.appearance.palette).toBe('glass')
+    expect(host.theme.get().tokens).toMatchObject(palettes.glass.dark)
+    platform.setDark(false)
+    expect(host.theme.get()).toMatchObject({ palette: 'glass', resolved: 'light', tokens: palettes.glass.light })
   })
 
   it('language change calls i18n.changeLanguage', async () => {
