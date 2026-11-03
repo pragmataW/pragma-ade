@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { type ChatEvent, ChatStartupError, emptyTranscript, reduceTranscript } from '../../src/contract'
+import { type ChatEvent, ChatStartupError, emptyTranscript, reduceTranscript, withCurrent } from '../../src/contract'
 import { ChatSessionController } from '../../src/main/controller'
 import { FAKE_OPTIONS, makeTranscript } from '../../testing'
 import { flush, harness } from './harness'
@@ -191,6 +191,34 @@ describe('ChatSessionController', () => {
     expect(c.snapshot().transcript.info.options[0]?.current).toBe('a')
     await c.attach(h.request({ resume: { externalSessionId: 'fake-ext-1' } }))
     expect(h.fake.lastSession().createdWith.initialOptions).toEqual({ fakeMode: 'a' })
+  })
+
+  it('a live option choice is reapplied when the chat process restarts (resume)', async () => {
+    const h = harness({ options: FAKE_OPTIONS })
+    const c = await h.attached()
+    await c.setOption('fakeMode', 'b')
+    h.fake.lastSession().emit({ kind: 'session-exit', exitCode: 1, reason: 'crashed' })
+    await c.attach(h.request({ resume: { externalSessionId: 'fake-ext-1' } }))
+    expect(h.fake.lastSession().createdWith.initialOptions).toEqual({ fakeMode: 'b' })
+  })
+
+  it('a chosen option the agent changed later (plan approved) resumes with the newer value', async () => {
+    const h = harness({ options: FAKE_OPTIONS })
+    const c = await h.attached()
+    await c.setOption('fakeMode', 'b')
+    h.fake.lastSession().emit({ kind: 'options', options: withCurrent(FAKE_OPTIONS, 'fakeMode', 'a') })
+    h.fake.lastSession().emit({ kind: 'session-exit', exitCode: 0, reason: 'closed' })
+    await c.attach(h.request({ resume: { externalSessionId: 'fake-ext-1' } }))
+    expect(h.fake.lastSession().createdWith.initialOptions).toEqual({ fakeMode: 'a' })
+  })
+
+  it('options the user never chose are not forced on a resume', async () => {
+    const h = harness({ options: FAKE_OPTIONS })
+    const c = await h.attached()
+    h.fake.lastSession().emit({ kind: 'options', options: withCurrent(FAKE_OPTIONS, 'fakeMode', 'b') })
+    h.fake.lastSession().emit({ kind: 'session-exit', exitCode: 0, reason: 'closed' })
+    await c.attach(h.request({ resume: { externalSessionId: 'fake-ext-1' } }))
+    expect(h.fake.lastSession().createdWith.initialOptions).toEqual({})
   })
 
   it('startup failure → error + session-exit startup_failed, status error, support cache records reason', async () => {

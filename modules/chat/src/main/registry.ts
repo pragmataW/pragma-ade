@@ -6,7 +6,8 @@ import {
   STOP_SIGNAL,
   type StopSignal,
 } from '@pragma/module-agents/contract'
-import type { ChatEvent } from '../contract'
+import { HISTORY_LOAD_FAILED_KEY } from '../constants'
+import { type ChatEvent, ERROR_CODE, EVENT_KIND as K } from '../contract'
 import { ChatSessionController, type ChatSnapshot, type ControllerDeps } from './controller'
 
 export type RegistryDeps = Omit<ControllerDeps, 'sessionId'>
@@ -64,8 +65,11 @@ export class ChatSessionRegistry {
         externalSessionId: session.externalSessionId,
       })
     } catch (e) {
+      // Non-fatal: the session still opens (toolbar from its saved options, resume by its external id).
       this.#d.log.warn(`chat ${session.id}: history load failed`, e)
-      return []
+      return [
+        { kind: K.error, code: ERROR_CODE.unknown, message: HISTORY_LOAD_FAILED_KEY, detail: String(e), fatal: false },
+      ]
     }
   }
 

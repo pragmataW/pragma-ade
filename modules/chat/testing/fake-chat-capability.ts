@@ -108,6 +108,8 @@ export interface FakeChatCapabilityOptions {
   support?: ChatSupport
   startupError?: ChatStartupError
   history?: ChatEvent[]
+  /** `loadHistory` rejects with it. */
+  historyError?: Error
   options?: ChatOptionDescriptor[]
   /** `respond` is defined (interactive custom events). */
   interactive?: boolean
@@ -144,6 +146,7 @@ export function createFakeChatCapability(opts: FakeChatCapabilityOptions = {}) {
     },
     async loadHistory(ctx) {
       historyRequests.push(ctx.externalSessionId)
+      if (opts.historyError) throw opts.historyError
       return opts.history ?? []
     },
   }

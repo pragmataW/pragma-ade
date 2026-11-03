@@ -6,6 +6,12 @@ export const LINE_SPLIT_RE = /\r?\n/
 export const FILE_LIST_CACHE_MS = 10_000
 export const FILE_RANK = { basenamePrefix: 0, pathPrefix: 1, subsequence: 2 } as const
 export const PATH_SEPARATOR = '/'
+/** Last session options per agent session (`ctx.module.paths.data`): dormant toolbars and resume choices. */
+export const SESSION_OPTIONS_FILE = 'session-options.json'
+/** Sessions kept in `SESSION_OPTIONS_FILE` (least recently changed dropped first). */
+export const SESSION_OPTIONS_MAX = 200
+/** Non-fatal transcript notice when a dormant session's history cannot be read. */
+export const HISTORY_LOAD_FAILED_KEY = 'chat:errors.historyLoadFailed'
 
 /** Renderer registrations. */
 export const CHAT_SLOT_ENTRY_ID = 'chat'

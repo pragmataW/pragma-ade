@@ -118,7 +118,10 @@ describe('history replay', () => {
     expect(ofKind(events, 'message')).toHaveLength(125)
     expect(ofKind(events, 'turn-end')).toHaveLength(125)
     const pages = requestsOf(h.log, /\/message$/)
-    expect(pages.map((r) => r.query.cursor)).toEqual([undefined, '200'])
+    expect(pages.map((r) => [r.query.cursor, r.query.order])).toEqual([
+      [undefined, 'asc'],
+      ['asc:200', undefined],
+    ])
     await until(() => pool.size() === 0)
   })
 
