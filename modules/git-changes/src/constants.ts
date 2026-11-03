@@ -59,6 +59,8 @@ export const FILES_TAB_ID = 'files'
  * diff in 06's workbench (user decision 2026-11-02, revised): `editor.openDiff`, not `editor.openFile`.
  */
 export const EDITOR_OPEN_DIFF_COMMAND = 'editor.openDiff'
+/** An inline thread's link: the file itself (not its diff) at the thread's line. */
+export const EDITOR_OPEN_FILE_COMMAND = 'editor.openFile'
 /** `refs.new` of a branch-mode diff (merge-base ↔ HEAD). */
 export const HEAD_REF = 'HEAD'
 export const COMMENTS_OPEN_DRAWER_COMMAND = 'comments.openDrawer'

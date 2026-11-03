@@ -7,9 +7,10 @@ import {
   commentsIpc,
 } from '@pragma/module-comments/contract'
 import type { IpcContract } from '@pragma/sdk'
-import { act, screen } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { EDITOR_OPEN_FILE_COMMAND, FILES_TAB_ID } from '../src/constants'
 import { GitChangesTestIds as T } from '../src/contract'
 import { CommentCard } from '../src/renderer/comments/CommentCard'
 import { useGitChangesStore, viewOf } from '../src/renderer/store'
@@ -46,11 +47,16 @@ function RecordingComposer(props: CommentComposerProps) {
   return <div data-testid={COMPOSER_ID} />
 }
 
-async function mountCard(remove: () => unknown = () => undefined) {
+async function mountCard(
+  remove: () => unknown = () => undefined,
+  commands: Record<string, (args: unknown) => unknown> = {},
+  comment: Comment = draft,
+) {
   lastProps = undefined
   const openDrawer = vi.fn()
   h = await mountPanel({
-    render: <CommentCard comment={draft} />,
+    render: <CommentCard comment={comment} />,
+    commands,
     ui: { CommentComposer: RecordingComposer, openDrawer },
     commentContracts: [commentsIpc.remove] as IpcContract<unknown, unknown>[],
     answers: { [COMMENTS_CHANNELS.remove]: remove },
@@ -113,5 +119,27 @@ describe('CommentCard Delete', () => {
     await screen.findByTestId('fake-thread')
     expect(screen.queryByRole('button', { name: DELETE })).toBeNull()
     expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([])
+  })
+})
+
+describe('CommentCard links', () => {
+  const noRemove = () => undefined
+
+  it('a new-side thread links to the editor at its first line, then shows the Files tab', async () => {
+    const calls: unknown[] = []
+    await mountCard(noRemove, { [EDITOR_OPEN_FILE_COMMAND]: (args) => void calls.push(args) })
+    await userEvent.click(await screen.findByTestId(T.commentOpenInEditor))
+    await waitFor(() => expect(calls).toEqual([{ worktreeId: WT_ID, path: 'src/app.ts', line: 10 }]))
+    await waitFor(() => expect(h?.host.registries.store.getState().activeTab).toBe(FILES_TAB_ID))
+  })
+
+  it('no link without editor.openFile, nor for an old-side thread (that line is not in the file)', async () => {
+    await mountCard()
+    await screen.findByTestId('fake-thread')
+    expect(screen.queryByTestId(T.commentOpenInEditor)).toBeNull()
+    await h?.dispose()
+    await mountCard(noRemove, { [EDITOR_OPEN_FILE_COMMAND]: () => undefined }, { ...draft, diffSide: 'old' })
+    await screen.findByTestId('fake-thread')
+    expect(screen.queryByTestId(T.commentOpenInEditor)).toBeNull()
   })
 })

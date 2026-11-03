@@ -96,7 +96,8 @@
   },
   "comments": {
     "lines": "L{{start}}–{{end}}",
-    "line": "L{{start}}"
+    "line": "L{{start}}",
+    "openInEditor": "Open in editor at this line"
   },
   "review": {
     "pending_one": "{{count}} unsent item · {{file}}",

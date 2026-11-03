@@ -26,6 +26,7 @@ export const GitChangesTestIds = {
   openInEditor: 'gc-open-in-editor',
   prevChange: 'gc-prev-change',
   nextChange: 'gc-next-change',
+  commentOpenInEditor: 'gc-comment-open-in-editor',
   reviewBar: 'gc-review-bar',
   reviewSend: 'gc-review-send',
   reviewDiscard: 'gc-review-discard',
