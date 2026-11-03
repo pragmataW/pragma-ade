@@ -11,7 +11,7 @@ import { type GeneralSettings, SETTINGS_GENERAL_ID, SETTINGS_GENERAL_PAGES, TEST
 import renderer from '../src/renderer/index'
 
 const DIR = join(import.meta.dirname, '..')
-const PALETTES = ['vscode', 'dark-brown', 'amber', 'indigo']
+const PALETTES = ['vscode', 'dark-brown', 'amber', 'indigo', 'glass']
 let r: RenderedWithHost | undefined
 
 afterEach(async () => {
@@ -54,7 +54,7 @@ describe('settings-general pages', () => {
     expect(screen.getByTestId(TEST_IDS.languageSelect)).toHaveTextContent('English')
   })
 
-  it('the appearance page shows 4 palettes, 3 modes and 2 densities', async () => {
+  it('the appearance page shows 5 palettes, 3 modes and 2 densities', async () => {
     await renderPage(SETTINGS_GENERAL_PAGES.appearance)
     for (const id of PALETTES) expect(screen.getByTestId(TEST_IDS.paletteCard(id))).toBeInTheDocument()
     for (const m of ['dark', 'light', 'system']) expect(screen.getByTestId(TEST_IDS.modeOption(m))).toBeInTheDocument()
@@ -72,6 +72,16 @@ describe('settings-general pages', () => {
     )
     await userEvent.click(screen.getByTestId(TEST_IDS.modeOption('light')))
     await waitFor(() => expect(r?.host.theme.get().resolved).toBe('light'))
+  })
+
+  it('the Glass card selects the glass palette and previews it in its own scope', async () => {
+    await renderPage(SETTINGS_GENERAL_PAGES.appearance)
+    const card = screen.getByTestId(TEST_IDS.paletteCard('glass'))
+    expect(card).toHaveTextContent('Glass')
+    expect(card.querySelector('[data-palette="glass"]')).not.toBeNull()
+    await userEvent.click(card)
+    await waitFor(() => expect(r?.host.theme.get().palette).toBe('glass'))
+    expect(stored()?.appearance.palette).toBe('glass')
   })
 
   it('the quick toggle stores the opposite of the resolved mode', async () => {
