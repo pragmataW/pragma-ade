@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  asDockPosition,
   DEFAULT_DOCK_LAYOUT,
   DOCK_LAYOUT_KEY,
   dockLeads,
@@ -68,4 +69,13 @@ it.each([
   ['bottom', 'panel-bottom'],
 ] as const)('a panel on the %s edge draws the %s icon', (edge, icon) => {
   expect(panelIcon(edge)).toBe(icon)
+})
+
+it.each([
+  ['left', 'left'],
+  ['bottom', 'bottom'],
+  ['dock', null],
+  [undefined, null],
+] as const)('drop target %s → dock position %s', (id, position) => {
+  expect(asDockPosition(id)).toBe(position)
 })
