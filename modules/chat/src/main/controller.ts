@@ -134,7 +134,7 @@ export class ChatSessionController {
   #emit(event: ChatEvent): void {
     const env: ChatEventEnvelope = { sessionId: this.#d.sessionId, seq: ++this.#seq, at: this.#now(), event }
     this.#transcript = reduceTranscript(this.#transcript, env)
-    if (event.kind === K.sessionInfo && event.externalSessionId) this.#externalSessionId = event.externalSessionId
+    if (event.kind === K.sessionInfo && event.externalSessionId) this.#followExternalSession(event.externalSessionId)
     const next = nextStatus(this.#status, event, { pendingInteractions: this.#transcript.pendingInteractions })
     const changed = next !== this.#status
     this.#status = next
@@ -143,6 +143,19 @@ export class ChatSessionController {
     if (event.kind === K.sessionExit) this.#onExit(event.exitCode)
     else if (changed) this.#persistStatus()
     if (event.kind === K.turnEnd) queueMicrotask(() => this.#dispatchNext())
+  }
+
+  /**
+   * The provider switched conversations mid-session (e.g. an OpenCode fork): the agent session follows, so resume,
+   * chat ⇄ terminal and `pragma session locate` use the conversation the tab now shows.
+   */
+  #followExternalSession(id: string): void {
+    const changed = this.#handle !== null && this.#externalSessionId !== undefined && id !== this.#externalSessionId
+    this.#externalSessionId = id
+    if (!changed) return
+    this.#d.agents
+      .updateSession(this.#d.sessionId, { externalSessionId: id })
+      .catch((e: unknown) => this.#d.log.warn(`chat ${this.#d.sessionId}: externalSessionId write failed`, e))
   }
 
   #persistStatus(): void {

@@ -134,6 +134,19 @@ describe('ChatSessionController', () => {
     expect(h.agents.updates).toContainEqual({ id: 's1', patch: { externalSessionId: 'fake-ext-1' } })
   })
 
+  it('a session-info with a new externalSessionId (fork) is persisted; the same id is not written again', async () => {
+    const h = harness()
+    await h.attached()
+    const writes = () => h.agents.updates.filter((u) => 'externalSessionId' in u.patch)
+    const before = writes().length
+    h.fake.lastSession().emit({ kind: 'session-info', externalSessionId: 'fake-ext-1' })
+    await flush()
+    expect(writes()).toHaveLength(before)
+    h.fake.lastSession().emit({ kind: 'session-info', externalSessionId: 'forked-2' })
+    await flush()
+    expect(writes().at(-1)).toEqual({ id: 's1', patch: { externalSessionId: 'forked-2' } })
+  })
+
   it('child env is exactly buildLaunchEnv({sessionId, resume}) (decorator PATH and PRAGMA_SESSION_ID present)', async () => {
     const h = harness()
     await h.attached({ resume: { externalSessionId: 'ext-9' } })
