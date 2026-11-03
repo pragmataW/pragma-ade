@@ -22,6 +22,7 @@ const toReply = (r: CommentReply): EditorThreadReply => ({
   label: r.authorLabel ?? null,
   body: r.body,
   pending: isPendingReply(r),
+  createdAt: r.createdAt,
 })
 
 /**
@@ -41,6 +42,7 @@ export function toEditorThreads(comments: readonly Comment[]): EditorThreads {
       status: c.status,
       pending: isPendingRoot(c),
       body: c.body,
+      createdAt: c.createdAt,
       replies: c.replies.map(toReply),
     })
   }

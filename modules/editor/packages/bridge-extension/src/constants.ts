@@ -80,7 +80,13 @@ export const DIFF_TITLE = {
 export const OUTSIDE_FOLDER_WARNING = 'Pragma: the file is outside this worktree and was not opened: '
 /** ui-notes palette token → workbench color ids (`workbench.colorCustomizations`). */
 export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
-  bg: ['editor.background', 'tab.activeBackground', 'editorGutter.background', 'breadcrumb.background'],
+  bg: [
+    'editor.background',
+    'tab.activeBackground',
+    'editorGutter.background',
+    'breadcrumb.background',
+    'editorCommentsWidget.replyInputBackground',
+  ],
   // Inactive variants too: the workbench is unfocused whenever the app's own UI has focus.
   sb: [
     'sideBar.background',
@@ -103,6 +109,9 @@ export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
     'activityBar.border',
     'statusBar.border',
     'commandCenter.border',
+    // The comment widget's frame: a neutral card border like the app's threads (the header shows the status).
+    'editorCommentsWidget.resolvedBorder',
+    'editorCommentsWidget.unresolvedBorder',
   ],
   bd2: ['input.border'],
   tx: [
@@ -135,7 +144,14 @@ export const PALETTE_COLOR_MAP: Record<string, readonly string[]> = {
   ],
   acfg: ['button.foreground', 'badge.foreground', 'activityBarBadge.foreground', 'statusBarItem.remoteForeground'],
   act: ['textLink.foreground'],
-  acs: ['editor.selectionHighlightBackground'],
+  acs: [
+    'editor.selectionHighlightBackground',
+    'editorCommentsWidget.rangeBackground',
+    'editorCommentsWidget.rangeActiveBackground',
+  ],
+  // Shared status tokens → colours the manifest contributes for the comment widget skin.
+  warn: ['pragma.comment.pendingBorder'],
+  ok: ['pragma.comment.resolvedForeground'],
 }
 export const COMMANDS = {
   sendToAgent: 'pragma.comment.sendToAgent',
@@ -143,22 +159,30 @@ export const COMMANDS = {
   cancel: 'pragma.comment.cancel',
   reply: 'pragma.thread.reply',
   replyAndSend: 'pragma.thread.replyAndSend',
+  /** Closes the reply box (the workbench collapses it after any form action). */
+  replyCancel: 'pragma.thread.replyCancel',
   resolve: 'pragma.thread.resolve',
   reopen: 'pragma.thread.reopen',
   deleteThread: 'pragma.thread.delete',
+  /** Removes a composer whose comment could not be stored ("Not sent"). */
+  discard: 'pragma.thread.discard',
+  /** Discards a pending user reply before a Send delivers it. */
+  discardReply: 'pragma.reply.discard',
 } as const
 export const CONTROLLER = {
   id: 'pragma-review',
   label: 'Pragma',
-  placeHolder: 'Comment for the agent',
-  prompt: 'Sends file, line range and code excerpt',
+  /** Placeholder of the new-comment and the reply editor. */
+  placeHolder: 'Write a comment for the agent…',
+  /** Text of a thread's collapsed reply button (one click opens the reply editor). */
+  prompt: 'Reply',
 } as const
 export const FILE_SCHEME = 'file'
 export const PLAINTEXT = 'plaintext'
 export const COMMENT_MESSAGES = {
   empty: 'Comment is empty',
   outside: 'Only files in this worktree can be commented',
-  drafted: 'Added to review',
+  drafted: 'Added to drafts',
   sent: 'Sent to agent',
   needsUserAction: 'Choose an agent in Pragma',
   notSentLabel: 'Not sent',
@@ -168,8 +192,20 @@ export const COMMENT_MESSAGES = {
   replied: 'Reply added',
   notStored: 'This thread is not stored in Pragma',
 } as const
-/** `CommentThread.contextValue` of a stored review thread (the manifest's title menu keys on it). */
-export const THREAD_CONTEXT = { open: 'pragma-thread-open', resolved: 'pragma-thread-resolved' } as const
+/** `CommentThread.contextValue`: stored threads, and a composer whose comment was not stored (the title menus key on it). */
+export const THREAD_CONTEXT = {
+  open: 'pragma-thread-open',
+  resolved: 'pragma-thread-resolved',
+  unsent: 'pragma-thread-unsent',
+} as const
+/** `Comment.contextValue`: a root or a user reply no Send delivered yet (the reply can be discarded), or delivered. */
+export const COMMENT_CONTEXT = {
+  pending: 'pragma-comment-pending',
+  pendingReply: 'pragma-reply-pending',
+  sent: 'pragma-comment',
+} as const
+/** Thread header text, as Git Changes writes a location: `L3` / `L3–5`, then the status and Pending. */
+export const THREAD_LABEL = { line: 'L', range: '–', sep: ' · ', open: 'Open', resolved: 'Resolved' } as const
 export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const
 /** Index = `vscode.DiagnosticSeverity` (Error 0, Warning 1, Information 2, Hint 3). */
 export const SEVERITIES = ['error', 'warning', 'info', 'hint'] as const

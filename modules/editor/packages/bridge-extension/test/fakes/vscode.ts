@@ -1,6 +1,7 @@
 import { SCM_CHANGE, type ScmChangeResult } from '../../src/constants'
 import type {
   CommentControllerSpec,
+  CommentRef,
   DiagnosticInfo,
   RevisionSide,
   TabInfo,
@@ -23,7 +24,9 @@ export interface FakeApi extends VscodeApi {
   threads: (ThreadSpec & { disposed: boolean; updates: number })[]
   commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
   /** Thread title commands (they get the thread's Pragma id). */
-  threadCommands: Map<string, (threadId: string | undefined) => unknown>
+  threadCommands: Map<string, (threadId: string | undefined, thread: ThreadLike) => unknown>
+  /** Comment title commands (they get the Pragma thread and reply ids of the comment). */
+  commentCommands: Map<string, (ref: CommentRef | undefined) => unknown>
   documents: Map<string, { lines: string[]; languageId: string }>
   diags: Map<string, DiagnosticInfo[]>
   tabList: TabInfo[]
@@ -67,6 +70,7 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
   const threads: FakeApi['threads'] = []
   const commands: FakeApi['commands'] = new Map()
   const threadCommands: FakeApi['threadCommands'] = new Map()
+  const commentCommands: FakeApi['commentCommands'] = new Map()
   const documents: FakeApi['documents'] = new Map()
   const disposable = { dispose: () => undefined }
   const diags: FakeApi['diags'] = new Map()
@@ -131,6 +135,10 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
       threadCommands.set(id, handler)
       return disposable
     },
+    registerCommentCommand: (id, handler) => {
+      commentCommands.set(id, handler)
+      return disposable
+    },
     readDocument: async (uri) => documents.get(uri.fsPath) ?? { lines: [], languageId: 'plaintext' },
     diagnostics: (path) => diags.get(path) ?? [],
     executeCommand: async (id, args) => void executed.push({ id, args }),
@@ -155,6 +163,7 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     threads,
     commands,
     threadCommands,
+    commentCommands,
     documents,
     logs,
     infos,

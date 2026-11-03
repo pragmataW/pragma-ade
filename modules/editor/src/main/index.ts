@@ -31,7 +31,8 @@ import { createUpstream } from './upstream'
 import { configureEditorSession, hardenEditorWebContents } from './views/editorSession'
 import { WORKBENCH_FONT_FILES } from './views/fontAssets'
 import { ViewManager } from './views/viewManager'
-import { applyWorkbenchFonts } from './views/workbenchFonts'
+import { WORKBENCH_COMMENTS_CSS } from './views/workbenchComments'
+import { applyWorkbenchStyles } from './views/workbenchFonts'
 import { workbenchUrl } from './views/workbenchUrl'
 
 /** Test-only overrides (`TEST_ENV`), read only in test mode. */
@@ -120,7 +121,9 @@ function activateEditor(typed: MainContext<EditorSettings>): void {
       background.apply(view as WebContentsView)
       const wc = (view as WebContentsView).webContents
       hardenEditorWebContents(wc, { port, openExternal })
-      applyWorkbenchFonts(wc, WORKBENCH_FONT_FILES, (m, e) => ctx.log.warn(m, e))
+      applyWorkbenchStyles(wc, { fonts: WORKBENCH_FONT_FILES, sheets: [WORKBENCH_COMMENTS_CSS] }, (m, e) =>
+        ctx.log.warn(m, e),
+      )
     },
     log: (m) => ctx.log.warn(m),
   })

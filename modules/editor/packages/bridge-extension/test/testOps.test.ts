@@ -12,6 +12,8 @@ const THREAD: ThreadInfo = {
   startLine: 0,
   endLine: 0,
   status: 'open',
+  label: 'L1 · Open',
+  pending: false,
   body: 'note',
   replies: [],
 }

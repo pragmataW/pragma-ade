@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   EDITOR_TEST_IDS,
   EditorSettingsSchema,
+  EditorThreadSchema,
   editorBridge,
   editorSettingsDefaults,
   normalizeFolderKey,
@@ -38,6 +39,7 @@ describe('contract', () => {
         'reply',
         'setStatus',
         'deleteThread',
+        'removeReply',
         'send',
       ]),
     )
@@ -47,5 +49,24 @@ describe('contract', () => {
   it('EDITOR_TEST_IDS values are unique', () => {
     const values = Object.values(EDITOR_TEST_IDS)
     expect(new Set(values).size).toBe(values.length)
+  })
+
+  it('a workbench thread carries the creation time of its root and of every reply', () => {
+    const reply = { id: 'r', author: 'agent', label: 'Claude', body: 'Done.', pending: false, createdAt: 20 }
+    const thread = {
+      id: 't',
+      source: 'editor',
+      filePath: 'a.ts',
+      lineStart: 1,
+      lineEnd: 1,
+      status: 'open',
+      pending: false,
+      body: 'x',
+      createdAt: 10,
+      replies: [reply],
+    }
+    expect(EditorThreadSchema.parse(thread)).toEqual(thread)
+    expect(() => EditorThreadSchema.parse({ ...thread, createdAt: undefined })).toThrow()
+    expect(() => EditorThreadSchema.parse({ ...thread, replies: [{ ...reply, createdAt: -1 }] })).toThrow()
   })
 })

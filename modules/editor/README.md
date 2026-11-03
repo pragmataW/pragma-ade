@@ -63,18 +63,29 @@ stays silent.
 
 - The bridge serves the worktree's **code threads** (`isCodeThread`: editor comments and the diff's new-side comments;
   old-side diff and browser threads stay in their panels) as `EditorThread` (root, replies with author/label,
-  `status`, `pending`) via `threads` and pushes a `threads` event to that worktree's clients on every
+  `status`, `pending`, `createdAt`) via `threads` and pushes a `threads` event to that worktree's clients on every
   `comment.changed` (`drafts` was renamed; the vsix is rebuilt from `buildInputs`, which include the comments contract,
   so old and new never mix).
-- "Send to Agent" on a new comment adds it and sends the worktree's whole review round (`send(worktreeId)`, once), the
-  same as every other surface. `reply { threadId, body, send }` adds a user reply (and with `send` sends the round),
-  `setStatus`, `deleteThread`, `send` go to the comments service.
-- The extension draws each thread as a replyable VS Code `CommentThread`: root + replies (author You / agent label /
-  Agent, `Pending` label on unsent items), `state` Resolved/Unresolved, collapsed when resolved, `contextValue`
-  `pragma-thread-open` / `pragma-thread-resolved`. Threads are updated in place, so a half-typed reply survives a
-  push. Commands: Reply, Reply and Send to Agent (reply box of a stored thread, `!commentThreadIsEmpty`), Resolve /
-  Reopen / Delete Thread (thread title). Its strings are fixed English in `bridge-extension/src/constants.ts`
-  (outside the app's i18n, as before).
+- A new comment offers **Add to drafts** (first form action: the primary button and the Ctrl+Enter default, like the
+  app's ⌘Enter), **Send now** (adds it and sends the worktree's whole review round, `send(worktreeId)`, once, the same
+  as every other surface) and **Cancel**. `reply { threadId, body, send }` adds a user reply (and with `send` sends
+  the round), `setStatus`, `deleteThread`, `removeReply { threadId, replyId }` (a pending user reply of that
+  thread), `send` go to the comments service.
+- The extension draws each thread as a VS Code `CommentThread`: header label `L3 · Open` / `L3–5 · Resolved`,
+  root + replies (author You / agent label / Agent, creation time, `Pending` label on unsent items), `state` Resolved/Unresolved, collapsed when resolved,
+  `contextValue` `pragma-thread-open` / `pragma-thread-resolved`. Threads are updated in place, so a half-typed reply
+  survives a push. The collapsed reply button reads **Reply** (the controller's `prompt`); it opens Reply / Reply and
+  send / Cancel (Cancel is a no-op command: the workbench collapses the box after any form action). Resolve / Reopen /
+  Delete Thread show in the title of stored threads only, so a new comment has just the workbench's own discard icon.
+  A pending user reply has a Discard reply action (`pragma-reply-pending`). A comment the app could not store stays
+  as `Not sent` with a Discard title action (`pragma-thread-unsent`). The extension's strings are fixed English in
+  `bridge-extension/src/constants.ts` and the manifest (outside the app's i18n, as before), worded like the comments
+  module.
+- The main side inserts `src/main/views/workbenchComments.ts` into every workbench load (with the fonts): the widget
+  as a card like the app's ThreadView, author and Pending pills, indented replies, a ghost Reply button and form
+  buttons that wrap. Only `--vscode-*` colours, which follow the app palette (`PALETTE_COLOR_MAP` maps `bg`, `bd`,
+  `acs` and the shared `warn` / `ok` tokens to the comment widget and the manifest's `pragma.comment.*` colours).
+  The selectors are the pinned VSCodium's DOM; the files-comments e2e guards them.
 - Test ops: `threads`, `replyThread { id, body, send }`, `setThreadStatus { id, status }` (`draftThreads` was renamed).
 
 ## Test-only overrides (read only when `PRAGMA_TEST=1`)

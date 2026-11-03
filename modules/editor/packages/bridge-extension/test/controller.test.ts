@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import type { EditorComment, EditorCommentReply, EditorThread } from '@pragma/module-editor/contract'
 import { describe, expect, it } from 'vitest'
 import { type CommentConnection, ReviewController } from '../src/comments/controller'
-import { COMMANDS, CONTROLLER, THREAD_CONTEXT } from '../src/constants'
+import { toThreadSpec } from '../src/comments/threads'
+import { COMMANDS, COMMENT_CONTEXT, CONTROLLER, THREAD_CONTEXT } from '../src/constants'
 import { fakeApi, fakeThread } from './fakes/vscode'
 
 const FOLDER = '/work/repo'
@@ -18,6 +19,7 @@ const draft = (id: string, o: Partial<EditorThread> = {}): EditorThread => ({
   status: 'open',
   pending: true,
   body: `note ${id}`,
+  createdAt: 1_000,
   replies: [],
   ...o,
 })
@@ -51,7 +53,7 @@ function setup(reply: EditorCommentReply | Error) {
 describe('ReviewController', () => {
   it.each([
     ['send', COMMANDS.sendToAgent, { status: 'sent', commentId: 'c1' }, 'Sent to agent', true],
-    ['draft', COMMANDS.addToReview, { status: 'drafted', commentId: 'c1' }, 'Added to review', true],
+    ['draft', COMMANDS.addToReview, { status: 'drafted', commentId: 'c1' }, 'Added to drafts', true],
     ['send', COMMANDS.sendToAgent, { status: 'needsUserAction', commentId: 'c1' }, 'Choose an agent in Pragma', true],
     ['send', COMMANDS.sendToAgent, { status: 'failed', message: 'comments:errors.deliveryFailed' }, null, false],
     ['send', COMMANDS.sendToAgent, new Error('offline'), null, false],
@@ -83,6 +85,25 @@ describe('ReviewController', () => {
     expect(t.added).toEqual([])
   })
 
+  it('an unsent comment stays as Not sent and the discard action removes it', async () => {
+    const { api } = setup(new Error('offline'))
+    const t = fakeThread(FILE, 0, 0)
+    await api.commands.get(COMMANDS.addToReview)?.({ thread: t.thread, text: 'Fix the type' })
+    expect(t.added).toEqual([{ body: 'Fix the type', label: 'Not sent' }])
+    expect(t.isDisposed()).toBe(false)
+    await api.threadCommands.get(COMMANDS.discard)?.(undefined, t.thread)
+    expect(t.isDisposed()).toBe(true)
+  })
+
+  it('cancelling a reply sends nothing and keeps the thread (the workbench collapses the reply box)', async () => {
+    const { api, calls } = setup({ status: 'drafted', commentId: 'a' })
+    const t = fakeThread(FILE, 0, 0)
+    expect(api.commands.has(COMMANDS.replyCancel)).toBe(true)
+    await api.commands.get(COMMANDS.replyCancel)?.({ thread: { ...t.thread, id: 'a' }, text: 'half' })
+    expect(calls).toEqual([])
+    expect(t.isDisposed()).toBe(false)
+  })
+
   it('cancel disposes the thread', async () => {
     const { api } = setup({ status: 'sent', commentId: 'c' })
     const t = fakeThread(FILE, 0, 0)
@@ -93,37 +114,28 @@ describe('ReviewController', () => {
   it('commenting ranges cover whole file for file scheme inside folder, none outside', () => {
     const { controller, api } = setup({ status: 'sent', commentId: 'c' })
     expect(api.controllers[0]?.id).toBe(CONTROLLER.id)
+    // The prompt is the text of a thread's collapsed reply button.
+    expect(api.controllers[0]).toMatchObject({ placeHolder: 'Write a comment for the agent…', prompt: 'Reply' })
     expect(controller.ranges({ scheme: 'file', fsPath: FILE, lineCount: 60 })).toEqual([[0, 59]])
     expect(controller.ranges({ scheme: 'file', fsPath: '/elsewhere/a.ts', lineCount: 3 })).toEqual([])
     expect(controller.ranges({ scheme: 'untitled', fsPath: 'Untitled-1', lineCount: 3 })).toEqual([])
   })
 
-  it('draws each thread with its replies, authors and Pending labels on 0-based lines of the absolute file', () => {
+  it('draws each thread as its spec (toThreadSpec) on 0-based lines of the absolute file', () => {
     const { api, controller } = setup({ status: 'sent', commentId: 'c' })
-    const replies = [
-      { id: 'r1', author: 'agent', label: 'Claude', body: 'Done.', pending: false },
-      { id: 'r2', author: 'agent', label: null, body: 'Also.', pending: false },
-      { id: 'r3', author: 'user', label: null, body: 'Thanks.', pending: true },
-    ] as const
-    controller.showThreads([draft('a', { lineStart: 2, lineEnd: 4, pending: false, replies: [...replies] })])
-    expect(api.threads).toEqual([
-      {
-        id: 'a',
-        path: '/work/repo/src/bad.ts',
-        startLine: 1,
-        endLine: 3,
-        comments: [
-          { body: 'note a', author: 'You' },
-          { body: 'Done.', author: 'Claude' },
-          { body: 'Also.', author: 'Agent' },
-          { body: 'Thanks.', author: 'You', label: 'Pending' },
-        ],
-        resolved: false,
-        contextValue: THREAD_CONTEXT.open,
-        disposed: false,
-        updates: 0,
-      },
-    ])
+    const reply = {
+      id: 'r1',
+      author: 'agent',
+      label: 'Claude',
+      body: 'Done.',
+      pending: false,
+      createdAt: 2_000,
+    } as const
+    const thread = draft('a', { lineStart: 2, lineEnd: 4, pending: false, replies: [reply] })
+    controller.showThreads([thread])
+    expect(api.threads).toEqual([{ ...toThreadSpec(FOLDER, thread), disposed: false, updates: 0 }])
+    expect(api.threads[0]).toMatchObject({ path: '/work/repo/src/bad.ts', startLine: 1, endLine: 3 })
+    expect(api.threads[0]?.comments.map((c) => c.author)).toEqual(['You', 'Claude'])
     expect(controller.threads()[0]).toMatchObject({ id: 'a', path: 'src/bad.ts', startLine: 1, status: 'open' })
   })
 
@@ -131,7 +143,8 @@ describe('ReviewController', () => {
     const { api, controller } = setup({ status: 'sent', commentId: 'c' })
     controller.showThreads([draft('a', { status: 'resolved', pending: false })])
     expect(api.threads[0]).toMatchObject({ resolved: true, contextValue: THREAD_CONTEXT.resolved })
-    expect(api.threads[0]?.comments[0]).toEqual({ body: 'note a', author: 'You' })
+    expect(api.threads[0]?.comments[0]).toMatchObject({ body: 'note a', author: 'You' })
+    expect(api.threads[0]?.comments[0]?.label).toBeUndefined()
   })
 
   it('a newer list removes deleted threads, keeps unchanged ones and updates changed ones in place', () => {
@@ -198,8 +211,23 @@ describe('ReviewController', () => {
     [COMMANDS.deleteThread, 'deleteThread', { threadId: 'a' }],
   ])('%s sends %s', async (command, name, payload) => {
     const { api, calls } = setup({ status: 'sent', commentId: 'c' })
-    await api.threadCommands.get(command)?.('a')
+    await api.threadCommands.get(command)?.('a', fakeThread(FILE, 0, 0).thread)
     expect(calls).toEqual([[name, payload]])
+  })
+
+  it('no Pragma title action shows on a new comment (the native trashcan is its only discard)', () => {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'))
+    const title: { when: string }[] = pkg.contributes.menus['comments/commentThread/title']
+    for (const m of title) expect(m.when).toMatch(/commentThread (==|=~) \/?\^?pragma-thread-/)
+  })
+
+  it('discarding a pending reply asks the app to remove it; an unknown comment only warns', async () => {
+    const { api, calls } = setup({ status: 'sent', commentId: 'c' })
+    await api.commentCommands.get(COMMANDS.discardReply)?.({ threadId: 'a', replyId: 'r3' })
+    expect(calls).toEqual([['removeReply', { threadId: 'a', replyId: 'r3' }]])
+    await api.commentCommands.get(COMMANDS.discardReply)?.(undefined)
+    expect(calls).toHaveLength(1)
+    expect(api.warnings).toHaveLength(1)
   })
 
   it('manifest command ids match constants', () => {
@@ -209,17 +237,34 @@ describe('ReviewController', () => {
     const controller = `commentController == ${CONTROLLER.id}`
     const menus = pkg.contributes.menus
     const when = (key: string) => menus[key].map((m: { command: string; when: string }) => [m.command, m.when])
+    // The first form action is the primary button and the Ctrl+Enter default (the app's ⌘Enter adds a draft).
     expect(when('comments/commentThread/context')).toEqual([
-      [COMMANDS.sendToAgent, `${controller} && commentThreadIsEmpty`],
       [COMMANDS.addToReview, `${controller} && commentThreadIsEmpty`],
+      [COMMANDS.sendToAgent, `${controller} && commentThreadIsEmpty`],
       [COMMANDS.cancel, `${controller} && commentThreadIsEmpty`],
-      [COMMANDS.replyAndSend, `${controller} && !commentThreadIsEmpty`],
       [COMMANDS.reply, `${controller} && !commentThreadIsEmpty`],
+      [COMMANDS.replyAndSend, `${controller} && !commentThreadIsEmpty`],
+      [COMMANDS.replyCancel, `${controller} && !commentThreadIsEmpty`],
+    ])
+    const title = (id: string) => pkg.contributes.commands.find((c: { command: string }) => c.command === id)?.title
+    expect([COMMANDS.addToReview, COMMANDS.sendToAgent, COMMANDS.cancel].map(title)).toEqual([
+      'Add to drafts',
+      'Send now',
+      'Cancel',
+    ])
+    expect([COMMANDS.reply, COMMANDS.replyAndSend, COMMANDS.replyCancel].map(title)).toEqual([
+      'Reply',
+      'Reply and send',
+      'Cancel',
     ])
     expect(when('comments/commentThread/title')).toEqual([
       [COMMANDS.resolve, `${controller} && commentThread == ${THREAD_CONTEXT.open}`],
       [COMMANDS.reopen, `${controller} && commentThread == ${THREAD_CONTEXT.resolved}`],
-      [COMMANDS.deleteThread, controller],
+      [COMMANDS.deleteThread, `${controller} && commentThread =~ /^pragma-thread-(open|resolved)$/`],
+      [COMMANDS.discard, `${controller} && commentThread == ${THREAD_CONTEXT.unsent}`],
+    ])
+    expect(when('comments/comment/title')).toEqual([
+      [COMMANDS.discardReply, `${controller} && comment == ${COMMENT_CONTEXT.pendingReply}`],
     ])
     expect(menus.commandPalette.map((m: { command: string }) => m.command).sort()).toEqual(ids)
   })

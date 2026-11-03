@@ -1,8 +1,9 @@
 import { FONT_MONO, FONT_SANS } from '@pragma/ui/tokens'
 import { describe, expect, it, vi } from 'vitest'
 import { WORKBENCH_FONT_FILES } from '../src/main/views/fontAssets'
+import { WORKBENCH_COMMENTS_CSS } from '../src/main/views/workbenchComments'
 import {
-  applyWorkbenchFonts,
+  applyWorkbenchStyles,
   dataUrlBase64,
   type FontTarget,
   fontFaceScript,
@@ -52,16 +53,24 @@ describe('workbench fonts', () => {
       expect(Buffer.from(f.base64, 'base64').subarray(0, 4).toString()).toBe(WOFF2_MAGIC)
   })
 
-  it('every page load inserts the css and adds the faces', async () => {
+  it('every page load inserts the font css and the extra sheets and adds the faces', async () => {
     const { wc, load } = fakeTarget()
     const files = [{ family: 'X', weight: '400', unicodeRange: 'U+0000-00FF', base64: 'AA==' }]
-    applyWorkbenchFonts(wc, files, vi.fn())
+    applyWorkbenchStyles(wc, { fonts: files, sheets: ['.a { color: red }'] }, vi.fn())
     expect(wc.insertCSS).not.toHaveBeenCalled()
     load()
     load()
-    expect(wc.insertCSS).toHaveBeenCalledTimes(2)
+    expect(wc.insertCSS).toHaveBeenCalledTimes(4)
     expect(wc.insertCSS).toHaveBeenCalledWith(workbenchFontCss())
+    expect(wc.insertCSS).toHaveBeenCalledWith('.a { color: red }')
     expect(wc.executeJavaScript).toHaveBeenCalledWith(fontFaceScript(files))
+  })
+
+  it('the comment widget skin wraps its buttons and takes every colour from the workbench theme', () => {
+    expect(WORKBENCH_COMMENTS_CSS).toContain('.review-widget')
+    expect(WORKBENCH_COMMENTS_CSS).toMatch(/flex-wrap:\s*wrap/)
+    expect(WORKBENCH_COMMENTS_CSS).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i)
+    expect(WORKBENCH_COMMENTS_CSS).toContain('var(--vscode-pragma-comment-pendingBorder)')
   })
 
   it('a failed injection is logged, not thrown', async () => {
@@ -69,7 +78,7 @@ describe('workbench fonts', () => {
     const err = new Error('gone')
     wc.insertCSS.mockRejectedValueOnce(err)
     const log = vi.fn()
-    applyWorkbenchFonts(wc, [], log)
+    applyWorkbenchStyles(wc, { fonts: [], sheets: [] }, log)
     load()
     await vi.waitFor(() => expect(log).toHaveBeenCalledWith(expect.any(String), err))
   })

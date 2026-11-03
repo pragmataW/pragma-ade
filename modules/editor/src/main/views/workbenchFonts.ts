@@ -40,16 +40,19 @@ export function fontFaceScript(files: readonly FontFile[]): string {
 })()`
 }
 
-/** On every load of the workbench page: the app's UI and code fonts instead of the platform ones. */
-export function applyWorkbenchFonts(
+/**
+ * On every load of the workbench page: the app's UI and code fonts instead of the platform ones, and the extra style
+ * sheets (the review-thread skin).
+ */
+export function applyWorkbenchStyles(
   wc: FontTarget,
-  files: readonly FontFile[],
+  o: { fonts: readonly FontFile[]; sheets: readonly string[] },
   log: (m: string, e: unknown) => void,
 ): void {
-  const css = workbenchFontCss()
-  const script = fontFaceScript(files)
+  const sheets = [workbenchFontCss(), ...o.sheets]
+  const script = fontFaceScript(o.fonts)
   wc.on(WC_EVENTS.domReady, () => {
-    wc.insertCSS(css).catch((e: unknown) => log('workbench font css failed', e))
+    for (const css of sheets) wc.insertCSS(css).catch((e: unknown) => log('workbench css failed', e))
     wc.executeJavaScript(script).catch((e: unknown) => log('workbench font faces failed', e))
   })
 }
