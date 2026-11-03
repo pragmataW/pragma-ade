@@ -2,6 +2,7 @@ import { useT } from '@pragma/sdk/renderer'
 import { cn, EmptyState } from '@pragma/ui'
 import { BUTTON_TYPE, ICON_PX, META_SEPARATOR, TASK_EMPTY_ICONS, TASK_INDENT_PX } from '../../../constants'
 import { CHAT_DATA_ATTRS, CHAT_TESTIDS, TASK_KIND } from '../../../contract'
+import { TASK_NAME_CLASS } from '../parts/lib/task-visual'
 import { SECTION_LABEL } from '../parts/lib/tone'
 import { useNow } from '../parts/lib/use-now'
 import { TaskStatusPill } from '../parts/TaskCard'
@@ -42,7 +43,7 @@ function Row({ row, now, onSelect }: { row: TaskRow; now: number; onSelect(): vo
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-1.5">
           <span className="flex min-w-0 items-center gap-1.5 text-[12.5px]">
             <TaskKindIcon task={task} size={ICON_PX} />
-            <span className="shrink-0 font-semibold text-tx">{task.name}</span>
+            <span className={TASK_NAME_CLASS}>{task.name}</span>
             {task.taskKind === TASK_KIND.workflow ? (
               <span className="shrink-0 text-[11px] text-act">{t('chat:task.kind.workflow')}</span>
             ) : null}

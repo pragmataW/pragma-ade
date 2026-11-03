@@ -1,7 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { ICON_PX, ICON_STROKE, TASK_INDENT_PX } from '../../../constants'
 import { CHAT_DATA_ATTRS, CHAT_TESTIDS, type ChatSlotProps, EVENT_KIND, type TaskItem } from '../../../contract'
-import { TASK_ICONS } from './lib/task-visual'
+import { TASK_ICONS, TASK_NAME_CLASS } from './lib/task-visual'
 import { TaskStatusPill, TaskStopButton } from './TaskCard'
 
 /** Side panel / header slot: every task of the session (nested by depth) with its live status and Stop. */
@@ -24,7 +24,7 @@ export function TaskTree({ session }: ChatSlotProps) {
               className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1 text-[12px] hover:bg-hv"
             >
               <Icon size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="shrink-0 text-act" />
-              <span className="shrink-0 font-semibold text-tx">{task.name}</span>
+              <span className={TASK_NAME_CLASS}>{task.name}</span>
               <span className="min-w-0 flex-1 truncate text-mu">{task.description ?? ''}</span>
               <TaskStatusPill item={task} />
               <TaskStopButton item={task} session={session} />

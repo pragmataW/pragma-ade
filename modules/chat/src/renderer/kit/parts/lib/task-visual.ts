@@ -23,3 +23,6 @@ export const TASK_ICONS: Record<TaskKind, typeof Bot> = {
 /** A task the user can still stop. */
 export const isLiveTask = (status: TaskStatus): boolean =>
   status === TASK_STATUS.running || status === TASK_STATUS.pending || status === TASK_STATUS.paused
+
+/** A task's name in a one-line row: keeps room for the description beside it and truncates when very long. */
+export const TASK_NAME_CLASS = 'min-w-0 max-w-[60%] shrink-0 truncate font-semibold text-tx'

@@ -73,8 +73,9 @@ export const TASKS_PANEL_MIN_CHAT_PX = 480
 export const TASKS_PANEL_FULL_BELOW_PX = 560
 /** "Show in chat" highlight and the indicator's new-task pulse. */
 export const TASK_FLASH_MS = 1600
-/** Longer prompts are clamped in the task detail ("Show more"). */
-export const TASK_PROMPT_CLAMP_CHARS = 280
+/** Task text (prompt, summary, description) longer than this many characters or lines is clamped ("Show more"). */
+export const TEXT_CLAMP_CHARS = 280
+export const TEXT_CLAMP_LINES = 4
 export const TASK_PULSE_MS = 1200
 export const TASKS_COMMAND_ID = 'chat.toggleTasksPanel'
 export const TASKS_SHORTCUT = { accelerator: 'CmdOrCtrl+Shift+A', scope: 'app' } as const
