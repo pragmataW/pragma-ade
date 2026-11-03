@@ -87,6 +87,7 @@ export class ReviewController {
       api.registerThreadCommand(COMMANDS.resolve, (id) => this.setStatus(id, THREAD_STATUS.resolved)),
       api.registerThreadCommand(COMMANDS.reopen, (id) => this.setStatus(id, THREAD_STATUS.open)),
       api.registerThreadCommand(COMMANDS.deleteThread, (id) => this.deleteThread(id)),
+      api.registerThreadCommand(COMMANDS.discard, (_id, thread) => thread.dispose()),
     )
     this.#draw()
   }

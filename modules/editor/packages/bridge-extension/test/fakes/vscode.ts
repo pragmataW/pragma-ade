@@ -23,7 +23,7 @@ export interface FakeApi extends VscodeApi {
   threads: (ThreadSpec & { disposed: boolean; updates: number })[]
   commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
   /** Thread title commands (they get the thread's Pragma id). */
-  threadCommands: Map<string, (threadId: string | undefined) => unknown>
+  threadCommands: Map<string, (threadId: string | undefined, thread: ThreadLike) => unknown>
   documents: Map<string, { lines: string[]; languageId: string }>
   diags: Map<string, DiagnosticInfo[]>
   tabList: TabInfo[]

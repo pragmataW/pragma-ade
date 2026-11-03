@@ -146,12 +146,16 @@ export const COMMANDS = {
   resolve: 'pragma.thread.resolve',
   reopen: 'pragma.thread.reopen',
   deleteThread: 'pragma.thread.delete',
+  /** Removes a composer whose comment could not be stored ("Not sent"). */
+  discard: 'pragma.thread.discard',
 } as const
 export const CONTROLLER = {
   id: 'pragma-review',
   label: 'Pragma',
-  placeHolder: 'Comment for the agent',
-  prompt: 'Sends file, line range and code excerpt',
+  /** Placeholder of the new-comment and the reply editor. */
+  placeHolder: 'Write a comment for the agent…',
+  /** Text of a thread's collapsed reply button (one click opens the reply editor). */
+  prompt: 'Reply',
 } as const
 export const FILE_SCHEME = 'file'
 export const PLAINTEXT = 'plaintext'
@@ -168,8 +172,16 @@ export const COMMENT_MESSAGES = {
   replied: 'Reply added',
   notStored: 'This thread is not stored in Pragma',
 } as const
-/** `CommentThread.contextValue` of a stored review thread (the manifest's title menu keys on it). */
-export const THREAD_CONTEXT = { open: 'pragma-thread-open', resolved: 'pragma-thread-resolved' } as const
+/** `CommentThread.contextValue`: stored threads, and a composer whose comment was not stored (the title menus key on it). */
+export const THREAD_CONTEXT = {
+  open: 'pragma-thread-open',
+  resolved: 'pragma-thread-resolved',
+  unsent: 'pragma-thread-unsent',
+} as const
+/** `Comment.contextValue` of a drawn comment: not delivered by a Send yet, or delivered / from the agent. */
+export const COMMENT_CONTEXT = { pending: 'pragma-comment-pending', sent: 'pragma-comment' } as const
+/** Thread header text, as Git Changes writes a location: `L3` / `L3–5`, then the status and Pending. */
+export const THREAD_LABEL = { line: 'L', range: '–', sep: ' · ', open: 'Open', resolved: 'Resolved' } as const
 export const CONNECTION = { connected: 'connected', disabled: 'disabled' } as const
 /** Index = `vscode.DiagnosticSeverity` (Error 0, Warning 1, Information 2, Hint 3). */
 export const SEVERITIES = ['error', 'warning', 'info', 'hint'] as const

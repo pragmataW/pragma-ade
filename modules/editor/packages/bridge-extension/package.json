@@ -65,6 +65,11 @@
         "command": "pragma.thread.delete",
         "title": "Delete Thread",
         "icon": "$(trash)"
+      },
+      {
+        "command": "pragma.thread.discard",
+        "title": "Discard",
+        "icon": "$(close)"
       }
     ],
     "menus": {
@@ -127,6 +132,10 @@
         {
           "command": "pragma.thread.delete",
           "when": "false"
+        },
+        {
+          "command": "pragma.thread.discard",
+          "when": "false"
         }
       ],
       "comments/commentThread/title": [
@@ -144,6 +153,11 @@
           "command": "pragma.thread.delete",
           "group": "inline@2",
           "when": "commentController == pragma-review && commentThread =~ /^pragma-thread-(open|resolved)$/"
+        },
+        {
+          "command": "pragma.thread.discard",
+          "group": "inline@1",
+          "when": "commentController == pragma-review && commentThread == pragma-thread-unsent"
         }
       ]
     }
