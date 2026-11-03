@@ -102,6 +102,9 @@ describe('NoticeRow', () => {
   it.each([
     [{ notice: 'reverted', messageId: 'm', files: ['a.ts', 'b.ts'] }, /Rewound.*restored 2 files: a.ts, b.ts/],
     [{ notice: 'forked', from: 'ses_1', to: 'ses_2' }, /Continuing in a copy.*ses_1/],
+    [{ notice: 'agent', agent: 'plan' }, /^Switched to the plan agent$/],
+    [{ notice: 'model', model: 'gpt-y' }, /^Switched to gpt-y$/],
+    [{ notice: 'system', text: 'Tools changed' }, /^Tools changed$/],
   ])('%j', (data, text) => {
     const item = itemOf([{ kind: 'custom', type: CUSTOM.notice, data }], 'custom')
     renderUi(<NoticeRow item={item} session={stubSessionApi().api} />)

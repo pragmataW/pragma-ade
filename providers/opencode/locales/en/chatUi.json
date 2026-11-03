@@ -14,7 +14,9 @@
       "files_other": "restored {{count}} files: {{files}}",
       "files_zero": "conversation only, no file changes",
       "forked": "Continuing in a copy",
-      "forkedFrom": "the original conversation ({{id}}) is unchanged"
+      "forkedFrom": "the original conversation ({{id}}) is unchanged",
+      "agent": "Switched to the {{agent}} agent",
+      "model": "Switched to {{model}}"
     },
     "model": {
       "search": "Search models…",

@@ -7,11 +7,23 @@ import { z } from '@pragma/sdk'
 
 export const CUSTOM = { form: 'opencode.form', notice: 'opencode.notice' } as const
 
-/** A session change shown inline: files reverted to before a message, or the chat continued in a fork. */
-export const NOTICE = { reverted: 'reverted', forked: 'forked' } as const
+/**
+ * A session change shown inline: files reverted to before a message, the chat continued in a fork, another agent or
+ * model selected, or OpenCode's own transcript summary of a system update.
+ */
+export const NOTICE = {
+  reverted: 'reverted',
+  forked: 'forked',
+  agent: 'agent',
+  model: 'model',
+  system: 'system',
+} as const
 export const noticePayloadSchema = z.discriminatedUnion('notice', [
   z.object({ notice: z.literal(NOTICE.reverted), messageId: z.string(), files: z.array(z.string()) }),
   z.object({ notice: z.literal(NOTICE.forked), from: z.string(), to: z.string() }),
+  z.object({ notice: z.literal(NOTICE.agent), agent: z.string() }),
+  z.object({ notice: z.literal(NOTICE.model), model: z.string() }),
+  z.object({ notice: z.literal(NOTICE.system), text: z.string() }),
 ])
 export type NoticePayload = z.infer<typeof noticePayloadSchema>
 

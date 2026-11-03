@@ -11,6 +11,7 @@ import {
 import { CONTENT_TYPES, IMAGE_MEDIA_PREFIX, MESSAGE_TYPES, PART_KIND, TOOL_STATES } from '../constants'
 import type { AssistantContent, IdleOutcome, Message, ModelRef, Tokens } from '../schemas'
 import { errorCodeOf, partIdOf, settleTool, usageEvent } from './event-mapper'
+import { agentSwitchEvents, injectedTextEvents, modelSwitchEvents } from './notices'
 import { toolKindOf, toolTitleOf } from './tool-kind'
 
 type Assistant = Extract<Message, { type: typeof MESSAGE_TYPES.assistant }>
@@ -99,6 +100,13 @@ export function historyToEvents(messages: Message[], contextWindow: ContextWindo
         return assistant(m)
       case MESSAGE_TYPES.idle:
         return [{ kind: K.turnEnd, reason: OUTCOMES[m.outcome] }]
+      case MESSAGE_TYPES.agentSwitched:
+        return agentSwitchEvents(m.agent)
+      case MESSAGE_TYPES.modelSwitched:
+        return modelSwitchEvents(m.model, m.previous)
+      case MESSAGE_TYPES.synthetic:
+      case MESSAGE_TYPES.system:
+        return injectedTextEvents(m.description)
       default: {
         const never: never = m
         return never

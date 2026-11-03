@@ -146,6 +146,8 @@ const EVENT_DATA = {
   [EV.providerUpdated]: z.looseObject({}),
   [EV.integrationUpdated]: z.looseObject({}),
   [EV.credentialUpdated]: z.looseObject({}),
+  [EV.agentSelected]: z.looseObject({ ...sid, agent: z.string(), previous: z.string().optional() }),
+  [EV.modelSelected]: z.looseObject({ ...sid, model: modelRefSchema, previous: modelRefSchema.optional() }),
 } as const satisfies Record<(typeof EV)[keyof typeof EV], z.ZodType>
 
 type EventDataMap = typeof EVENT_DATA
@@ -207,10 +209,33 @@ const idleMessageSchema = z.looseObject({
   outcome: z.enum(IDLE_OUTCOMES),
 })
 
+const agentSwitchedSchema = z.looseObject({
+  id: z.string(),
+  type: z.literal(MESSAGE_TYPES.agentSwitched),
+  agent: z.string(),
+  previous: z.string().optional(),
+})
+const modelSwitchedSchema = z.looseObject({
+  id: z.string(),
+  type: z.literal(MESSAGE_TYPES.modelSwitched),
+  model: modelRefSchema,
+  previous: modelRefSchema.optional(),
+})
+/** `text` is model-facing; `description` (optional) is OpenCode's short transcript summary. */
+const injectedTextSchema = z.looseObject({
+  id: z.string(),
+  type: z.enum([MESSAGE_TYPES.synthetic, MESSAGE_TYPES.system]),
+  description: z.string().optional(),
+})
+
+/** One stored message; an unlisted type fails here and `lenientArray` drops it (the rest of the page still loads). */
 export const messageSchema = z.discriminatedUnion(TYPE_KEY, [
   userMessageSchema,
   assistantMessageSchema,
   idleMessageSchema,
+  agentSwitchedSchema,
+  modelSwitchedSchema,
+  injectedTextSchema,
 ])
 export type Message = z.infer<typeof messageSchema>
 export type IdleOutcome = (typeof IDLE_OUTCOMES)[number]

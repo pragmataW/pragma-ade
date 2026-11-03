@@ -26,6 +26,7 @@ import type { ModelRef, OpencodeTodo, StructuredError, Tokens, ToolContent, Tool
 import type { HubEvent } from '../wire/event-hub'
 import { changeOf, patchToHunks } from './diff'
 import { outcomeOf, permissionOptions } from './input'
+import { agentSwitchEvents, modelSwitchEvents } from './notices'
 import { toolKindOf, toolTitleOf } from './tool-kind'
 
 type ToolResultStatus = typeof TOOL_STATUS.completed | typeof TOOL_STATUS.error
@@ -258,6 +259,10 @@ export class EventMapper {
         return this.#failed(e.data.error)
       case EV.executionInterrupted:
         return this.#end(TURN_END_REASON.interrupted)
+      case EV.agentSelected:
+        return agentSwitchEvents(e.data.agent)
+      case EV.modelSelected:
+        return modelSwitchEvents(e.data.model, e.data.previous)
       default: {
         const never: never = e
         return never
