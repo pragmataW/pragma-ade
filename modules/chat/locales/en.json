@@ -118,7 +118,8 @@
     "jumpToLatest": "Jump to latest"
   },
   "tool": {
-    "group": "{{count}} tool calls",
+    "group_one": "{{count}} tool call",
+    "group_other": "{{count}} tool calls",
     "status": {
       "pending": "Pending",
       "running": "Running",

@@ -20,6 +20,7 @@ import {
   type ChatSlotProps,
   OPTION_TYPE,
 } from '../../../contract'
+import { CHAT_RESPONSIVE } from '../responsive'
 import { useChoiceLabel } from './use-choice-label'
 
 export const PICKER_VARIANTS = ['select', 'icon'] as const
@@ -43,11 +44,23 @@ function EnumPicker({ d, session, icon: IconC, variant }: PickerProps) {
           data-testid={CHAT_TESTIDS.optionPicker(d.key)}
           aria-label={t(d.labelKey)}
           title={t(d.labelKey)}
-          className={cn('gap-1 px-2 text-[12px]', current?.warn ? 'text-warn' : 'text-mu')}
+          className={cn(
+            'min-w-0 shrink gap-1 px-2 text-[12px] @max-[479px]/chat:px-1.5',
+            current?.warn ? 'text-warn' : 'text-mu',
+          )}
         >
-          {IconC ? <IconC size={ICON_PX} strokeWidth={ICON_STROKE} /> : null}
-          {variant === SELECT || !IconC ? <span className="max-w-40 truncate">{label(current)}</span> : null}
-          <ChevronDown size={ICON_PX} strokeWidth={ICON_STROKE} className="opacity-60" />
+          {IconC ? <IconC size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="shrink-0" /> : null}
+          {variant === SELECT || !IconC ? (
+            <span className={cn('max-w-40', CHAT_RESPONSIVE.compactLabel, IconC && CHAT_RESPONSIVE.label)}>
+              {label(current)}
+            </span>
+          ) : null}
+          <ChevronDown
+            size={ICON_PX}
+            strokeWidth={ICON_STROKE}
+            aria-hidden
+            className={cn('shrink-0 opacity-60', CHAT_RESPONSIVE.wideOnly)}
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={ALIGN_START} className="min-w-44">

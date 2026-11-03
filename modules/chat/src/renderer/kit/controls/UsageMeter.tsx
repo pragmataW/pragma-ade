@@ -1,6 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
 import { CHAT_TESTIDS, type ChatSlotProps } from '../../../contract'
 import { formatTokens, formatUsd } from '../parts/lib/format'
+import { CHAT_RESPONSIVE } from '../responsive'
 
 /** Tokens in/out (compact) and the session cost when the provider reports it. */
 export function UsageMeter({ session }: ChatSlotProps) {
@@ -10,9 +11,9 @@ export function UsageMeter({ session }: ChatSlotProps) {
   return (
     <span
       data-testid={CHAT_TESTIDS.usage}
-      className="inline-flex items-center gap-2 text-[11.5px] tabular-nums text-mu"
+      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-[11.5px] tabular-nums text-mu"
     >
-      <span>
+      <span className={usage.costUsd === undefined ? undefined : CHAT_RESPONSIVE.wideOnly}>
         {t('chat:usage.tokens', { input: formatTokens(usage.inputTokens), output: formatTokens(usage.outputTokens) })}
       </span>
       {usage.costUsd === undefined ? null : <span>{formatUsd(usage.costUsd)}</span>}

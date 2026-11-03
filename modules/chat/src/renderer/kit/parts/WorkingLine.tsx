@@ -35,7 +35,9 @@ export function WorkingLine({ session }: ChatSlotProps) {
       <span className="min-w-0 truncate text-tx">
         {currentAction(session.transcript) ?? t('chat:working.thinking')}
       </span>
-      <span className="shrink-0 text-mu">{t('chat:working.meta', { elapsed: formatElapsed(now - startedAt) })}</span>
+      <span className="shrink-0 text-mu tabular-nums">
+        {t('chat:working.meta', { elapsed: formatElapsed(now - startedAt) })}
+      </span>
     </div>
   )
 }

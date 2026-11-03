@@ -29,6 +29,9 @@ export const READ_PREVIEW_LINES = 20
 export const QUEUE_CHIP_CHARS = 60
 export const MENTION_DEBOUNCE_MS = 120
 export const ROW_ESTIMATE_PX = 64
+/** Space kept under the last row for the working line, which overlays the transcript bottom (no layout shift). */
+export const LIST_PADDING_END_PX = 36
+export const LIST_PADDING_START_PX = 8
 /** Until the scroller is measured (first paint, tests). */
 export const INITIAL_RECT = { width: 740, height: 800 } as const
 export const ICON_PX = 14
@@ -57,6 +60,8 @@ export const MARK_PX = 14
 export const TASKS_PANEL = { defaultWidth: 380, minWidth: 300, maxWidth: 640, keyStep: 24 } as const
 /** Below this transcript width the panel overlays it instead of docking. */
 export const TASKS_PANEL_MIN_CHAT_PX = 480
+/** Below this chat width the overlaid panel takes the whole width (a sliver of transcript beside it is unusable). */
+export const TASKS_PANEL_FULL_BELOW_PX = 560
 /** "Show in chat" highlight and the indicator's new-task pulse. */
 export const TASK_FLASH_MS = 1600
 /** Longer prompts are clamped in the task detail ("Show more"). */

@@ -31,16 +31,25 @@ export function AssistantText({ item, session }: ChatPartProps<TextItem>) {
       ref={root}
       data-testid={CHAT_TESTIDS.part(EVENT_KIND.textDelta)}
       {...{ [CHAT_DATA_ATTRS.streaming]: item.streaming }}
-      className="text-[13px] leading-[1.6] text-tx"
+      className="group/msg text-[13px] leading-[1.6] text-tx"
       onClick={refs.onClick}
       onKeyDown={refs.onKeyDown}
     >
       <RichMarkdown text={item.text} streaming={item.streaming} onLinkClick={onLinkClick} />
-      {item.streaming ? (
-        <span aria-hidden className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-mu align-middle" />
-      ) : (
-        <MessageCopy text={item.text} />
-      )}
+      {/* one fixed-height row for the caret, then the copy button: the message does not grow when streaming ends */}
+      <div className="flex h-6 items-center">
+        {item.streaming ? (
+          <span
+            aria-hidden
+            className="inline-block h-3.5 w-1.5 animate-pulse rounded-[1px] bg-mu motion-reduce:animate-none"
+          />
+        ) : (
+          <MessageCopy
+            text={item.text}
+            className="-ml-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/msg:opacity-100 motion-reduce:transition-none"
+          />
+        )}
+      </div>
     </div>
   )
 }

@@ -7,6 +7,7 @@ export type {
   ChatUiDefinition,
 } from '@pragma/module-chat/renderer'
 export {
+  CHAT_RESPONSIVE,
   ChatHostProvider,
   ChatSessionView,
   ContextMeter,

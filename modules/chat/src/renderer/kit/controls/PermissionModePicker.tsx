@@ -8,10 +8,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@pragma/ui/components/dropdown-menu'
-import { Check, ChevronDown, ShieldAlert } from '@pragma/ui/icons'
+import { Check, ChevronDown, Shield, ShieldAlert } from '@pragma/ui/icons'
 import { ALIGN_START, BUTTON_TYPE, ICON_PX, ICON_STROKE } from '../../../constants'
 import { CHAT_TESTIDS, CHAT_TONE, type ChatOptionChoice, type ChatSlotProps } from '../../../contract'
 import { PILL, TONE_BADGE, TONE_DOT } from '../parts/lib/tone'
+import { CHAT_RESPONSIVE } from '../responsive'
 import { valueKey } from './OptionPicker'
 import { useChoiceDescription, useChoiceLabel } from './use-choice-label'
 import { permissionModeOf, usePermissionModeSelect } from './use-permission-mode'
@@ -58,12 +59,21 @@ export function PermissionModePicker({ session }: ChatSlotProps) {
           data-testid={CHAT_TESTIDS.permissionMode}
           data-tone={toneOf(current)}
           aria-label={t(d.labelKey)}
-          title={t('chat:permissionMode.hint')}
-          className={cn(PILL, 'h-6 cursor-pointer hover:brightness-110', TONE_BADGE[toneOf(current)])}
+          title={`${label(current)} · ${t('chat:permissionMode.hint')}`}
+          className={cn(PILL, 'h-6 min-w-0 shrink cursor-pointer hover:brightness-110', TONE_BADGE[toneOf(current)])}
         >
-          {current?.dangerous ? <ShieldAlert size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden /> : null}
-          <span className="max-w-32 truncate">{label(current)}</span>
-          <ChevronDown size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="opacity-60" />
+          {current?.dangerous ? (
+            <ShieldAlert size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="shrink-0" />
+          ) : (
+            <Shield size={ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className={CHAT_RESPONSIVE.narrowOnly} />
+          )}
+          <span className={cn('max-w-32 truncate', CHAT_RESPONSIVE.label)}>{label(current)}</span>
+          <ChevronDown
+            size={ICON_PX}
+            strokeWidth={ICON_STROKE}
+            aria-hidden
+            className={cn('shrink-0 opacity-60', CHAT_RESPONSIVE.wideOnly)}
+          />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={ALIGN_START} className="w-72">

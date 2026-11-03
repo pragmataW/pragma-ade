@@ -11,6 +11,7 @@ import {
   TASKS_SHORTCUT,
 } from '../../../constants'
 import { CHAT_TESTIDS, type ChatSlotProps } from '../../../contract'
+import { CHAT_RESPONSIVE } from '../responsive'
 import { type TaskCounts, taskCounts } from './model'
 import { shortcutLabel } from './shortcut-label'
 import { useTasksPanelStore, useTasksView } from './store'
@@ -86,7 +87,8 @@ export function TasksIndicator({ session }: ChatSlotProps) {
       {counts.workflows > 0 ? (
         <Workflow size={SMALL_ICON_PX} strokeWidth={ICON_STROKE} aria-hidden className="shrink-0 text-act" />
       ) : null}
-      <span className="whitespace-nowrap">{label}</span>
+      <span className={cn('whitespace-nowrap', CHAT_RESPONSIVE.wideOnly)}>{label}</span>
+      <span className={CHAT_RESPONSIVE.narrowOnly}>{counts.running || counts.total}</span>
     </button>
   )
 }
