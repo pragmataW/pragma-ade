@@ -1,4 +1,13 @@
 import { defineBridgeNamespace } from '@pragma/module-bridge/contract'
+import { COMMENT_SOURCES, COMMENT_STATUSES, REPLY_AUTHORS } from '@pragma/module-comments/contract'
+
+/** Thread vocabulary of the comments module, re-exported for the extension (it bundles only this contract). */
+export {
+  COMMENT_STATUS as THREAD_STATUS,
+  type CommentStatus as ThreadStatus,
+  REPLY_AUTHOR,
+} from '@pragma/module-comments/contract'
+
 import { z } from '@pragma/sdk'
 import { THEME_MODES } from '@pragma/ui/tokens'
 import {
@@ -50,7 +59,8 @@ export const EditorCommentSchema = z.object({
   body: z.string().min(1),
 })
 const commentId = z.object({ commentId: z.string() })
-export const EditorCommentReplySchema = z.discriminatedUnion('status', [
+const REPLY_KEY = 'status'
+export const EditorCommentReplySchema = z.discriminatedUnion(REPLY_KEY, [
   commentId.extend({ status: z.literal(COMMENT_REPLY.drafted) }),
   commentId.extend({ status: z.literal(COMMENT_REPLY.sent) }),
   /** The comments module shows its target picker / start-agent flow. */
@@ -58,16 +68,43 @@ export const EditorCommentReplySchema = z.discriminatedUnion('status', [
   /** `commentId` when the draft was stored before the send failed (it stays as a Pending draft). */
   z.object({ status: z.literal(COMMENT_REPLY.failed), message: z.string(), commentId: z.string().optional() }),
 ])
-/** A stored editor draft as the extension draws it: a read-only thread on its lines until sent or deleted. */
-export const EditorDraftSchema = z.object({
+/** What a Send from the editor did (the worktree's whole review round). */
+export const EditorSendReplySchema = z.discriminatedUnion(REPLY_KEY, [
+  z.object({ status: z.literal(COMMENT_REPLY.sent) }),
+  z.object({ status: z.literal(COMMENT_REPLY.needsUserAction) }),
+  z.object({ status: z.literal(COMMENT_REPLY.failed), message: z.string() }),
+])
+/** One reply of a review thread; `label` = the agent's profile name (null for the user or an unknown agent). */
+export const EditorThreadReplySchema = z.object({
   id: z.string(),
+  author: z.enum(REPLY_AUTHORS),
+  label: z.string().nullable(),
+  body: z.string(),
+  /** A user reply no Send delivered yet. */
+  pending: z.boolean(),
+})
+/**
+ * A review thread on code as the workbench draws it: editor comments and the diff's new-side comments of the
+ * client's worktree (the same threads Git Changes and the drawer show).
+ */
+export const EditorThreadSchema = z.object({
+  id: z.string(),
+  source: z.enum(COMMENT_SOURCES),
   filePath: z.string(),
   lineStart: line(),
   lineEnd: line(),
+  status: z.enum(COMMENT_STATUSES),
+  /** The root was not sent yet. */
+  pending: z.boolean(),
   body: z.string(),
+  replies: z.array(EditorThreadReplySchema),
 })
-/** Every editor draft of the client's worktree (oldest first); the extension replaces what it shows with it. */
-export const EditorDraftsSchema = z.object({ comments: z.array(EditorDraftSchema) })
+/** Every code thread of the client's worktree (oldest first); the extension replaces what it shows with it. */
+export const EditorThreadsSchema = z.object({ threads: z.array(EditorThreadSchema) })
+const threadRef = z.object({ threadId: z.string().min(1) })
+/** A user reply from the workbench; `send` also sends the worktree's review round. */
+export const EditorThreadReplyInputSchema = threadRef.extend({ body: z.string().min(1), send: z.boolean() })
+export const EditorThreadStatusInputSchema = threadRef.extend({ status: z.enum(COMMENT_STATUSES) })
 export const EditorOpenFileMsgSchema = z.object({
   path: z.string(),
   line: line().optional(),
@@ -101,8 +138,12 @@ export type EditorHello = z.infer<typeof EditorHelloSchema>
 export type EditorHelloReply = z.infer<typeof EditorHelloReplySchema>
 export type EditorComment = z.infer<typeof EditorCommentSchema>
 export type EditorCommentReply = z.infer<typeof EditorCommentReplySchema>
-export type EditorDraft = z.infer<typeof EditorDraftSchema>
-export type EditorDrafts = z.infer<typeof EditorDraftsSchema>
+export type EditorSendReply = z.infer<typeof EditorSendReplySchema>
+export type EditorThreadReply = z.infer<typeof EditorThreadReplySchema>
+export type EditorThread = z.infer<typeof EditorThreadSchema>
+export type EditorThreads = z.infer<typeof EditorThreadsSchema>
+export type EditorThreadReplyInput = z.infer<typeof EditorThreadReplyInputSchema>
+export type EditorThreadStatusInput = z.infer<typeof EditorThreadStatusInputSchema>
 export type EditorOpenFileMsg = z.infer<typeof EditorOpenFileMsgSchema>
 export type DiffRefs = z.infer<typeof DiffRefsSchema>
 export type EditorOpenDiffMsg = z.infer<typeof EditorOpenDiffMsgSchema>
@@ -119,8 +160,13 @@ export const editorBridge = defineBridgeNamespace({
     comment: { input: EditorCommentSchema, output: EditorCommentReplySchema },
     testResponse: { input: EditorTestResponseSchema, output: z.null() },
     languageStatus: { input: EditorLanguageStatusSchema, output: z.null() },
-    /** Asked after every hello: the drafts to show. */
-    drafts: { input: z.object({}), output: EditorDraftsSchema },
+    /** Asked after every hello: the review threads to show. */
+    threads: { input: z.object({}), output: EditorThreadsSchema },
+    reply: { input: EditorThreadReplyInputSchema, output: EditorCommentReplySchema },
+    setStatus: { input: EditorThreadStatusInputSchema, output: z.null() },
+    deleteThread: { input: threadRef, output: z.null() },
+    /** Sends every pending item of the client's worktree (one review round). */
+    send: { input: z.object({}), output: EditorSendReplySchema },
   },
   events: {
     /** Sent to one client (`BridgeServer.send(clientId)`). */
@@ -132,7 +178,7 @@ export const editorBridge = defineBridgeNamespace({
     /** Sent to one client, test mode only. */
     testRequest: EditorTestRequestSchema,
     /** Sent to every client of a worktree whose comments changed. */
-    drafts: EditorDraftsSchema,
+    threads: EditorThreadsSchema,
   },
 })
 export type EditorBridgeEvent = keyof typeof editorBridge.events

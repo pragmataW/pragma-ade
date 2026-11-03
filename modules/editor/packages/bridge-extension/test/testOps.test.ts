@@ -1,23 +1,36 @@
 import type { CommentAction } from '@pragma/module-editor/contract'
 import { describe, expect, it } from 'vitest'
 import type { ReplyLike } from '../src/comments/controller'
+import type { ThreadInfo } from '../src/comments/threads'
 import { answerTestRequest, createTestOps } from '../src/testOps'
 import { fakeApi } from './fakes/vscode'
 
 const FOLDER = '/work/repo'
+const THREAD: ThreadInfo = {
+  id: 'c1',
+  path: 'src/bad.ts',
+  startLine: 0,
+  endLine: 0,
+  status: 'open',
+  body: 'note',
+  replies: [],
+}
 
 function setup() {
   const api = fakeApi({ folder: FOLDER })
   const handled: { reply: ReplyLike; action: CommentAction }[] = []
+  const calls: unknown[][] = []
   const ops = createTestOps(api, {
     folderPath: () => FOLDER,
     handleComment: async (reply, action) => {
       handled.push({ reply, action })
       reply.thread.addComment(reply.text, 'Not sent')
     },
-    drafts: () => [{ id: 'c1', path: 'src/bad.ts', startLine: 0, endLine: 0, body: 'note' }],
+    handleReply: async (reply, send) => void calls.push(['reply', reply.thread.id, reply.text, send]),
+    setStatus: async (id, status) => void calls.push(['setStatus', id, status]),
+    threads: () => [THREAD],
   })
-  return { api, ops, handled }
+  return { api, ops, handled, calls }
 }
 
 describe('test ops', () => {
@@ -36,9 +49,15 @@ describe('test ops', () => {
     expect(r).toEqual({ notSent: ['Fix'] })
   })
 
-  it('draftThreads lists the Pending threads the review controller shows', () => {
-    const { ops } = setup()
-    expect(ops.draftThreads({})).toEqual([{ id: 'c1', path: 'src/bad.ts', startLine: 0, endLine: 0, body: 'note' }])
+  it('threads lists what the review controller shows; replyThread and setThreadStatus go through it', async () => {
+    const { ops, calls } = setup()
+    expect(ops.threads({})).toEqual([THREAD])
+    await ops.replyThread({ id: 'c1', body: 'Why?', send: true })
+    await ops.setThreadStatus({ id: 'c1', status: 'resolved' })
+    expect(calls).toEqual([
+      ['reply', 'c1', 'Why?', true],
+      ['setStatus', 'c1', 'resolved'],
+    ])
   })
 
   it('diagnostics resolve the path against the folder', () => {

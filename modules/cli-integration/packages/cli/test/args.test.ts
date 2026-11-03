@@ -13,7 +13,11 @@ const COMMAND_LINES = [
   'pragma task move <id> --column <name>',
   'pragma task columns [--project <id>]',
   'pragma task show <id>',
-  'pragma comments list [--worktree <id>]',
+  'pragma comments list [--worktree <id>] [--status <open|resolved|all>]',
+  'pragma comments show <id>',
+  'pragma comments reply <id> [--body <text>] [--file <path|->]',
+  'pragma comments resolve <id> [--body <text>]',
+  'pragma comments reopen <id>',
   'pragma handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
   'pragma ask --to <profile> [--prompt <text>] [--prompt-file <path|->] [--timeout <seconds>]',
 ]
@@ -36,6 +40,11 @@ describe('parseCli', () => {
     [['task', 'list', '--column', 'Review'], 'taskList', { column: 'Review' }],
     [['task', 'columns', '--project', 'p1'], 'taskColumns', { project: 'p1' }],
     [['comments', 'list', '--worktree', 'w1'], 'commentsList', { worktree: 'w1' }],
+    [['comments', 'list', '--status', 'all'], 'commentsList', { status: 'all' }],
+    [['comments', 'reply', 'c1', '--body', 'Done.'], 'commentsReply', { body: 'Done.' }],
+    [['comments', 'reply', 'c1', '--file', '-'], 'commentsReply', { file: '-' }],
+    [['comments', 'resolve', 'c1', '--body', 'Fixed.'], 'commentsResolve', { body: 'Fixed.' }],
+    [['comments', 'reopen', 'c1'], 'commentsReopen', {}],
     [['handoff', '--to', 'oc', '--file', '-'], 'handoff', { to: 'oc', file: '-' }],
   ])('maps %j to %s', (argv, method, options) => {
     expect(parseCli(argv)).toMatchObject({ kind: 'call', method, json: false, options })
@@ -48,6 +57,10 @@ describe('parseCli', () => {
 
   it('parses task show with positional id', () => {
     expect(parseCli(['task', 'show', 'PRA-3'])).toMatchObject({ method: 'taskShow', positionals: ['PRA-3'] })
+  })
+
+  it('comments show takes the thread id as positional', () => {
+    expect(parseCli(['comments', 'show', 'abc'])).toMatchObject({ method: 'commentsShow', positionals: ['abc'] })
   })
 
   it('labels split on comma and trimmed', () => {
@@ -77,7 +90,10 @@ describe('parseCli', () => {
       ['task', 'create', '--title', 't', '--priority', 'p1'],
       /--priority must be one of: none, low, medium, high, urgent/,
     ],
-    [['comments', 'list', '--status', 'sent'], /Unknown option '--status'/],
+    [['comments', 'list', '--status', 'bogus'], /--status must be one of: open, resolved, all/],
+    [['comments', 'reply', 'c1'], /Pass one of --body, --file\./],
+    [['comments', 'reply', 'c1', '--body', 'a', '--file', 'b'], /--body cannot be combined with --file/],
+    [['comments', 'resolve'], /<id> is required/],
     [['nope'], /Unknown command 'nope'/],
     [['worktree'], /Unknown or missing subcommand for 'worktree'. Expected one of: list, create/],
     [['task', 'create', '--title'], /--title/],

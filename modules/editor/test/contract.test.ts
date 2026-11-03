@@ -27,12 +27,21 @@ describe('contract', () => {
     expect(EditorSettingsSchema.parse(editorSettingsDefaults)).toEqual(editorSettingsDefaults)
   })
 
-  it('editorBridge declares hello/comment/testResponse/drafts requests and openFile/openDiff/setTheme/testRequest/drafts events', () => {
+  it('editorBridge declares the thread requests and openFile/openDiff/setTheme/testRequest/threads events', () => {
     expect(editorBridge.name).toBe('editor')
     expect(Object.keys(editorBridge.requests)).toEqual(
-      expect.arrayContaining(['hello', 'comment', 'testResponse', 'drafts']),
+      expect.arrayContaining([
+        'hello',
+        'comment',
+        'testResponse',
+        'threads',
+        'reply',
+        'setStatus',
+        'deleteThread',
+        'send',
+      ]),
     )
-    expect(Object.keys(editorBridge.events)).toEqual(['openFile', 'openDiff', 'setTheme', 'testRequest', 'drafts'])
+    expect(Object.keys(editorBridge.events)).toEqual(['openFile', 'openDiff', 'setTheme', 'testRequest', 'threads'])
   })
 
   it('EDITOR_TEST_IDS values are unique', () => {

@@ -67,7 +67,7 @@ describe('agent handlers', () => {
 })
 
 describe('comments handler', () => {
-  it('lists the drafts of the worktree; a sent (deleted) comment is absent', async () => {
+  it('lists the delivered open threads of the worktree', async () => {
     const comments = fakeComments([aComment('c1', { lineStart: 2 }), aComment('other', { worktreeId: 'w2' })])
     const h = createCliHandlers(makeDeps({ comments }))
     expect(await h.commentsList({ context: context({ worktreeId: 'w1' }) })).toMatchObject({

@@ -74,4 +74,15 @@ describe('skills', () => {
   ])('pragma-cli mentions `pragma %s`', (cmd) => {
     expect(read('pragma-cli').body).toContain(`pragma ${cmd}`)
   })
+
+  it.each(['comments list', 'comments show', 'comments reply', 'comments resolve', 'comments reopen'])(
+    'pragma-cli documents the review loop command `pragma %s`',
+    (cmd) => {
+      expect(read('pragma-cli').body).toContain(`pragma ${cmd}`)
+    },
+  )
+
+  it('pragma-cli has a Review threads section', () => {
+    expect(read('pragma-cli').body).toContain('## Review threads')
+  })
 })

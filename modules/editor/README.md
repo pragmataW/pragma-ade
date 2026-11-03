@@ -2,8 +2,8 @@
 
 Phase 06. The right-panel **Files** tab is a real VS Code workbench: VSCodium `reh-web` (pinned 1.143.17232, VS Code
 1.143.1) served on `127.0.0.1` and shown in one `WebContentsView` per worktree. The bundled VS Code extension
-`pragma-bridge` (sub-package `packages/bridge-extension`) talks to the app over 04's bridge: line comments to the
-agent, open a file at a line, follow the app theme, report language status.
+`pragma-bridge` (sub-package `packages/bridge-extension`) talks to the app over 04's bridge: line comments and
+review threads, open a file at a line, follow the app theme, report language status.
 
 - Manifest: id `editor`, `dependsOn: ["projects", "bridge", "comments"]`, `core: false`.
 - Entries: `./contract` (anywhere), `./main` and `./renderer` (loader only).
@@ -18,7 +18,7 @@ agent, open a file at a line, follow the app theme, report language status.
 | Right tab | `files` (order 30, icon `file-code`) | Download/progress/cancel/retry UI until ready; then the native view covers it. |
 | Settings page | `editor` (order 80) | Max open views, theme map, palette sync, local webviews, server info, Restart / Re-download. |
 | Status bar | `statusbar.right` `editor.languageStatus` (order 30) | `typescript · ✓` or `typescript · 1 error, 0 warnings` for the active worktree. |
-| Bridge namespace | `editor` (`editorBridge`) | requests `hello`, `comment`, `testResponse`, `languageStatus`; events `openFile`, `setTheme` (broadcast), `testRequest` |
+| Bridge namespace | `editor` (`editorBridge`) | requests `hello`, `comment`, `testResponse`, `languageStatus`, `threads`, `reply`, `setStatus`, `deleteThread`, `send`; events `openFile`, `openDiff`, `setTheme` (broadcast), `testRequest`, `threads` |
 | IPC | `editor.getStatus`, `ensureReady`, `cancelDownload`, `retry`, `restartServer`, `reinstall`, `getServerInfo`, `getLanguageStatus`; events `editor.statusChanged`, `revealRequested`, `languageStatusChanged` | |
 | Test ids | `EDITOR_TEST_IDS` (contract) | For other modules' E2E. |
 
@@ -58,6 +58,24 @@ through `pragma.package.extraResources` (`packages/bridge-extension/dist` → `r
 and found with `ctx.paths.resource('editor', 'packages/bridge-extension/dist/pragma-bridge.vsix')`. Installed with
 `--install-extension --force` when the marker or the installed folder does not match. Without bridge configuration it
 stays silent.
+
+### Review threads in the workbench
+
+- The bridge serves the worktree's **code threads** (`isCodeThread`: editor comments and the diff's new-side comments;
+  old-side diff and browser threads stay in their panels) as `EditorThread` (root, replies with author/label,
+  `status`, `pending`) via `threads` and pushes a `threads` event to that worktree's clients on every
+  `comment.changed` (`drafts` was renamed; the vsix is rebuilt from `buildInputs`, which include the comments contract,
+  so old and new never mix).
+- "Send to Agent" on a new comment adds it and sends the worktree's whole review round (`send(worktreeId)`, once), the
+  same as every other surface. `reply { threadId, body, send }` adds a user reply (and with `send` sends the round),
+  `setStatus`, `deleteThread`, `send` go to the comments service.
+- The extension draws each thread as a replyable VS Code `CommentThread`: root + replies (author You / agent label /
+  Agent, `Pending` label on unsent items), `state` Resolved/Unresolved, collapsed when resolved, `contextValue`
+  `pragma-thread-open` / `pragma-thread-resolved`. Threads are updated in place, so a half-typed reply survives a
+  push. Commands: Reply, Reply and Send to Agent (reply box of a stored thread, `!commentThreadIsEmpty`), Resolve /
+  Reopen / Delete Thread (thread title). Its strings are fixed English in `bridge-extension/src/constants.ts`
+  (outside the app's i18n, as before).
+- Test ops: `threads`, `replyThread { id, body, send }`, `setThreadStatus { id, status }` (`draftThreads` was renamed).
 
 ## Test-only overrides (read only when `PRAGMA_TEST=1`)
 

@@ -4,7 +4,7 @@ import { ProjectsRendererServiceToken, type ProjectsSnapshot, type Worktree } fr
 import type { MainIpcApi } from '@pragma/sdk/main'
 import type { RendererContext, SettingsPage, SlotEntry } from '@pragma/sdk/renderer'
 import type { IpcClient } from '@pragma/sdk/runtime/renderer'
-import { type Comment, type CommentsSettings, commentsIpc } from '../src/contract'
+import { COMMENT_STATUS_FILTER, type Comment, type CommentsSettings, commentsIpc } from '../src/contract'
 import type { CommentsUpstream, SessionRef } from '../src/main/upstream'
 import { setRuntime } from '../src/renderer/runtime'
 import { useCommentsStore } from '../src/renderer/store'
@@ -158,6 +158,9 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
   let settings: CommentsSettings = { submitAfterPaste: false }
   const settingsSubs = listeners<CommentsSettings>()
   const updates: unknown[] = []
+  /** Every SDK confirm dialog; `confirmAnswer.value` is what the user picks. */
+  const confirms: unknown[] = []
+  const confirmAnswer = { value: true }
   const disposable = { dispose: () => undefined }
   const recording =
     <A extends unknown[]>(record: (...a: A) => void) =>
@@ -167,6 +170,12 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
     }
   const ctx = {
     ipc,
+    dialogs: {
+      confirm: async (o: unknown) => {
+        confirms.push(o)
+        return confirmAnswer.value
+      },
+    },
     services: {
       provide: recording((token: { id: string }, impl: unknown) => void provided.set(token.id, impl)),
       get: (token: { id: string }) => provided.get(token.id),
@@ -210,20 +219,28 @@ export function createFakeRendererCtx(opts: { activeWorktreeId?: string | null }
     slotEntries: slots,
     pagesRegistered: pages,
     updates,
+    confirms,
+    confirmAnswer,
   })
 }
 export type FakeRendererCtx = ReturnType<typeof createFakeRendererCtx>
 
+const matchesStatus = (c: Comment, status: string | undefined) =>
+  !status || status === COMMENT_STATUS_FILTER.all || c.status === status
+
 /**
- * The renderer runtime over a fake context with a fresh store; `listDrafts` answers from `drafts`.
+ * The renderer runtime over a fake context with a fresh store; `list` answers from `data` (threads and round).
  * Call `init()` to start the store's subscriptions (disposed by `stop`).
  */
-export function mountRenderer(opts: { activeWorktreeId?: string | null; drafts?: Comment[] } = {}) {
+export function mountRenderer(opts: { activeWorktreeId?: string | null; threads?: Comment[]; round?: number } = {}) {
   const ctx = createFakeRendererCtx({
     activeWorktreeId: opts.activeWorktreeId === undefined ? WT : opts.activeWorktreeId,
   })
-  const data = { drafts: opts.drafts ?? [] }
-  ctx.fakeIpc.respond(commentsIpc.listDrafts, () => data.drafts)
+  const data = { threads: opts.threads ?? [], round: opts.round ?? 0 }
+  ctx.fakeIpc.respond(commentsIpc.list, (input) => ({
+    round: data.round,
+    threads: data.threads.filter((c) => matchesStatus(c, (input as { status?: string }).status)),
+  }))
   setRuntime(ctx)
   useCommentsStore.setState(useCommentsStore.getInitialState(), true)
   let off: (() => void) | undefined

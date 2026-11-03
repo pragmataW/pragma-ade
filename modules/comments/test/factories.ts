@@ -57,6 +57,8 @@ export function makeComment(overrides: Partial<Comment> = {}): Comment {
     snippet,
     language,
     body,
+    status: 'open',
+    replies: [],
     createdAt: seq,
     updatedAt: seq,
     ...overrides,

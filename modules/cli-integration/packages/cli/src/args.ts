@@ -1,6 +1,7 @@
 import { type ParseArgsConfig, parseArgs } from 'node:util'
 import {
   ASK_MAX_TIMEOUT_SECONDS,
+  CLI_COMMENT_STATUS_FILTERS,
   CLI_METHOD,
   CLI_PRIORITIES,
   type CliMethod,
@@ -48,7 +49,11 @@ const COMMAND_TABLE: readonly (readonly [string, CliMethod])[] = [
   ['task move <id> --column <name>', CLI_METHOD.taskMove],
   ['task columns [--project <id>]', CLI_METHOD.taskColumns],
   ['task show <id>', CLI_METHOD.taskShow],
-  ['comments list [--worktree <id>]', CLI_METHOD.commentsList],
+  ['comments list [--worktree <id>] [--status <open|resolved|all>]', CLI_METHOD.commentsList],
+  ['comments show <id>', CLI_METHOD.commentsShow],
+  ['comments reply <id> [--body <text>] [--file <path|->]', CLI_METHOD.commentsReply],
+  ['comments resolve <id> [--body <text>]', CLI_METHOD.commentsResolve],
+  ['comments reopen <id>', CLI_METHOD.commentsReopen],
   [
     'handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
     CLI_METHOD.handoff,
@@ -62,14 +67,18 @@ const OPTION_RE = /(?<optional>\[)?--(?<name>[a-z][a-z-]*)(?<value> [^\s\]]+)?\]
 const WORD_RE = /^[a-z]+$/
 const POSITIONAL_RE = /^<([a-z]+)>$/
 const LIST_OPTIONS = new Set(['labels'])
-const CHOICES: Record<string, readonly string[]> = { priority: CLI_PRIORITIES }
+const CHOICES: Record<string, readonly string[]> = { priority: CLI_PRIORITIES, status: CLI_COMMENT_STATUS_FILTERS }
 /** Option pairs that exclude each other: `[a, b]` → "--a cannot be combined with --b". */
 const EXCLUSIVE: readonly (readonly [string, string])[] = [
   ['branch', 'same-worktree'],
   ['prompt', 'prompt-file'],
+  ['body', 'file'],
 ]
 /** Per method, options of which exactly one must be given (pairs above already exclude each other). */
-const ONE_OF: Partial<Record<CliMethod, readonly string[]>> = { [CLI_METHOD.ask]: ['prompt', 'prompt-file'] }
+const ONE_OF: Partial<Record<CliMethod, readonly string[]>> = {
+  [CLI_METHOD.ask]: ['prompt', 'prompt-file'],
+  [CLI_METHOD.commentsReply]: ['body', 'file'],
+}
 /** Options whose value is a whole number in `[min, max]`. */
 const INTEGER_OPTIONS: Record<string, { min: number; max: number }> = {
   timeout: { min: 1, max: ASK_MAX_TIMEOUT_SECONDS },

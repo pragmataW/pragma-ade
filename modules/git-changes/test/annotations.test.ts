@@ -1,21 +1,25 @@
 import type { Comment } from '@pragma/module-comments/contract'
+import { aThread } from '@pragma/module-comments/testing'
 import { describe, expect, it } from 'vitest'
 import { toAnnotations } from '../src/renderer/diff/annotations'
-import { draftCounts, toAnnotationSide, toDiffSide } from '../src/renderer/lib/comments'
+import { openCounts, toAnnotationSide, toDiffSide } from '../src/renderer/lib/comments'
 
-const comment = (id: string, over: Partial<Comment>): Comment => ({
-  id,
-  worktreeId: 'w',
-  source: 'diff',
-  filePath: 'a.ts',
-  lineStart: 1,
-  lineEnd: 2,
-  diffSide: 'new',
-  body: 'b',
-  createdAt: 0,
-  updatedAt: 0,
-  ...over,
-})
+const comment = (id: string, over: Partial<Comment>): Comment =>
+  aThread({
+    id,
+    worktreeId: 'w',
+    source: 'diff',
+    filePath: 'a.ts',
+    lineStart: 1,
+    lineEnd: 2,
+    diffSide: 'new',
+    snippet: undefined,
+    language: undefined,
+    body: 'b',
+    createdAt: 0,
+    updatedAt: 0,
+    ...over,
+  })
 
 describe('diff annotations', () => {
   it('comments of this file on both sides, then the composer last', () => {
@@ -49,9 +53,28 @@ describe('diff annotations', () => {
     expect(toAnnotationSide(diffSide)).toBe(side)
   })
 
-  it('an unknown side reads as additions; draft counts per file', () => {
+  it('an unknown side reads as additions; open code threads per file', () => {
     expect(toAnnotationSide(undefined)).toBe('additions')
-    const list = [comment('1', {}), comment('2', {}), comment('4', { filePath: 'b.ts' })]
-    expect(draftCounts(list)).toEqual({ 'a.ts': 2, 'b.ts': 1 })
+    const list = [
+      comment('1', {}),
+      comment('2', { source: 'editor', diffSide: undefined }),
+      comment('3', { status: 'resolved' }),
+      comment('4', { filePath: 'b.ts' }),
+      comment('5', { source: 'browser', filePath: undefined }),
+    ]
+    expect(openCounts(list)).toEqual({ 'a.ts': 2, 'b.ts': 1 })
+  })
+
+  it('editor threads show on the new side of their file; browser threads never; old-side diff threads stay old', () => {
+    const list = [
+      comment('ed', { source: 'editor', diffSide: undefined, lineStart: 3, lineEnd: 3 }),
+      comment('br', { source: 'browser', filePath: undefined }),
+      comment('old', { diffSide: 'old', lineStart: 5, lineEnd: 5 }),
+    ]
+    const out = toAnnotations(list, null, { path: 'a.ts' })
+    expect(out.map((a) => [a.metadata.kind === 'comment' && a.metadata.comment.id, a.side])).toEqual([
+      ['ed', 'additions'],
+      ['old', 'deletions'],
+    ])
   })
 })

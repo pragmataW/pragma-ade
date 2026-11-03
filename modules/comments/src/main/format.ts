@@ -11,7 +11,15 @@ import {
   NEWLINE,
   TRAILING_SPACE_RE,
 } from '../constants'
-import { type BrowserElementContext, COMMENT_SOURCE, type Comment, DIFF_SIDE } from '../contract'
+import {
+  type BrowserElementContext,
+  COMMENT_SOURCE,
+  type Comment,
+  type CommentReply,
+  DIFF_SIDE,
+  REPLY_AUTHOR,
+  type ThreadFormatOptions,
+} from '../contract'
 import { codeLocation } from '../lib/code-location'
 
 export type FormattableComment = Pick<
@@ -20,9 +28,7 @@ export type FormattableComment = Pick<
 >
 
 const TEMPLATE = {
-  header: 'Review comments:',
   itemSeparator: '\n\n',
-  oldVersion: ' (old version)',
   html: 'html',
   bullet: '- ',
   component: 'React component: ',
@@ -33,6 +39,14 @@ const TEMPLATE = {
   stylesSeparator: '; ',
   outerHtml: 'outerHTML:',
   consoleErrors: 'Console errors:',
+} as const
+
+const THREAD = {
+  oldVersion: 'old version',
+  tagJoin: ', ',
+  user: 'User',
+  agent: 'Agent',
+  userNew: (round: number) => `User (new in round ${round})`,
 } as const
 
 const LANGUAGES = {
@@ -76,9 +90,6 @@ export function languageFromPath(path: string | undefined): string | undefined {
   return ext && Object.hasOwn(LANGUAGES, ext) ? LANGUAGES[ext as keyof typeof LANGUAGES] : undefined
 }
 
-const indentLines = (text: string, indent: string): string[] =>
-  text.split(NEWLINE).map((l) => (l.length ? indent + l : ''))
-
 /** Backticks one longer than the longest run in `text` (at least `MIN_FENCE`). */
 function fence(text: string): string {
   const longest = Math.max(0, ...(text.match(BACKTICK_RUN) ?? []).map((run) => run.length))
@@ -114,9 +125,14 @@ function snippetLines(c: FormattableComment, limits: FormatLimits): string[] {
   return [...fencedBlock(byChars.text, language, INDENT), ...notes]
 }
 
-function codeItem(c: FormattableComment, n: number, limits: FormatLimits): string[] {
-  const old = c.diffSide === DIFF_SIDE.old ? TEMPLATE.oldVersion : ''
-  return [`${n}. ${code(codeLocation(c))}${old}`, ...snippetLines(c, limits)]
+/** `prefix` starts the head line (`[open] id `); `suffix` ends it. */
+interface Head {
+  prefix: string
+  suffix: string
+}
+
+function codeItem(c: FormattableComment, head: Head, limits: FormatLimits): string[] {
+  return [`${head.prefix}${code(codeLocation(c))}${head.suffix}`, ...snippetLines(c, limits)]
 }
 
 const bullet = (text: string): string => INDENT + TEMPLATE.bullet + text
@@ -153,24 +169,24 @@ function elementBullets(e: BrowserElementContext, limits: FormatLimits): string[
   return optional.filter((l): l is string => l !== undefined).map(bullet)
 }
 
-function browserItem(c: FormattableComment, n: number, limits: FormatLimits): string[] {
+function browserItem(c: FormattableComment, head: Head, limits: FormatLimits): string[] {
   const e = c.element
-  if (!e) return [`${n}. Browser element`]
+  if (!e) return [`${head.prefix}Browser element${head.suffix}`]
   return [
-    `${n}. Browser element ${code(e.selector)} on ${e.url}`,
+    `${head.prefix}Browser element ${code(e.selector)} on ${e.url}${head.suffix}`,
     ...elementBullets(e, limits),
     ...outerHtmlLines(e, limits),
     ...consoleErrorLines(e.consoleErrors ?? [], limits),
   ]
 }
 
-function itemHead(c: FormattableComment, n: number, limits: FormatLimits): string[] {
+function itemHead(c: FormattableComment, head: Head, limits: FormatLimits): string[] {
   switch (c.source) {
     case COMMENT_SOURCE.editor:
     case COMMENT_SOURCE.diff:
-      return codeItem(c, n, limits)
+      return codeItem(c, head, limits)
     case COMMENT_SOURCE.browser:
-      return browserItem(c, n, limits)
+      return browserItem(c, head, limits)
     default: {
       const never: never = c.source
       throw new Error(`unknown comment source ${String(never)}`)
@@ -178,11 +194,65 @@ function itemHead(c: FormattableComment, n: number, limits: FormatLimits): strin
   }
 }
 
-const formatItem = (c: FormattableComment, n: number, limits: FormatLimits): string =>
-  [...itemHead(c, n, limits), ...indentLines(c.body.trim(), INDENT)].join(NEWLINE)
+/** `[open] id ` … ` (diff, old version)`. */
+function threadHead(c: Comment): Head {
+  const tags = [c.source, ...(c.diffSide === DIFF_SIDE.old ? [THREAD.oldVersion] : [])].join(THREAD.tagJoin)
+  return { prefix: `[${c.status}] ${c.id} `, suffix: ` (${tags})` }
+}
 
-/** The text pasted into the agent: `Review comments:` and numbered items; `\n`, no trailing newline or spaces. */
-export function formatComments(comments: readonly FormattableComment[], limits: FormatLimits = FORMAT_LIMITS): string {
-  const items = comments.map((c, i) => formatItem(c, i + 1, limits)).join(TEMPLATE.itemSeparator)
-  return `${TEMPLATE.header}${NEWLINE}${items}`.replace(TRAILING_SPACE_RE, '')
+/** `Label: first line`, further lines indented below it. */
+function entryLines(label: string, body: string): string[] {
+  const [first = '', ...rest] = body.trim().split(NEWLINE)
+  return [`${INDENT}${label}: ${first}`, ...rest.map((l) => (l.length ? NESTED_INDENT + l : ''))]
+}
+
+const isNew = (round: number | undefined, opts: ThreadFormatOptions): boolean => round === opts.round
+
+function replyLabel(r: CommentReply, opts: ThreadFormatOptions): string {
+  if (r.author === REPLY_AUTHOR.agent) return r.authorLabel ?? THREAD.agent
+  return isNew(r.round, opts) ? THREAD.userNew(opts.round) : THREAD.user
+}
+
+/**
+ * One review thread for an agent (CLI output): head with status, id, location and source, the snippet or element
+ * block, then the root and every reply in order. Fixed English; no trailing spaces or newline.
+ */
+export function formatThread(c: Comment, opts: ThreadFormatOptions, limits: FormatLimits = FORMAT_LIMITS): string {
+  const rootLabel = isNew(c.round, opts) ? THREAD.userNew(opts.round) : THREAD.user
+  return [
+    ...itemHead(c, threadHead(c), limits),
+    ...entryLines(rootLabel, c.body),
+    ...c.replies.flatMap((r) => entryLines(replyLabel(r, opts), r.body)),
+  ]
+    .join(NEWLINE)
+    .replace(TRAILING_SPACE_RE, '')
+}
+
+/** Threads separated by a blank line. */
+export const formatThreads = (threads: readonly Comment[], opts: ThreadFormatOptions): string =>
+  threads.map((c) => formatThread(c, opts)).join(TEMPLATE.itemSeparator)
+
+/** What one review round delivers: open threads in all, new roots, threads with new user replies. */
+export interface NudgeCounts {
+  round: number
+  open: number
+  created: number
+  updated: number
+}
+
+const NUDGE = {
+  thread: (n: number) => `${n} open review ${n === 1 ? 'thread' : 'threads'}`,
+  created: (n: number) => `${n} new`,
+  updated: (n: number) => `${n} with new replies`,
+  partJoin: ', ',
+  instructions:
+    'Read them with `pragma comments list`, address each one, reply with `pragma comments reply <id> --body "<text>"`' +
+    ' and resolve finished threads with `pragma comments resolve <id>`.',
+} as const
+
+/** The one-line message a Send pastes into the agent (one line: no bracketed-paste wait). Fixed English. */
+export function formatNudge(c: NudgeCounts): string {
+  const parts = [...(c.created ? [NUDGE.created(c.created)] : []), ...(c.updated ? [NUDGE.updated(c.updated)] : [])]
+  const detail = parts.length ? ` (${parts.join(NUDGE.partJoin)})` : ''
+  return `Review round ${c.round}: ${NUDGE.thread(c.open)} in this worktree${detail}. ${NUDGE.instructions}`
 }

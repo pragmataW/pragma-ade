@@ -131,9 +131,17 @@ only in `src/main/mappers.ts` and the adapter files named in its plan task.
 
 ### comments (`@pragma/module-comments/contract`)
 
-- `CommentsServiceToken.listDrafts(worktreeId)` — every stored comment is a draft (sent ones are deleted,
-  post-review change 2026-11-02). `Comment = { id, worktreeId, source, filePath?, lineStart?, lineEnd?, body,
-  createdAt, … }`.
+- `CommentsServiceToken` review threads (2026-11-03): `listThreads(worktreeId, { status, deliveredOnly: true })`,
+  `getThread`, `reply(id, { author: 'agent', body, sessionId?, authorLabel? })`, `setStatus(id, status, reply?)`,
+  `round(worktreeId)`, `format(threads, { round })` (fixed-English thread text) and `visibleToAgent`. `CommentsError`
+  keys map to CLI codes in `mappers.ts` (`notFound` → not_found, `alreadyDelivered`/`alreadySending` → conflict).
+- CLI: `comments list [--worktree] [--status open|resolved|all]` (default open; delivered content only, a pending
+  draft is `not_found` for `show`/`reply`/`resolve`/`reopen`), `comments show <id>`, `comments reply <id>
+  (--body | --file <path|->)` (exactly one; `--file` maps to `document`), `comments resolve <id> [--body]`,
+  `comments reopen <id>`. Replies are agent replies labelled with the caller session's profile name
+  (`PRAGMA_SESSION_ID` → `agents.getSession` → profile). Each `CliComment` carries `text`, the comments module's
+  rendering, which the human output prints (handlers in `handlers/comments.ts` (list) and
+  `handlers/comment-threads.ts`).
 
 ### test-support
 

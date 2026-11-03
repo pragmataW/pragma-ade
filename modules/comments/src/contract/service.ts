@@ -1,13 +1,17 @@
 import { createServiceToken } from '@pragma/sdk'
-import type { Comment, CommentInput, CommentPatch } from './dto'
+import type { Comment, CommentInput, CommentPatch, CommentStatus, CommentStatusFilter, ReplyInput } from './dto'
 import { type SendErrorKey, type SendResult, sendErrorI18nKey, type TargetResolution } from './results'
 
-/** What a delivery target gets; 11c may render `comments` as chips and ignores `submit`. */
+/**
+ * What a delivery target gets: `text` is the one-line review-round nudge, `comments` the threads with something new
+ * in `round` (11c may render them as chips and ignores `submit`).
+ */
 export interface DeliveryRequest {
   sessionId: string
   worktreeId: string
   mode: string
   ptyId: string | null
+  round: number
   text: string
   comments: Comment[]
   submit: boolean
@@ -30,26 +34,56 @@ export interface SendOptions {
   promptUser?: boolean
 }
 
+/** What a thread's text marks: entries delivered in `round` are flagged as new. */
+export interface ThreadFormatOptions {
+  round: number
+}
+
+export interface ListThreadsFilter {
+  /** Default `all`. */
+  status?: CommentStatusFilter
+  /** Only what an agent may read: delivered roots with their delivered replies (`visibleToAgent`). */
+  deliveredOnly?: boolean
+}
+
 export interface CommentsService {
   /** Rejects with a ZodError on invalid input. */
   addDraft(input: CommentInput): Promise<Comment>
-  /** CommentsError `notFound`. */
+  /** CommentsError `notFound`; `alreadyDelivered` once a Send delivered the root (reply instead). */
   update(id: string, patch: CommentPatch): Promise<Comment>
-  /** CommentsError `notFound`. */
+  /** Deletes the whole thread (any time). CommentsError `notFound`. */
   remove(id: string): Promise<void>
-  /** Oldest first. Every stored comment is a draft: a successful send deletes the delivered comments. */
-  listDrafts(worktreeId: string): Promise<Comment[]>
+  /** The worktree's threads with their replies, oldest first. */
+  listThreads(worktreeId: string, filter?: ListThreadsFilter): Promise<Comment[]>
+  /** CommentsError `notFound`. */
+  getThread(id: string): Promise<Comment>
+  /**
+   * Adds a reply and returns the thread. A user reply is pending until the next Send and reopens a resolved thread;
+   * an agent reply is stamped with the worktree's current round. CommentsError `notFound`.
+   */
+  reply(id: string, input: ReplyInput): Promise<Comment>
+  /** Only a pending user reply; CommentsError `notFound` / `alreadyDelivered`. */
+  removeReply(replyId: string): Promise<void>
+  /** Resolve or reopen, with an optional reply added first (e.g. a closing note). CommentsError `notFound`. */
+  setStatus(id: string, status: CommentStatus, reply?: ReplyInput): Promise<Comment>
+  /** Deletes the worktree's resolved threads; returns how many. */
+  clearResolved(worktreeId: string): Promise<number>
+  /** The worktree's last delivered review round (0 before the first). */
+  round(worktreeId: string): Promise<number>
   resolveTarget(worktreeId: string, preferredSessionId?: string): Promise<TargetResolution>
   /**
-   * On `sent` the delivered comments are deleted; any other result keeps them as drafts.
-   * With no target: sends when exactly one running session exists. Otherwise returns needsTarget/noSession and,
-   * unless `opts.promptUser === false`, publishes `comments.sendRequested` so the UI asks the user.
+   * Delivers one review round: every pending item of the worktree (new roots and user replies) as a short nudge that
+   * tells the agent to read the threads with the CLI. Nothing is deleted. On `sent` the items captured before delivery
+   * get the new round number (items added meanwhile stay pending); any other result changes nothing. `failed: empty`
+   * with nothing pending. With no target: sends when exactly one running session exists. Otherwise returns
+   * needsTarget/noSession and, unless `opts.promptUser === false`, publishes `comments.sendRequested`.
    */
-  send(commentIds: string[], targetSessionId?: string, opts?: SendOptions): Promise<SendResult>
-  /** Delivers to the next agent session started in the worktree (one pending entry per worktree). */
-  sendOnNextSession(worktreeId: string, commentIds: string[]): Promise<{ pendingId: string }>
+  send(worktreeId: string, targetSessionId?: string, opts?: SendOptions): Promise<SendResult>
+  /** Delivers the worktree's round to the next agent session started there (one entry per worktree). */
+  sendOnNextSession(worktreeId: string): Promise<{ pendingId: string }>
   cancelPending(worktreeId: string): void
-  format(comments: Comment[]): string
+  /** Fixed-English text of the threads for an agent (CLI output), blank-line separated. */
+  format(threads: Comment[], opts: ThreadFormatOptions): string
   /** Returns unregister; a duplicate mode throws. */
   registerDeliveryTarget(mode: string, deliver: DeliverFn): () => void
 }

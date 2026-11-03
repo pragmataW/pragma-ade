@@ -1,6 +1,6 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { type Comment, type CommentContext, DIFF_SIDE } from '@pragma/module-comments/contract'
-import { toAnnotationSide } from '../lib/comments'
+import { codeThreads, toAnnotationSide } from '../lib/comments'
 import type { DiffAnnotationMeta } from './diff-options'
 
 type Anchor = Pick<CommentContext, 'filePath' | 'diffSide' | 'lineStart' | 'lineEnd'>
@@ -17,14 +17,17 @@ const placed = (a: Anchor) => {
   return lineNumber === undefined ? null : { side: toAnnotationSide(a.diffSide), lineNumber }
 }
 
-/** Comment cards under their last line, then the open composer (last). */
+/**
+ * Thread cards under their last line, then the open composer (last). Diff threads sit on their side; editor threads
+ * (no `diffSide`) on the new side of their file; browser threads never show.
+ */
 export function toAnnotations(
-  comments: readonly Comment[],
+  threads: readonly Comment[],
   composer: CommentContext | null,
   file: { path: string; oldPath?: string },
 ): DiffLineAnnotation<DiffAnnotationMeta>[] {
   const out: DiffLineAnnotation<DiffAnnotationMeta>[] = []
-  for (const comment of comments) {
+  for (const comment of codeThreads(threads)) {
     const at = anchoredTo(comment, file) ? placed(comment) : null
     if (at) out.push({ ...at, metadata: { kind: ANNOTATION_KIND.comment, comment } })
   }

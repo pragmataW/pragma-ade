@@ -183,6 +183,18 @@ export const aWorktree = (over: Partial<Worktree> = {}): Worktree => ({
   ...over,
 })
 
+/** Stands in for 05's ThreadView: location, root body and the host's Edit (05 hides it once the root was sent). */
+const FakeThread: CommentsUiService['ThreadView'] = ({ comment, locationLabel, onEdit }) => (
+  <div data-testid="fake-thread">
+    <span>{locationLabel}</span>
+    <p>{comment.body}</p>
+    {onEdit ? (
+      <button type="button" onClick={onEdit}>
+        Edit
+      </button>
+    ) : null}
+  </div>
+)
 const NoComposer = () => null
 
 function GitChangesTab() {
@@ -242,8 +254,10 @@ export async function mountPanel(
   }
   const ui: CommentsUiService = {
     CommentComposer: NoComposer,
+    ThreadView: FakeThread,
     openDrawer: () => undefined,
     send: async () => undefined,
+    clearResolved: async () => 0,
     ...opts.ui,
   }
   const commentsRenderer: RendererModule<never> = {

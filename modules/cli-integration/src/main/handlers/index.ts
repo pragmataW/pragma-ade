@@ -3,6 +3,7 @@ import type { CliHandler } from '../lib/define-cli-handler'
 import { agentHandlers } from './agent'
 import { askHandlers } from './ask'
 import { boardHandlers } from './board'
+import { commentThreadHandlers } from './comment-threads'
 import { commentsHandlers } from './comments'
 import { handoffHandlers } from './handoff'
 import { sessionHandlers } from './session'
@@ -23,5 +24,6 @@ export function createCliHandlers(deps: CliHandlerDeps): Record<CliMethod, CliHa
     ...sessionHandlers(deps),
     ...boardHandlers(deps),
     ...askHandlers(deps),
+    ...commentThreadHandlers(deps),
   }
 }

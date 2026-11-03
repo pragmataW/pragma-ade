@@ -27,7 +27,8 @@ const request = (comments: Comment[], submit: boolean): DeliveryRequest => ({
   worktreeId: 'w1',
   mode: 'chat',
   ptyId: null,
-  text: 'Review comments:\n1. src/a.ts:3 fix',
+  round: 1,
+  text: 'Review round 1: 1 open review thread in this worktree (1 new).',
   comments,
   submit,
 })

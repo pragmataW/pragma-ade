@@ -42,3 +42,5 @@ export const CRLF_RE = /\r\n?/g
 export const BACKSLASH_RE = /\\/g
 export const TRAILING_SPACE_RE = /[ \t]+$/gm
 export const ELLIPSIS = '…'
+/** Visible lines of a reply box before it grows. */
+export const REPLY_ROWS = 2

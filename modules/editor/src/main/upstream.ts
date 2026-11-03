@@ -2,8 +2,10 @@ import { type BridgeServer, BridgeServerToken } from '@pragma/module-bridge/cont
 import {
   type Comment,
   type CommentInput,
+  type CommentStatus,
   CommentsServiceToken,
   commentsChanged,
+  type ReplyInput,
   type SendResult,
 } from '@pragma/module-comments/contract'
 import {
@@ -28,10 +30,13 @@ export interface EditorUpstream {
   selectWorktree(worktreeId: string): Promise<void>
   bridge: Pick<BridgeServer, 'url' | 'token' | 'registerHandler' | 'broadcast' | 'send' | 'onClient'>
   addDraft(i: CommentInput): Promise<Comment>
-  /** No target: the comments module asks the user when needed. */
-  send(commentIds: string[]): Promise<SendResult>
-  listDrafts(worktreeId: string): Promise<Comment[]>
-  /** A worktree's drafts were added, edited, deleted or delivered. */
+  /** Sends the worktree's review round (every pending item); no target: the comments module asks the user. */
+  send(worktreeId: string): Promise<SendResult>
+  listThreads(worktreeId: string): Promise<Comment[]>
+  reply(id: string, input: ReplyInput): Promise<Comment>
+  setStatus(id: string, status: CommentStatus): Promise<Comment>
+  remove(id: string): Promise<void>
+  /** A worktree's threads were added, edited, replied to, resolved, deleted or delivered. */
   onCommentsChanged(cb: (worktreeId: string) => void): () => void
 }
 
@@ -62,8 +67,11 @@ export function createUpstream(ctx: MainContext): EditorUpstream {
     },
     bridge,
     addDraft: (i) => comments.addDraft(i),
-    send: (ids) => comments.send(ids),
-    listDrafts: (worktreeId) => comments.listDrafts(worktreeId),
+    send: (worktreeId) => comments.send(worktreeId),
+    listThreads: (worktreeId) => comments.listThreads(worktreeId),
+    reply: (id, input) => comments.reply(id, input),
+    setStatus: (id, status) => comments.setStatus(id, status),
+    remove: (id) => comments.remove(id),
     onCommentsChanged(cb) {
       const d = ctx.events.on(commentsChanged, (p) => cb(p.worktreeId))
       return () => d.dispose()

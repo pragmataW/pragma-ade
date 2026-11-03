@@ -17,7 +17,7 @@ function PickerBody({ picker }: { picker: Picker }) {
   const flow = useSendFlow()
   const [chosen, setChosen] = useState(picker.defaultSessionId)
   const [busy, run] = useBusy(SEND)
-  const send = () => run(() => flow.sendTo(picker.commentIds, chosen))
+  const send = () => run(() => flow.sendTo(picker.worktreeId, chosen))
   return (
     <>
       <DialogTitle>{t('comments:target.title')}</DialogTitle>
@@ -51,7 +51,7 @@ export function TargetPickerDialog() {
   return (
     <Dialog open={picker !== null} onOpenChange={(open) => (open ? undefined : close())}>
       <DialogContent data-testid={T.targetPicker} className="max-w-[420px]">
-        {picker ? <PickerBody key={picker.commentIds.join()} picker={picker} /> : null}
+        {picker ? <PickerBody key={picker.worktreeId} picker={picker} /> : null}
       </DialogContent>
     </Dialog>
   )

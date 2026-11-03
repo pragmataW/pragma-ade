@@ -92,17 +92,16 @@
   },
   "comments": {
     "lines": "L{{start}}–{{end}}",
-    "line": "L{{start}}",
-    "pending": "Pending",
-    "edit": "Edit"
+    "line": "L{{start}}"
   },
   "review": {
-    "pending_one": "{{count}} pending comment · {{file}}",
-    "pending_other": "{{count}} pending comments · {{file}}",
+    "pending_one": "{{count}} unsent item · {{file}}",
+    "pending_other": "{{count}} unsent items · {{file}}",
     "discard": "Discard",
-    "confirmDiscard": "Discard {{count}}? Click again",
-    "send_one": "Send {{count}} comment to agent",
-    "send_other": "Send {{count}} comments to agent"
+    "confirmDiscard": "Discard {{count}} new? Click again",
+    "send_one": "Send {{count}} to agent",
+    "send_other": "Send {{count}} to agent",
+    "clearResolved": "Clear resolved"
   },
   "scm": {
     "dismiss": "Dismiss",

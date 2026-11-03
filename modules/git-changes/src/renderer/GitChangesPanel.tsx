@@ -342,7 +342,7 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
           }
         />
       </Body>
-      <ReviewBar comments={review.comments} fileName={selected?.path ?? ''} />
+      <ReviewBar worktreeId={worktreeId} threads={review.threads} fileName={selected?.path ?? ''} />
     </div>
   )
 }

@@ -54,7 +54,24 @@ describe('BridgeConnection', () => {
   it.each([
     ['openFile', { path: 'src/a.ts', line: 3 }],
     ['openDiff', { path: 'src/a.ts', refs: { old: 'abc', new: 'HEAD' }, line: 3 }],
-    ['drafts', { comments: [{ id: 'c1', filePath: 'src/a.ts', lineStart: 2, lineEnd: 2, body: 'note' }] }],
+    [
+      'threads',
+      {
+        threads: [
+          {
+            id: 'c1',
+            source: 'editor',
+            filePath: 'src/a.ts',
+            lineStart: 2,
+            lineEnd: 2,
+            status: 'open',
+            pending: true,
+            body: 'note',
+            replies: [],
+          },
+        ],
+      },
+    ],
   ])('dispatches %s sent to this client', async (name, payload) => {
     const c = await connected()
     const clientId = c.hellos[0]?.clientId as string

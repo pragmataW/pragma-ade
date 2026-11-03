@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest'
 import { commentsIpc, commentsIpcEvents, type SendResult } from '../../src/contract'
 import { locationLabel } from '../../src/renderer/location'
+import { selectPending } from '../../src/renderer/store'
+import { aReply } from '../../src/testing'
 import { makeComment, makeElement, OTHER_WT, WT } from '../factories'
 import { type MountedRenderer, mountRenderer } from '../fakes'
 
@@ -16,8 +18,8 @@ const flush = () => new Promise((res) => setTimeout(res, 0))
 describe('store', () => {
   test('init loads drafts for the active worktree', async () => {
     const c = makeComment()
-    mount({ drafts: [c] }).init()
-    await vi.waitFor(() => expect(state().drafts).toEqual([c]))
+    mount({ threads: [c] }).init()
+    await vi.waitFor(() => expect(state().threads).toEqual([c]))
     expect(state().activeWorktreeId).toBe(WT)
   })
 
@@ -25,68 +27,57 @@ describe('store', () => {
     const m = mount()
     m.init()
     await flush()
-    const before = m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).length
+    const before = m.fakeIpc.callsOn(commentsIpc.list.channel).length
     m.fakeIpc.emit(commentsIpcEvents.changed, { worktreeId: OTHER_WT })
     m.fakeIpc.emit(commentsIpcEvents.changed, { worktreeId: WT })
     await flush()
-    expect(m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).length).toBe(before + 1)
+    expect(m.fakeIpc.callsOn(commentsIpc.list.channel).length).toBe(before + 1)
   })
 
-  test('active worktree change clears selection and reloads', async () => {
-    const m = mount({ drafts: [makeComment({ id: 'a' })] })
+  test('active worktree change clears the threads and reloads', async () => {
+    const m = mount({ threads: [makeComment({ id: 'a' })], round: 2 })
     m.init()
-    await vi.waitFor(() => expect(state().drafts).toHaveLength(1))
-    state().toggleSelected('a')
-    m.data.drafts = []
+    await vi.waitFor(() => expect(state().threads).toHaveLength(1))
+    expect(state().round).toBe(2)
+    m.data.threads = []
     m.projects.setActive(OTHER_WT)
-    expect(state().selection.size).toBe(0)
+    expect(state().threads).toEqual([])
     await flush()
     expect(state().activeWorktreeId).toBe(OTHER_WT)
-    expect(m.fakeIpc.callsOn(commentsIpc.listDrafts.channel).at(-1)).toEqual({ worktreeId: OTHER_WT })
+    expect(m.fakeIpc.callsOn(commentsIpc.list.channel).at(-1)).toEqual({ worktreeId: OTHER_WT })
   })
 
-  test('loaded drafts start selected; an unticked one stays unticked across reloads', async () => {
-    const m = mount({ drafts: [makeComment({ id: 'a' }), makeComment({ id: 'b' })] })
-    m.init()
-    await vi.waitFor(() => expect([...state().selection]).toEqual(['a', 'b']))
-    state().toggleSelected('a')
-    m.data.drafts = [makeComment({ id: 'a' }), makeComment({ id: 'c' })]
-    await state().reload()
-    expect([...state().selection]).toEqual(['c'])
-    state().selectAll()
-    expect([...state().selection]).toEqual(['a', 'c'])
-    state().clearSelection()
-    await state().reload()
-    expect(state().selection.size).toBe(0)
-  })
-
-  test('a sent result unticks only the sent ids', () => {
+  test('selectPending counts pending roots and pending user replies', () => {
     mount()
-    for (const id of ['a', 'b']) state().toggleSelected(id)
-    state().applyResult(WT, ['a'], { status: 'sent', sessionId: 's', commentIds: ['a'], sentAt: 1 })
-    expect([...state().selection]).toEqual(['b'])
+    r?.store.setState({
+      threads: [
+        makeComment({ round: 1, replies: [aReply({ round: 1 }), aReply(), aReply({ author: 'agent', round: 1 })] }),
+        makeComment(),
+      ],
+    })
+    expect(selectPending(state())).toBe(2)
   })
 
   const SESSIONS = [{ id: 'a', title: 'A', mode: 'terminal', status: 'idle' }]
   it.each<[string, SendResult, (s: ReturnType<typeof state>) => unknown, unknown]>([
-    ['sent', { status: 'sent', sessionId: 'a', commentIds: ['c'], sentAt: 1 }, (s) => s.selection.size, 0],
+    [
+      'sent',
+      { status: 'sent', sessionId: 'a', round: 1, commentIds: ['c'], replyIds: [], sentAt: 1 },
+      (s) => s.lastError,
+      null,
+    ],
     [
       'needsTarget',
       { status: 'needsTarget', sessions: SESSIONS, defaultSessionId: 'a' },
       (s) => s.targetPicker,
-      { commentIds: ['c'], sessions: SESSIONS, defaultSessionId: 'a' },
+      { worktreeId: WT, sessions: SESSIONS, defaultSessionId: 'a' },
     ],
-    [
-      'noSession',
-      { status: 'noSession' },
-      (s) => s.launchSuggestion,
-      { worktreeId: WT, commentIds: ['c'], waiting: false },
-    ],
+    ['noSession', { status: 'noSession' }, (s) => s.launchSuggestion, { worktreeId: WT, count: 1, waiting: false }],
     ['failed', { status: 'failed', errorKey: 'agentNotReady' }, (s) => s.lastError, 'agentNotReady'],
   ])('applyResult %s', (_n, result, pick, want) => {
     mount()
-    state().toggleSelected('c')
-    state().applyResult(WT, ['c'], result)
+    r?.store.setState({ activeWorktreeId: WT, threads: [makeComment()] })
+    state().applyResult(WT, result)
     expect(pick(state())).toEqual(want)
   })
 
@@ -95,20 +86,19 @@ describe('store', () => {
     m.init()
     m.fakeIpc.emit(commentsIpcEvents.sendRequested, {
       worktreeId: WT,
-      commentIds: ['c'],
       result: { status: 'needsTarget', sessions: SESSIONS, defaultSessionId: 'a' },
     })
     expect(state().drawer.open).toBe(true)
-    expect(state().targetPicker?.commentIds).toEqual(['c'])
+    expect(state().targetPicker?.worktreeId).toEqual(WT)
   })
 
   test('pendingDelivered clears the launch suggestion', () => {
     const m = mount()
     m.init()
-    state().applyResult(WT, ['c'], { status: 'noSession' })
+    state().applyResult(WT, { status: 'noSession' })
     m.fakeIpc.emit(commentsIpcEvents.pendingDelivered, {
       worktreeId: WT,
-      result: { status: 'sent', sessionId: 'a', commentIds: ['c'], sentAt: 1 },
+      result: { status: 'sent', sessionId: 'a', round: 1, commentIds: ['c'], replyIds: [], sentAt: 1 },
     })
     expect(state().launchSuggestion).toBeNull()
   })

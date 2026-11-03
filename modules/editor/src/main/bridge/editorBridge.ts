@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type { BridgeRequestContext } from '@pragma/module-bridge/contract'
-import { COMMENT_SOURCE, type Comment, SEND_STATUS, type SendResult } from '@pragma/module-comments/contract'
+import { COMMENT_SOURCE, REPLY_AUTHOR, type SendResult } from '@pragma/module-comments/contract'
 import {
   BRIDGE_ERRORS,
   CLIENT_EVENT,
   NOT_A_WORKTREE,
+  NOT_THIS_WORKTREE,
   OPEN_FILE_READY_TIMEOUT_MS,
   TEST_REQUEST_TIMEOUT_MS,
 } from '../../constants'
@@ -13,19 +14,22 @@ import {
   COMMENT_REPLY,
   type EditorComment,
   type EditorCommentReply,
-  type EditorDraft,
-  type EditorDrafts,
   type EditorHello,
   type EditorHelloReply,
   type EditorLanguageStatus,
   type EditorOpenDiffMsg,
   type EditorOpenFileMsg,
+  type EditorSendReply,
   type EditorSetThemeMsg,
   type EditorTestRequest,
   type EditorTestResponse,
+  type EditorThreadReplyInput,
+  type EditorThreadStatusInput,
+  type EditorThreads,
   editorBridge,
 } from '../../contract'
 import type { EditorUpstream } from '../upstream'
+import { sendOutcome, toEditorThreads } from './threads'
 
 const EVENT = (name: keyof typeof editorBridge.events): string => `${editorBridge.name}.${name}`
 
@@ -44,39 +48,10 @@ export interface EditorBridgeOptions {
   onLanguageStatus?: (worktreeId: string, status: EditorLanguageStatus | null) => void
 }
 
-function replyForSend(commentId: string, r: SendResult): EditorCommentReply {
-  switch (r.status) {
-    case SEND_STATUS.sent:
-      return { status: COMMENT_REPLY.sent, commentId }
-    case SEND_STATUS.needsTarget:
-    case SEND_STATUS.noSession:
-      return { status: COMMENT_REPLY.needsUserAction, commentId }
-    case SEND_STATUS.failed:
-      return { status: COMMENT_REPLY.failed, message: r.message ?? r.errorKey, commentId }
-    default: {
-      const never: never = r
-      return never
-    }
-  }
-}
+/** A Send's outcome for the thread it was asked from. */
+const replyForSend = (commentId: string, r: SendResult): EditorCommentReply => ({ ...sendOutcome(r), commentId })
 
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e))
-
-/** The editor drafts the workbench shows (diff and browser comments stay in their own panels). */
-function toEditorDrafts(comments: readonly Comment[]): EditorDrafts {
-  const drafts: EditorDraft[] = []
-  for (const c of comments) {
-    if (c.source !== COMMENT_SOURCE.editor || !c.filePath || c.lineStart === undefined) continue
-    drafts.push({
-      id: c.id,
-      filePath: c.filePath,
-      lineStart: c.lineStart,
-      lineEnd: c.lineEnd ?? c.lineStart,
-      body: c.body,
-    })
-  }
-  return { comments: drafts }
-}
 
 /** Main side of the `editor` namespace: client registry (folder → client), openFile/openDiff/theme/test requests, comments. */
 export class EditorBridge {
@@ -100,12 +75,20 @@ export class EditorBridge {
       comment: (p, ctx) => this.#comment(p, ctx),
       testResponse: (p) => this.#testResponse(p),
       languageStatus: (p, ctx) => this.#languageStatus(p, ctx),
-      drafts: (_p, ctx) => this.#draftsOf(this.#worktreeOfClient.get(ctx.clientId)),
+      threads: (_p, ctx) => this.#threadsOf(this.#worktreeOfClient.get(ctx.clientId)),
+      reply: (p, ctx) => this.#reply(p, ctx),
+      setStatus: (p, ctx) => this.#setStatus(p, ctx),
+      deleteThread: async (p, ctx) => {
+        await this.#ownThread(p.threadId, ctx)
+        await this.#up.remove(p.threadId)
+        return null
+      },
+      send: (_p, ctx) => this.#send(ctx),
     })
     const offClient = this.#up.bridge.onClient(CLIENT_EVENT.disconnected, (c) => this.#forget(c.clientId))
     // A failed push is dropped: the next change or the extension's next hello resyncs.
     const offComments = this.#up.onCommentsChanged(
-      (worktreeId) => void this.#pushDrafts(worktreeId).catch(() => undefined),
+      (worktreeId) => void this.#pushThreads(worktreeId).catch(() => undefined),
     )
     return () => {
       unregister()
@@ -215,19 +198,54 @@ export class EditorBridge {
       return { status: COMMENT_REPLY.failed, message: errorText(error) }
     }
     if (p.action === COMMENT_ACTION.draft) return { status: COMMENT_REPLY.drafted, commentId }
-    return replyForSend(commentId, await this.#up.send([commentId]))
+    return replyForSend(commentId, await this.#up.send(worktreeId))
   }
 
-  async #draftsOf(worktreeId: string | undefined): Promise<EditorDrafts> {
-    return worktreeId ? toEditorDrafts(await this.#up.listDrafts(worktreeId)) : { comments: [] }
+  /** A user reply; with `send` the worktree's review round goes out right after (one Send, not per comment). */
+  async #reply(p: EditorThreadReplyInput, ctx: BridgeRequestContext): Promise<EditorCommentReply> {
+    const commentId = p.threadId
+    let worktreeId: string
+    try {
+      worktreeId = await this.#ownThread(commentId, ctx)
+      await this.#up.reply(commentId, { author: REPLY_AUTHOR.user, body: p.body })
+    } catch (error) {
+      return { status: COMMENT_REPLY.failed, message: errorText(error) }
+    }
+    if (!p.send) return { status: COMMENT_REPLY.drafted, commentId }
+    return replyForSend(commentId, await this.#up.send(worktreeId))
   }
 
-  /** Every client showing `worktreeId` gets its drafts; a client that went away in between is skipped. */
-  async #pushDrafts(worktreeId: string): Promise<void> {
+  async #setStatus(p: EditorThreadStatusInput, ctx: BridgeRequestContext): Promise<null> {
+    await this.#ownThread(p.threadId, ctx)
+    await this.#up.setStatus(p.threadId, p.status)
+    return null
+  }
+
+  /** The client's worktree when `threadId` is one of its threads; throws otherwise (a client acts only on its own). */
+  async #ownThread(threadId: string, ctx: BridgeRequestContext): Promise<string> {
+    const worktreeId = await this.#worktreeFor(this.#folderOfClient.get(ctx.clientId))
+    if (!worktreeId) throw new Error(NOT_A_WORKTREE)
+    const threads = await this.#up.listThreads(worktreeId)
+    if (!threads.some((c) => c.id === threadId)) throw new Error(NOT_THIS_WORKTREE)
+    return worktreeId
+  }
+
+  async #send(ctx: BridgeRequestContext): Promise<EditorSendReply> {
+    const worktreeId = await this.#worktreeFor(this.#folderOfClient.get(ctx.clientId))
+    if (!worktreeId) return { status: COMMENT_REPLY.failed, message: NOT_A_WORKTREE }
+    return sendOutcome(await this.#up.send(worktreeId))
+  }
+
+  async #threadsOf(worktreeId: string | undefined): Promise<EditorThreads> {
+    return worktreeId ? toEditorThreads(await this.#up.listThreads(worktreeId)) : { threads: [] }
+  }
+
+  /** Every client showing `worktreeId` gets its threads; a client that went away in between is skipped. */
+  async #pushThreads(worktreeId: string): Promise<void> {
     const clients = [...this.#worktreeOfClient].filter(([, w]) => w === worktreeId).map(([clientId]) => clientId)
     if (clients.length === 0) return
-    const payload = await this.#draftsOf(worktreeId)
-    for (const clientId of clients) this.#up.bridge.send(clientId, { type: EVENT('drafts'), payload })
+    const payload = await this.#threadsOf(worktreeId)
+    for (const clientId of clients) this.#up.bridge.send(clientId, { type: EVENT('threads'), payload })
   }
 
   #testResponse(p: EditorTestResponse): null {

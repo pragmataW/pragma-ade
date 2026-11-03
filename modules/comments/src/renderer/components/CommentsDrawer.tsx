@@ -1,11 +1,20 @@
 import { useT } from '@pragma/sdk/renderer'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
-import { type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
+import { ChevronDown, ChevronRight } from '@pragma/ui/icons'
+import { useState } from 'react'
+import { COMMENT_STATUS, type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
+import { clearResolved } from '../clear-resolved'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
-import { SEND, useBusy } from '../lib/use-busy'
-import { useCommentsStore } from '../store'
+import { CLEAR, SEND, useBusy } from '../lib/use-busy'
+import { selectPending, useCommentsStore } from '../store'
 import { useSendFlow } from '../use-send-flow'
 import { CommentRow } from './CommentRow'
+
+const ICON_PX = 14
+/** Esc in a reply or edit box cancels that box (its own handler), not the drawer. */
+const keepOpenWhileTyping = (e: KeyboardEvent) => {
+  if (e.target instanceof HTMLTextAreaElement) e.preventDefault()
+}
 
 function Empty({ children }: { children: string }) {
   return <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">{children}</p>
@@ -35,74 +44,114 @@ function WaitingLine() {
   )
 }
 
-/** Selected ids in list order (drafts start selected; sending sends exactly the selection). */
-const idsToSend = (drafts: readonly Comment[], selection: ReadonlySet<string>): string[] =>
-  drafts.filter((c) => selection.has(c.id)).map((c) => c.id)
-
-function SelectionToggle({ allSelected }: { allSelected: boolean }) {
-  const t = useT()
-  const s = useCommentsStore.getState
-  return (
-    <QuietButton data-testid={T.selectionToggle} onClick={() => (allSelected ? s().clearSelection() : s().selectAll())}>
-      {t(allSelected ? 'comments:drawer.clearSelection' : 'comments:drawer.selectAll')}
-    </QuietButton>
-  )
-}
-
-function DraftsFooter({ drafts }: { drafts: Comment[] }) {
+function SendFooter() {
   const t = useT()
   const flow = useSendFlow()
-  const selection = useCommentsStore((s) => s.selection)
+  const pending = useCommentsStore(selectPending)
   const preferredSessionId = useCommentsStore((s) => s.drawer.preferredSessionId)
   const [busy, run] = useBusy(SEND)
-  const ids = idsToSend(drafts, selection)
-  const allSelected = drafts.length > 0 && ids.length === drafts.length
-  const send = () => run(() => flow.send(ids, { preferredSessionId }))
-  const label = t(allSelected ? 'comments:drawer.sendAll' : 'comments:drawer.sendSelected', { count: ids.length })
+  const send = () => run(() => flow.send({ preferredSessionId }))
   return (
     <div className="flex flex-col gap-2 border-t px-4 py-3">
       <ErrorLine />
       <WaitingLine />
       <div className="flex items-center justify-end gap-2">
-        {drafts.length ? <SelectionToggle allSelected={allSelected} /> : null}
-        <PrimaryButton data-testid={T.sendButton} disabled={busy || ids.length === 0} onClick={() => void send()}>
-          {label}
+        <PrimaryButton data-testid={T.sendButton} disabled={busy || pending === 0} onClick={() => void send()}>
+          {pending ? t('comments:drawer.sendPending', { count: pending }) : t('comments:drawer.nothingToSend')}
         </PrimaryButton>
       </div>
     </div>
   )
 }
 
-/** The worktree's drafts; a delivered comment is deleted, so there is no sent list. */
-function DraftsList() {
+function ResolvedSection({ threads }: { threads: Comment[] }) {
   const t = useT()
-  const drafts = useCommentsStore((s) => s.drafts)
+  const [open, setOpen] = useState(false)
+  if (!threads.length) return null
+  return (
+    <li data-testid={T.resolvedSection} className="border-b">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-1.5 px-4 py-2 text-left text-[12px] text-muted-foreground hover:text-foreground"
+      >
+        {open ? <ChevronDown size={ICON_PX} aria-hidden /> : <ChevronRight size={ICON_PX} aria-hidden />}
+        {t('comments:drawer.resolvedSection', { count: threads.length })}
+      </button>
+      {open ? (
+        <ul>
+          {threads.map((c) => (
+            <CommentRow key={c.id} comment={c} />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  )
+}
+
+/** The worktree's open threads, then a collapsed "Resolved (n)" section. */
+function ThreadsList() {
+  const t = useT()
+  const threads = useCommentsStore((s) => s.threads)
+  const open = threads.filter((c) => c.status === COMMENT_STATUS.open)
+  const resolved = threads.filter((c) => c.status === COMMENT_STATUS.resolved)
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ul className="min-h-0 flex-1 overflow-y-auto">
-        {drafts.map((c) => (
+        {open.map((c) => (
           <CommentRow key={c.id} comment={c} />
         ))}
+        <ResolvedSection threads={resolved} />
       </ul>
-      {drafts.length ? null : <Empty>{t('comments:drawer.emptyDrafts')}</Empty>}
-      <DraftsFooter drafts={drafts} />
+      {threads.length ? null : <Empty>{t('comments:drawer.emptyThreads')}</Empty>}
+      <SendFooter />
     </div>
   )
 }
 
-/** The Comments drawer: a right-side sheet with the active worktree's drafts. */
+/** Round label and "Clear resolved" (confirmed through the SDK dialog) above the list. */
+function HeaderActions({ worktreeId }: { worktreeId: string }) {
+  const t = useT()
+  const round = useCommentsStore((s) => s.round)
+  const resolved = useCommentsStore((s) => s.threads.some((c) => c.status === COMMENT_STATUS.resolved))
+  const [busy, run] = useBusy(CLEAR)
+  return (
+    <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+      {round ? <span>{t('comments:drawer.round', { round })}</span> : null}
+      {resolved ? (
+        <QuietButton
+          data-testid={T.clearResolved}
+          disabled={busy}
+          className="ml-auto"
+          onClick={() => void run(() => clearResolved(worktreeId))}
+        >
+          {t('comments:drawer.clearResolved')}
+        </QuietButton>
+      ) : null}
+    </div>
+  )
+}
+
+/** The Comments drawer: a right-side sheet with the active worktree's review threads. */
 export function CommentsDrawer() {
   const t = useT()
   const open = useCommentsStore((s) => s.drawer.open)
   const worktreeId = useCommentsStore((s) => s.activeWorktreeId)
   return (
     <Sheet open={open} onOpenChange={(o) => (o ? undefined : useCommentsStore.getState().closeDrawer())}>
-      <SheetContent data-testid={T.drawer} side="right" className="w-[420px] gap-0 p-0 sm:max-w-[420px]">
+      <SheetContent
+        data-testid={T.drawer}
+        side="right"
+        className="w-[420px] gap-0 p-0 sm:max-w-[420px]"
+        onEscapeKeyDown={keepOpenWhileTyping}
+      >
         <SheetHeader className="border-b px-4 py-3">
           <SheetTitle>{t('comments:drawer.title')}</SheetTitle>
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
+          {worktreeId ? <HeaderActions worktreeId={worktreeId} /> : null}
         </SheetHeader>
-        {worktreeId ? <DraftsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
+        {worktreeId ? <ThreadsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
       </SheetContent>
     </Sheet>
   )

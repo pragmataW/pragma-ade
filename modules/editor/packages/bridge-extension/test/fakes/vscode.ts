@@ -2,10 +2,10 @@ import { SCM_CHANGE, type ScmChangeResult } from '../../src/constants'
 import type {
   CommentControllerSpec,
   DiagnosticInfo,
-  DraftThreadSpec,
   RevisionSide,
   TabInfo,
   ThreadLike,
+  ThreadSpec,
   VscodeApi,
 } from '../../src/vscodeApi'
 
@@ -19,9 +19,11 @@ export interface FakeApi extends VscodeApi {
   state: Map<string, unknown>
   configWrites: string[]
   controllers: CommentControllerSpec[]
-  /** Threads created through a controller, with their disposed flag. */
-  threads: (DraftThreadSpec & { disposed: boolean })[]
+  /** Threads created through a controller: the latest spec, how often it was updated in place, disposed flag. */
+  threads: (ThreadSpec & { disposed: boolean; updates: number })[]
   commands: Map<string, (reply: { thread: ThreadLike; text: string }) => unknown>
+  /** Thread title commands (they get the thread's Pragma id). */
+  threadCommands: Map<string, (threadId: string | undefined) => unknown>
   documents: Map<string, { lines: string[]; languageId: string }>
   diags: Map<string, DiagnosticInfo[]>
   tabList: TabInfo[]
@@ -64,6 +66,7 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
   const controllers: CommentControllerSpec[] = []
   const threads: FakeApi['threads'] = []
   const commands: FakeApi['commands'] = new Map()
+  const threadCommands: FakeApi['threadCommands'] = new Map()
   const documents: FakeApi['documents'] = new Map()
   const disposable = { dispose: () => undefined }
   const diags: FakeApi['diags'] = new Map()
@@ -109,9 +112,10 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
       return {
         dispose: () => undefined,
         createThread: (t) => {
-          const rec = { ...t, disposed: false }
+          const rec = { ...t, disposed: false, updates: 0 }
           threads.push(rec)
           return {
+            update: (next) => void Object.assign(rec, next, { updates: rec.updates + 1 }),
             dispose: () => {
               rec.disposed = true
             },
@@ -121,6 +125,10 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     },
     registerReplyCommand: (id, handler) => {
       commands.set(id, handler)
+      return disposable
+    },
+    registerThreadCommand: (id, handler) => {
+      threadCommands.set(id, handler)
       return disposable
     },
     readDocument: async (uri) => documents.get(uri.fsPath) ?? { lines: [], languageId: 'plaintext' },
@@ -146,6 +154,7 @@ export function fakeApi(o: { folder?: string; env?: Record<string, string | unde
     controllers,
     threads,
     commands,
+    threadCommands,
     documents,
     logs,
     infos,

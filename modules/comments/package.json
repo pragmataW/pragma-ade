@@ -23,7 +23,8 @@
   "exports": {
     "./contract": "./src/contract/index.ts",
     "./main": "./src/main/index.ts",
-    "./renderer": "./src/renderer/index.tsx"
+    "./renderer": "./src/renderer/index.tsx",
+    "./testing": "./src/testing/index.ts"
   },
   "dependencies": {
     "@pragma/module-agents": "workspace:*",

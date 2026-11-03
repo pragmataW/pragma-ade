@@ -21,6 +21,10 @@ export const CLI_METHODS = [
   'taskShow',
   'ask',
   'askWait',
+  'commentsShow',
+  'commentsReply',
+  'commentsResolve',
+  'commentsReopen',
 ] as const
 export type CliMethod = (typeof CLI_METHODS)[number]
 /** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
@@ -35,6 +39,11 @@ export const CLI_PING_METHOD = 'ping'
 /** The CLI's wire vocabulary for priorities (equal to the board's `PRIORITIES`, pinned by a test). */
 export const CLI_PRIORITIES = ['none', 'low', 'medium', 'high', 'urgent'] as const
 export type CliPriority = (typeof CLI_PRIORITIES)[number]
+/** `comments list --status` values (equal to the comments module's `COMMENT_STATUS_FILTERS`, pinned by a test). */
+export const CLI_COMMENT_STATUS_FILTERS = ['open', 'resolved', 'all'] as const
+export type CliCommentStatusFilter = (typeof CLI_COMMENT_STATUS_FILTERS)[number]
+/** Thread statuses (the filters without `all`). */
+const CLI_COMMENT_STATUSES = ['open', 'resolved'] as const
 export const CLI_ERROR_CODES = [
   'invalid_argument',
   'not_found',
@@ -131,16 +140,37 @@ export const cliColumnSchema = z.object({
   taskCount: z.number().int().nonnegative(),
 })
 export type CliColumn = z.infer<typeof cliColumnSchema>
-/** Every stored comment is a draft (a delivered comment is deleted by 05). */
+export const cliCommentReplySchema = z.object({
+  id,
+  author: z.string(),
+  authorLabel: z.string().nullable(),
+  sessionId: z.string().nullable(),
+  body: z.string(),
+  createdAt: z.number(),
+  /** The review round that delivered it. */
+  round: z.number().int().nullable(),
+})
+export type CliCommentReply = z.infer<typeof cliCommentReplySchema>
+/** A delivered review thread: the root comment and its delivered replies, oldest first. */
 export const cliCommentSchema = z.object({
   id,
   worktreeId: id,
   source: z.string(),
+  status: z.enum(CLI_COMMENT_STATUSES),
   filePath: z.string().nullable(),
   lineStart: z.number().int().nullable(),
   lineEnd: z.number().int().nullable(),
+  diffSide: z.string().nullable(),
+  snippet: z.string().nullable(),
+  selector: z.string().nullable(),
+  url: z.string().nullable(),
   body: z.string(),
+  round: z.number().int().nullable(),
+  resolvedAt: z.number().nullable(),
+  replies: z.array(cliCommentReplySchema),
   createdAt: z.number(),
+  /** Fixed-English rendering of the whole thread (what the human output prints). */
+  text: z.string(),
 })
 export type CliComment = z.infer<typeof cliCommentSchema>
 export const cliHandoffResultSchema = z.object({
@@ -179,6 +209,9 @@ export const cliAskResultSchema = z.discriminatedUnion('status', [
 ])
 export type CliAskResult = z.infer<typeof cliAskResultSchema>
 
+const commentRef = { commentId: id }
+const REPLY_TEXT_FIELDS = ['body', 'document'] as const
+const NEEDS_ONE_REPLY_TEXT = `pass exactly one of ${REPLY_TEXT_FIELDS.join(', ')}`
 const UPDATE_FIELDS = ['title', 'description', 'priority', 'labels'] as const
 const NEEDS_UPDATE_FIELD = `pass at least one of ${UPDATE_FIELDS.join(', ')}`
 
@@ -210,7 +243,7 @@ export const cliRequestSchemas = {
     labels: labels.optional(),
   }).refine((r) => UPDATE_FIELDS.some((f) => r[f] !== undefined), { message: NEEDS_UPDATE_FIELD }),
   taskMove: withContext({ taskId: taskRefSchema, column: text }),
-  commentsList: withContext({ worktreeId: id.optional() }),
+  commentsList: withContext({ worktreeId: id.optional(), status: z.enum(CLI_COMMENT_STATUS_FILTERS).optional() }),
   handoff: withContext({
     to: text,
     branch: text.optional(),
@@ -230,6 +263,14 @@ export const cliRequestSchemas = {
     timeoutSeconds: z.number().int().min(1).max(ASK_MAX_TIMEOUT_SECONDS).default(ASK_DEFAULT_TIMEOUT_SECONDS),
   }),
   askWait: withContext({ askId: id }),
+  commentsShow: withContext(commentRef),
+  commentsReply: withContext({
+    ...commentRef,
+    body: documentText.optional(),
+    document: documentText.optional(),
+  }).refine((r) => REPLY_TEXT_FIELDS.filter((f) => r[f] !== undefined).length === 1, { message: NEEDS_ONE_REPLY_TEXT }),
+  commentsResolve: withContext({ ...commentRef, body: documentText.optional() }),
+  commentsReopen: withContext(commentRef),
 } satisfies Record<CliMethod, z.ZodType>
 
 export const cliResultSchemas = {
@@ -242,13 +283,22 @@ export const cliResultSchemas = {
   taskCreate: cliTaskSchema,
   taskUpdate: cliTaskSchema,
   taskMove: cliTaskSchema,
-  commentsList: z.object({ worktreeId: id, comments: z.array(cliCommentSchema) }),
+  commentsList: z.object({
+    worktreeId: id,
+    round: z.number().int(),
+    status: z.enum(CLI_COMMENT_STATUS_FILTERS),
+    comments: z.array(cliCommentSchema),
+  }),
   handoff: cliHandoffResultSchema,
   sessionLocate: cliSessionLocateResultSchema,
   taskColumns: z.object({ projectId: id, columns: z.array(cliColumnSchema) }),
   taskShow: cliTaskDetailSchema,
   ask: cliAskResultSchema,
   askWait: cliAskResultSchema,
+  commentsShow: cliCommentSchema,
+  commentsReply: cliCommentSchema,
+  commentsResolve: cliCommentSchema,
+  commentsReopen: cliCommentSchema,
 } satisfies Record<CliMethod, z.ZodType>
 
 export type CliRequest<M extends CliMethod> = z.infer<(typeof cliRequestSchemas)[M]>

@@ -8,7 +8,7 @@ import { useSendFlow } from '../use-send-flow'
 const close = () => useCommentsStore.getState().closeLaunchSuggestion()
 
 /**
- * "No agent running → Start agent". Start queues the comments for the next session of the worktree and opens 03's
+ * "No agent running → Start agent". Start queues the review round for the next session of the worktree and opens 03's
  * launcher; this dialog and the drawer close so the launcher is the only modal, and the drawer shows the wait.
  */
 export function LaunchSuggestionDialog() {
@@ -18,17 +18,13 @@ export function LaunchSuggestionDialog() {
   const start = () => {
     if (!launch) return
     useCommentsStore.getState().closeDrawer()
-    flow
-      .startAgentAndSend(launch.worktreeId, launch.commentIds)
-      .catch((e: unknown) => console.warn('comments: start agent failed', e))
+    flow.startAgentAndSend(launch.worktreeId).catch((e: unknown) => console.warn('comments: start agent failed', e))
   }
   return (
     <Dialog open={launch !== null && !launch.waiting} onOpenChange={(open) => (open ? undefined : close())}>
       <DialogContent data-testid={T.launchSuggestion} className="max-w-[420px]">
         <DialogTitle>{t('comments:launch.title')}</DialogTitle>
-        <DialogDescription>
-          {t('comments:launch.description', { count: launch?.commentIds.length ?? 0 })}
-        </DialogDescription>
+        <DialogDescription>{t('comments:launch.description', { count: launch?.count ?? 0 })}</DialogDescription>
         <DialogFooter>
           <QuietButton onClick={close}>{t('comments:launch.cancel')}</QuietButton>
           <PrimaryButton data-testid={T.launchStart} onClick={start}>

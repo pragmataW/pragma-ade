@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { makeLaunchContext } from '@pragma/module-agents/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LAUNCH_DECORATOR_ID } from '../src/constants'
-import { type AskCapability, cliIntegrationIpc } from '../src/contract'
+import { type AskCapability, cliIntegrationIpc, SKILL_IDS } from '../src/contract'
 import { FAKE_ASK_ENV, type FakeAskRecord, writeFakeAskBin } from '../testing'
 import { aWorktree } from './support/fakes'
 import { activateModule } from './support/module-ctx'
@@ -102,16 +102,16 @@ describe('skills IPC', () => {
     vi.stubEnv('HOME', f.home)
     const m = await activateModule({ skillProviders: f.providers })
     const before = await m.fake.invoke(cliIntegrationIpc.getStatus, undefined)
+    const perProvider = SKILL_IDS.length
     expect(before.skills.map((s) => [s.providerId, s.state])).toEqual([
-      ['alpha', 'missing'],
-      ['alpha', 'missing'],
-      ['alpha', 'missing'],
-      ['beta', 'missing'],
-      ['beta', 'missing'],
-      ['beta', 'missing'],
+      ...Array.from({ length: perProvider }, () => ['alpha', 'missing']),
+      ...Array.from({ length: perProvider }, () => ['beta', 'missing']),
     ])
     const after = await m.fake.invoke(cliIntegrationIpc.installSkills, { providerIds: ['alpha'] })
-    expect(after.skills.map((s) => s.state)).toEqual(['current', 'current', 'current', 'missing', 'missing', 'missing'])
+    expect(after.skills.map((s) => s.state)).toEqual([
+      ...Array.from({ length: perProvider }, () => 'current'),
+      ...Array.from({ length: perProvider }, () => 'missing'),
+    ])
     expect(existsSync(join(f.home, '.alpha', 'skills', 'pragma-handoff', 'SKILL.md'))).toBe(true)
     expect(existsSync(join(m.userData, 'modules', 'cli-integration', 'installed-skills.json'))).toBe(true)
     expect(m.fake.publishedOn(cliIntegrationIpc.statusChanged)).toEqual([after])
