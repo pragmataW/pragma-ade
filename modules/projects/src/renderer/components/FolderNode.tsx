@@ -14,15 +14,13 @@ import {
 import { sidebarAction } from '../lib/actions'
 import { openRenameFolder, useWorktreeDrop } from '../lib/folder-actions'
 import type { FolderView } from '../lib/folders'
+import { MOTION_CLASSES as MOTION } from '../lib/motion'
 import { useProjects, useRuntime } from '../lib/runtime'
 import { FolderMenu } from './FolderMenu'
 import { PlainButton } from './PlainButton'
 import { TreeItem } from './TreeItem'
 import { WorktreeRow } from './WorktreeRow'
 
-/** Motion tokens with fallbacks; `motion-reduce` turns the transitions off. */
-const MOTION =
-  'duration-[var(--motion-duration-base,160ms)] ease-[var(--motion-ease-standard,ease)] motion-reduce:transition-none'
 /** Expand/collapse: the children grid row animates between 0fr and 1fr (no measured heights). */
 const childrenVariants = cva(`grid transition-[grid-template-rows] ${MOTION}`, {
   variants: { open: { true: 'grid-rows-[1fr]', false: 'grid-rows-[0fr]' } },
