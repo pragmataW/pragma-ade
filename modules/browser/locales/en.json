@@ -35,8 +35,10 @@
     "devServer": "Local dev server"
   },
   "empty": {
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to browse its app",
     "noTabs": "No tabs open",
+    "noTabsHint": "Preview your app's dev server here and leave comments on the page for an agent.",
     "openLocalhost": "Open localhost:3000"
   },
   "error": {
