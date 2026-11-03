@@ -54,6 +54,15 @@ async function mountCard() {
 
 const finish = (r: ComposerResult) => act(() => lastProps?.onDone?.(r))
 
+describe('CommentCard', () => {
+  it("draws the thread with 05's ThreadView and the L10–12 label", async () => {
+    await mountCard()
+    const thread = await screen.findByTestId('fake-thread')
+    expect(thread).toHaveTextContent('L10–12')
+    expect(thread).toHaveTextContent('rename this')
+  })
+})
+
 describe('CommentCard Edit', () => {
   it('reopens the inline composer in edit mode at the card, prefilled, instead of the drawer', async () => {
     const openDrawer = await mountCard()

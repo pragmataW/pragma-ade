@@ -1,20 +1,30 @@
-import { type Comment, commentContextOf } from '@pragma/module-comments/contract'
+import { type Comment, CommentsUiServiceToken, commentContextOf } from '@pragma/module-comments/contract'
 import { useT } from '@pragma/sdk/renderer'
-import { Badge } from '@pragma/ui/components/badge'
-import { Button } from '@pragma/ui/components/button'
 import { GitChangesTestIds as T } from '../../contract'
+import { getRendererCtx } from '../lib/sdk'
 import { useGitChangesStore, useWorktreeView } from '../store'
 import { DiffCommentComposer } from './DiffCommentComposer'
 
+/** `L3–5` / `L3` for the thread's range. */
+function useLinesLabel(c: Pick<Comment, 'lineStart' | 'lineEnd'>): string | undefined {
+  const t = useT()
+  const { lineStart: start, lineEnd: end } = c
+  if (start === undefined) return undefined
+  return end === undefined || end === start
+    ? t('git-changes:comments.line', { start })
+    : t('git-changes:comments.lines', { start, end })
+}
+
 /**
- * An inline review draft under its line: range, Pending badge, body, Edit. Edit reopens the draft's own composer
- * right here (prefilled, Save/Cancel), not 05's drawer. Sent ones are deleted.
+ * A review thread under its line, drawn by 05's ThreadView (replies, status, reply box). Edit (pending root only)
+ * reopens the comment's own composer right here (prefilled, Save/Cancel), not 05's drawer.
  */
 export function CommentCard({ comment }: { comment: Comment }) {
-  const t = useT()
+  const label = useLinesLabel(comment)
   const editing = useWorktreeView(comment.worktreeId).editingId === comment.id
   const setEditing = (on: boolean) =>
     useGitChangesStore.getState().editComment(comment.worktreeId, on ? comment.id : null)
+  const { ThreadView } = getRendererCtx().services.get(CommentsUiServiceToken)
   if (editing)
     return (
       <DiffCommentComposer
@@ -24,26 +34,9 @@ export function CommentCard({ comment }: { comment: Comment }) {
         onClose={() => setEditing(false)}
       />
     )
-  const { lineStart: start, lineEnd: end } = comment
-  const lines =
-    start === undefined
-      ? null
-      : end === undefined || end === start
-        ? t('git-changes:comments.line', { start })
-        : t('git-changes:comments.lines', { start, end })
   return (
-    <div
-      data-testid={T.commentCard}
-      className="mx-3 my-2 rounded-[var(--radius-card)] border border-[var(--bd)] bg-[var(--el)] px-3 py-2 font-sans text-[13px]"
-    >
-      <div className="mb-1 flex items-center gap-2 text-muted-foreground text-xs">
-        {lines ? <span className="font-mono">{lines}</span> : null}
-        <Badge variant="secondary">{t('git-changes:comments.pending')}</Badge>
-        <Button size="xs" variant="link" className="ml-auto h-auto p-0 text-xs" onClick={() => setEditing(true)}>
-          {t('git-changes:comments.edit')}
-        </Button>
-      </div>
-      <p className="whitespace-pre-wrap break-words">{comment.body}</p>
+    <div data-testid={T.commentCard} data-comment-id={comment.id} className="mx-3 my-2">
+      <ThreadView comment={comment} locationLabel={label} onEdit={() => setEditing(true)} />
     </div>
   )
 }

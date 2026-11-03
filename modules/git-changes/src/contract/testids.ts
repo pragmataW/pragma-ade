@@ -29,6 +29,7 @@ export const GitChangesTestIds = {
   reviewBar: 'gc-review-bar',
   reviewSend: 'gc-review-send',
   reviewDiscard: 'gc-review-discard',
+  reviewClearResolved: 'gc-review-clear-resolved',
   commentCard: 'gc-comment-card',
   /** Source Control: commit box, split Commit button and its menu, Sync, the "…" menu and its items. */
   commitMessage: 'gc-commit-message',

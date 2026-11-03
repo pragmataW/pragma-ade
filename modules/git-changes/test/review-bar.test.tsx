@@ -1,4 +1,5 @@
 import { COMMENTS_CHANNELS, type Comment, type CommentsUiService, commentsIpc } from '@pragma/module-comments/contract'
+import { aReply } from '@pragma/module-comments/testing'
 import type { IpcContract } from '@pragma/sdk'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -28,30 +29,42 @@ const draft = (id: string): Comment => ({
   updatedAt: 0,
 })
 const DRAFTS = [draft('c1'), draft('c2')]
+const delivered = (id: string, over: Partial<Comment> = {}): Comment => ({ ...draft(id), round: 1, ...over })
+/** Two new diff threads, an editor draft, a user reply waiting on a delivered thread and a resolved one. */
+const THREADS: Comment[] = [
+  ...DRAFTS,
+  { ...draft('e1'), source: 'editor', diffSide: undefined },
+  delivered('d1', { replies: [aReply({ commentId: 'd1' })] }),
+  delivered('r1', { status: 'resolved' }),
+]
 
-async function mountBar(send = vi.fn<CommentsUiService['send']>(async () => undefined)) {
+async function mountBar(
+  send = vi.fn<CommentsUiService['send']>(async () => undefined),
+  threads: readonly Comment[] = THREADS,
+) {
+  const clearResolved = vi.fn<CommentsUiService['clearResolved']>(async () => 1)
   h = await mountPanel({
-    render: <ReviewBar comments={DRAFTS} fileName="app.ts" />,
-    ui: { send },
+    render: <ReviewBar worktreeId={WT_ID} threads={threads} fileName="app.ts" />,
+    ui: { send, clearResolved },
     commentContracts: [commentsIpc.remove, commentsIpc.send] as IpcContract<unknown, unknown>[],
     answers: { [COMMENTS_CHANNELS.remove]: () => undefined },
     commentLocales: { errors: { deliveryFailed: 'The agent did not receive the comments' } },
   })
-  return send
+  return Object.assign(send, { clearResolved })
 }
 
 describe('ReviewBar', () => {
-  it('2 drafts render "2 pending comments" with the file name', async () => {
+  it('counts every pending item of the worktree (editor drafts and user replies too)', async () => {
     await mountBar()
-    expect(await screen.findByTestId(T.reviewBar)).toHaveTextContent('2 pending comments · app.ts')
-    expect(screen.getByTestId(T.reviewSend)).toHaveTextContent('Send 2 comments to agent')
+    expect(await screen.findByTestId(T.reviewBar)).toHaveTextContent('4 unsent items · app.ts')
+    expect(screen.getByTestId(T.reviewSend)).toHaveTextContent('Send 4 to agent')
   })
 
-  it('Discard needs a confirm, then removes both drafts', async () => {
+  it('Discard needs a confirm, then removes only the new diff threads', async () => {
     await mountBar()
     await userEvent.click(await screen.findByTestId(T.reviewDiscard))
     expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([])
-    expect(screen.getByTestId(T.reviewDiscard)).toHaveTextContent('Discard 2? Click again')
+    expect(screen.getByTestId(T.reviewDiscard)).toHaveTextContent('Discard 2 new? Click again')
     await userEvent.click(screen.getByTestId(T.reviewDiscard))
     await waitFor(() => expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([{ id: 'c1' }, { id: 'c2' }]))
   })
@@ -69,8 +82,21 @@ describe('ReviewBar', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The agent did not receive the comments')
   })
 
-  it('renders nothing without drafts', async () => {
-    h = await mountPanel({ render: <ReviewBar comments={[]} fileName="a" /> })
+  it('Clear resolved goes through 05 and shows only with resolved threads', async () => {
+    const { clearResolved } = await mountBar()
+    await userEvent.click(await screen.findByTestId(T.reviewClearResolved))
+    await waitFor(() => expect(clearResolved).toHaveBeenCalledWith(WT_ID))
+  })
+
+  it('only resolved threads: the bar stays for Clear resolved, Send and Discard are off', async () => {
+    await mountBar(undefined, [delivered('r1', { status: 'resolved' })])
+    expect(await screen.findByTestId(T.reviewClearResolved)).toBeInTheDocument()
+    expect(screen.getByTestId(T.reviewSend)).toBeDisabled()
+    expect(screen.queryByTestId(T.reviewDiscard)).toBeNull()
+  })
+
+  it('renders nothing without pending items or resolved threads', async () => {
+    h = await mountPanel({ render: <ReviewBar worktreeId={WT_ID} threads={[delivered('o1')]} fileName="a" /> })
     expect(screen.queryByTestId(T.reviewBar)).toBeNull()
   })
 })
