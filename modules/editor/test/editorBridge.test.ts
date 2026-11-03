@@ -238,6 +238,7 @@ describe('EditorBridge', () => {
 
   it('reply adds a user reply; with send it also sends the round once', async () => {
     const { up, ext } = await setup()
+    up.stored = [stored({ id: 't1' })]
     const e = await ext('/work/one')
     await e.hello()
     expect(await e.client.request(editorBridge, 'reply', { threadId: 't1', body: 'Why?', send: false })).toEqual({
@@ -258,6 +259,7 @@ describe('EditorBridge', () => {
 
   it('setStatus, deleteThread and send go to the comments service', async () => {
     const { up, ext } = await setup()
+    up.stored = [stored({ id: 't1' }), stored({ id: 't2' })]
     const e = await ext('/work/one')
     await e.hello()
     expect(await e.client.request(editorBridge, 'setStatus', { threadId: 't1', status: 'resolved' })).toBeNull()
@@ -269,6 +271,25 @@ describe('EditorBridge', () => {
       ['remove', 't2'],
     ])
     expect(up.sends).toEqual(['w1'])
+  })
+
+  it('reply, setStatus and deleteThread refuse a thread of another worktree', async () => {
+    const { up, ext } = await setup()
+    up.stored = [stored({ id: 'o1', worktreeId: 'w2' })]
+    const e = await ext('/work/one')
+    await e.hello()
+    expect(await e.client.request(editorBridge, 'reply', { threadId: 'o1', body: 'Hi.', send: true })).toEqual({
+      status: 'failed',
+      message: 'This review thread is not in this worktree',
+    })
+    await expect(e.client.request(editorBridge, 'setStatus', { threadId: 'o1', status: 'resolved' })).rejects.toThrow(
+      'This review thread is not in this worktree',
+    )
+    await expect(e.client.request(editorBridge, 'deleteThread', { threadId: 'o1' })).rejects.toThrow(
+      'This review thread is not in this worktree',
+    )
+    expect(up.actions).toEqual([])
+    expect(up.sends).toEqual([])
   })
 
   it('testRequest resolves on matching testResponse, ignores other requestIds', async () => {

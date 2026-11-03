@@ -5,6 +5,7 @@ import {
   BRIDGE_ERRORS,
   CLIENT_EVENT,
   NOT_A_WORKTREE,
+  NOT_THIS_WORKTREE,
   OPEN_FILE_READY_TIMEOUT_MS,
   TEST_REQUEST_TIMEOUT_MS,
 } from '../../constants'
@@ -76,8 +77,9 @@ export class EditorBridge {
       languageStatus: (p, ctx) => this.#languageStatus(p, ctx),
       threads: (_p, ctx) => this.#threadsOf(this.#worktreeOfClient.get(ctx.clientId)),
       reply: (p, ctx) => this.#reply(p, ctx),
-      setStatus: (p) => this.#setStatus(p),
-      deleteThread: async (p) => {
+      setStatus: (p, ctx) => this.#setStatus(p, ctx),
+      deleteThread: async (p, ctx) => {
+        await this.#ownThread(p.threadId, ctx)
         await this.#up.remove(p.threadId)
         return null
       },
@@ -202,9 +204,9 @@ export class EditorBridge {
   /** A user reply; with `send` the worktree's review round goes out right after (one Send, not per comment). */
   async #reply(p: EditorThreadReplyInput, ctx: BridgeRequestContext): Promise<EditorCommentReply> {
     const commentId = p.threadId
-    const worktreeId = await this.#worktreeFor(this.#folderOfClient.get(ctx.clientId))
-    if (!worktreeId) return { status: COMMENT_REPLY.failed, message: NOT_A_WORKTREE }
+    let worktreeId: string
     try {
+      worktreeId = await this.#ownThread(commentId, ctx)
       await this.#up.reply(commentId, { author: REPLY_AUTHOR.user, body: p.body })
     } catch (error) {
       return { status: COMMENT_REPLY.failed, message: errorText(error) }
@@ -213,9 +215,19 @@ export class EditorBridge {
     return replyForSend(commentId, await this.#up.send(worktreeId))
   }
 
-  async #setStatus(p: EditorThreadStatusInput): Promise<null> {
+  async #setStatus(p: EditorThreadStatusInput, ctx: BridgeRequestContext): Promise<null> {
+    await this.#ownThread(p.threadId, ctx)
     await this.#up.setStatus(p.threadId, p.status)
     return null
+  }
+
+  /** The client's worktree when `threadId` is one of its threads; throws otherwise (a client acts only on its own). */
+  async #ownThread(threadId: string, ctx: BridgeRequestContext): Promise<string> {
+    const worktreeId = await this.#worktreeFor(this.#folderOfClient.get(ctx.clientId))
+    if (!worktreeId) throw new Error(NOT_A_WORKTREE)
+    const threads = await this.#up.listThreads(worktreeId)
+    if (!threads.some((c) => c.id === threadId)) throw new Error(NOT_THIS_WORKTREE)
+    return worktreeId
   }
 
   async #send(ctx: BridgeRequestContext): Promise<EditorSendReply> {

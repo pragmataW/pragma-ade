@@ -122,6 +122,7 @@ export const TEST_REQUEST_TIMEOUT_MS = 30_000
 export const BRIDGE_EXTENSION_DIR_PREFIX = 'pragma.pragma-bridge-'
 export const EXTENSION_INSTALL_TIMEOUT_MS = 120_000
 export const NOT_A_WORKTREE = 'This folder is not a Pragma worktree'
+export const NOT_THIS_WORKTREE = 'This review thread is not in this worktree'
 export const BRIDGE_ERRORS = { notReady: 'notReady', timeout: 'timeout' } as const
 export const CLIENT_EVENT = { disconnected: 'disconnected' } as const
 export const SERVER_STOP_ON_QUIT_MS = 2000
