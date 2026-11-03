@@ -1,8 +1,13 @@
 import { type ParseArgsConfig, parseArgs } from 'node:util'
-import { CLI_METHOD, CLI_PRIORITIES, type CliMethod } from '@pragma/module-cli-integration/contract'
+import {
+  ASK_MAX_TIMEOUT_SECONDS,
+  CLI_METHOD,
+  CLI_PRIORITIES,
+  type CliMethod,
+} from '@pragma/module-cli-integration/contract'
 import { CLI_NAME, GLOBAL_HELP, HELP_FLAGS, LIST_SEPARATOR, VERSION_FLAG } from './constants'
 
-export type OptionValue = string | boolean | string[]
+export type OptionValue = string | boolean | number | string[]
 export const COMMAND_KIND = { help: 'help', version: 'version', call: 'call' } as const
 export type ParsedCommand =
   | { kind: typeof COMMAND_KIND.help; topic?: string }
@@ -48,6 +53,7 @@ const COMMAND_TABLE: readonly (readonly [string, CliMethod])[] = [
   ],
   ['session locate <id>', CLI_METHOD.sessionLocate],
   ['session current', CLI_METHOD.sessionLocate],
+  ['ask --to <profile> [--prompt <text>] [--prompt-file <path|->] [--timeout <seconds>]', CLI_METHOD.ask],
 ]
 
 const OPTION_RE = /(?<optional>\[)?--(?<name>[a-z][a-z-]*)(?<value> [^\s\]]+)?\]?/g
@@ -56,7 +62,19 @@ const POSITIONAL_RE = /^<([a-z]+)>$/
 const LIST_OPTIONS = new Set(['labels'])
 const CHOICES: Record<string, readonly string[]> = { priority: CLI_PRIORITIES }
 /** Option pairs that exclude each other: `[a, b]` → "--a cannot be combined with --b". */
-const EXCLUSIVE: readonly (readonly [string, string])[] = [['branch', 'same-worktree']]
+const EXCLUSIVE: readonly (readonly [string, string])[] = [
+  ['branch', 'same-worktree'],
+  ['prompt', 'prompt-file'],
+]
+/** Per method, options of which exactly one must be given (pairs above already exclude each other). */
+const ONE_OF: Partial<Record<CliMethod, readonly string[]>> = { [CLI_METHOD.ask]: ['prompt', 'prompt-file'] }
+/** Options whose value is a whole number in `[min, max]`. */
+const INTEGER_OPTIONS: Record<string, { min: number; max: number }> = {
+  timeout: { min: 1, max: ASK_MAX_TIMEOUT_SECONDS },
+}
+const INTEGER_RE = /^\d+$/
+/** Inline text options that must not be blank. */
+const TEXT_OPTIONS = new Set(['prompt'])
 const STRING_TYPE = 'string'
 const BOOLEAN_TYPE = 'boolean'
 const JSON_FLAG = 'json'
@@ -127,7 +145,17 @@ function checkPositionals(spec: CommandSpec, positionals: string[]): void {
   if (spec.positional && positionals.length === 0) throw new UsageError(`<${spec.positional}> is required.`)
 }
 
+function integerOption(name: string, value: string): number {
+  const range = INTEGER_OPTIONS[name] as { min: number; max: number }
+  const n = INTEGER_RE.test(value) ? Number(value) : Number.NaN
+  if (!(n >= range.min && n <= range.max))
+    throw new UsageError(`--${name} must be a whole number of seconds from ${range.min} to ${range.max}.`)
+  return n
+}
+
 function normalizeOption(name: string, value: string | boolean): OptionValue {
+  if (INTEGER_OPTIONS[name] && typeof value === STRING_TYPE) return integerOption(name, String(value))
+  if (TEXT_OPTIONS.has(name) && String(value).trim().length === 0) throw new UsageError(`--${name} is empty.`)
   const choices = CHOICES[name]
   if (choices && !choices.includes(String(value)))
     throw new UsageError(`--${name} must be one of: ${choices.join(LIST_JOIN)}.`)
@@ -151,6 +179,9 @@ function collectOptions(spec: CommandSpec, values: Record<string, unknown>): Rec
   for (const [a, b] of EXCLUSIVE)
     if (options[a] !== undefined && options[b] !== undefined)
       throw new UsageError(`--${a} cannot be combined with --${b}.`)
+  const oneOf = ONE_OF[spec.method]
+  if (oneOf && !oneOf.some((name) => options[name] !== undefined))
+    throw new UsageError(`Pass one of ${oneOf.map((name) => `--${name}`).join(LIST_JOIN)}.`)
   return options
 }
 

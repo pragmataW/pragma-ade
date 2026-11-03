@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AppError } from '../src/client'
 import { type CliDeps, type CliIo, run } from '../src/main'
 
 const ENDPOINT = { url: 'http://127.0.0.1:1', token: 't' }
@@ -30,10 +31,20 @@ function harness(over: Partial<CliIo> = {}, files: Record<string, string> = {}) 
     resolve: async () => ENDPOINT,
     call: async (_ep, method, payload) => {
       out.calls.push({ method, payload })
+      if (method === 'ask') return ASK_ANSWER
       return method === 'handoff' ? HANDOFF : RESULT
     },
   }
   return { io, deps, out }
+}
+
+const ASK_ANSWER = {
+  status: 'answered',
+  askId: 'a1',
+  profile: { id: 'oc', name: 'OpenCode', providerId: 'opencode' },
+  text: 'Use a mutex.',
+  truncated: false,
+  durationMs: 3,
 }
 
 const HANDOFF = {
@@ -86,6 +97,39 @@ describe('run', () => {
     expect(await run(['handoff', '--to', 'oc', '--file', 'h.md'], h.io, h.deps)).toBe(2)
     expect(h.out.stderr).toContain('/repo/src/h.md')
     expect(h.out.calls).toHaveLength(0)
+  })
+
+  it('ask prints exactly the answer text', async () => {
+    const h = harness({ env: { PRAGMA_WORKTREE_ID: 'w1' } })
+    expect(await run(['ask', '--to', 'oc', '--prompt', 'Race here?', '--timeout', '30'], h.io, h.deps)).toBe(0)
+    expect(h.out.stdout).toBe('Use a mutex.\n')
+    expect(h.out.calls[0]).toEqual({
+      method: 'ask',
+      payload: { context: { worktreeId: 'w1', cwd: '/repo/src' }, to: 'oc', prompt: 'Race here?', timeoutSeconds: 30 },
+    })
+  })
+
+  it('ask --json prints the envelope', async () => {
+    const h = harness()
+    expect(await run(['ask', '--to', 'oc', '--prompt', 'q', '--json'], h.io, h.deps)).toBe(0)
+    expect(JSON.parse(h.out.stdout)).toEqual({ ok: true, result: ASK_ANSWER })
+  })
+
+  it('ask --prompt-file - reads stdin', async () => {
+    const h = harness()
+    expect(await run(['ask', '--to', 'oc', '--prompt-file', '-'], h.io, h.deps)).toBe(0)
+    expect(h.out.calls[0]?.payload).toMatchObject({ prompt: '# From stdin\n' })
+  })
+
+  it('an app error from ask exits 1 with the message on stderr', async () => {
+    const h = harness()
+    const message = "Profile 'Custom' cannot answer questions. Profiles that can: Claude."
+    h.deps.call = async () => {
+      throw new AppError('invalid_argument', message)
+    }
+    expect(await run(['ask', '--to', 'Custom', '--prompt', 'q'], h.io, h.deps)).toBe(1)
+    expect(h.out.stderr).toContain(`Error: ${message}`)
+    expect(h.out.stdout).toBe('')
   })
 
   it('--version prints the injected version', async () => {

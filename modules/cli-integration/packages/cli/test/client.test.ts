@@ -1,6 +1,8 @@
+import { ASK_REQUEST_TIMEOUT_MS } from '@pragma/module-cli-integration/contract'
 import { describe, expect, it } from 'vitest'
-import { AppError, callBridge } from '../src/client'
+import { AppError, callBridge, requestTimeoutMs } from '../src/client'
 import { NotRunningError } from '../src/connection'
+import { RESPONSE_TIMEOUT_MS } from '../src/constants'
 import { cliBridge, closedPortUrl, silentServerUrl } from './support/servers'
 
 const payload = { context: { cwd: '/x' } }
@@ -14,6 +16,26 @@ describe('callBridge', () => {
   it('round-trips a request', async () => {
     const server = await cliBridge({ worktreeList: () => ({ ok: true, result: worktrees }) })
     expect(await callBridge(server.connection, 'worktreeList', payload)).toEqual(worktrees)
+  })
+
+  it('only ask and askWait get the long-poll request timeout', () => {
+    expect(requestTimeoutMs('ask')).toBe(ASK_REQUEST_TIMEOUT_MS)
+    expect(requestTimeoutMs('askWait')).toBe(ASK_REQUEST_TIMEOUT_MS)
+    expect(requestTimeoutMs('worktreeList')).toBe(RESPONSE_TIMEOUT_MS)
+    expect(RESPONSE_TIMEOUT_MS).toBe(120_000)
+  })
+
+  it('round-trips an answered ask', async () => {
+    const answered = {
+      status: 'answered',
+      askId: 'a1',
+      profile: { id: 'oc', name: 'OpenCode', providerId: 'opencode' },
+      text: '42',
+      truncated: false,
+      durationMs: 3,
+    }
+    const server = await cliBridge({ ask: () => ({ ok: true, result: answered }) })
+    expect(await callBridge(server.connection, 'ask', { ...payload, to: 'oc', prompt: 'q' })).toEqual(answered)
   })
 
   it('server error becomes AppError with the same code and message', async () => {

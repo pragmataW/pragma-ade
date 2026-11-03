@@ -13,6 +13,7 @@ const COMMAND_LINES = [
   'pragma task move <id> --column <name>',
   'pragma comments list [--worktree <id>]',
   'pragma handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
+  'pragma ask --to <profile> [--prompt <text>] [--prompt-file <path|->] [--timeout <seconds>]',
 ]
 
 describe('parseCli', () => {
@@ -85,6 +86,41 @@ describe('parseCli', () => {
     [['--version'], { kind: 'version' }],
   ])('%j → %j', (argv, expected) => {
     expect(parseCli(argv)).toEqual(expected)
+  })
+})
+
+describe('parseCli ask', () => {
+  it('maps --to and --prompt', () => {
+    expect(parseCli(['ask', '--to', 'opencode', '--prompt', 'q'])).toEqual({
+      kind: 'call',
+      method: 'ask',
+      json: false,
+      options: { to: 'opencode', prompt: 'q' },
+      positionals: [],
+    })
+  })
+
+  it('--timeout is a number', () => {
+    expect(parseCli(['ask', '--to', 'oc', '--prompt-file', '-', '--timeout', '90'])).toMatchObject({
+      options: { to: 'oc', 'prompt-file': '-', timeout: 90 },
+    })
+  })
+
+  it.each([
+    [
+      ['ask', '--to', 'oc', '--prompt', 'q', '--timeout', '0'],
+      /--timeout must be a whole number of seconds from 1 to 3600/,
+    ],
+    [['ask', '--to', 'oc', '--prompt', 'q', '--timeout', 'abc'], /--timeout must be a whole number/],
+    [['ask', '--to', 'oc', '--prompt', 'q', '--timeout', '3601'], /--timeout must be a whole number/],
+    [['ask', '--to', 'oc', '--prompt', 'q', '--timeout', '1.5'], /--timeout must be a whole number/],
+    [['ask', '--to', 'oc', '--prompt', 'q', '--prompt-file', 'f'], /--prompt cannot be combined with --prompt-file/],
+    [['ask', '--to', 'oc'], /Pass one of --prompt, --prompt-file\./],
+    [['ask', '--to', 'oc', '--prompt', '  '], /--prompt is empty/],
+    [['ask', '--prompt', 'q'], /--to is required/],
+  ])('usage error for %j', (argv, message) => {
+    expect(() => parseCli(argv)).toThrow(UsageError)
+    expect(() => parseCli(argv)).toThrow(message)
   })
 })
 
