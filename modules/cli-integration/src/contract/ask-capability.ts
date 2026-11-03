@@ -1,4 +1,4 @@
-import type { AgentProfile } from '@pragma/module-agents/contract'
+import { type AgentProfile, launchSpecSchema } from '@pragma/module-agents/contract'
 import { z } from '@pragma/sdk'
 
 /** What a provider gets to build one headless, read-only question. */
@@ -12,16 +12,14 @@ export interface AskQuery {
   writeTempFile(name: string, contents: string): Promise<string>
 }
 
-/** The process cli-integration runs for one question (it owns spawn, timeout, kill and output caps). */
-export const askSpecSchema = z.object({
-  /** The resolved binary. */
-  command: z.string().min(1),
-  args: z.array(z.string()),
-  /** The full child env (shell env + profile env, cleaned by the provider). */
-  env: z.record(z.string(), z.string()),
-  /** Written to the child's stdin (which is always closed afterwards). */
-  stdin: z.string().nullable(),
-})
+/**
+ * The process cli-integration runs for one question (it owns spawn, timeout, kill and output caps): the launch
+ * spec's command and args, the FULL child env (shell env + profile env, cleaned by the provider) and what is
+ * written to stdin (always closed afterwards).
+ */
+export const askSpecSchema = launchSpecSchema
+  .pick({ command: true, args: true, env: true })
+  .extend({ stdin: z.string().nullable() })
 export type AskSpec = z.infer<typeof askSpecSchema>
 
 /** What the process left behind. */
