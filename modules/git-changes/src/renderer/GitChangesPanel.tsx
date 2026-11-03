@@ -17,6 +17,9 @@ import { type DiffReview, useDiffReview } from './comments/use-diff-review'
 import { DiffView, type DiffViewHandle } from './diff/DiffView'
 import { HunkBar } from './diff/HunkBar'
 import { EmptyState } from './EmptyState'
+import { FilterBar, NoMatches } from './filter/FilterBar'
+import { type FileFilter, filterFiles } from './filter/filter-files'
+import { type ParsedQuery, parseQuery } from './filter/match'
 import { type KeyAction, keyToAction } from './keyboard'
 import { type EditorOpener, editorOpener } from './lib/editor'
 import { useActiveWorktree } from './lib/projects'
@@ -47,14 +50,39 @@ const rowHandlers = (scm: ScmActions): RowHandlers => ({
   discard: (files, all) => void scm.discard(files, all),
 })
 
-/** The entries of the current list in display order (grouped in uncommitted mode, tree or flat). */
-function useDisplay(files: ChangedFile[], viewMode: GitChangesSettings['viewMode'], mode: ChangeMode) {
+interface Display {
+  nodes: TreeNode[]
+  ordered: ChangedFile[]
+}
+
+function display(files: readonly ChangedFile[], opts: Parameters<typeof buildGroups>[1]): Display {
+  const nodes = buildGroups(files, opts)
+  const byKey = new Map(files.map((f) => [entryKey(f), f]))
+  return { nodes, ordered: leafOrder(nodes).flatMap((k) => byKey.get(k) ?? []) }
+}
+
+/**
+ * The entries of the current list in display order (grouped in uncommitted mode, tree or flat): `full` unfiltered
+ * (the selection reconciles against it, so filtering never moves it), `shown` through the file filter.
+ */
+function useDisplay(
+  files: ChangedFile[],
+  filter: FileFilter,
+  viewMode: GitChangesSettings['viewMode'],
+  mode: ChangeMode,
+) {
   return useMemo(() => {
-    const nodes = buildGroups(files, { grouped: mode === CHANGE_MODE.uncommitted, flat: viewMode !== TREE })
-    const byKey = new Map(files.map((f) => [entryKey(f), f]))
-    const ordered = leafOrder(nodes).flatMap((k) => byKey.get(k) ?? [])
-    return { nodes, ordered }
-  }, [files, viewMode, mode])
+    const opts = { grouped: mode === CHANGE_MODE.uncommitted, flat: viewMode !== TREE }
+    const full = display(files, opts)
+    return { full, shown: filter.active ? display(filter.visible, { ...opts, all: files }) : full }
+  }, [files, filter, viewMode, mode])
+}
+
+/** The file filter of a worktree: its query (kept in the store) parsed, and the list through it. */
+function useFileFilter(files: readonly ChangedFile[], text: string): { query: ParsedQuery; filter: FileFilter } {
+  const query = useMemo(() => parseQuery(text), [text])
+  const filter = useMemo(() => filterFiles(files, query), [files, query])
+  return { query, filter }
 }
 
 /** j / k move the selection through the display order (`step` ±1), stopping at both ends. */
@@ -64,37 +92,66 @@ function neighbour(ordered: ChangedFile[], selected: string | null, step: number
   return next ? entryKey(next) : null
 }
 
-/** The left pane: the change tree (or "No changes") above the Stashes section. */
+/** The left pane: the file filter, the change tree (or "No changes" / "No matches") above the Stashes section. */
 function FileListPane(props: {
   worktreeId: string
   files: ChangedFile[]
   nodes: TreeNode[]
+  /** The best match (Enter in the filter selects it). */
+  first: ChangedFile | undefined
   view: WorktreeView
+  filter: FileFilter
+  query: ParsedQuery
   commentCounts: Record<string, number>
   onOpenInEditor?(path: string): void
   handlers?: RowHandlers
   stashes: StashEntry[]
   scm: ScmActions
+  filterRef: RefObject<HTMLInputElement | null>
 }) {
   const t = useT()
-  const { worktreeId, view } = props
+  const { worktreeId, view, filter } = props
+  const store = useGitChangesStore.getState()
+  const setFilter = (text: string) => store.setFilter(worktreeId, text)
+  const reset = () => {
+    setFilter('')
+    props.filterRef.current?.focus()
+  }
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <FilterBar
+        value={view.filter}
+        filter={filter}
+        onChange={setFilter}
+        onSubmit={() => {
+          if (props.first) store.select(worktreeId, entryKey(props.first))
+        }}
+        inputRef={props.filterRef}
+      />
       <div className="flex min-h-0 flex-1 flex-col">
         {props.files.length === 0 ? (
           <EmptyState kind={EMPTY_KINDS.noChanges} text={t('git-changes:empty.noChanges')} />
+        ) : filter.active && filter.visible.length === 0 ? (
+          <NoMatches query={view.filter} onReset={reset} />
         ) : (
           <ChangesTree
             nodes={props.nodes}
             selectedPath={view.selectedPath}
-            onSelect={(key) => useGitChangesStore.getState().select(worktreeId, key)}
+            onSelect={(key) => store.select(worktreeId, key)}
             commentCounts={props.commentCounts}
             onOpenInEditor={props.onOpenInEditor}
             handlers={props.handlers}
+            matches={filter.matches}
           />
         )}
       </div>
-      <StashList worktreeId={worktreeId} stashes={props.stashes} selected={view.stashFile} actions={props.scm} />
+      <StashList
+        worktreeId={worktreeId}
+        stashes={props.stashes}
+        selected={view.stashFile}
+        actions={props.scm}
+        query={props.query}
+      />
     </div>
   )
 }
@@ -186,9 +243,11 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   const lists: ChangeLists = { uncommitted: uncommitted.data, branch: branch.data }
   const okList = current.data?.state === CHANGE_LIST_STATE.ok ? current.data : undefined
   const files = useMemo(() => okList?.files ?? [], [okList])
-  const { nodes, ordered } = useDisplay(files, settings.viewMode, view.mode)
+  const { query, filter } = useFileFilter(files, view.filter)
+  const { full, shown } = useDisplay(files, filter, settings.viewMode, view.mode)
   const selected = files.find((f) => entryKey(f) === view.selectedPath) ?? null
   const diffRef = useRef<DiffViewHandle>(null)
+  const filterRef = useRef<HTMLInputElement>(null)
   const review = useDiffReview(worktreeId, selected, view.composer)
   const openInEditor = editorOpener({ worktreeId, mode: view.mode, mergeBase: okList?.mergeBase ?? null })
   const openPathInEditor = openInEditor
@@ -203,15 +262,21 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
   const uncommittedFiles = uncommitted.data?.state === CHANGE_LIST_STATE.ok ? uncommitted.data.files : NO_FILES
 
   useEffect(() => {
-    if (okList) useGitChangesStore.getState().reconcile(worktreeId, ordered)
-  }, [okList, ordered, worktreeId])
+    if (okList) useGitChangesStore.getState().reconcile(worktreeId, full.ordered)
+  }, [okList, full, worktreeId])
 
+  const focusFilter = () => {
+    filterRef.current?.focus()
+    filterRef.current?.select()
+  }
   const run: Record<KeyAction, () => void> = {
-    nextFile: () => store.select(worktreeId, neighbour(ordered, view.selectedPath, 1)),
-    prevFile: () => store.select(worktreeId, neighbour(ordered, view.selectedPath, -1)),
+    nextFile: () => store.select(worktreeId, neighbour(shown.ordered, view.selectedPath, 1)),
+    prevFile: () => store.select(worktreeId, neighbour(shown.ordered, view.selectedPath, -1)),
     nextChange: () => diffRef.current?.nextChange(),
     prevChange: () => diffRef.current?.prevChange(),
-    find: () => diffRef.current?.openFind(),
+    // Without an open diff there is nothing to find in: Cmd/Ctrl+F filters the files instead.
+    find: () => (diffRef.current ? diffRef.current.openFind() : focusFilter()),
+    filter: focusFilter,
   }
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const action = keyToAction({ ...e, targetIsEditable: isEditable(e.target) })
@@ -249,8 +314,12 @@ function WorktreeChanges({ worktreeId }: { worktreeId: string }) {
             <FileListPane
               worktreeId={worktreeId}
               files={files}
-              nodes={nodes}
+              nodes={shown.nodes}
+              first={filter.active ? filter.visible[0] : undefined}
               view={view}
+              filter={filter}
+              query={query}
+              filterRef={filterRef}
               commentCounts={review.counts}
               onOpenInEditor={openPathInEditor}
               handlers={isUncommitted ? rowHandlers(scm) : undefined}

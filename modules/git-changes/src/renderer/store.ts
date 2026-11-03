@@ -13,6 +13,8 @@ export interface WorktreeView {
   composer: CommentContext | null
   /** A file of a stash shown in the diff pane instead of the selected entry. */
   stashFile: StashFile | null
+  /** The changed-files filter query (kept while the app runs). */
+  filter: string
 }
 
 /** A stash (by commit sha) and one of its files (`scm.stashFiles`). */
@@ -27,6 +29,7 @@ const INITIAL_VIEW: WorktreeView = {
   order: [],
   composer: null,
   stashFile: null,
+  filter: '',
 }
 
 /**
@@ -61,6 +64,7 @@ export interface GitChangesState {
   reveal(worktreeId: string, key: string, uncommittedKeys: readonly string[] | null): void
   /** Shows a stash's file in the diff pane (null: back to the selected entry). */
   showStashFile(worktreeId: string, stashFile: StashFile | null): void
+  setFilter(worktreeId: string, filter: string): void
   openComposer(worktreeId: string, context: CommentContext): void
   closeComposer(worktreeId: string): void
 }
@@ -85,6 +89,7 @@ export const useGitChangesStore = create<GitChangesState>()((set) => {
         v.selectedPath === path && v.stashFile === null ? {} : { selectedPath: path, composer: null, stashFile: null },
       ),
     showStashFile: (id, stashFile) => patch(id, () => ({ stashFile, composer: null })),
+    setFilter: (id, filter) => patch(id, (v) => (v.filter === filter ? {} : { filter })),
     reconcile: (id, files) =>
       patch(id, (v) => {
         const selectedPath = reconcileSelection(v.selectedPath, v.order, files)

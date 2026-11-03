@@ -47,4 +47,12 @@ describe('git-changes store', () => {
     s.setMode('w', 'uncommitted')
     expect(view().mode).toBe('uncommitted')
   })
+
+  it('the file filter is kept per worktree, across mode switches', () => {
+    const s = useGitChangesStore.getState()
+    s.setFilter('w', 'ödeme')
+    s.setMode('w', 'branch')
+    expect(view().filter).toBe('ödeme')
+    expect(viewOf(useGitChangesStore.getState(), 'other').filter).toBe('')
+  })
 })

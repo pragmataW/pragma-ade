@@ -42,7 +42,15 @@
   "empty": {
     "noWorktree": "Select a worktree to see its changes",
     "noChanges": "No changes",
-    "loading": "Loading changes…"
+    "loading": "Loading changes…",
+    "noMatches": "No changed files match “{{query}}”"
+  },
+  "filter": {
+    "placeholder": "Filter files",
+    "label": "Filter changed files (⌘/Ctrl+Alt+F)",
+    "clear": "Clear filter (Escape)",
+    "reset": "Clear filter",
+    "count": "{{count}} of {{total}}"
   },
   "groups": {
     "staged": "Staged Changes",
@@ -185,7 +193,10 @@
       "discard": "Discard Changes",
       "stageAll": "Stage All Changes",
       "unstageAll": "Unstage All Changes",
-      "discardAll": "Discard All Changes"
+      "discardAll": "Discard All Changes",
+      "stageMatching": "Stage Matching Changes",
+      "unstageMatching": "Unstage Matching Changes",
+      "discardMatching": "Discard Matching Changes"
     },
     "hunk": {
       "stage": "Stage",

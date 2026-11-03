@@ -4,8 +4,10 @@ import { keyToAction } from '../src/renderer/keyboard'
 const key = (
   k: string,
   mods: Partial<Record<'altKey' | 'metaKey' | 'ctrlKey' | 'shiftKey' | 'targetIsEditable', boolean>> = {},
+  code = `Key${k.toUpperCase()}`,
 ) => ({
   key: k,
+  code,
   altKey: false,
   metaKey: false,
   ctrlKey: false,
@@ -31,6 +33,12 @@ describe('keyToAction', () => {
     [key('f', { metaKey: true, targetIsEditable: true }), 'find'],
     [key('f', { metaKey: true, shiftKey: true }), null],
     [key('f'), null],
+    // ⌥⌘F on macOS types `ƒ`: the filter goes by the physical key.
+    [key('ƒ', { metaKey: true, altKey: true }, 'KeyF'), 'filter'],
+    [key('f', { ctrlKey: true, altKey: true }), 'filter'],
+    [key('f', { ctrlKey: true, altKey: true, targetIsEditable: true }), 'filter'],
+    [key('f', { altKey: true }), null],
+    [key('f', { metaKey: true, altKey: true, shiftKey: true }), null],
   ])('%o → %s', (e, action) => {
     expect(keyToAction(e)).toBe(action)
   })

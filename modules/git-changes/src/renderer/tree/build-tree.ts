@@ -7,7 +7,7 @@ const [DIR, FILE, GROUP] = TREE_NODE_KINDS
 /** The uncommitted mode's groups (VS Code: "Staged Changes", "Changes"). */
 export const CHANGE_GROUPS = ['staged', 'unstaged'] as const
 export type ChangeGroup = (typeof CHANGE_GROUPS)[number]
-const [STAGED, UNSTAGED] = CHANGE_GROUPS
+const [STAGED] = CHANGE_GROUPS
 
 export interface TreeNode {
   id: string
@@ -22,6 +22,8 @@ export interface TreeNode {
   group?: ChangeGroup
   /** Descendant files (1 for a file). */
   fileCount: number
+  /** A group of a filtered list: its entries before filtering (`fileCount` counts the matches). */
+  totalCount?: number
 }
 
 /** A list entry's identity: its path, prefixed for a staged entry (a path can be listed in both groups). */
@@ -106,7 +108,7 @@ export const buildTree = (files: readonly ChangedFile[]): TreeNode[] =>
 /** Flat list: one leaf per file, named by its full path, in the given order. */
 export const buildFlatList = (files: readonly ChangedFile[]): TreeNode[] => files.map((f) => fileNode(f, f.path))
 
-const groupNode = (group: ChangeGroup, children: TreeNode[]): TreeNode => ({
+const groupNode = (group: ChangeGroup, children: TreeNode[], totalCount?: number): TreeNode => ({
   id: GROUP_ID_PREFIX + group,
   name: group,
   path: '',
@@ -115,20 +117,27 @@ const groupNode = (group: ChangeGroup, children: TreeNode[]): TreeNode => ({
   children,
   ...stagedFlag(group === STAGED),
   fileCount: countFiles(children),
+  ...(totalCount === undefined ? {} : { totalCount }),
 })
+
+const inGroup = (group: ChangeGroup) => (f: ChangedFile) => (group === STAGED) === (f.staged === true)
 
 /**
  * The tree (or flat list) of a change list. `grouped` (uncommitted mode): a "Staged Changes" group with the staged
- * entries, then a "Changes" group with the rest; a group without entries is left out.
+ * entries, then a "Changes" group with the rest; a group without entries is left out. `all`: the list before a
+ * filter made `files` (groups then carry `totalCount`).
  */
-export function buildGroups(files: readonly ChangedFile[], opts: { grouped: boolean; flat: boolean }): TreeNode[] {
+export function buildGroups(
+  files: readonly ChangedFile[],
+  opts: { grouped: boolean; flat: boolean; all?: readonly ChangedFile[] },
+): TreeNode[] {
   const build = opts.flat ? buildFlatList : buildTree
   if (!opts.grouped) return build(files)
-  const parts: [ChangeGroup, ChangedFile[]][] = [
-    [STAGED, files.filter((f) => f.staged)],
-    [UNSTAGED, files.filter((f) => !f.staged)],
-  ]
-  return parts.flatMap(([group, entries]) => (entries.length === 0 ? [] : [groupNode(group, build(entries))]))
+  const { all } = opts
+  return CHANGE_GROUPS.flatMap((group) => {
+    const entries = files.filter(inGroup(group))
+    return entries.length === 0 ? [] : [groupNode(group, build(entries), all?.filter(inGroup(group)).length)]
+  })
 }
 
 /** The entries under a node (itself for a file), in display order. */
