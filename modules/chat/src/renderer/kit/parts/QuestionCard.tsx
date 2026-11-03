@@ -3,7 +3,7 @@ import { cn } from '@pragma/ui'
 import { Button } from '@pragma/ui/components/button'
 import { MessageCircleQuestion } from '@pragma/ui/icons'
 import { useId, useState } from 'react'
-import { SIZE_SM } from '../../../constants'
+import { ROLE_RADIO, SIZE_SM } from '../../../constants'
 import {
   CHAT_TESTIDS,
   type ChatPartProps,
@@ -48,7 +48,7 @@ function QuestionField({
 }) {
   const t = useT()
   const name = useId()
-  const type = q.multiSelect ? 'checkbox' : 'radio'
+  const type = q.multiSelect ? 'checkbox' : ROLE_RADIO
   const otherOn = answer.other !== null
   return (
     <fieldset disabled={disabled} className="flex min-w-0 flex-col gap-1">

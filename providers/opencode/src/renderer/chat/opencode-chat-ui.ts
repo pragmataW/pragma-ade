@@ -15,6 +15,8 @@ import {
   RateLimitBanner,
   RetryBanner,
   StopButton,
+  TasksIndicator,
+  TasksPanel,
   UsageMeter,
 } from './kit'
 import { NoticeRow } from './NoticeRow'
@@ -38,7 +40,8 @@ export const opencodeChatUi: ChatUiDefinition = {
     [`${CUSTOM_PART_PREFIX}${CUSTOM.form}`]: FormCard,
     [`${CUSTOM_PART_PREFIX}${CUSTOM.notice}`]: NoticeRow,
   },
-  header: [McpStatus, UsageMeter],
+  header: [TasksIndicator, McpStatus, UsageMeter],
+  sidePanels: [TasksPanel],
   banners: [RateLimitBanner, RetryBanner],
   composerToolbar: [PermissionModePicker, AgentPicker, OpencodeModelPicker, VariantPicker, ContextMeter, StopButton],
   composerExtensions: [...defaultComposerExtensions, documentAttachmentsExtension],

@@ -18,6 +18,7 @@ import {
 import {
   CHAT_TESTIDS,
   type ChatItem,
+  type ChatItemKind,
   type ChatPartComponent,
   type ChatPartKey,
   type ChatSessionApi,
@@ -26,7 +27,7 @@ import {
 } from '../../../contract'
 import { ChatPartsProvider, ChatRowView } from './ChatRows'
 import { useStickToBottom } from './lib/useStickToBottom'
-import { buildRows } from './rows'
+import { buildRows, rowIndexOf } from './rows'
 
 export interface MessageListProps {
   items: readonly ChatItem[]
@@ -42,6 +43,8 @@ export interface MessageListHandle {
   scrollToIndex(index: number): void
   /** The rendered element of a row, when it is in the virtual window. */
   rowElement(index: number): HTMLElement | null
+  /** Scrolls to the row showing the item (its own row or its tool-call group); false when no row shows it. */
+  scrollToItem(kind: ChatItemKind, id: string): boolean
 }
 
 /** The virtualized transcript (centred 740 px column); sticks to the bottom, "Jump to latest" when scrolled up. */
@@ -68,8 +71,13 @@ export function MessageList(props: MessageListProps) {
     () => ({
       scrollToIndex: (index) => virtualizer.scrollToIndex(index, { align: ALIGN_CENTER }),
       rowElement: (index) => scroller.current?.querySelector<HTMLElement>(`[${CHAT_ROW_ATTR}="${index}"]`) ?? null,
+      scrollToItem(kind, id) {
+        const index = rowIndexOf(rows, kind, id)
+        if (index >= 0) virtualizer.scrollToIndex(index, { align: ALIGN_CENTER })
+        return index >= 0
+      },
     }),
-    [virtualizer],
+    [virtualizer, rows],
   )
   const lastIndex = rows.length - 1
   const last = items.at(-1)

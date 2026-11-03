@@ -353,6 +353,89 @@ export const workflowScenario = (): Scenario => ({
   ],
 })
 
+const RELEASE_TOOL_ID = 'toolu_release_1'
+const EXPLORE_TOOL_ID = 'toolu_tp_explore'
+const NOTES_TOOL_ID = 'toolu_tp_notes'
+const PRS_TOOL_ID = 'toolu_tp_prs'
+const REVIEW_TOOL_ID = 'toolu_tp_review'
+const WATCH_TOOL_ID = 'toolu_tp_watch'
+const progress = (taskId: string, toolId: string, lastTool: string, tokens: number, toolUses: number): Step =>
+  sys('task_progress', {
+    task_id: taskId,
+    tool_use_id: toolId,
+    usage: usage(tokens, toolUses),
+    last_tool_name: lastTool,
+  })
+
+/**
+ * The Tasks panel scene: a `release` workflow with two parallel subagents (one runs a nested helper), a finished
+ * review subagent and a background watcher; the turn then holds (tasks still running) until interrupted.
+ */
+export const tasksPanelScenario = (): Scenario => ({
+  init: FAKE_INIT,
+  turns: [
+    [
+      text('msg_tp_0', 'I will run the release workflow and review the diff in parallel.', 2),
+      tool('msg_tp_wf', RELEASE_TOOL_ID, 'Workflow', { name: 'release' }),
+      sys('task_started', {
+        task_id: 'tp_release',
+        tool_use_id: RELEASE_TOOL_ID,
+        task_type: 'local_workflow',
+        workflow_name: 'release',
+        description: 'Ship v1.2 to npm',
+      }),
+      ...spawnTask(
+        EXPLORE_TOOL_ID,
+        'tp_explore',
+        { subagent_type: 'Explore', description: 'Find what changed since v1.1', parent_task_id: 'tp_release' },
+        RELEASE_TOOL_ID,
+      ),
+      ...spawnTask(
+        NOTES_TOOL_ID,
+        'tp_notes',
+        { subagent_type: 'Plan', description: 'Draft the release notes', parent_task_id: 'tp_release' },
+        RELEASE_TOOL_ID,
+      ),
+      nestedText('msg_tp_e1', 'Comparing v1.1 with main.', EXPLORE_TOOL_ID),
+      tool('msg_tp_e2', 'toolu_tp_git', 'Bash', { command: 'git log --oneline v1.1..main' }, EXPLORE_TOOL_ID),
+      toolDone('toolu_tp_git', 'a1b2c3 feat: tasks panel\nd4e5f6 fix: number format', EXPLORE_TOOL_ID),
+      progress('tp_explore', EXPLORE_TOOL_ID, 'Bash', 9_800, 1),
+      nestedText('msg_tp_n1', 'Outlining the notes: **Features**, **Fixes**, **Upgrade notes**.', NOTES_TOOL_ID),
+      ...spawnTask(
+        PRS_TOOL_ID,
+        'tp_prs',
+        {
+          subagent_type: 'general-purpose',
+          description: 'Collect the merged PRs',
+          parent_task_id: 'tp_notes',
+          spawn_depth: 2,
+        },
+        NOTES_TOOL_ID,
+      ),
+      nestedText('msg_tp_p1', 'Searching merged pull requests.', PRS_TOOL_ID),
+      tool('msg_tp_p2', 'toolu_tp_grep', 'Grep', { pattern: 'Merge pull request' }, PRS_TOOL_ID),
+      progress('tp_prs', PRS_TOOL_ID, 'Grep', 4_100, 2),
+      progress('tp_notes', NOTES_TOOL_ID, 'Agent', 18_400, 7),
+      { delayMs: BEAT_MS },
+      nestedText('msg_tp_e3', 'Two commits since v1.1: the tasks panel and a number format fix.', EXPLORE_TOOL_ID),
+      ...finishTask('tp_explore', EXPLORE_TOOL_ID, 'Two commits since v1.1.', RELEASE_TOOL_ID),
+      ...spawnTask(REVIEW_TOOL_ID, 'tp_review', { subagent_type: 'code-reviewer', description: 'Review the diff' }),
+      nestedText('msg_tp_r1', 'No blocking issues; one naming nit in TaskList.', REVIEW_TOOL_ID),
+      ...finishTask('tp_review', REVIEW_TOOL_ID, 'No blocking issues.'),
+      tool('msg_tp_w', WATCH_TOOL_ID, 'Bash', { command: 'pnpm test --watch', run_in_background: true }),
+      sys('task_started', {
+        task_id: 'tp_watch',
+        tool_use_id: WATCH_TOOL_ID,
+        task_type: 'local_bash',
+        is_backgrounded: true,
+        description: 'pnpm test --watch',
+      }),
+      toolDone(WATCH_TOOL_ID, 'Command running in background with ID: tp_watch'),
+      { awaitInterrupt: true },
+    ],
+  ],
+})
+
 export const FAKE_BACKGROUND_TASK_ID = 'bash_bg_1'
 const BACKGROUND_TOOL_ID = 'toolu_bg_1'
 
@@ -502,6 +585,7 @@ export const SCENARIOS = {
   subagent: subagentScenario,
   workflow: workflowScenario,
   'background-task': backgroundTaskScenario,
+  'tasks-panel': tasksPanelScenario,
   'ask-question': askQuestionScenario,
   'plan-approve': planApproveScenario,
   'mcp-status': mcpStatusScenario,

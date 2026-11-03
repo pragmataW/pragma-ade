@@ -19,5 +19,7 @@ export {
   RetryBanner,
   StopButton,
   slashCommandsExtension,
+  TasksIndicator,
+  TasksPanel,
   UsageMeter,
 } from '@pragma/module-chat/renderer'

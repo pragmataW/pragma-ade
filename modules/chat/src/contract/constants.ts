@@ -112,6 +112,8 @@ export const CHAT_TASK_KINDS = ['subagent', 'workflow', 'background'] as const
 export const TASK_KIND = keyedEnum(CHAT_TASK_KINDS)
 export const CHAT_TASK_STATUSES = ['pending', 'running', 'completed', 'failed', 'killed', 'paused'] as const
 export const TASK_STATUS = keyedEnum(CHAT_TASK_STATUSES)
+/** Statuses a task does not leave on its own (it ran to an end). */
+export const FINISHED_TASK_STATUSES = [TASK_STATUS.completed, TASK_STATUS.failed, TASK_STATUS.killed] as const
 export const MCP_SERVER_STATUSES = ['connected', 'pending', 'failed', 'needs-auth', 'disabled'] as const
 export const MCP_STATUS = keyedEnum(MCP_SERVER_STATUSES)
 /** `cleared` drops the banner. */

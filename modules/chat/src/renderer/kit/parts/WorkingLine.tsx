@@ -1,9 +1,9 @@
 import { SESSION_STATUS } from '@pragma/module-agents/contract'
 import { useT } from '@pragma/sdk/renderer'
-import { useEffect, useState } from 'react'
-import { ELAPSED_TICK_MS, MS_PER_SECOND, SECONDS_PAD, SECONDS_PER_MINUTE } from '../../../constants'
+import { MS_PER_SECOND, SECONDS_PAD, SECONDS_PER_MINUTE } from '../../../constants'
 import { CHAT_TESTIDS, type ChatSlotProps, type ChatTranscript, EVENT_KIND, TOOL_STATUS } from '../../../contract'
 import { StatusGlyph } from './lib/StatusGlyph'
+import { useNow } from './lib/use-now'
 
 /** `12s`, `3m 05s`. */
 export function formatElapsed(ms: number): string {
@@ -20,16 +20,6 @@ export function currentAction(t: ChatTranscript): string | undefined {
     if (item?.kind === EVENT_KIND.toolCall && item.status === TOOL_STATUS.running) return item.title ?? item.name
   }
   return undefined
-}
-
-function useNow(active: boolean): number {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    if (!active) return
-    const timer = setInterval(() => setNow(Date.now()), ELAPSED_TICK_MS)
-    return () => clearInterval(timer)
-  }, [active])
-  return now
 }
 
 /** "ring + current action + elapsed · esc to interrupt" while the agent works (ui-notes). */

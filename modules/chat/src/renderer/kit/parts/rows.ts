@@ -36,6 +36,14 @@ export function buildRows(
   return b.rows
 }
 
+/** The index of the row showing the item (its own row, or the tool-call group holding it); -1 when none does. */
+export function rowIndexOf(rows: readonly ChatRow[], kind: ChatItem['kind'], id: string): number {
+  return rows.findIndex((r) => {
+    if (r.kind === ROW_KIND.item) return r.item.kind === kind && r.item.id === id
+    return r.kind === ROW_KIND.group && kind === EVENT_KIND.toolCall && r.items.some((i) => i.id === id)
+  })
+}
+
 /**
  * Which items render inside a task card instead of this list: items whose parent (a task or a `task`-kind tool
  * call) is in `items`, and the tool call a rendered task card replaces. Orphans stay in the list.

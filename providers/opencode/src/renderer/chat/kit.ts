@@ -21,6 +21,8 @@ export {
   RateLimitBanner,
   RetryBanner,
   StopButton,
+  TasksIndicator,
+  TasksPanel,
   UsageMeter,
   useChatHost,
 } from '@pragma/module-chat/renderer'

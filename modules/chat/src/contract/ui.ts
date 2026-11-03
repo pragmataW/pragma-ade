@@ -95,6 +95,10 @@ export interface ChatUiDefinition {
   header?: ChatSlotComponent[]
   composerToolbar?: ChatSlotComponent[]
   composerExtensions?: ComposerExtension[]
+  /**
+   * Right of the transcript and composer (e.g. `TasksPanel`). Each panel renders its own column (and returns null
+   * while closed); it may overlay the transcript through the kit's `useChatLayout().overlayHost` on narrow views.
+   */
   sidePanels?: ChatSlotComponent[]
   /** Full-width notices above the composer (e.g. `RateLimitBanner`, `RetryBanner`). */
   banners?: ChatSlotComponent[]

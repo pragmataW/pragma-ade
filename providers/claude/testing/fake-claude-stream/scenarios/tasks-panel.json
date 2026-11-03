@@ -1,0 +1,379 @@
+{
+  "init": {
+    "commands": [
+      {
+        "name": "review",
+        "description": "Review the current changes",
+        "argumentHint": ""
+      },
+      {
+        "name": "compact",
+        "description": "Compact the conversation",
+        "argumentHint": "[instructions]"
+      }
+    ],
+    "models": [
+      {
+        "value": "default",
+        "displayName": "Default (recommended)",
+        "description": "Fake default",
+        "supportsEffort": true,
+        "supportedEffortLevels": ["low", "medium", "high"],
+        "supportsFastMode": true,
+        "supportsAutoMode": true
+      },
+      {
+        "value": "fake-opus",
+        "displayName": "Fake Opus",
+        "description": "Bigger fake",
+        "supportsEffort": false
+      }
+    ]
+  },
+  "turns": [
+    [
+      {
+        "emitText": {
+          "messageId": "msg_tp_0",
+          "text": "I will run the release workflow and review the diff in parallel.",
+          "chunks": 2
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_tp_wf",
+          "id": "toolu_release_1",
+          "name": "Workflow",
+          "input": {
+            "name": "release"
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "tp_release",
+          "tool_use_id": "toolu_release_1",
+          "task_type": "local_workflow",
+          "workflow_name": "release",
+          "description": "Ship v1.2 to npm",
+          "uuid": "task_started-tp_release",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_spawn_tp_explore",
+          "id": "toolu_tp_explore",
+          "name": "Agent",
+          "input": {
+            "description": "Find what changed since v1.1",
+            "prompt": "List the files"
+          },
+          "parentToolUseId": "toolu_release_1"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "tp_explore",
+          "tool_use_id": "toolu_tp_explore",
+          "task_type": "local_agent",
+          "is_backgrounded": false,
+          "spawn_depth": 1,
+          "subagent_type": "Explore",
+          "description": "Find what changed since v1.1",
+          "parent_task_id": "tp_release",
+          "uuid": "task_started-tp_explore",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_spawn_tp_notes",
+          "id": "toolu_tp_notes",
+          "name": "Agent",
+          "input": {
+            "description": "Draft the release notes",
+            "prompt": "List the files"
+          },
+          "parentToolUseId": "toolu_release_1"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "tp_notes",
+          "tool_use_id": "toolu_tp_notes",
+          "task_type": "local_agent",
+          "is_backgrounded": false,
+          "spawn_depth": 1,
+          "subagent_type": "Plan",
+          "description": "Draft the release notes",
+          "parent_task_id": "tp_release",
+          "uuid": "task_started-tp_notes",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_tp_e1",
+          "text": "Comparing v1.1 with main.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_tp_explore"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_tp_e2",
+          "id": "toolu_tp_git",
+          "name": "Bash",
+          "input": {
+            "command": "git log --oneline v1.1..main"
+          },
+          "parentToolUseId": "toolu_tp_explore"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_tp_git",
+          "content": "a1b2c3 feat: tasks panel\nd4e5f6 fix: number format",
+          "parentToolUseId": "toolu_tp_explore"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_progress",
+          "task_id": "tp_explore",
+          "tool_use_id": "toolu_tp_explore",
+          "usage": {
+            "total_tokens": 9800,
+            "tool_uses": 1,
+            "duration_ms": 4200
+          },
+          "last_tool_name": "Bash",
+          "uuid": "task_progress-tp_explore",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_tp_n1",
+          "text": "Outlining the notes: **Features**, **Fixes**, **Upgrade notes**.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_tp_notes"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_spawn_tp_prs",
+          "id": "toolu_tp_prs",
+          "name": "Agent",
+          "input": {
+            "description": "Collect the merged PRs",
+            "prompt": "List the files"
+          },
+          "parentToolUseId": "toolu_tp_notes"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "tp_prs",
+          "tool_use_id": "toolu_tp_prs",
+          "task_type": "local_agent",
+          "is_backgrounded": false,
+          "spawn_depth": 2,
+          "subagent_type": "general-purpose",
+          "description": "Collect the merged PRs",
+          "parent_task_id": "tp_notes",
+          "uuid": "task_started-tp_prs",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_tp_p1",
+          "text": "Searching merged pull requests.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_tp_prs"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_tp_p2",
+          "id": "toolu_tp_grep",
+          "name": "Grep",
+          "input": {
+            "pattern": "Merge pull request"
+          },
+          "parentToolUseId": "toolu_tp_prs"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_progress",
+          "task_id": "tp_prs",
+          "tool_use_id": "toolu_tp_prs",
+          "usage": {
+            "total_tokens": 4100,
+            "tool_uses": 2,
+            "duration_ms": 4200
+          },
+          "last_tool_name": "Grep",
+          "uuid": "task_progress-tp_prs",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_progress",
+          "task_id": "tp_notes",
+          "tool_use_id": "toolu_tp_notes",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 7,
+            "duration_ms": 4200
+          },
+          "last_tool_name": "Agent",
+          "uuid": "task_progress-tp_notes",
+          "session_id": "fake"
+        }
+      },
+      {
+        "delayMs": 400
+      },
+      {
+        "emitText": {
+          "messageId": "msg_tp_e3",
+          "text": "Two commits since v1.1: the tasks panel and a number format fix.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_tp_explore"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_notification",
+          "task_id": "tp_explore",
+          "tool_use_id": "toolu_tp_explore",
+          "status": "completed",
+          "output_file": "/tmp/fake-task.output",
+          "summary": "Two commits since v1.1.",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 3,
+            "duration_ms": 4200
+          },
+          "uuid": "task_notification-tp_explore",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_tp_explore",
+          "content": "Two commits since v1.1.",
+          "parentToolUseId": "toolu_release_1"
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_spawn_tp_review",
+          "id": "toolu_tp_review",
+          "name": "Agent",
+          "input": {
+            "description": "Review the diff",
+            "prompt": "List the files"
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "tp_review",
+          "tool_use_id": "toolu_tp_review",
+          "task_type": "local_agent",
+          "is_backgrounded": false,
+          "spawn_depth": 1,
+          "subagent_type": "code-reviewer",
+          "description": "Review the diff",
+          "uuid": "task_started-tp_review",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitText": {
+          "messageId": "msg_tp_r1",
+          "text": "No blocking issues; one naming nit in TaskList.",
+          "chunks": 2,
+          "parentToolUseId": "toolu_tp_review"
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_notification",
+          "task_id": "tp_review",
+          "tool_use_id": "toolu_tp_review",
+          "status": "completed",
+          "output_file": "/tmp/fake-task.output",
+          "summary": "No blocking issues.",
+          "usage": {
+            "total_tokens": 18400,
+            "tool_uses": 3,
+            "duration_ms": 4200
+          },
+          "uuid": "task_notification-tp_review",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_tp_review",
+          "content": "No blocking issues."
+        }
+      },
+      {
+        "emitToolUse": {
+          "messageId": "msg_tp_w",
+          "id": "toolu_tp_watch",
+          "name": "Bash",
+          "input": {
+            "command": "pnpm test --watch",
+            "run_in_background": true
+          }
+        }
+      },
+      {
+        "emit": {
+          "type": "system",
+          "subtype": "task_started",
+          "task_id": "tp_watch",
+          "tool_use_id": "toolu_tp_watch",
+          "task_type": "local_bash",
+          "is_backgrounded": true,
+          "description": "pnpm test --watch",
+          "uuid": "task_started-tp_watch",
+          "session_id": "fake"
+        }
+      },
+      {
+        "emitToolResult": {
+          "toolUseId": "toolu_tp_watch",
+          "content": "Command running in background with ID: tp_watch"
+        }
+      },
+      {
+        "awaitInterrupt": true
+      }
+    ]
+  ]
+}

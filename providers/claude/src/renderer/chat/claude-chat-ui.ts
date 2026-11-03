@@ -20,6 +20,8 @@ import {
   RetryBanner,
   StopButton,
   slashCommandsExtension,
+  TasksIndicator,
+  TasksPanel,
   UsageMeter,
 } from './kit'
 
@@ -36,7 +38,8 @@ export const claudeChatUi: ChatUiDefinition = {
     [`${CUSTOM_PART_PREFIX}${CLAUDE_CUSTOM_EVENTS.compactBoundary}`]: CompactBoundaryNotice,
   },
   banners: [RateLimitBanner, RetryBanner],
-  header: [McpStatus, UsageMeter],
+  header: [TasksIndicator, McpStatus, UsageMeter],
+  sidePanels: [TasksPanel],
   composerToolbar: [PermissionModePicker, ModelPicker, EffortPicker, FastModeToggle, ContextMeter, StopButton],
   // documents before images: the image extension leaves PDFs and text files to it
   composerExtensions: [

@@ -9,9 +9,12 @@ import {
   CHAT_STATUSBAR_ORDER,
   CHAT_UI_CAPABILITY,
   CHAT_VIEW_ORDER,
+  TASKS_COMMAND_ID,
+  TASKS_SHORTCUT,
 } from '../constants'
 import { CHAT_MODE, CHAT_MODULE_ID, type ChatSettings, chatIpcEvents } from '../contract'
 import { withChatHost } from './host-adapter'
+import { toggleTasksPanel } from './kit/tasks/store'
 import { useChatStore } from './session/store'
 import { ChatSettingsPage } from './view/ChatSettingsPage'
 import { ChatSessionView } from './view/ChatView'
@@ -33,6 +36,7 @@ export type {
   ComposerMenuProps,
 } from '../contract'
 export { ChatHostProvider, useChatHost } from './host-adapter'
+export { type ChatLayoutApi, useChatLayout } from './kit/chat-layout'
 export { Composer } from './kit/composer/Composer'
 export { ComposerAttachments, DocumentChips } from './kit/composer/ComposerAttachments'
 export {
@@ -72,7 +76,7 @@ export { SessionExitNotice, TurnEndNotice } from './kit/parts/Notices'
 export { PermissionCard } from './kit/parts/PermissionCard'
 export { PlanApprovalCard } from './kit/parts/PlanApprovalCard'
 export { QuestionCard } from './kit/parts/QuestionCard'
-export { TaskCard, TaskStatusPill, TaskStopButton } from './kit/parts/TaskCard'
+export { TaskCard, TaskOpenInPanel, TaskStatusPill, TaskStopButton } from './kit/parts/TaskCard'
 export { TaskTree } from './kit/parts/TaskTree'
 export { ThinkingBlock } from './kit/parts/ThinkingBlock'
 export { TodoChecklist, TodoList } from './kit/parts/TodoList'
@@ -82,6 +86,8 @@ export { UserMessage } from './kit/parts/UserMessage'
 export { createUserMessage, type UserMessageActionsCopy } from './kit/parts/UserMessageActions'
 export { useCustomResponse } from './kit/parts/use-custom-response'
 export { WorkingLine } from './kit/parts/WorkingLine'
+export { TasksIndicator } from './kit/tasks/TasksIndicator'
+export { TasksPanel } from './kit/tasks/TasksPanel'
 export { ChatSessionProvider, useChatSessionApi } from './session/ChatSessionContext'
 export { useChatStore } from './session/store'
 export { ChatSessionView } from './view/ChatView'
@@ -108,6 +114,17 @@ export default defineRendererModule<ChatSettings>({
       id: CHAT_STATUSBAR_ID,
       order: CHAT_STATUSBAR_ORDER,
       component: StatusbarContext,
+    })
+    // the active chat's Tasks panel (app scope: matched in the renderer; the registry refuses a conflicting chord)
+    ctx.commands.register(TASKS_COMMAND_ID, () => toggleTasksPanel(useChatStore.getState().activeSessionId), {
+      titleKey: 'chat:commands.toggleTasks',
+      palette: true,
+    })
+    ctx.shortcuts.register({
+      id: TASKS_COMMAND_ID,
+      ...TASKS_SHORTCUT,
+      command: TASKS_COMMAND_ID,
+      titleKey: 'chat:commands.toggleTasks',
     })
     ctx.settingsPages.register({
       id: CHAT_MODULE_ID,

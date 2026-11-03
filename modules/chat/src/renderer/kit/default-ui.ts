@@ -19,6 +19,8 @@ import { ThinkingBlock } from './parts/ThinkingBlock'
 import { TodoList } from './parts/TodoList'
 import { ToolCallCard } from './parts/ToolCallCard'
 import { UserMessage } from './parts/UserMessage'
+import { TasksIndicator } from './tasks/TasksIndicator'
+import { TasksPanel } from './tasks/TasksPanel'
 
 /** The kit's definition for providers without a `chatUi` capability (all core parts). */
 export const defaultChatUi: ChatUiDefinition = {
@@ -37,7 +39,8 @@ export const defaultChatUi: ChatUiDefinition = {
     question: QuestionCard,
     'plan-proposal': PlanApprovalCard,
   },
-  header: [McpStatus, UsageMeter],
+  header: [TasksIndicator, McpStatus, UsageMeter],
+  sidePanels: [TasksPanel],
   banners: [RateLimitBanner, RetryBanner],
   composerToolbar: [PermissionModePicker, ModelPicker, ContextMeter, StopButton],
   composerExtensions: defaultComposerExtensions,

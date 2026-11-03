@@ -15,7 +15,7 @@ const EVENTS: ChatEvent[] = [user('u1', 'alpha beta'), user('u2', 'gamma'), user
 
 /** The search hook over three user messages and a mock virtualized list. */
 function setup() {
-  const list: MessageListHandle = { scrollToIndex: vi.fn(), rowElement: () => null }
+  const list: MessageListHandle = { scrollToIndex: vi.fn(), rowElement: () => null, scrollToItem: () => false }
   const hook = renderHook(() =>
     useChatSearch({
       items: makeTranscript(EVENTS).items,
