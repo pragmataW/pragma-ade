@@ -4,6 +4,7 @@ import {
   MERMAID_FONT_SIZE,
   MERMAID_ID_PREFIX,
   MERMAID_SECURITY,
+  MERMAID_SEQUENCE,
   MERMAID_THEME,
   MERMAID_THEME_TOKENS,
 } from '../../../../constants'
@@ -42,6 +43,7 @@ const configOf = (themeVariables: ThemeVariables): MermaidConfig => ({
   securityLevel: MERMAID_SECURITY,
   htmlLabels: false,
   flowchart: { htmlLabels: false },
+  sequence: MERMAID_SEQUENCE,
   suppressErrorRendering: true,
   theme: MERMAID_THEME,
   themeVariables,

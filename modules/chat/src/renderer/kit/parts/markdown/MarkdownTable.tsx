@@ -32,8 +32,7 @@ const TABLE_CLASS = cn(
   '[&_tbody_tr:first-child_td]:border-t-0',
   '[&_tbody_tr:nth-child(even)]:bg-[color-mix(in_srgb,var(--hv)_42%,transparent)]',
   '[&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-hv',
-  '[&_[data-numeric]]:text-right [&_[data-numeric]]:font-mono [&_[data-numeric]]:text-[12px]',
-  '[&_th[data-numeric]]:font-sans',
+  '[&_[data-numeric]]:text-right',
 )
 
 const FADE = 'pointer-events-none absolute inset-y-0 z-[2] w-6 from-el to-transparent'

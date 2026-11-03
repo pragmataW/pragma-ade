@@ -172,6 +172,18 @@ export const SCROLL_EDGE_SLACK_PX = 2
 export const MERMAID_ID_PREFIX = 'chat-mermaid-'
 export const MERMAID_ZOOM = { min: 0.5, max: 3, step: 0.25 } as const
 export const MERMAID_FONT_SIZE = '13px'
+/** Sequence diagrams default to 16px text in 150×65 boxes; match the chat's compact type scale instead. */
+export const MERMAID_SEQUENCE = {
+  actorFontSize: 13,
+  messageFontSize: 12.5,
+  noteFontSize: 12,
+  width: 120,
+  height: 36,
+  actorMargin: 40,
+  boxMargin: 8,
+  messageMargin: 30,
+  mirrorActors: false,
+} as const
 export const MERMAID_THEME = 'base'
 export const MERMAID_SECURITY = 'strict'
 export const FONT_UI_VAR = '--font-ui'
