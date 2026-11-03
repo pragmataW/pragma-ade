@@ -18,6 +18,7 @@ import {
   type CliProfile,
   type CliSession,
   type CliTask,
+  type CliTaskDetail,
   type CliWorktree,
 } from '../contract'
 import { CliError } from './cli-error'
@@ -126,3 +127,15 @@ export const toCliColumn = (c: ColumnDto, taskCount: number): CliColumn => ({
   description: c.description,
   taskCount,
 })
+
+/** `toCliTask` plus the description, the column's description and the linked worktree's branch. */
+export function toCliTaskDetail(t: TaskDto, section: BoardSection, worktreeBranch: string | null): CliTaskDetail {
+  return {
+    ...toCliTask(t, section),
+    description: t.descriptionMd,
+    columnDescription: section.columns.find((c) => c.id === t.columnId)?.description ?? '',
+    worktreeBranch,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  }
+}

@@ -78,6 +78,12 @@ describe('run', () => {
     expect(h.out.calls[0]).toMatchObject({ method: 'taskUpdate', payload: { taskId: '42', description: 'Details' } })
   })
 
+  it('task show maps the positional id to taskId', async () => {
+    const h = harness()
+    await run(['task', 'show', 'PRA-3'], h.io, h.deps)
+    expect(h.out.calls[0]).toMatchObject({ method: 'taskShow', payload: { taskId: 'PRA-3' } })
+  })
+
   it.each([
     ['empty', { '/repo/src/h.md': '' }],
     ['missing', {}],

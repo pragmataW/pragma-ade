@@ -21,7 +21,7 @@ import type { Comment, CommentsService } from '@pragma/module-comments/contract'
 import type { CreateWorktreeInput, Project, ProjectsService, Worktree } from '@pragma/module-projects/contract'
 import type { Logger } from '@pragma/sdk'
 import type { SessionTranscriptLocation, SessionTranscriptQuery } from '../../src/contract'
-import type { CliHandlerDeps } from '../../src/main/handlers'
+import { type CliHandlerDeps, createCliHandlers } from '../../src/main/handlers'
 import type { TranscriptLocator } from '../../src/main/session-transcripts'
 
 const NOW = 1_700_000_000_000
@@ -288,3 +288,9 @@ export function makeDeps(over: Partial<CliHandlerDeps> = {}): CliHandlerDeps {
 }
 
 export const context = (over: Record<string, string> = {}) => ({ cwd: '/elsewhere', ...over })
+
+/** The real handler map over a `fakeBoard(tasks)`; `over` replaces other deps (e.g. `projects`). */
+export function handlersOnBoard(tasks: TaskDto[], over: Partial<CliHandlerDeps> = {}) {
+  const board = fakeBoard(tasks)
+  return { board, h: createCliHandlers(makeDeps({ board, ...over })) }
+}

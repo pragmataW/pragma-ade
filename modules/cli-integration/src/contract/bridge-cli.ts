@@ -18,6 +18,7 @@ export const CLI_METHODS = [
   'handoff',
   'sessionLocate',
   'taskColumns',
+  'taskShow',
 ] as const
 export type CliMethod = (typeof CLI_METHODS)[number]
 /** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
@@ -106,6 +107,15 @@ export const cliTaskSchema = z.object({
   sessionIds: z.array(z.string()),
 })
 export type CliTask = z.infer<typeof cliTaskSchema>
+/** One task in full: `description` is its markdown, `columnDescription` its column's guidance ('' when unset). */
+export const cliTaskDetailSchema = cliTaskSchema.extend({
+  description: z.string(),
+  columnDescription: z.string(),
+  worktreeBranch: z.string().nullable(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+})
+export type CliTaskDetail = z.infer<typeof cliTaskDetailSchema>
 /** A board column in board order; `description` is the user's guidance ('' when unset). */
 export const cliColumnSchema = z.object({
   id: z.number().int(),
@@ -191,6 +201,7 @@ export const cliRequestSchemas = {
   /** A Pragma or provider session id; without one, the caller's `PRAGMA_SESSION_ID`. */
   sessionLocate: withContext({ sessionId: id.optional() }),
   taskColumns: withContext({ projectId: id.optional() }),
+  taskShow: withContext({ taskId: taskRefSchema }),
 } satisfies Record<CliMethod, z.ZodType>
 
 export const cliResultSchemas = {
@@ -207,6 +218,7 @@ export const cliResultSchemas = {
   handoff: cliHandoffResultSchema,
   sessionLocate: cliSessionLocateResultSchema,
   taskColumns: z.object({ projectId: id, columns: z.array(cliColumnSchema) }),
+  taskShow: cliTaskDetailSchema,
 } satisfies Record<CliMethod, z.ZodType>
 
 export type CliRequest<M extends CliMethod> = z.infer<(typeof cliRequestSchemas)[M]>

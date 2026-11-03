@@ -30,6 +30,7 @@ Prefer `--json`: every command then prints one JSON document,
 | `pragma task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]` | Edit a task |
 | `pragma task move <id> --column <name>` | Move a task to another column |
 | `pragma task columns [--project <id>]` | Board columns in order with their description and task count |
+| `pragma task show <id>` | One task in full: column, priority, labels, worktree, description |
 | `pragma comments list [--worktree <id>]` | Review comments (drafts) of a worktree |
 | `pragma handoff --to <profile> --file <path\|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]` | Hand off to another agent |
 | `pragma session locate <id>` | Where a session's full transcript is stored (Pragma, Claude or OpenCode session id) |

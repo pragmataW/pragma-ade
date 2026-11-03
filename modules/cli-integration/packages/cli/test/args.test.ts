@@ -12,6 +12,7 @@ const COMMAND_LINES = [
   'pragma task update <id> [--title <t>] [--description-file <path>] [--priority <p>] [--labels a,b]',
   'pragma task move <id> --column <name>',
   'pragma task columns [--project <id>]',
+  'pragma task show <id>',
   'pragma comments list [--worktree <id>]',
   'pragma handoff --to <profile> --file <path|-> [--branch <name>] [--base <branch>] [--same-worktree] [--task <id>]',
 ]
@@ -44,6 +45,10 @@ describe('parseCli', () => {
     expect(cmd).toMatchObject({ method: 'taskUpdate', positionals: ['42'], options: { title: 'x' } })
   })
 
+  it('parses task show with positional id', () => {
+    expect(parseCli(['task', 'show', 'PRA-3'])).toMatchObject({ method: 'taskShow', positionals: ['PRA-3'] })
+  })
+
   it('labels split on comma and trimmed', () => {
     expect(parseCli(['task', 'create', '--title', 't', '--labels', 'a, b'])).toMatchObject({
       options: { labels: ['a', 'b'] },
@@ -66,6 +71,7 @@ describe('parseCli', () => {
     [['worktree', 'list', '--nope'], /Unknown option '--nope'/],
     [['worktree', 'list', 'extra'], /Unexpected argument 'extra'/],
     [['task', 'columns', 'extra'], /Unexpected argument 'extra'/],
+    [['task', 'show'], /<id> is required/],
     [
       ['task', 'create', '--title', 't', '--priority', 'p1'],
       /--priority must be one of: none, low, medium, high, urgent/,
