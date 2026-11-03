@@ -139,9 +139,10 @@ describe('send', () => {
     expect(delivered).toHaveLength(1)
     expect(delivered[0]?.text).toBe(formatNudge({ round: 1, open: 2, created: 2, updated: 0 }))
     expect(delivered[0]?.text).toBe(
-      'Review round 1: 2 open review threads in this worktree (2 new). Read them with `pragma comments list`, ' +
-        'address each one, reply with `pragma comments reply <id> --body "<text>"` and resolve finished threads with ' +
-        '`pragma comments resolve <id>`.',
+      'Review round 1: 2 open review threads in this worktree (2 new). Address them with the pragma-review skill: ' +
+        'read them with `pragma comments list`, make the requested changes, resolve each done thread with ' +
+        '`pragma comments resolve <id>` and reply with `pragma comments reply <id> --body "<text>"` only to ask or ' +
+        'answer a question.',
     )
     expect(delivered[0]).toMatchObject({ sessionId: 's1', worktreeId: WT, mode: 'terminal', ptyId: 'pty-s1', round: 1 })
     expect(ids(delivered[0]?.comments ?? [])).toEqual(ids(cs))

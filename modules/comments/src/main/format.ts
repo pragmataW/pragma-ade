@@ -246,8 +246,9 @@ const NUDGE = {
   updated: (n: number) => `${n} with new replies`,
   partJoin: ', ',
   instructions:
-    'Read them with `pragma comments list`, address each one, reply with `pragma comments reply <id> --body "<text>"`' +
-    ' and resolve finished threads with `pragma comments resolve <id>`.',
+    'Address them with the pragma-review skill: read them with `pragma comments list`, make the requested changes,' +
+    ' resolve each done thread with `pragma comments resolve <id>` and reply with' +
+    ' `pragma comments reply <id> --body "<text>"` only to ask or answer a question.',
 } as const
 
 /** The one-line message a Send pastes into the agent (one line: no bracketed-paste wait). Fixed English. */

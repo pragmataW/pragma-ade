@@ -210,8 +210,9 @@ describe('formatThread', () => {
 
 describe('formatNudge', () => {
   const tail =
-    ' Read them with `pragma comments list`, address each one, reply with `pragma comments reply <id> --body "<text>"`' +
-    ' and resolve finished threads with `pragma comments resolve <id>`.'
+    ' Address them with the pragma-review skill: read them with `pragma comments list`, make the requested changes,' +
+    ' resolve each done thread with `pragma comments resolve <id>` and reply with' +
+    ' `pragma comments reply <id> --body "<text>"` only to ask or answer a question.'
   it.each([
     [
       { round: 2, open: 3, created: 1, updated: 2 },
@@ -226,5 +227,6 @@ describe('formatNudge', () => {
     const text = formatNudge(counts)
     expect(text).toBe(head + tail)
     expect(text).not.toContain('\n')
+    expect(text).toContain('pragma-review')
   })
 })
