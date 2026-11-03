@@ -13,6 +13,13 @@
   color: var(--info);
 }
 
+/* File filter: matched characters in accent text, no browser <mark> yellow. */
+.gc-match {
+  background: none;
+  color: var(--act);
+  font-weight: 600;
+}
+
 /*
  * Diff text (ui-notes: JetBrains Mono 12px / 20px); custom properties inherit into the open shadow root.
  * The surface is the panel token, not the shiki theme's own background (pierre-dark is near-black): this rule

@@ -61,4 +61,13 @@ export const GitChangesTestIds = {
   stashRow: 'gc-stash-row',
   stashAction: (action: string) => `gc-stash-${action}`,
   stashFile: 'gc-stash-file',
+  /** An expanded stash's "n of m" while the file filter is on. */
+  stashFileCount: 'gc-stash-file-count',
+  /** The changed-files filter: bar, query, its clear button, "n of m", the empty state's reset, a matched span. */
+  filterBar: 'gc-filter',
+  filterInput: 'gc-filter-input',
+  filterClear: 'gc-filter-clear',
+  filterCount: 'gc-filter-count',
+  filterReset: 'gc-filter-reset',
+  filterMatch: 'gc-filter-match',
 } as const

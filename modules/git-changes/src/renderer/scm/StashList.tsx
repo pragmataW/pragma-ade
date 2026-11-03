@@ -10,14 +10,18 @@ import {
   type LucideIcon,
   Trash2,
 } from '@pragma/ui/icons'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BUTTON_TYPE, ROW_ACTION_ICON_PX, TREE_ICON_PX } from '../../constants'
 import { STASH_ACTIONS, type StashAction, type StashEntry, GitChangesTestIds as T } from '../../contract'
+import { filterFiles } from '../filter/filter-files'
+import { Highlighted } from '../filter/Highlighted'
+import type { ParsedQuery, Range } from '../filter/match'
 import { type StashFile, useGitChangesStore } from '../store'
 import type { ScmActions } from './actions'
 import { useStashFiles } from './use-scm'
 
 const [APPLY, POP, DROP] = STASH_ACTIONS
+const NO_RANGES: Range[] = []
 export const STASH_BUTTONS: [StashAction, LucideIcon][] = [
   [APPLY, ArchiveRestore],
   [POP, ArrowUpFromLine],
@@ -64,12 +68,28 @@ interface RowProps {
   expanded: boolean
   selected: StashFile | null
   actions: ScmActions
+  query: ParsedQuery
   onToggle(): void
 }
 
-function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: RowProps) {
+/** The stash's file count; "n of m" while the file filter is on. */
+function FileCount({ shown, total, filtering }: { shown: number; total: number; filtering: boolean }) {
+  const t = useT()
+  return filtering ? (
+    <span data-testid={T.stashFileCount} className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+      {t('git-changes:filter.count', { count: shown, total })}
+    </span>
+  ) : (
+    <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+      {t('git-changes:scm.stash.files', { count: total })}
+    </span>
+  )
+}
+
+function StashRow({ worktreeId, entry, expanded, selected, actions, query, onToggle }: RowProps) {
   const t = useT()
   const files = useStashFiles(worktreeId, expanded ? entry.sha : null)
+  const filter = useMemo(() => (files ? filterFiles(files, query) : null), [files, query])
   const Chevron = expanded ? ChevronDown : ChevronRight
   return (
     <>
@@ -88,16 +108,12 @@ function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: 
           <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
           <Archive size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
           <span className="min-w-0 flex-1 truncate">{stashLabel(entry.message)}</span>
-          {files ? (
-            <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
-              {t('git-changes:scm.stash.files', { count: files.length })}
-            </span>
-          ) : null}
+          {filter ? <FileCount shown={filter.visible.length} total={filter.total} filtering={filter.active} /> : null}
         </button>
         <StashButtons entry={entry} actions={actions} />
       </div>
       {expanded
-        ? files?.map((file) => {
+        ? filter?.visible.map((file) => {
             const isSelected = selected?.sha === entry.sha && selected.file.path === file.path
             return (
               <button
@@ -114,7 +130,9 @@ function StashRow({ worktreeId, entry, expanded, selected, actions, onToggle }: 
                 )}
               >
                 <FileIcon path={file.path} size={TREE_ICON_PX} />
-                <span className="min-w-0 flex-1 truncate">{file.path}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  <Highlighted text={file.path} ranges={filter?.matches.get(file.path)?.ranges ?? NO_RANGES} />
+                </span>
                 <span
                   className={cn(
                     'w-3 shrink-0 text-center font-mono font-semibold text-[11px]',
@@ -148,6 +166,8 @@ export function StashList(props: {
   stashes: readonly StashEntry[]
   selected: StashFile | null
   actions: ScmActions
+  /** The file filter: an expanded stash lists only its matching files. */
+  query: ParsedQuery
 }) {
   const t = useT()
   const [open, setOpen] = useState(true)
@@ -184,6 +204,7 @@ export function StashList(props: {
               expanded={expanded === entry.sha}
               selected={props.selected}
               actions={props.actions}
+              query={props.query}
               onToggle={() => setExpanded(expanded === entry.sha ? null : entry.sha)}
             />
           ))}

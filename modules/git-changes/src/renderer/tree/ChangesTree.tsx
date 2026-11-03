@@ -22,6 +22,9 @@ import {
   TREE_ROW_HEIGHT_PX,
 } from '../../constants'
 import { FILE_STATUS, type FileStatus, GitChangesTestIds as T } from '../../contract'
+import { nodeRanges } from '../filter/filter-files'
+import { Highlighted } from '../filter/Highlighted'
+import type { PathMatch } from '../filter/match'
 import { entryKey, TREE_NODE_KINDS, type TreeNode } from './build-tree'
 import { RowActions, type RowHandlers, rowButtons } from './RowActions'
 import { RowMenu, type RowMenuAt } from './RowMenu'
@@ -38,6 +41,8 @@ export interface ChangesTreeProps {
   onOpenInEditor?(path: string): void
   /** Uncommitted mode: inline Stage / Unstage / Discard buttons and menu items. */
   handlers?: RowHandlers
+  /** The file filter's matches by `entryKey` (row labels highlight them). */
+  matches?: ReadonlyMap<string, PathMatch>
 }
 
 const RENAME_ARROW = ' → '
@@ -45,6 +50,7 @@ const [, FILE_KIND, GROUP_KIND] = TREE_NODE_KINDS
 /** Deleted files are struck through (ui-notes); inline so it holds without the stylesheet. */
 const DELETED_NAME: CSSProperties = { textDecorationLine: 'line-through' }
 const NO_COUNTS: Record<string, number> = {}
+const NO_MATCHES: ReadonlyMap<string, PathMatch> = new Map()
 
 /** Height of the tree's container (react-window needs a number); a fixed fallback until it is measured. */
 function useContainerHeight(): [RefObject<HTMLDivElement | null>, number] {
@@ -78,10 +84,11 @@ function StatusLetter({ status }: { status: FileStatus }) {
   )
 }
 
-/** A group header ("Staged Changes" / "Changes"): section-label type, entry count. */
+/** A group header ("Staged Changes" / "Changes"): section-label type, entry count ("n of m" while filtered). */
 function GroupLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node']; actions: ReactNode }) {
   const t = useT()
   const Chevron = node.isOpen ? ChevronDown : ChevronRight
+  const { fileCount, totalCount } = node.data
   return (
     <>
       <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
@@ -89,8 +96,8 @@ function GroupLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node
         {t(`git-changes:groups.${node.data.group}`)}
       </span>
       {actions}
-      <span className="shrink-0 rounded-full bg-[var(--hv)] px-1.5 text-[11px] text-muted-foreground">
-        {node.data.fileCount}
+      <span className="shrink-0 rounded-full bg-[var(--hv)] px-1.5 text-[11px] text-muted-foreground tabular-nums">
+        {totalCount === undefined ? fileCount : t('git-changes:filter.count', { count: fileCount, total: totalCount })}
       </span>
     </>
   )
@@ -102,7 +109,9 @@ function DirLabel({ node, actions }: { node: NodeRendererProps<TreeNode>['node']
     <>
       <Chevron size={TREE_ICON_PX} className="shrink-0 text-muted-foreground" aria-hidden />
       <FileIcon path={node.data.name} folder open={node.isOpen} size={TREE_ICON_PX} />
-      <span className="min-w-0 flex-1 truncate">{node.data.name}</span>
+      <span className="min-w-0 flex-1 truncate">
+        <RowName data={node.data} />
+      </span>
       {actions}
       <span className="shrink-0 text-[11px] text-muted-foreground">{node.data.fileCount}</span>
     </>
@@ -115,7 +124,7 @@ function FileLabel({ data, comments, actions }: { data: TreeNode; comments: numb
     <>
       <FileIcon path={data.path} size={TREE_ICON_PX} className="ml-[14px]" />
       <span className="min-w-0 flex-1 truncate" style={status === FILE_STATUS.D ? DELETED_NAME : undefined}>
-        {data.name}
+        <RowName data={data} />
       </span>
       {comments > 0 ? (
         <span className="flex shrink-0 items-center gap-0.5 text-[11px] text-[var(--act)]">
@@ -137,14 +146,21 @@ function RowLabel(props: { node: NodeRendererProps<TreeNode>['node']; comments: 
 }
 
 type OpenRowMenu = (e: MouseEvent<HTMLDivElement>, node: TreeNode) => void
-/** What every row reads: comment counts, the context-menu opener, the inline handlers, "Open in editor". */
+/** What every row reads: comment counts, filter matches, the menu opener, inline handlers, "Open in editor". */
 interface RowContextValue {
   counts: Record<string, number>
+  matches: ReadonlyMap<string, PathMatch>
   openMenu: OpenRowMenu | null
   handlers?: RowHandlers
   onOpenInEditor?(path: string): void
 }
-const RowContext = createContext<RowContextValue>({ counts: NO_COUNTS, openMenu: null })
+const RowContext = createContext<RowContextValue>({ counts: NO_COUNTS, matches: NO_MATCHES, openMenu: null })
+
+/** A row's name with the filter's matched characters marked. */
+function RowName({ data }: { data: TreeNode }) {
+  const { matches } = useContext(RowContext)
+  return <Highlighted text={data.name} ranges={nodeRanges(data, matches)} />
+}
 
 function InlineActions({ node }: { node: NodeRendererProps<TreeNode>['node'] }) {
   const { handlers, onOpenInEditor } = useContext(RowContext)
@@ -183,6 +199,7 @@ function ChangeRow({ node, style }: NodeRendererProps<TreeNode>) {
 /** The compressed, indented changes tree (22px rows, 12px indent), single selection, keyboard via react-arborist. */
 export function ChangesTree(props: ChangesTreeProps) {
   const { nodes, selectedPath, onSelect, commentCounts = NO_COUNTS, treeRef, onOpenInEditor, handlers } = props
+  const matches = props.matches ?? NO_MATCHES
   const t = useT()
   const [containerRef, height] = useContainerHeight()
   const [menuAt, setMenuAt] = useState<RowMenuAt | null>(null)
@@ -192,7 +209,13 @@ export function ChangesTree(props: ChangesTreeProps) {
     setMenuAt({ node, x: e.clientX - (box?.left ?? 0), y: e.clientY - (box?.top ?? 0) })
   }
   const hasMenu = onOpenInEditor !== undefined || handlers !== undefined
-  const row: RowContextValue = { counts: commentCounts, openMenu: hasMenu ? openMenu : null, handlers, onOpenInEditor }
+  const row: RowContextValue = {
+    counts: commentCounts,
+    matches,
+    openMenu: hasMenu ? openMenu : null,
+    handlers,
+    onOpenInEditor,
+  }
   return (
     <RowContext.Provider value={row}>
       <div ref={containerRef} data-testid={T.tree} className="relative h-full min-h-0 overflow-hidden">

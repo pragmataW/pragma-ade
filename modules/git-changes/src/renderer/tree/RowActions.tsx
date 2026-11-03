@@ -25,10 +25,47 @@ interface RowButton {
   run(): void
 }
 
-/** VS Code's inline actions: Open File, then Discard + Stage for "Changes" entries, Unstage for staged ones. */
+/** What a row's buttons act on: its entry (or directory), its whole group, or a filtered group's matching entries. */
+const SCOPES = ['entry', 'all', 'matching'] as const
+type Scope = (typeof SCOPES)[number]
+const [ENTRY, ALL, MATCHING] = SCOPES
+
+type ScmAction = Exclude<RowAction, typeof OPEN>
+const LABELS: Record<ScmAction, Record<Scope, string>> = {
+  stage: {
+    entry: 'git-changes:scm.row.stage',
+    all: 'git-changes:scm.row.stageAll',
+    matching: 'git-changes:scm.row.stageMatching',
+  },
+  unstage: {
+    entry: 'git-changes:scm.row.unstage',
+    all: 'git-changes:scm.row.unstageAll',
+    matching: 'git-changes:scm.row.unstageMatching',
+  },
+  discard: {
+    entry: 'git-changes:scm.row.discard',
+    all: 'git-changes:scm.row.discardAll',
+    matching: 'git-changes:scm.row.discardMatching',
+  },
+}
+
+/**
+ * While the filter is on (`totalCount` set), a group acts only on its listed entries, by path: never on one the filter
+ * hides, nor on one that appears between render and click.
+ */
+function scopeOf(node: TreeNode): Scope {
+  if (node.kind !== GROUP_KIND) return ENTRY
+  return node.totalCount === undefined ? ALL : MATCHING
+}
+
+/**
+ * VS Code's inline actions: Open File, then Discard + Stage for "Changes" entries, Unstage for staged ones. A whole
+ * group's buttons act on every entry of the group; a filtered group's on its listed (matching) entries by path.
+ */
 export function rowButtons(node: TreeNode, handlers: RowHandlers, open?: () => void): RowButton[] {
-  const group = node.kind === GROUP_KIND
   const files = filesUnder(node)
+  const scope = scopeOf(node)
+  const all = scope === ALL
   const opener: RowButton[] =
     open && node.kind === FILE_KIND
       ? [{ action: OPEN, icon: SquareArrowOutUpRight, labelKey: 'git-changes:diff.openInEditor', run: open }]
@@ -39,23 +76,18 @@ export function rowButtons(node: TreeNode, handlers: RowHandlers, open?: () => v
       {
         action: UNSTAGE,
         icon: Minus,
-        labelKey: group ? 'git-changes:scm.row.unstageAll' : 'git-changes:scm.row.unstage',
-        run: () => (group ? handlers.unstage() : handlers.unstage(files)),
+        labelKey: LABELS.unstage[scope],
+        run: () => (all ? handlers.unstage() : handlers.unstage(files)),
       },
     ]
   return [
     ...opener,
-    {
-      action: DISCARD,
-      icon: Undo2,
-      labelKey: group ? 'git-changes:scm.row.discardAll' : 'git-changes:scm.row.discard',
-      run: () => handlers.discard(files, group),
-    },
+    { action: DISCARD, icon: Undo2, labelKey: LABELS.discard[scope], run: () => handlers.discard(files, all) },
     {
       action: STAGE,
       icon: Plus,
-      labelKey: group ? 'git-changes:scm.row.stageAll' : 'git-changes:scm.row.stage',
-      run: () => (group ? handlers.stage() : handlers.stage(files)),
+      labelKey: LABELS.stage[scope],
+      run: () => (all ? handlers.stage() : handlers.stage(files)),
     },
   ]
 }
