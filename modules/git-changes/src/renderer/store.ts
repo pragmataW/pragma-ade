@@ -11,6 +11,8 @@ export interface WorktreeView {
   /** Entry keys of the last reconciled list in display order (to keep the selection's index when it disappears). */
   order: string[]
   composer: CommentContext | null
+  /** The draft whose inline card is open in edit mode (its own composer, at its lines). */
+  editingId: string | null
   /** A file of a stash shown in the diff pane instead of the selected entry. */
   stashFile: StashFile | null
   /** The changed-files filter query (kept while the app runs). */
@@ -28,9 +30,13 @@ const INITIAL_VIEW: WorktreeView = {
   selectedPath: null,
   order: [],
   composer: null,
+  editingId: null,
   stashFile: null,
   filter: '',
 }
+
+/** Closes both inline boxes (new comment and edit) when the diff shows something else. */
+const NO_COMPOSER = { composer: null, editingId: null } as const
 
 /**
  * Keeps `prev` while it is listed; otherwise the file now at its old index, else the last file, else null. Without a
@@ -65,8 +71,11 @@ export interface GitChangesState {
   /** Shows a stash's file in the diff pane (null: back to the selected entry). */
   showStashFile(worktreeId: string, stashFile: StashFile | null): void
   setFilter(worktreeId: string, filter: string): void
+  /** Opens the new-comment composer (closes an open edit box). */
   openComposer(worktreeId: string, context: CommentContext): void
   closeComposer(worktreeId: string): void
+  /** Opens a draft's card in edit mode (closes the new-comment composer); null closes it. */
+  editComment(worktreeId: string, commentId: string | null): void
 }
 
 export const viewOf = (s: Pick<GitChangesState, 'views'>, worktreeId: string): WorktreeView =>
@@ -83,28 +92,30 @@ export const useGitChangesStore = create<GitChangesState>()((set) => {
     treeCollapsed: null,
     setTreeCollapsed: (collapsed) => set((s) => (s.treeCollapsed === collapsed ? {} : { treeCollapsed: collapsed })),
     toggleTree: () => set((s) => ({ treeCollapsed: !s.treeCollapsed })),
-    setMode: (id, mode) => patch(id, (v) => (v.mode === mode ? {} : { mode, order: [], composer: null })),
+    setMode: (id, mode) => patch(id, (v) => (v.mode === mode ? {} : { mode, order: [], ...NO_COMPOSER })),
     select: (id, path) =>
       patch(id, (v) =>
-        v.selectedPath === path && v.stashFile === null ? {} : { selectedPath: path, composer: null, stashFile: null },
+        v.selectedPath === path && v.stashFile === null ? {} : { selectedPath: path, stashFile: null, ...NO_COMPOSER },
       ),
-    showStashFile: (id, stashFile) => patch(id, () => ({ stashFile, composer: null })),
+    showStashFile: (id, stashFile) => patch(id, () => ({ stashFile, ...NO_COMPOSER })),
     setFilter: (id, filter) => patch(id, (v) => (v.filter === filter ? {} : { filter })),
     reconcile: (id, files) =>
       patch(id, (v) => {
         const selectedPath = reconcileSelection(v.selectedPath, v.order, files)
         const order = files.map(entryKey)
-        return { selectedPath, order, composer: selectedPath === v.selectedPath ? v.composer : null }
+        return { selectedPath, order, ...(selectedPath === v.selectedPath ? {} : NO_COMPOSER) }
       }),
     reveal: (id, key, uncommittedKeys) =>
       patch(id, (v) => ({
         mode: revealMode(key, uncommittedKeys, v.mode),
         selectedPath: key,
         order: [],
-        composer: null,
+        ...NO_COMPOSER,
       })),
-    openComposer: (id, context) => patch(id, () => ({ composer: context })),
+    openComposer: (id, context) => patch(id, () => ({ composer: context, editingId: null })),
     closeComposer: (id) => patch(id, () => ({ composer: null })),
+    editComment: (id, commentId) =>
+      patch(id, () => (commentId === null ? { editingId: null } : { editingId: commentId, composer: null })),
   }
 })
 

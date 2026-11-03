@@ -2,13 +2,7 @@ import { useT } from '@pragma/sdk/renderer'
 import { cn } from '@pragma/ui'
 import { FileCode, GitCompare, MousePointerClick, Pencil, Trash2 } from '@pragma/ui/icons'
 import { useState } from 'react'
-import {
-  type Comment,
-  type CommentContext,
-  type CommentSource,
-  commentsIpc,
-  COMMENTS_TESTIDS as T,
-} from '../../contract'
+import { type Comment, type CommentSource, commentContextOf, commentsIpc, COMMENTS_TESTIDS as T } from '../../contract'
 import { IconButton } from '../lib/buttons'
 import { locationLabel } from '../location'
 import { runtime } from '../runtime'
@@ -22,11 +16,6 @@ const SOURCE_LABEL_KEYS = {
   diff: 'comments:row.source.diff',
   browser: 'comments:row.source.browser',
 } as const satisfies Record<CommentSource, string>
-
-const contextOf = (c: Comment): CommentContext => {
-  const { source, filePath, lineStart, lineEnd, diffSide, snippet, language, element } = c
-  return { source, filePath, lineStart, lineEnd, diffSide, snippet, language, element }
-}
 
 function SourceIcon({ source }: { source: CommentSource }) {
   const t = useT()
@@ -77,7 +66,7 @@ export function CommentRow({ comment }: { comment: Comment }) {
       <li data-testid={T.row} data-comment-id={comment.id} className="border-b px-4 py-3">
         <CommentComposer
           worktreeId={comment.worktreeId}
-          context={contextOf(comment)}
+          context={commentContextOf(comment)}
           editCommentId={comment.id}
           initialBody={comment.body}
           onDone={() => setEditing(false)}
