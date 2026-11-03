@@ -7,7 +7,7 @@ import {
   commentsIpc,
 } from '@pragma/module-comments/contract'
 import type { IpcContract } from '@pragma/sdk'
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GitChangesTestIds as T } from '../src/contract'

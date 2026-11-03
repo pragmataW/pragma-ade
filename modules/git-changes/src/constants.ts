@@ -115,3 +115,5 @@ export const SIZE_SM = 'sm'
 export const SIZE_ICON_SM = 'icon-sm'
 export const SIZE_XS = 'xs'
 export const VARIANT_LINK = 'link'
+/** Below this width (px) the review bar keeps only its count and Send inline; the rest goes into its "…" menu. */
+export const REVIEW_BAR_NARROW_PX = 420

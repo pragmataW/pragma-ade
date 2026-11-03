@@ -105,7 +105,8 @@
     "confirmDiscard": "Discard {{count}} new? Click again",
     "send_one": "Send {{count}} to agent",
     "send_other": "Send {{count}} to agent",
-    "clearResolved": "Clear resolved"
+    "clearResolved": "Clear resolved",
+    "more": "More review actions"
   },
   "scm": {
     "dismiss": "Dismiss",
