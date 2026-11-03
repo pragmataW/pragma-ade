@@ -3,7 +3,7 @@
   "displayName": "Pragma Bridge",
   "description": "Connects the Pragma ADE editor to the app: line comments to agents, open file at line, theme sync.",
   "publisher": "pragma",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "private": true,
   "license": "MIT",
   "repository": "local:pragma-ade/modules/editor/packages/bridge-extension",
