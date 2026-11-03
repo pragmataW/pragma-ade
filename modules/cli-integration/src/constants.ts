@@ -1,6 +1,6 @@
 /** Main/renderer-only constants (§9.2); literals shared with the CLI live in `contract/constants.ts`. */
 import { SETTINGS_PAGE_ORDER as SDK_SETTINGS_PAGE_ORDER } from '@pragma/sdk'
-import { CLI_MODULE_ID } from './contract/constants'
+import { ASK_REQUEST_TIMEOUT_MS, CLI_MODULE_ID } from './contract/constants'
 
 /** Install registry of skills we wrote (`<module data>/installed-skills.json`), never inside skill dirs. */
 export const REGISTRY_FILE = 'installed-skills.json'
@@ -48,3 +48,5 @@ export const ASK_MAX_STDERR_BYTES = ASK_MAX_STDERR_KIB * KIB
 export const TASKKILL = { exe: 'taskkill', args: ['/T', '/F', '/PID'] } as const
 export const ASK_MAX_CONCURRENT = 4
 export const ASK_TEMP_PREFIX = 'ask-'
+/** A question nobody polled for this long is aborted (the CLI went away). */
+export const ASK_ABANDON_MS = 2 * ASK_REQUEST_TIMEOUT_MS

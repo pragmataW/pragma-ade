@@ -21,6 +21,10 @@ export const CLI_METHODS = [
 export type CliMethod = (typeof CLI_METHODS)[number]
 /** `CLI_METHOD.handoff === 'handoff'`: named access to the methods (one source). */
 export const CLI_METHOD = Object.fromEntries(CLI_METHODS.map((m) => [m, m])) as { readonly [K in CliMethod]: K }
+/** States of a `pragma ask` long-poll (`ask` / `askWait` answer one of these). */
+export const ASK_STATUS = ['pending', 'answered'] as const
+export type AskStatus = (typeof ASK_STATUS)[number]
+export const ASK_STATE = Object.fromEntries(ASK_STATUS.map((s) => [s, s])) as { readonly [K in AskStatus]: K }
 /** Liveness probe the CLI sends (short timeout) before the real request; not a user command. */
 export const CLI_PING_METHOD = 'ping'
 
