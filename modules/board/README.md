@@ -59,11 +59,11 @@ One channel per service method (answers are `Result<T, BoardErrorDto>`, so error
 ### Tables and migration
 
 `migrations/0901_board.sql`: `board_boards`, `board_columns`, `board_labels`, `board_tasks`,
-`board_task_sessions`. No foreign keys to other modules' tables.
+`board_task_sessions`; `0902_board_column_description.sql` adds `board_columns.description`. No foreign keys to other modules' tables.
 
 ### Testing
 
 - `BOARD_TESTIDS` / `BOARD_TESTID_ATTRS` from `@pragma/module-board/contract`.
 - `@pragma/module-board/testing`: `BoardPage` (Playwright): `open`, `selectScope`, `column`, `columnNames`, `card`,
   `cardsIn`, `allCards`, `quickAdd`, `openCard`, `filter`, `dragCard`, `dragColumn`, `expectDropTarget`,
-  `keyboardMoveTo`.
+  `keyboardMoveTo`, `columnDescription`, `editColumnDescription`.

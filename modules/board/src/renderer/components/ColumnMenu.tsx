@@ -12,8 +12,14 @@ import { ICON_PX, MENU_ALIGN, SIZE, VARIANT } from '../../constants'
 import { type ColumnDto, BOARD_TESTIDS as T } from '../../contract'
 import { DeleteColumnDialog } from './DeleteColumnDialog'
 
-/** Rename / Delete (disabled, with the reason, when it is the board's last column). */
-export function ColumnMenu(props: { column: ColumnDto; columns: ColumnDto[]; taskCount: number; onRename(): void }) {
+/** Rename / Edit description / Delete (disabled, with the reason, when it is the board's last column). */
+export function ColumnMenu(props: {
+  column: ColumnDto
+  columns: ColumnDto[]
+  taskCount: number
+  onRename(): void
+  onEditDescription(): void
+}) {
   const t = useT()
   const [deleting, setDeleting] = useState(false)
   const last = props.columns.length <= 1
@@ -34,6 +40,9 @@ export function ColumnMenu(props: { column: ColumnDto; columns: ColumnDto[]; tas
         <DropdownMenuContent align={MENU_ALIGN.end}>
           <DropdownMenuItem data-testid={T.columnRename} onSelect={props.onRename}>
             {t('board:column.rename')}
+          </DropdownMenuItem>
+          <DropdownMenuItem data-testid={T.columnEditDescription} onSelect={props.onEditDescription}>
+            {t('board:column.editDescription')}
           </DropdownMenuItem>
           <DropdownMenuItem
             data-testid={T.columnDelete}

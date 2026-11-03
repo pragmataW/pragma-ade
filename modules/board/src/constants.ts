@@ -51,6 +51,7 @@ export const PRIORITY_BARS = { none: 0, low: 1, medium: 2, high: 3, urgent: 3 } 
 /** Heights of the three bars, shortest first. */
 export const PRIORITY_BAR_CLASSES = ['h-1', 'h-[7px]', 'h-2.5'] as const
 export const DESCRIPTION_ROWS = 8
+export const COLUMN_DESCRIPTION_ROWS = 4
 export const MONOGRAM_LETTERS = 2
 /** ui-notes mark sizes: 20px on cards. */
 export const AGENT_MARK_PX = 20

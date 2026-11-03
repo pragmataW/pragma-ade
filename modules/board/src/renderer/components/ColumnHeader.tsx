@@ -7,6 +7,7 @@ import { ENTER_KEY, ESCAPE_KEY, ICON_PX } from '../../constants'
 import { BOARD_ERROR, type ColumnDto, BOARD_TESTIDS as T } from '../../contract'
 import { errorNotice } from '../lib/errors'
 import { boardActions, isBoardError, setError } from '../store'
+import { ColumnDescriptionDialog } from './ColumnDescriptionDialog'
 import { ColumnMenu } from './ColumnMenu'
 import { PlainButton } from './PlainButton'
 
@@ -49,7 +50,7 @@ function RenameInput({ column, onDone }: { column: ColumnDto; onDone(): void }) 
   )
 }
 
-/** Drag handle, name (inline rename), count and the column menu; project scope only. */
+/** Drag handle, name (inline rename), description icon, count and the column menu; project scope only. */
 export function ColumnHeader(props: {
   column: ColumnDto
   columns: ColumnDto[]
@@ -60,6 +61,7 @@ export function ColumnHeader(props: {
 }) {
   const t = useT()
   const [renaming, setRenaming] = useState(false)
+  const [describing, setDescribing] = useState(false)
   const { column } = props
   return (
     <>
@@ -76,13 +78,26 @@ export function ColumnHeader(props: {
       ) : (
         <span className="truncate font-medium text-[12.5px]">{column.name}</span>
       )}
+      {column.description && (
+        <PlainButton
+          data-testid={T.columnDescription}
+          title={column.description}
+          aria-label={t('board:column.editDescription')}
+          className="shrink-0 text-[var(--fa)] hover:text-[var(--tx)]"
+          onClick={() => setDescribing(true)}
+        >
+          <Icon name="info" size={ICON_PX.small} />
+        </PlainButton>
+      )}
       {props.count}
       <ColumnMenu
         column={column}
         columns={props.columns}
         taskCount={props.taskCount}
         onRename={() => setRenaming(true)}
+        onEditDescription={() => setDescribing(true)}
       />
+      {describing && <ColumnDescriptionDialog column={column} onClose={() => setDescribing(false)} />}
     </>
   )
 }
