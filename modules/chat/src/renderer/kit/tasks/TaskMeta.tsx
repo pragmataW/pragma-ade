@@ -3,7 +3,7 @@ import { cn } from '@pragma/ui'
 import { ICON_STROKE } from '../../../constants'
 import type { TaskItem } from '../../../contract'
 import { formatTokens, formatUsd } from '../parts/lib/format'
-import { isLiveTask, TASK_ICONS, TASK_TONE } from '../parts/lib/task-visual'
+import { isLiveTask, TASK_ICONS, taskTone } from '../parts/lib/task-visual'
 import { TONE_TEXT } from '../parts/lib/tone'
 import { formatElapsed } from '../parts/WorkingLine'
 import { taskElapsedMs } from './model'
@@ -16,7 +16,7 @@ export function TaskKindIcon({ task, size, className }: { task: TaskItem; size: 
       size={size}
       strokeWidth={ICON_STROKE}
       aria-hidden
-      className={cn('shrink-0', TONE_TEXT[TASK_TONE[task.status]], className)}
+      className={cn('shrink-0', TONE_TEXT[taskTone(task.status)], className)}
     />
   )
 }

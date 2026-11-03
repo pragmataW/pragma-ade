@@ -28,6 +28,16 @@ describe('TaskCard', () => {
     expect(screen.getByTestId(CHAT_TESTIDS.taskToggle)).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it.each([undefined, 'backgrounded'])(
+    'a missing or unknown status (%s) reads a neutral label, never a raw key',
+    (s) => {
+      renderPart(TaskCard, [task({ status: s as never })])
+      const card = screen.getByTestId(CHAT_TESTIDS.part(EVENT_KIND.task))
+      expect(card).not.toHaveTextContent('task.status')
+      expect(card).toHaveTextContent('Unknown')
+    },
+  )
+
   it('expanding renders the nested transcript (by task id and tool call id) with the provider parts', async () => {
     renderPart(
       TaskCard,
