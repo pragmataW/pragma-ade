@@ -3,6 +3,13 @@
 All notable changes to Pragma ADE are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] - 2026-11-03
+
+### Fixed
+
+- **Linux, Windows:** The Comments drawer header no longer sits under the window controls, so Clear resolved stays
+  visible and clickable.
+
 ## [0.10.0] - 2026-11-03
 
 ### Added
@@ -165,6 +172,7 @@ First public release. Unsigned builds for macOS (arm64, x64), Linux x64 and Wind
   native modules; a Homebrew cask for macOS.
 - MIT license, app logo and icons.
 
+[0.10.1]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.10.1
 [0.10.0]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.10.0
 [0.9.3]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.3
 [0.9.2]: https://github.com/pragmataW/pragma-ade/releases/tag/v0.9.2
