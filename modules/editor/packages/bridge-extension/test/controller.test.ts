@@ -202,6 +202,12 @@ describe('ReviewController', () => {
     expect(calls).toEqual([[name, payload]])
   })
 
+  it('no Pragma title action shows on a new comment (the native trashcan is its only discard)', () => {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'))
+    const title: { when: string }[] = pkg.contributes.menus['comments/commentThread/title']
+    for (const m of title) expect(m.when).toMatch(/commentThread (==|=~) \/?\^?pragma-thread-/)
+  })
+
   it('manifest command ids match constants', () => {
     const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'))
     const ids = pkg.contributes.commands.map((c: { command: string }) => c.command).sort()
@@ -219,7 +225,7 @@ describe('ReviewController', () => {
     expect(when('comments/commentThread/title')).toEqual([
       [COMMANDS.resolve, `${controller} && commentThread == ${THREAD_CONTEXT.open}`],
       [COMMANDS.reopen, `${controller} && commentThread == ${THREAD_CONTEXT.resolved}`],
-      [COMMANDS.deleteThread, controller],
+      [COMMANDS.deleteThread, `${controller} && commentThread =~ /^pragma-thread-(open|resolved)$/`],
     ])
     expect(menus.commandPalette.map((m: { command: string }) => m.command).sort()).toEqual(ids)
   })

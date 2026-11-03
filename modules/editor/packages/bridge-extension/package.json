@@ -143,7 +143,7 @@
         {
           "command": "pragma.thread.delete",
           "group": "inline@2",
-          "when": "commentController == pragma-review"
+          "when": "commentController == pragma-review && commentThread =~ /^pragma-thread-(open|resolved)$/"
         }
       ]
     }
