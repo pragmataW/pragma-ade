@@ -93,8 +93,7 @@
     },
     "toggle": "Enable {{name}}",
     "reconnect": "Reconnect {{name}}",
-    "refresh": "Refresh",
-    "empty": "No MCP servers configured"
+    "refresh": "Refresh"
   },
   "rateLimit": {
     "warning": "Approaching the usage limit ({{percent}}%)",

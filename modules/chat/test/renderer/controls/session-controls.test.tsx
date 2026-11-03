@@ -91,12 +91,12 @@ describe('McpStatus', () => {
     ])
   })
 
-  it('hidden without servers unless refreshMcp is offered', () => {
-    const { container, unmount } = renderChat(<McpStatus session={stubSessionApi().api} />)
+  it.each([
+    ['no actions', []],
+    ['refreshMcp offered', [actions('refreshMcp')]],
+  ])('hidden without servers (%s): no "0" in the header', (_label, events) => {
+    const { container } = renderChat(<McpStatus session={stubSessionApi(events).api} />)
     expect(container).toBeEmptyDOMElement()
-    unmount()
-    renderChat(<McpStatus session={stubSessionApi([actions('refreshMcp')]).api} />)
-    expect(screen.getByTestId(CHAT_TESTIDS.mcpStatus)).toHaveTextContent('0')
   })
 })
 
