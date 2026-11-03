@@ -45,8 +45,6 @@ export interface CommentsRepository {
    * that gets a user reply in this round. Returns the new round.
    */
   markDelivered(worktreeId: string, ids: PendingItems, at: number): number
-  /** One transaction; returns the number deleted. Removed with the round-based send. */
-  removeMany(ids: string[]): number
   /** Threads, replies and the round counter of the worktree; returns the number of threads deleted. */
   removeByWorktree(worktreeId: string): number
 }
@@ -197,10 +195,6 @@ export function createCommentsRepository(db: PragmaDb): CommentsRepository {
         )
         return round
       })
-    },
-    removeMany(ids) {
-      if (!ids.length) return 0
-      return db.transaction((tx) => tx.delete(T).where(inArray(T.id, ids)).run().changes)
     },
     removeByWorktree(worktreeId) {
       return db.transaction((tx) => {

@@ -2,6 +2,7 @@ import { agentSessionStatuses } from '@pragma/module-agents/contract'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import type { DeliveryRequest } from '../src/contract'
 import { DeliveryRegistry } from '../src/main/delivery-registry'
+import { formatNudge } from '../src/main/format'
 import { createTerminalDelivery } from '../src/main/terminal-delivery'
 import { isRunning } from '../src/main/upstream'
 import { makeSession } from './factories'
@@ -13,6 +14,7 @@ const request = (o: Partial<DeliveryRequest> = {}): DeliveryRequest => ({
   worktreeId: 'wt',
   mode: 'terminal',
   ptyId: 'pty1',
+  round: 1,
   text: TEXT,
   comments: [],
   submit: false,
@@ -55,11 +57,12 @@ describe('terminal delivery', () => {
     })
   })
 
-  test('single-line text pastes without checking the mode', async () => {
+  test('the one-line review nudge pastes without waiting for bracketed paste', async () => {
     const up = createFakeUpstream()
     up.bracketedOff.add('pty1')
-    await createTerminalDelivery(up, fast)(request({ text: 'one line' }))
-    expect(up.pasted).toEqual([['pty1', 'one line']])
+    const text = formatNudge({ round: 1, open: 1, created: 1, updated: 0 })
+    await createTerminalDelivery(up, fast)(request({ text }))
+    expect(up.pasted).toEqual([['pty1', text]])
   })
 
   describe('with fake timers', () => {

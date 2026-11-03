@@ -45,11 +45,12 @@ describe('renderer module', () => {
   test('ui.send with two running sessions opens the target picker; with one it sends directly', async () => {
     activate()
     r.fakeIpc.respond(commentsIpc.send, () => ({ status: 'needsTarget', sessions: SESSIONS, defaultSessionId: 'a' }))
-    expect(await ui().send(['c1'])).toBeUndefined()
-    expect(r.store.getState().targetPicker?.commentIds).toEqual(['c1'])
-    const sent = { status: 'sent', sessionId: 'a', commentIds: ['c2'], sentAt: 1 }
+    expect(await ui().send()).toBeUndefined()
+    expect(r.store.getState().targetPicker?.worktreeId).toEqual(WT)
+    const sent = { status: 'sent', sessionId: 'a', round: 1, commentIds: ['c2'], replyIds: [], sentAt: 1 }
     r.fakeIpc.respond(commentsIpc.send, () => sent)
-    expect(await ui().send(['c2'])).toEqual(sent)
+    expect(await ui().send({ worktreeId: WT })).toEqual(sent)
+    expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ worktreeId: WT }, { worktreeId: WT }])
   })
 
   test('the openDrawer command opens the drawer', async () => {
@@ -74,9 +75,9 @@ describe('renderer module', () => {
     expect(r.store.getState().drawer).toMatchObject({ open: true, preferredSessionId: 's9' })
   })
 
-  it.each([0, 2])('badge count shown only when > 0 (%i)', async (n) => {
-    activate({ drafts: Array.from({ length: n }, () => makeComment()) })
-    await waitFor(() => expect(r.store.getState().drafts).toHaveLength(n))
+  it.each([0, 2])('badge shows the pending count only when > 0 (%i)', async (n) => {
+    activate({ threads: Array.from({ length: n }, () => makeComment()) })
+    await waitFor(() => expect(r.store.getState().threads).toHaveLength(n))
     const Badge = slot('agentSession.toolbar')?.component as unknown as ComponentType<AgentSessionToolbarProps>
     renderUi(<Badge session={makeSession()} />)
     const button = screen.getByTestId(T.toolbarBadge)

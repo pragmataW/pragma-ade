@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { type Comment, commentsIpc, type SendResult, COMMENTS_TESTIDS as T } from '../../src/contract'
 import { CommentsDrawer } from '../../src/renderer/components/CommentsDrawer'
 import { LaunchSuggestionDialog } from '../../src/renderer/components/LaunchSuggestionDialog'
@@ -15,9 +15,9 @@ const SESSIONS = [
   { id: 'a', title: 'Agent A', mode: 'terminal', status: 'idle' },
   { id: 'b', title: 'Agent B', mode: 'terminal', status: 'idle' },
 ]
-const SENT_OK: SendResult = { status: 'sent', sessionId: 'a', commentIds: [], sentAt: 1 }
+const SENT_OK: SendResult = { status: 'sent', sessionId: 'a', round: 1, commentIds: [], replyIds: [], sentAt: 1 }
 
-async function open(opts: { drafts?: Comment[]; activeWorktreeId?: string | null } = {}) {
+async function open(opts: { threads?: Comment[]; activeWorktreeId?: string | null } = {}) {
   r = mountRenderer(opts)
   r.fakeIpc.respond(commentsIpc.send, () => SENT_OK)
   r.fakeIpc.respond(commentsIpc.resolveTarget, () => ({ kind: 'choose', sessions: SESSIONS, defaultSessionId: 'a' }))
@@ -31,7 +31,7 @@ async function open(opts: { drafts?: Comment[]; activeWorktreeId?: string | null
     </>,
   )
   if (opts.activeWorktreeId !== null)
-    await waitFor(() => expect(r.store.getState().drafts).toHaveLength(opts.drafts?.length ?? 0))
+    await waitFor(() => expect(r.store.getState().threads).toHaveLength(opts.threads?.length ?? 0))
   return screen.getByTestId(T.drawer)
 }
 const rows = () => screen.queryAllByTestId(T.row)
@@ -41,7 +41,7 @@ const draftB = () =>
 
 describe('CommentsDrawer', () => {
   test('renders drafts with location label and source', async () => {
-    await open({ drafts: [draftA(), draftB()] })
+    await open({ threads: [draftA(), draftB()] })
     expect(rows()).toHaveLength(2)
     const first = within(rows()[0] as HTMLElement)
     expect(first.getByText('src/a.ts:3-5')).toBeInTheDocument()
@@ -49,43 +49,20 @@ describe('CommentsDrawer', () => {
     expect(within(rows()[1] as HTMLElement).getByRole('img', { name: en.row.source.editor })).toBeInTheDocument()
   })
 
-  const rowOf = (id: string) => rows().find((el) => el.dataset.commentId === id) as HTMLElement
-  it.each([
-    ['default → every draft', [] as string[], ['a1', 'b1', 'c1'], 'Send all 3 comments'],
-    ['b1 unticked → the rest', ['b1'], ['a1', 'c1'], 'Send 2 comments'],
-  ])('drafts start selected; the footer sends exactly the selection: %s', async (_n, untick, ids, label) => {
-    await open({ drafts: [draftA(), draftB(), makeComment({ id: 'c1' })] })
-    for (const box of screen.getAllByTestId(T.rowSelect)) expect(box).toBeChecked()
-    for (const id of untick) fireEvent.click(within(rowOf(id)).getByTestId(T.rowSelect))
+  test('the footer sends every pending item of the worktree; disabled with nothing pending', async () => {
+    await open({ threads: [draftA(), draftB(), makeComment({ id: 'c1', round: 1 })] })
     const send = screen.getByTestId(T.sendButton)
-    expect(send).toHaveTextContent(label)
+    expect(send).toHaveTextContent('Send 2 pending items')
     fireEvent.click(send)
-    await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ commentIds: ids }]))
-  })
-
-  test('Clear selection disables Send; Select all brings every draft back', async () => {
-    await open({ drafts: [draftA(), draftB()] })
-    const toggle = screen.getByTestId(T.selectionToggle)
-    expect(toggle).toHaveTextContent(en.drawer.clearSelection)
-    fireEvent.click(toggle)
-    expect(screen.getByTestId(T.sendButton)).toBeDisabled()
-    expect(toggle).toHaveTextContent(en.drawer.selectAll)
-    fireEvent.click(toggle)
-    expect(screen.getByTestId(T.sendButton)).toHaveTextContent('Send all 2 comments')
-  })
-
-  test('a reload keeps an unticked draft unticked and ticks a new one', async () => {
-    await open({ drafts: [draftA()] })
-    fireEvent.click(within(rowOf('a1')).getByTestId(T.rowSelect))
-    r.data.drafts = [draftA(), draftB()]
+    await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ worktreeId: WT }]))
+    r.data.threads = [makeComment({ id: 'c1', round: 1 })]
     await act(() => r.store.getState().reload())
-    expect(within(rowOf('a1')).getByTestId(T.rowSelect)).not.toBeChecked()
-    expect(within(rowOf('b1')).getByTestId(T.rowSelect)).toBeChecked()
-    expect(screen.getByTestId(T.sendButton)).toHaveTextContent('Send 1 comment')
+    expect(screen.getByTestId(T.sendButton)).toBeDisabled()
+    expect(screen.getByTestId(T.sendButton)).toHaveTextContent(en.drawer.nothingToSend)
   })
 
   test('Edit and Delete are labelled, always rendered buttons on every draft row', async () => {
-    await open({ drafts: [draftA(), draftB()] })
+    await open({ threads: [draftA(), draftB()] })
     for (const row of rows()) {
       const scope = within(row)
       expect(scope.getByRole('button', { name: en.row.edit })).toHaveAttribute('title', en.row.edit)
@@ -94,59 +71,52 @@ describe('CommentsDrawer', () => {
   })
 
   test('delete calls comments.remove', async () => {
-    await open({ drafts: [draftA()] })
+    await open({ threads: [draftA()] })
     fireEvent.click(screen.getByTestId(T.rowDelete))
     await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.remove.channel)).toEqual([{ id: 'a1' }]))
   })
 
   test('edit swaps in the edit-mode composer', async () => {
-    await open({ drafts: [draftA()] })
+    await open({ threads: [draftA()] })
     fireEvent.click(screen.getByTestId(T.rowEdit))
     expect(screen.getByTestId(T.composerInput)).toHaveValue('First')
     expect(screen.getByTestId(T.composerSave)).toBeInTheDocument()
   })
 
-  test('a single drafts list, no tabs; a delivered draft disappears on reload (it was deleted)', async () => {
-    await open({ drafts: [draftA(), draftB()] })
-    expect(screen.queryAllByRole('tab')).toEqual([])
-    fireEvent.click(screen.getByTestId(T.sendButton))
-    await waitFor(() => expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toHaveLength(1))
-    r.data.drafts = []
-    await act(() => r.store.getState().reload())
+  test('no threads → the empty text', async () => {
+    await open()
     expect(rows()).toEqual([])
-    expect(screen.getByText(en.drawer.emptyDrafts)).toBeInTheDocument()
+    expect(screen.getByText(en.drawer.emptyThreads)).toBeInTheDocument()
   })
 
   test('target picker preselects the default and sends to the chosen session', async () => {
-    await open({ drafts: [draftA()] })
-    act(() =>
-      r.store.getState().applyResult(WT, ['a1'], { status: 'needsTarget', sessions: SESSIONS, defaultSessionId: 'b' }),
-    )
+    await open({ threads: [draftA()] })
+    act(() => r.store.getState().applyResult(WT, { status: 'needsTarget', sessions: SESSIONS, defaultSessionId: 'b' }))
     const picker = await screen.findByTestId(T.targetPicker)
     const options = within(picker).getAllByRole('radio')
     expect(options[1]).toHaveAttribute('aria-checked', 'true')
     fireEvent.click(options[0] as HTMLElement)
     fireEvent.click(within(picker).getByTestId(T.targetSend))
     await waitFor(() =>
-      expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ commentIds: ['a1'], targetSessionId: 'a' }]),
+      expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ worktreeId: WT, targetSessionId: 'a' }]),
     )
     await waitFor(() => expect(screen.queryByTestId(T.targetPicker)).toBeNull())
   })
 
   test('launch suggestion Start agent calls startAgentAndSend and shows waiting', async () => {
-    await open({ drafts: [draftA()] })
-    act(() => r.store.getState().applyResult(WT, ['a1'], { status: 'noSession' }))
+    await open({ threads: [draftA()] })
+    act(() => r.store.getState().applyResult(WT, { status: 'noSession' }))
     fireEvent.click(await screen.findByTestId(T.launchStart))
     await waitFor(() => expect(r.executed).toEqual([['agents.openLauncher', { worktreeId: WT }]]))
-    expect(r.fakeIpc.callsOn(commentsIpc.sendOnNextSession.channel)).toEqual([{ worktreeId: WT, commentIds: ['a1'] }])
+    expect(r.fakeIpc.callsOn(commentsIpc.sendOnNextSession.channel)).toEqual([{ worktreeId: WT }])
     act(() => r.store.getState().openDrawer())
     expect(await screen.findByText(en.launch.waiting)).toBeInTheDocument()
     expect(screen.queryByTestId(T.launchSuggestion)).toBeNull()
   })
 
   test('lastError rendered via t()', async () => {
-    await open({ drafts: [draftA()] })
-    act(() => r.store.getState().applyResult(WT, ['a1'], { status: 'failed', errorKey: 'sessionNotRunning' }))
+    await open({ threads: [draftA()] })
+    act(() => r.store.getState().applyResult(WT, { status: 'failed', errorKey: 'sessionNotRunning' }))
     expect(screen.getByTestId(T.error)).toHaveTextContent(en.errors.sessionNotRunning)
   })
 

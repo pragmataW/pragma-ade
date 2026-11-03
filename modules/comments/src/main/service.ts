@@ -1,5 +1,6 @@
 import type { MainContext } from '@pragma/sdk/main'
 import {
+  COMMENT_STATUS,
   type Comment,
   CommentInputSchema,
   CommentsError,
@@ -14,6 +15,8 @@ import {
   isPendingReply,
   isPendingRoot,
   type ListThreadsFilter,
+  type PendingItems,
+  pendingItems,
   REPLY_AUTHOR,
   type ReplyInput,
   ReplyInputSchema,
@@ -26,7 +29,7 @@ import {
   visibleToAgent,
 } from '../contract'
 import type { DeliveryRegistry } from './delivery-registry'
-import { formatComments, formatThreads } from './format'
+import { formatNudge, formatThreads } from './format'
 import { PendingDeliveries, type PendingOptions } from './pending'
 import type { CommentsRepository } from './repository'
 import { type CommentsUpstream, isRunning, type SessionRef, toTargetSession } from './upstream'
@@ -41,24 +44,29 @@ export interface ServiceDeps {
   pendingOptions?: PendingOptions
 }
 
-type Batch = { comments: Comment[]; worktreeId: string; ids: string[] }
+/** One review round about to be delivered: the pending ids captured now and the threads they belong to. */
+type Round = { worktreeId: string; round: number; items: PendingItems; threads: Comment[]; text: string }
 
 const failed = (errorKey: SendErrorKey, message?: string): SendResult => ({
   status: SEND_STATUS.failed,
   errorKey,
   message,
 })
-const byCreatedAt = (a: Comment, b: Comment): number => a.createdAt - b.createdAt
 
-/** The first validation failure of a send, or the batch it covers. */
-function validate(repo: CommentsRepository, ids: string[], inFlight: ReadonlySet<string>): Batch | SendErrorKey {
-  if (!ids.length) return SEND_ERROR.empty
-  const comments = repo.getMany(ids)
-  if (comments.length !== ids.length) return SEND_ERROR.notFound
-  const worktrees = new Set(comments.map((c) => c.worktreeId))
-  if (worktrees.size > 1) return SEND_ERROR.mixedWorktrees
-  if (ids.some((id) => inFlight.has(id))) return SEND_ERROR.alreadySending
-  return { comments, worktreeId: comments[0]?.worktreeId as string, ids }
+/** Threads with an item in `items`, and the nudge counts. Undefined when nothing is pending. */
+function collectRound(repo: CommentsRepository, worktreeId: string): Round | undefined {
+  const all = repo.list(worktreeId)
+  const items = pendingItems(all)
+  const replyIds = new Set(items.replyIds)
+  const created = new Set(items.commentIds)
+  const updated = all.filter((c) => !created.has(c.id) && c.replies.some((r) => replyIds.has(r.id)))
+  if (!created.size && !updated.length) return undefined
+  const threads = all.filter((c) => created.has(c.id) || updated.includes(c))
+  const inRound = new Set(threads.map((c) => c.id))
+  const open = all.filter((c) => c.status === COMMENT_STATUS.open || inRound.has(c.id)).length
+  const round = repo.currentRound(worktreeId) + 1
+  const text = formatNudge({ round, open, created: created.size, updated: updated.length })
+  return { worktreeId, round, items, threads, text }
 }
 
 /** Running sessions → none | single | choose (default: preferred, else last focused, else the first). */
@@ -113,38 +121,39 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
     return threads.flatMap((c) => visibleToAgent(c) ?? [])
   }
 
-  async function deliverTo(batch: Batch, sessionId: string): Promise<SendResult> {
+  async function deliverTo(r: Round, sessionId: string): Promise<SendResult> {
     const session = await upstream.getSession(sessionId)
     if (!session || !isRunning(session)) return failed(SEND_ERROR.sessionNotRunning)
-    if (session.worktreeId !== batch.worktreeId) return failed(SEND_ERROR.wrongWorktree)
+    if (session.worktreeId !== r.worktreeId) return failed(SEND_ERROR.wrongWorktree)
     const deliver = registry.get(session.mode)
     if (!deliver) return failed(SEND_ERROR.noDeliveryTarget)
-    const comments = [...batch.comments].sort(byCreatedAt)
     try {
       await deliver({
         sessionId,
-        worktreeId: batch.worktreeId,
+        worktreeId: r.worktreeId,
         mode: session.mode,
         ptyId: session.ptyId,
-        text: formatComments(comments),
-        comments,
+        round: r.round,
+        text: r.text,
+        comments: r.threads,
         submit: deps.settings().submitAfterPaste,
       })
     } catch (e) {
       return e instanceof CommentsError ? failed(e.key) : failed(SEND_ERROR.deliveryFailed, String(e))
     }
     const sentAt = now()
-    // Delivered comments are not kept; every non-`sent` result above leaves them as drafts.
-    repo.removeMany(batch.ids)
-    events.emit(commentSent, { commentIds: batch.ids, sessionId, worktreeId: batch.worktreeId, sentAt })
-    notifyChanged(batch.worktreeId)
-    return { status: SEND_STATUS.sent, sessionId, commentIds: batch.ids, sentAt }
+    // Only the items captured before delivery; anything written meanwhile stays pending for the next round.
+    const round = repo.markDelivered(r.worktreeId, r.items, sentAt)
+    const delivered = { round, commentIds: r.items.commentIds, replyIds: r.items.replyIds, sessionId, sentAt }
+    events.emit(commentSent, { ...delivered, worktreeId: r.worktreeId })
+    notifyChanged(r.worktreeId)
+    return { status: SEND_STATUS.sent, ...delivered }
   }
 
-  async function sendBatch(batch: Batch, target: string | undefined, promptUser: boolean): Promise<SendResult> {
-    if (target) return deliverTo(batch, target)
-    const resolution = await resolveFor(upstream, batch.worktreeId)
-    if (resolution.kind === TARGET_KIND.single) return deliverTo(batch, resolution.session.id)
+  async function sendRound(r: Round, target: string | undefined, promptUser: boolean): Promise<SendResult> {
+    if (target) return deliverTo(r, target)
+    const resolution = await resolveFor(upstream, r.worktreeId)
+    if (resolution.kind === TARGET_KIND.single) return deliverTo(r, resolution.session.id)
     const result: SendResult =
       resolution.kind === TARGET_KIND.none
         ? { status: SEND_STATUS.noSession }
@@ -153,8 +162,7 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
             sessions: resolution.sessions,
             defaultSessionId: resolution.defaultSessionId,
           }
-    if (promptUser)
-      upstream.publish(commentsIpcEvents.sendRequested, { worktreeId: batch.worktreeId, commentIds: batch.ids, result })
+    if (promptUser) upstream.publish(commentsIpcEvents.sendRequested, { worktreeId: r.worktreeId, result })
     return result
   }
 
@@ -210,18 +218,18 @@ export function createCommentsService(deps: ServiceDeps): CommentsServiceImpl {
     },
     round: async (worktreeId) => repo.currentRound(worktreeId),
     resolveTarget: (worktreeId, preferredSessionId) => resolveFor(upstream, worktreeId, preferredSessionId),
-    async send(commentIds, targetSessionId, opts) {
-      const ids = [...new Set(commentIds)]
-      const batch = validate(repo, ids, inFlight)
-      if (typeof batch === 'string') return failed(batch)
-      for (const id of ids) inFlight.add(id)
+    async send(worktreeId, targetSessionId, opts) {
+      if (inFlight.has(worktreeId)) return failed(SEND_ERROR.alreadySending)
+      const r = collectRound(repo, worktreeId)
+      if (!r) return failed(SEND_ERROR.empty)
+      inFlight.add(worktreeId)
       try {
-        return await sendBatch(batch, targetSessionId, opts?.promptUser !== false)
+        return await sendRound(r, targetSessionId, opts?.promptUser !== false)
       } finally {
-        for (const id of ids) inFlight.delete(id)
+        inFlight.delete(worktreeId)
       }
     },
-    sendOnNextSession: async (worktreeId, commentIds) => ({ pendingId: pending.add(worktreeId, commentIds) }),
+    sendOnNextSession: async (worktreeId) => ({ pendingId: pending.add(worktreeId) }),
     cancelPending: (worktreeId) => pending.cancel(worktreeId),
     format: (threads, opts) => formatThreads(threads, opts),
     registerDeliveryTarget: (mode, deliver) => registry.register(mode, deliver),

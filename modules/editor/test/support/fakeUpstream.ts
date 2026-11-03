@@ -6,7 +6,7 @@ import type { EditorUpstream, WorktreeRef } from '../../src/main/upstream'
 
 export interface FakeUpstream extends EditorUpstream {
   drafts: CommentInput[]
-  sends: string[][]
+  sends: string[]
   selected: string[]
   sendResult: SendResult
   worktrees: WorktreeRef[]
@@ -27,7 +27,7 @@ export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[]
     drafts: [],
     sends: [],
     selected: [],
-    sendResult: { status: 'sent', sessionId: 's1', commentIds: [], sentAt: 1 },
+    sendResult: { status: 'sent', sessionId: 's1', round: 1, commentIds: [], replyIds: [], sentAt: 1 },
     worktrees,
     active: worktrees[0]?.id ?? null,
     stored: [],
@@ -52,8 +52,8 @@ export function fakeUpstream(server?: TestBridgeServer, worktrees: WorktreeRef[]
       up.drafts.push(i)
       return { id: `c${up.drafts.length}` } as Comment
     },
-    send: async (ids) => {
-      up.sends.push(ids)
+    send: async (worktreeId) => {
+      up.sends.push(worktreeId)
       return up.sendResult
     },
     listThreads: async (worktreeId) => up.stored.filter((c) => c.worktreeId === worktreeId),

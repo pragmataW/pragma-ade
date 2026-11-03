@@ -15,7 +15,14 @@ function setup(props: Partial<Parameters<typeof CommentComposer>[0]> = {}) {
   const draft = makeComment({ id: 'new' })
   r.fakeIpc.respond(commentsIpc.addDraft, () => draft)
   r.fakeIpc.respond(commentsIpc.update, () => ({ ...draft, body: 'edited' }))
-  r.fakeIpc.respond(commentsIpc.send, () => ({ status: 'sent', sessionId: 's', commentIds: ['new'], sentAt: 1 }))
+  r.fakeIpc.respond(commentsIpc.send, () => ({
+    status: 'sent',
+    sessionId: 's',
+    round: 1,
+    commentIds: ['new'],
+    replyIds: [],
+    sentAt: 1,
+  }))
   const onDone = vi.fn<(res: ComposerResult) => void>()
   renderUi(<CommentComposer worktreeId={WT} context={CONTEXT} onDone={onDone} {...props} />)
   const input = screen.getByTestId(T.composerInput)
@@ -80,7 +87,8 @@ describe('CommentComposer', () => {
     type('note')
     fireEvent.click(screen.getByTestId(T.composerSendNow))
     await waitFor(() => expect(kinds(onDone)).toEqual(['drafted']))
-    expect(r.store.getState().targetPicker?.commentIds).toEqual(['new'])
+    expect(r.store.getState().targetPicker?.worktreeId).toEqual(WT)
+    expect(r.fakeIpc.callsOn(commentsIpc.send.channel)).toEqual([{ worktreeId: WT }])
   })
 
   test('edit mode calls comments.update and onDone saved', async () => {

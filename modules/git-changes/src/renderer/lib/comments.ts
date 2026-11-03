@@ -52,6 +52,6 @@ export async function discardDiffDrafts(ids: readonly string[]): Promise<void> {
   await Promise.all(ids.map((id) => ipc.invoke(commentsIpc.remove, { id })))
 }
 
-/** 05's send flow (target picker, start-agent prompt); undefined while a dialog waits for the user. */
-export const sendDiffDrafts = (ids: string[]): Promise<SendResult | undefined> =>
-  getRendererCtx().services.get(CommentsUiServiceToken).send(ids)
+/** 05's send flow for the worktree's whole review round (target picker, start-agent prompt); undefined while a dialog waits. */
+export const sendRound = (worktreeId: string): Promise<SendResult | undefined> =>
+  getRendererCtx().services.get(CommentsUiServiceToken).send({ worktreeId })

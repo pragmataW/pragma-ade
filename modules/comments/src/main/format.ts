@@ -28,9 +28,7 @@ export type FormattableComment = Pick<
 >
 
 const TEMPLATE = {
-  header: 'Review comments:',
   itemSeparator: '\n\n',
-  oldVersion: ' (old version)',
   html: 'html',
   bullet: '- ',
   component: 'React component: ',
@@ -92,9 +90,6 @@ export function languageFromPath(path: string | undefined): string | undefined {
   return ext && Object.hasOwn(LANGUAGES, ext) ? LANGUAGES[ext as keyof typeof LANGUAGES] : undefined
 }
 
-const indentLines = (text: string, indent: string): string[] =>
-  text.split(NEWLINE).map((l) => (l.length ? indent + l : ''))
-
 /** Backticks one longer than the longest run in `text` (at least `MIN_FENCE`). */
 function fence(text: string): string {
   const longest = Math.max(0, ...(text.match(BACKTICK_RUN) ?? []).map((run) => run.length))
@@ -130,7 +125,7 @@ function snippetLines(c: FormattableComment, limits: FormatLimits): string[] {
   return [...fencedBlock(byChars.text, language, INDENT), ...notes]
 }
 
-/** `prefix` starts the head line (`1. ` or `[open] id `); `suffix` ends it. */
+/** `prefix` starts the head line (`[open] id `); `suffix` ends it. */
 interface Head {
   prefix: string
   suffix: string
@@ -199,20 +194,6 @@ function itemHead(c: FormattableComment, head: Head, limits: FormatLimits): stri
   }
 }
 
-const numbered = (c: FormattableComment, n: number): Head => ({
-  prefix: `${n}. `,
-  suffix: c.diffSide === DIFF_SIDE.old ? TEMPLATE.oldVersion : '',
-})
-
-const formatItem = (c: FormattableComment, n: number, limits: FormatLimits): string =>
-  [...itemHead(c, numbered(c, n), limits), ...indentLines(c.body.trim(), INDENT)].join(NEWLINE)
-
-/** The text pasted into the agent: `Review comments:` and numbered items; `\n`, no trailing newline or spaces. */
-export function formatComments(comments: readonly FormattableComment[], limits: FormatLimits = FORMAT_LIMITS): string {
-  const items = comments.map((c, i) => formatItem(c, i + 1, limits)).join(TEMPLATE.itemSeparator)
-  return `${TEMPLATE.header}${NEWLINE}${items}`.replace(TRAILING_SPACE_RE, '')
-}
-
 /** `[open] id ` … ` (diff, old version)`. */
 function threadHead(c: Comment): Head {
   const tags = [c.source, ...(c.diffSide === DIFF_SIDE.old ? [THREAD.oldVersion] : [])].join(THREAD.tagJoin)
@@ -250,3 +231,28 @@ export function formatThread(c: Comment, opts: ThreadFormatOptions, limits: Form
 /** Threads separated by a blank line. */
 export const formatThreads = (threads: readonly Comment[], opts: ThreadFormatOptions): string =>
   threads.map((c) => formatThread(c, opts)).join(TEMPLATE.itemSeparator)
+
+/** What one review round delivers: open threads in all, new roots, threads with new user replies. */
+export interface NudgeCounts {
+  round: number
+  open: number
+  created: number
+  updated: number
+}
+
+const NUDGE = {
+  thread: (n: number) => `${n} open review ${n === 1 ? 'thread' : 'threads'}`,
+  created: (n: number) => `${n} new`,
+  updated: (n: number) => `${n} with new replies`,
+  partJoin: ', ',
+  instructions:
+    'Read them with `pragma comments list`, address each one, reply with `pragma comments reply <id> --body "<text>"`' +
+    ' and resolve finished threads with `pragma comments resolve <id>`.',
+} as const
+
+/** The one-line message a Send pastes into the agent (one line: no bracketed-paste wait). Fixed English. */
+export function formatNudge(c: NudgeCounts): string {
+  const parts = [...(c.created ? [NUDGE.created(c.created)] : []), ...(c.updated ? [NUDGE.updated(c.updated)] : [])]
+  const detail = parts.length ? ` (${parts.join(NUDGE.partJoin)})` : ''
+  return `Review round ${c.round}: ${NUDGE.thread(c.open)} in this worktree${detail}. ${NUDGE.instructions}`
+}

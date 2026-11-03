@@ -135,7 +135,7 @@ describe('EditorBridge', () => {
 
   it.each([
     [
-      { status: 'sent', sessionId: 's', commentIds: ['c1'], sentAt: 1 },
+      { status: 'sent', sessionId: 's', round: 1, commentIds: ['c1'], replyIds: [], sentAt: 1 },
       { status: 'sent', commentId: 'c1' },
     ],
     [
@@ -147,13 +147,13 @@ describe('EditorBridge', () => {
       { status: 'failed', errorKey: 'deliveryFailed' },
       { status: 'failed', message: 'deliveryFailed', commentId: 'c1' },
     ],
-  ] as const)('comment send → %o maps to %o and the draft is kept', async (result, reply) => {
+  ] as const)('comment send → the worktree round is sent once; %o maps to %o', async (result, reply) => {
     const { up, ext } = await setup()
     up.sendResult = result as FakeUpstream['sendResult']
     const e = await ext('/work/one')
     await e.hello()
     expect(await e.client.request(editorBridge, 'comment', comment('send'))).toEqual(reply)
-    expect(up.sends).toEqual([['c1']])
+    expect(up.sends).toEqual(['w1'])
   })
 
   it('unknown folder → failed message', async () => {

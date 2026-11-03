@@ -18,7 +18,6 @@ export type TargetResolution = z.infer<typeof TargetResolutionSchema>
 
 export const SEND_ERROR_KEYS = [
   'notFound',
-  'mixedWorktrees',
   'sessionNotRunning',
   'wrongWorktree',
   'noDeliveryTarget',
@@ -47,7 +46,11 @@ export const SendResultSchema = z.discriminatedUnion(SEND_RESULT_KEY, [
   z.object({
     status: z.literal(SEND_STATUS.sent),
     sessionId: z.string(),
+    /** The review round this Send delivered. */
+    round: z.number().int(),
+    /** New roots and user replies the round delivered. */
     commentIds: z.array(z.string()),
+    replyIds: z.array(z.string()),
     sentAt: z.number(),
   }),
   z.object({

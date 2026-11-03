@@ -1,9 +1,9 @@
 import { useT } from '@pragma/sdk/renderer'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
-import { type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
+import { sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
 import { SEND, useBusy } from '../lib/use-busy'
-import { useCommentsStore } from '../store'
+import { selectPending, useCommentsStore } from '../store'
 import { useSendFlow } from '../use-send-flow'
 import { CommentRow } from './CommentRow'
 
@@ -35,48 +35,30 @@ function WaitingLine() {
   )
 }
 
-/** Selected ids in list order (drafts start selected; sending sends exactly the selection). */
-const idsToSend = (drafts: readonly Comment[], selection: ReadonlySet<string>): string[] =>
-  drafts.filter((c) => selection.has(c.id)).map((c) => c.id)
-
-function SelectionToggle({ allSelected }: { allSelected: boolean }) {
-  const t = useT()
-  const s = useCommentsStore.getState
-  return (
-    <QuietButton data-testid={T.selectionToggle} onClick={() => (allSelected ? s().clearSelection() : s().selectAll())}>
-      {t(allSelected ? 'comments:drawer.clearSelection' : 'comments:drawer.selectAll')}
-    </QuietButton>
-  )
-}
-
-function DraftsFooter({ drafts }: { drafts: Comment[] }) {
+function SendFooter() {
   const t = useT()
   const flow = useSendFlow()
-  const selection = useCommentsStore((s) => s.selection)
+  const pending = useCommentsStore(selectPending)
   const preferredSessionId = useCommentsStore((s) => s.drawer.preferredSessionId)
   const [busy, run] = useBusy(SEND)
-  const ids = idsToSend(drafts, selection)
-  const allSelected = drafts.length > 0 && ids.length === drafts.length
-  const send = () => run(() => flow.send(ids, { preferredSessionId }))
-  const label = t(allSelected ? 'comments:drawer.sendAll' : 'comments:drawer.sendSelected', { count: ids.length })
+  const send = () => run(() => flow.send({ preferredSessionId }))
   return (
     <div className="flex flex-col gap-2 border-t px-4 py-3">
       <ErrorLine />
       <WaitingLine />
       <div className="flex items-center justify-end gap-2">
-        {drafts.length ? <SelectionToggle allSelected={allSelected} /> : null}
-        <PrimaryButton data-testid={T.sendButton} disabled={busy || ids.length === 0} onClick={() => void send()}>
-          {label}
+        <PrimaryButton data-testid={T.sendButton} disabled={busy || pending === 0} onClick={() => void send()}>
+          {pending ? t('comments:drawer.sendPending', { count: pending }) : t('comments:drawer.nothingToSend')}
         </PrimaryButton>
       </div>
     </div>
   )
 }
 
-/** The worktree's drafts; a delivered comment is deleted, so there is no sent list. */
-function DraftsList() {
+/** The worktree's review threads. */
+function ThreadsList() {
   const t = useT()
-  const drafts = useCommentsStore((s) => s.drafts)
+  const drafts = useCommentsStore((s) => s.threads)
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ul className="min-h-0 flex-1 overflow-y-auto">
@@ -84,13 +66,13 @@ function DraftsList() {
           <CommentRow key={c.id} comment={c} />
         ))}
       </ul>
-      {drafts.length ? null : <Empty>{t('comments:drawer.emptyDrafts')}</Empty>}
-      <DraftsFooter drafts={drafts} />
+      {drafts.length ? null : <Empty>{t('comments:drawer.emptyThreads')}</Empty>}
+      <SendFooter />
     </div>
   )
 }
 
-/** The Comments drawer: a right-side sheet with the active worktree's drafts. */
+/** The Comments drawer: a right-side sheet with the active worktree's review threads. */
 export function CommentsDrawer() {
   const t = useT()
   const open = useCommentsStore((s) => s.drawer.open)
@@ -102,7 +84,7 @@ export function CommentsDrawer() {
           <SheetTitle>{t('comments:drawer.title')}</SheetTitle>
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
         </SheetHeader>
-        {worktreeId ? <DraftsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
+        {worktreeId ? <ThreadsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
       </SheetContent>
     </Sheet>
   )

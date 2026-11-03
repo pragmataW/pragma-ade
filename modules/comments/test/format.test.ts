@@ -1,11 +1,18 @@
 import { describe, expect, it, test } from 'vitest'
-import { formatComments, formatThread, formatThreads, languageFromPath } from '../src/main/format'
+import type { Comment, CommentInput } from '../src/contract'
+import { formatNudge, formatThread, formatThreads, languageFromPath } from '../src/main/format'
 import { aReply, aThread } from '../src/testing'
 import { makeBrowserInput, makeElement, makeInput } from './factories'
 
+/** Threads `t1`, `t2`, … from composer inputs, rendered with nothing new in the round. */
+const formatComments = (inputs: CommentInput[]) =>
+  formatThreads(
+    inputs.map((input, i) => aThread({ ...(input as Partial<Comment>), id: `t${i + 1}` })),
+    { round: 0 },
+  )
 const lines = (n: number) => Array.from({ length: n }, (_, i) => `line ${i + 1}`).join('\n')
 
-describe('formatComments', () => {
+describe('thread rendering', () => {
   test('formats code comments exactly', () => {
     expect(
       formatComments([
@@ -30,20 +37,19 @@ describe('formatComments', () => {
       ]),
     ).toBe(
       [
-        'Review comments:',
-        '1. `src/foo.ts:42-45`',
+        '[open] t1 `src/foo.ts:42-45` (diff)',
         '   ```ts',
         '   const a = 1',
         '   const b = 2',
         '   ```',
-        '   Rename these.',
+        '   User: Rename these.',
         '',
-        '2. `README.md:3`',
+        '[open] t2 `README.md:3` (editor)',
         '   ```markdown',
         '   # Title',
         '   ```',
-        '   Typo.',
-        '   Second line.',
+        '   User: Typo.',
+        '     Second line.',
       ].join('\n'),
     )
   })
@@ -67,8 +73,7 @@ describe('formatComments', () => {
       ]),
     ).toBe(
       [
-        'Review comments:',
-        '1. Browser element `form > button.primary` on http://localhost:5173/login',
+        '[open] t1 Browser element `form > button.primary` on http://localhost:5173/login (browser)',
         '   - React component: `SubmitButton` (src/Button.tsx:12)',
         '   - Bounding box: x=10, y=20, width=100, height=31',
         '   - Screenshot: /tmp/shots/c1.png',
@@ -79,7 +84,7 @@ describe('formatComments', () => {
         '     ```',
         '   - Console errors:',
         '     - TypeError: x is undefined',
-        '   Make it blue.',
+        '   User: Make it blue.',
       ].join('\n'),
     )
   })
@@ -104,15 +109,20 @@ describe('formatComments', () => {
       [],
     ],
     ['a snippet containing ```', makeInput({ snippet: 'a\n```\nb' }), ['   ````ts\n'], []],
-    ["diffSide: 'old'", makeInput({ diffSide: 'old' }), ['1. `src/example.ts:1-2` (old version)'], []],
+    ["diffSide: 'old'", makeInput({ diffSide: 'old' }), ['[open] t1 `src/example.ts:1-2` (diff, old version)'], []],
     [
       '12 console errors',
       makeBrowserInput({ element: makeElement({ consoleErrors: Array.from({ length: 12 }, (_, i) => `e${i}`) }) }),
       ['     - e9\n     - (2 more)'],
       ['e10'],
     ],
-    ['no snippet', makeInput({ snippet: undefined }), ['1. `src/example.ts:1-2`\n   Rename these.'], ['```']],
-    ['no lines', makeInput({ lineStart: undefined, lineEnd: undefined }), ['1. `src/example.ts`\n'], []],
+    [
+      'no snippet',
+      makeInput({ snippet: undefined }),
+      ['[open] t1 `src/example.ts:1-2` (diff)\n   User: Rename these.'],
+      ['```'],
+    ],
+    ['no lines', makeInput({ lineStart: undefined, lineEnd: undefined }), ['[open] t1 `src/example.ts` (diff)\n'], []],
     [
       'a long element text and styles',
       makeBrowserInput({ element: makeElement({ text: 't'.repeat(250), styles: { color: 'red', margin: '0' } }) }),
@@ -195,5 +205,26 @@ describe('formatThread', () => {
     expect(formatThreads([a, b], { round: 1 })).toBe(
       `${formatThread(a, { round: 1 })}\n\n${formatThread(b, { round: 1 })}`,
     )
+  })
+})
+
+describe('formatNudge', () => {
+  const tail =
+    ' Read them with `pragma comments list`, address each one, reply with `pragma comments reply <id> --body "<text>"`' +
+    ' and resolve finished threads with `pragma comments resolve <id>`.'
+  it.each([
+    [
+      { round: 2, open: 3, created: 1, updated: 2 },
+      'Review round 2: 3 open review threads in this worktree (1 new, 2 with new replies).',
+    ],
+    [{ round: 1, open: 1, created: 1, updated: 0 }, 'Review round 1: 1 open review thread in this worktree (1 new).'],
+    [
+      { round: 4, open: 5, created: 0, updated: 1 },
+      'Review round 4: 5 open review threads in this worktree (1 with new replies).',
+    ],
+  ])('%j', (counts, head) => {
+    const text = formatNudge(counts)
+    expect(text).toBe(head + tail)
+    expect(text).not.toContain('\n')
   })
 })

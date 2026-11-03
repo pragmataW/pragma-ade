@@ -38,10 +38,11 @@ export interface CommentsUiService {
   CommentComposer: ComponentType<CommentComposerProps>
   openDrawer(args?: OpenDrawerArgs): void
   /**
-   * Same flow as the drawer: single target → sends; several → target picker; none → launch suggestion. Resolves to
-   * the SendResult, or undefined while a dialog is waiting for the user.
+   * Same flow as the drawer: delivers every pending item of the worktree (default: the active one) as one review
+   * round. Single target → sends; several → target picker; none → launch suggestion. Resolves to the SendResult, or
+   * undefined while a dialog is waiting for the user.
    */
-  send(commentIds: string[], opts?: { preferredSessionId?: string }): Promise<SendResult | undefined>
+  send(opts?: { worktreeId?: string; preferredSessionId?: string }): Promise<SendResult | undefined>
 }
 
 export const CommentsUiServiceToken = createServiceToken<CommentsUiService>('comments.ui')

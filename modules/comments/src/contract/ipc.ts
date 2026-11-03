@@ -43,7 +43,7 @@ export const COMMENTS_COMMANDS = { openDrawer: 'comments.openDrawer' } as const
 const id = z.string().min(1)
 const worktreeRef = z.object({ worktreeId: id })
 const comments = z.array(CommentSchema)
-const commentIds = z.array(id)
+const ids = z.array(id)
 /** Text the user typed in a reply box (the main side validates it with `ReplyInputSchema`). */
 const replyBody = z.string()
 
@@ -89,12 +89,12 @@ export const commentsIpc = {
   }),
   send: defineIpc({
     channel: COMMENTS_CHANNELS.send,
-    input: z.object({ commentIds, targetSessionId: z.string().optional() }),
+    input: worktreeRef.extend({ targetSessionId: z.string().optional() }),
     output: SendResultSchema,
   }),
   sendOnNextSession: defineIpc({
     channel: COMMENTS_CHANNELS.sendOnNextSession,
-    input: worktreeRef.extend({ commentIds }),
+    input: worktreeRef,
     output: z.object({ pendingId: z.string() }),
   }),
   cancelPending: defineIpc({ channel: COMMENTS_CHANNELS.cancelPending, input: worktreeRef, output: z.void() }),
@@ -104,7 +104,7 @@ export const commentsIpcEvents = {
   changed: defineIpcEvent({ channel: COMMENTS_IPC_EVENTS.changed, payload: worktreeRef }),
   sendRequested: defineIpcEvent({
     channel: COMMENTS_IPC_EVENTS.sendRequested,
-    payload: worktreeRef.extend({ commentIds, result: SendResultSchema }),
+    payload: worktreeRef.extend({ result: SendResultSchema }),
   }),
   pendingDelivered: defineIpcEvent({
     channel: COMMENTS_IPC_EVENTS.pendingDelivered,
@@ -114,8 +114,11 @@ export const commentsIpcEvents = {
 
 export const CommentCreatedPayloadSchema = z.object({ comment: CommentSchema })
 export type CommentCreatedPayload = z.infer<typeof CommentCreatedPayloadSchema>
+/** One delivered review round. */
 export const CommentSentPayloadSchema = z.object({
-  commentIds,
+  round: z.number().int(),
+  commentIds: ids,
+  replyIds: ids,
   sessionId: z.string(),
   worktreeId: z.string(),
   sentAt: z.number(),

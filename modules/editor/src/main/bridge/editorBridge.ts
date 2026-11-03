@@ -215,7 +215,7 @@ export class EditorBridge {
       return { status: COMMENT_REPLY.failed, message: errorText(error) }
     }
     if (p.action === COMMENT_ACTION.draft) return { status: COMMENT_REPLY.drafted, commentId }
-    return replyForSend(commentId, await this.#up.send([commentId]))
+    return replyForSend(commentId, await this.#up.send(worktreeId))
   }
 
   async #draftsOf(worktreeId: string | undefined): Promise<EditorDrafts> {

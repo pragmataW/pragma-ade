@@ -28,8 +28,8 @@ export interface EditorUpstream {
   selectWorktree(worktreeId: string): Promise<void>
   bridge: Pick<BridgeServer, 'url' | 'token' | 'registerHandler' | 'broadcast' | 'send' | 'onClient'>
   addDraft(i: CommentInput): Promise<Comment>
-  /** No target: the comments module asks the user when needed. */
-  send(commentIds: string[]): Promise<SendResult>
+  /** Sends the worktree's review round (every pending item); no target: the comments module asks the user. */
+  send(worktreeId: string): Promise<SendResult>
   listThreads(worktreeId: string): Promise<Comment[]>
   /** A worktree's drafts were added, edited, deleted or delivered. */
   onCommentsChanged(cb: (worktreeId: string) => void): () => void
@@ -62,7 +62,7 @@ export function createUpstream(ctx: MainContext): EditorUpstream {
     },
     bridge,
     addDraft: (i) => comments.addDraft(i),
-    send: (ids) => comments.send(ids),
+    send: (worktreeId) => comments.send(worktreeId),
     listThreads: (worktreeId) => comments.listThreads(worktreeId),
     onCommentsChanged(cb) {
       const d = ctx.events.on(commentsChanged, (p) => cb(p.worktreeId))

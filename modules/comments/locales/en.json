@@ -12,18 +12,14 @@
     "title": "Comments",
     "description": "Review comments for the agents in this worktree.",
     "noWorktree": "Select a worktree to see its comments.",
-    "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
-    "selectAll": "Select all",
-    "clearSelection": "Clear selection",
-    "sendSelected_one": "Send {{count}} comment",
-    "sendSelected_other": "Send {{count}} comments",
-    "sendAll_one": "Send {{count}} comment",
-    "sendAll_other": "Send all {{count}} comments"
+    "emptyThreads": "No review threads. Add comments from the editor, the diff or the browser.",
+    "sendPending_one": "Send {{count}} pending item",
+    "sendPending_other": "Send {{count}} pending items",
+    "nothingToSend": "Nothing to send"
   },
   "row": {
     "edit": "Edit",
     "delete": "Delete",
-    "select": "Select comment",
     "source": {
       "editor": "Editor",
       "diff": "Diff",
@@ -48,8 +44,8 @@
   },
   "launch": {
     "title": "No agent running",
-    "description_one": "Start an agent in this worktree to deliver {{count}} comment.",
-    "description_other": "Start an agent in this worktree to deliver {{count}} comments.",
+    "description_one": "Start an agent in this worktree to deliver {{count}} pending item.",
+    "description_other": "Start an agent in this worktree to deliver {{count}} pending items.",
     "start": "Start agent",
     "cancel": "Cancel",
     "waiting": "Waiting for the new agent session…"
@@ -60,14 +56,13 @@
     "submitAfterPasteHint": "Comments are submitted to the agent right after they are pasted. When off, they stay in the agent's input until you press Enter."
   },
   "errors": {
-    "notFound": "Some comments no longer exist.",
-    "mixedWorktrees": "Comments from different worktrees cannot be sent together.",
+    "notFound": "This comment no longer exists.",
     "sessionNotRunning": "The selected agent session is no longer running.",
     "wrongWorktree": "The selected agent session belongs to another worktree.",
     "noDeliveryTarget": "This kind of agent session cannot receive comments.",
     "deliveryFailed": "Could not deliver the comments.",
-    "alreadySending": "These comments are already being sent.",
-    "empty": "Select at least one comment.",
+    "alreadySending": "This worktree's comments are already being sent.",
+    "empty": "Nothing new to send.",
     "agentNotReady": "The agent is not ready to receive multi-line text yet. Try again in a moment.",
     "alreadyDelivered": "This comment was already sent. Add a reply instead."
   }

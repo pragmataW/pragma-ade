@@ -42,7 +42,7 @@ test('commentContextOf keeps the anchor and drops body, ids and timestamps', () 
 test('settings default', () => expect(CommentsSettingsSchema.parse({})).toEqual({ submitAfterPaste: true }))
 
 const RESULTS: SendResult[] = [
-  { status: 'sent', sessionId: 's1', commentIds: ['c1'], sentAt: 1 },
+  { status: 'sent', sessionId: 's1', round: 1, commentIds: ['c1'], replyIds: ['r1'], sentAt: 1 },
   {
     status: 'needsTarget',
     sessions: [{ id: 's1', title: 'A', mode: 'terminal', status: 'idle' }],

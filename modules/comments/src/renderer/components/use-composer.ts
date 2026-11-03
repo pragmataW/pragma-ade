@@ -44,7 +44,7 @@ export function useComposer(p: CommentComposerProps) {
   const sendNow = () =>
     run(async () => {
       const comment = await draft()
-      const result = await flow.send([comment.id], { worktreeId: p.worktreeId })
+      const result = await flow.send({ worktreeId: p.worktreeId })
       if (result?.status === SEND_STATUS.sent) return { kind: COMPOSER_RESULT.sent, comment, result }
       if (result?.status === SEND_STATUS.failed) useCommentsStore.getState().showError(result.errorKey)
       // A picker / launch suggestion (hosted next to the drawer) or the error takes over; the caller can close.

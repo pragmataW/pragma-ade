@@ -4,7 +4,7 @@ import { Button } from '@pragma/ui/components/button'
 import { useState } from 'react'
 import { ROLE_ALERT, SIZE_SM, VARIANT_GHOST } from '../../constants'
 import { GitChangesTestIds as T } from '../../contract'
-import { discardDiffDrafts, sendDiffDrafts } from '../lib/comments'
+import { discardDiffDrafts, sendRound } from '../lib/comments'
 
 const report = (what: string) => (e: unknown) => console.warn(`git-changes: ${what} failed`, e)
 
@@ -26,7 +26,7 @@ export function ReviewBar({ comments, fileName }: { comments: readonly Comment[]
   }
   const send = async () => {
     setErrorKey(null)
-    const result = await sendDiffDrafts(ids)
+    const result = await sendRound(comments[0]?.worktreeId as string)
     if (result?.status === SEND_STATUS.failed) setErrorKey(sendErrorI18nKey(result.errorKey))
   }
   return (

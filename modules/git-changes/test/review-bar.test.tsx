@@ -56,10 +56,10 @@ describe('ReviewBar', () => {
     await waitFor(() => expect(h?.callsOn(COMMENTS_CHANNELS.remove)).toEqual([{ id: 'c1' }, { id: 'c2' }]))
   })
 
-  it("Send goes through 05's UI service with both ids, never the comments.send IPC", async () => {
+  it("Send goes through 05's UI service with the worktree round, never the comments.send IPC", async () => {
     const send = await mountBar()
     await userEvent.click(await screen.findByTestId(T.reviewSend))
-    await waitFor(() => expect(send).toHaveBeenCalledWith(['c1', 'c2']))
+    await waitFor(() => expect(send).toHaveBeenCalledWith({ worktreeId: WT_ID }))
     expect(h?.callsOn(COMMENTS_CHANNELS.send)).toEqual([])
   })
 

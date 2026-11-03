@@ -2,12 +2,16 @@ import { createServiceToken } from '@pragma/sdk'
 import type { Comment, CommentInput, CommentPatch, CommentStatus, CommentStatusFilter, ReplyInput } from './dto'
 import { type SendErrorKey, type SendResult, sendErrorI18nKey, type TargetResolution } from './results'
 
-/** What a delivery target gets; 11c may render `comments` as chips and ignores `submit`. */
+/**
+ * What a delivery target gets: `text` is the one-line review-round nudge, `comments` the threads with something new
+ * in `round` (11c may render them as chips and ignores `submit`).
+ */
 export interface DeliveryRequest {
   sessionId: string
   worktreeId: string
   mode: string
   ptyId: string | null
+  round: number
   text: string
   comments: Comment[]
   submit: boolean
@@ -68,13 +72,15 @@ export interface CommentsService {
   round(worktreeId: string): Promise<number>
   resolveTarget(worktreeId: string, preferredSessionId?: string): Promise<TargetResolution>
   /**
-   * On `sent` the delivered comments are deleted; any other result keeps them as drafts.
-   * With no target: sends when exactly one running session exists. Otherwise returns needsTarget/noSession and,
-   * unless `opts.promptUser === false`, publishes `comments.sendRequested` so the UI asks the user.
+   * Delivers one review round: every pending item of the worktree (new roots and user replies) as a short nudge that
+   * tells the agent to read the threads with the CLI. Nothing is deleted. On `sent` the items captured before delivery
+   * get the new round number (items added meanwhile stay pending); any other result changes nothing. `failed: empty`
+   * with nothing pending. With no target: sends when exactly one running session exists. Otherwise returns
+   * needsTarget/noSession and, unless `opts.promptUser === false`, publishes `comments.sendRequested`.
    */
-  send(commentIds: string[], targetSessionId?: string, opts?: SendOptions): Promise<SendResult>
-  /** Delivers to the next agent session started in the worktree (one pending entry per worktree). */
-  sendOnNextSession(worktreeId: string, commentIds: string[]): Promise<{ pendingId: string }>
+  send(worktreeId: string, targetSessionId?: string, opts?: SendOptions): Promise<SendResult>
+  /** Delivers the worktree's round to the next agent session started there (one entry per worktree). */
+  sendOnNextSession(worktreeId: string): Promise<{ pendingId: string }>
   cancelPending(worktreeId: string): void
   /** Fixed-English text of the threads for an agent (CLI output), blank-line separated. */
   format(threads: Comment[], opts: ThreadFormatOptions): string

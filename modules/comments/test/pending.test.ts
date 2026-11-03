@@ -10,7 +10,7 @@ import { makeInput, makeSession, OTHER_WT, WT } from './factories'
 import { createFakeUpstream } from './fakes'
 
 const OPTS = { readyQuietMs: 500, readyTimeoutMs: 15_000, ttlMs: 600_000 }
-const SENT: SendResult = { status: 'sent', sessionId: 'new', commentIds: ['c1'], sentAt: 1 }
+const SENT: SendResult = { status: 'sent', sessionId: 'new', round: 1, commentIds: ['c1'], replyIds: [], sentAt: 1 }
 
 const started = (o: Partial<AgentSessionStartedPayload> = {}): AgentSessionStartedPayload => ({
   sessionId: 'new',
@@ -24,12 +24,12 @@ const started = (o: Partial<AgentSessionStartedPayload> = {}): AgentSessionStart
 
 function setup() {
   const upstream = createFakeUpstream()
-  const sends: [string[], string | undefined, unknown][] = []
+  const sends: [string, string | undefined, unknown][] = []
   const delivered: [string, SendResult][] = []
   const pending = new PendingDeliveries(
     upstream,
-    async (ids, target, opts) => {
-      sends.push([ids, target, opts])
+    async (worktreeId, target, opts) => {
+      sends.push([worktreeId, target, opts])
       return SENT
     },
     (wt, r) => void delivered.push([wt, r]),
@@ -44,7 +44,7 @@ describe('PendingDeliveries', () => {
 
   test('delivers to the session started in the same worktree after output then quiet', async () => {
     const { upstream, pending, sends } = setup()
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     upstream.emitSessionStarted(started())
     await vi.advanceTimersByTimeAsync(1000)
     upstream.emitPtyData('pty-new')
@@ -53,12 +53,12 @@ describe('PendingDeliveries', () => {
     await vi.advanceTimersByTimeAsync(400)
     expect(sends).toEqual([])
     await vi.advanceTimersByTimeAsync(200)
-    expect(sends).toEqual([[['c1'], 'new', { promptUser: false }]])
+    expect(sends).toEqual([[WT, 'new', { promptUser: false }]])
   })
 
   test('ignores sessions started in another worktree', async () => {
     const { upstream, pending, sends } = setup()
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     upstream.emitSessionStarted(started({ worktreeId: OTHER_WT, sessionId: 'x', ptyId: 'pty-x' }))
     await vi.advanceTimersByTimeAsync(20_000)
     expect(sends).toEqual([])
@@ -66,7 +66,7 @@ describe('PendingDeliveries', () => {
 
   test('delivers after readyTimeoutMs without output', async () => {
     const { upstream, pending, sends } = setup()
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     upstream.emitSessionStarted(started())
     await vi.advanceTimersByTimeAsync(14_900)
     expect(sends).toHaveLength(0)
@@ -78,7 +78,7 @@ describe('PendingDeliveries', () => {
     const { upstream, pending, sends } = setup()
     const session = makeSession({ id: 'new', ptyId: null })
     upstream.sessions.push(session)
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     upstream.emitSessionStarted(started({ ptyId: null }))
     await vi.advanceTimersByTimeAsync(250)
     session.ptyId = 'pty-late'
@@ -90,7 +90,7 @@ describe('PendingDeliveries', () => {
 
   test('expired entry is not delivered', async () => {
     const { upstream, pending, sends } = setup()
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     await vi.advanceTimersByTimeAsync(OPTS.ttlMs + 1)
     upstream.emitSessionStarted(started())
     await vi.advanceTimersByTimeAsync(20_000)
@@ -99,7 +99,7 @@ describe('PendingDeliveries', () => {
 
   test('cancel prevents delivery', async () => {
     const { upstream, pending, sends } = setup()
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     upstream.emitSessionStarted(started())
     await vi.advanceTimersByTimeAsync(100)
     pending.cancel(WT)
@@ -107,18 +107,18 @@ describe('PendingDeliveries', () => {
     expect(sends).toEqual([])
   })
 
-  test('second add replaces the first', async () => {
+  test('second add replaces the first: one delivery', async () => {
     const { upstream, pending, sends } = setup()
-    pending.add(WT, ['c1'])
-    pending.add(WT, ['c2', 'c3'])
+    const first = pending.add(WT)
+    expect(pending.add(WT)).not.toBe(first)
     upstream.emitSessionStarted(started())
     await vi.advanceTimersByTimeAsync(20_000)
-    expect(sends.map(([ids]) => ids)).toEqual([['c2', 'c3']])
+    expect(sends).toHaveLength(1)
   })
 
   test('onDelivered receives the SendResult', async () => {
     const { upstream, pending, delivered } = setup()
-    pending.add(WT, ['c1'])
+    pending.add(WT)
     upstream.emitSessionStarted(started())
     await vi.advanceTimersByTimeAsync(20_000)
     expect(delivered).toEqual([[WT, SENT]])
@@ -128,7 +128,7 @@ describe('PendingDeliveries', () => {
 describe('service wiring', () => {
   const db = perTestDb()
 
-  test('a pending send delivered to the launched agent deletes the comments', async () => {
+  test('a pending send delivers the round to the launched agent and keeps the threads', async () => {
     const upstream = createFakeUpstream([makeSession({ id: 'new', ptyId: 'pty-new' })])
     const registry = new DeliveryRegistry()
     const delivered: string[][] = []
@@ -142,11 +142,11 @@ describe('service wiring', () => {
       pendingOptions: { readyTimeoutMs: 1 },
     })
     const c = await service.addDraft(makeInput())
-    await service.sendOnNextSession(WT, [c.id])
+    await service.sendOnNextSession(WT)
     upstream.emitSessionStarted(started())
     await vi.waitFor(() => expect(upstream.publishedOn(COMMENTS_IPC_EVENTS.pendingDelivered)).toHaveLength(1))
     expect(delivered).toEqual([[c.id]])
-    expect(await service.listThreads(WT)).toEqual([])
+    expect((await service.listThreads(WT)).map((t) => [t.id, t.round])).toEqual([[c.id, 1]])
     service.dispose()
   })
 
@@ -162,7 +162,8 @@ describe('service wiring', () => {
     })
     const kept = await service.addDraft(makeInput({ worktreeId: OTHER_WT }))
     const gone = await service.addDraft(makeInput())
-    await service.sendOnNextSession(WT, [gone.id])
+    expect(gone.id).toBeDefined()
+    await service.sendOnNextSession(WT)
     upstream.emitWorktreeRemoved(WT)
     upstream.emitSessionStarted(started())
     await new Promise((r) => setTimeout(r, 20))

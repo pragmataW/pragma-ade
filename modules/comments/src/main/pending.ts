@@ -13,7 +13,6 @@ export interface PendingOptions {
 
 interface Entry {
   id: string
-  commentIds: string[]
   createdAt: number
   claimed: boolean
 }
@@ -25,7 +24,7 @@ const DEFAULTS: Required<PendingOptions> = {
 }
 
 /**
- * "Start an agent, then deliver": one entry per worktree, delivered to the next session started in THAT worktree once
+ * "Start an agent, then deliver the review round": one entry per worktree (whatever is pending at delivery time), delivered to the next session started in THAT worktree once
  * its pty produced output and went quiet (so the agent had time to enable bracketed paste), or after a timeout.
  */
 export class PendingDeliveries {
@@ -50,9 +49,9 @@ export class PendingDeliveries {
   }
 
   /** A new entry replaces the worktree's old one. */
-  add(worktreeId: string, commentIds: string[]): string {
+  add(worktreeId: string): string {
     const id = randomUUID()
-    this.#entries.set(worktreeId, { id, commentIds: [...commentIds], createdAt: Date.now(), claimed: false })
+    this.#entries.set(worktreeId, { id, createdAt: Date.now(), claimed: false })
     return id
   }
 
@@ -81,7 +80,7 @@ export class PendingDeliveries {
     if (ptyId) await this.#waitReady(ptyId)
     if (this.#entries.get(e.worktreeId) !== entry) return
     this.#entries.delete(e.worktreeId)
-    const result = await this.#send(entry.commentIds, e.sessionId, { promptUser: false })
+    const result = await this.#send(e.worktreeId, e.sessionId, { promptUser: false })
     this.#onDelivered(e.worktreeId, result)
   }
 

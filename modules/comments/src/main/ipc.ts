@@ -18,9 +18,9 @@ export function registerCommentsIpc(ipc: Pick<MainContext['ipc'], 'handle'>, ser
     service.resolveTarget(worktreeId, preferredSessionId),
   )
   // The renderer runs its own picker / launch suggestion, so main never publishes `sendRequested` for it.
-  ipc.handle(I.send, ({ commentIds, targetSessionId }) =>
-    service.send(commentIds, targetSessionId, { promptUser: false }),
+  ipc.handle(I.send, ({ worktreeId, targetSessionId }) =>
+    service.send(worktreeId, targetSessionId, { promptUser: false }),
   )
-  ipc.handle(I.sendOnNextSession, ({ worktreeId, commentIds }) => service.sendOnNextSession(worktreeId, commentIds))
+  ipc.handle(I.sendOnNextSession, ({ worktreeId }) => service.sendOnNextSession(worktreeId))
   ipc.handle(I.cancelPending, ({ worktreeId }) => service.cancelPending(worktreeId))
 }

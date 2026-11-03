@@ -30,8 +30,8 @@ test('comments.send passes promptUser:false', async () => {
   const ipc = createFakeIpc()
   const { service, calls } = recordingService()
   registerCommentsIpc(ipc, service)
-  await ipc.invoke(commentsIpc.send, { commentIds: ['a'], targetSessionId: 's1' })
-  expect(calls).toEqual([['send', [['a'], 's1', { promptUser: false }]]])
+  await ipc.invoke(commentsIpc.send, { worktreeId: WT, targetSessionId: 's1' })
+  expect(calls).toEqual([['send', [WT, 's1', { promptUser: false }]]])
 })
 
 test('test hook createDraft fills defaults and goes through addDraft', async () => {
@@ -47,6 +47,14 @@ test('test hook createDraft fills defaults and goes through addDraft', async () 
   })
   hooks.setPendingOptions({ readyQuietMs: 5 })
   expect(calls[1]).toEqual(['setPendingOptions', [{ readyQuietMs: 5 }]])
+  await hooks.agentReply('c1', 'Done.', 'Claude')
+  await hooks.setStatus('c1', 'resolved')
+  await hooks.listThreads(WT)
+  expect(calls.slice(2)).toEqual([
+    ['reply', ['c1', { author: 'agent', body: 'Done.', authorLabel: 'Claude' }]],
+    ['setStatus', ['c1', 'resolved']],
+    ['listThreads', [WT]],
+  ])
 })
 
 test('thread channels map to the service (user replies, statuses, clear resolved, list)', async () => {

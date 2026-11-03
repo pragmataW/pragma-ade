@@ -1,12 +1,10 @@
 import { useT } from '@pragma/sdk/renderer'
-import { cn } from '@pragma/ui'
 import { FileCode, GitCompare, MousePointerClick, Pencil, Trash2 } from '@pragma/ui/icons'
 import { useState } from 'react'
 import { type Comment, type CommentSource, commentContextOf, commentsIpc, COMMENTS_TESTIDS as T } from '../../contract'
 import { IconButton } from '../lib/buttons'
 import { locationLabel } from '../location'
 import { runtime } from '../runtime'
-import { useCommentsStore } from '../store'
 import { CommentComposer } from './CommentComposer'
 
 const ICON_PX = 14
@@ -55,12 +53,9 @@ function RowActions({ comment, onEdit }: { comment: Comment; onEdit(): void }) {
   )
 }
 
-/** One draft: checkbox, source icon, location, two-line body preview, Edit/Delete. */
+/** One thread root: source icon, location, two-line body preview, Edit/Delete. */
 export function CommentRow({ comment }: { comment: Comment }) {
-  const t = useT()
   const [editing, setEditing] = useState(false)
-  const selected = useCommentsStore((s) => s.selection.has(comment.id))
-  const toggle = () => useCommentsStore.getState().toggleSelected(comment.id)
   if (editing)
     return (
       <li data-testid={T.row} data-comment-id={comment.id} className="border-b px-4 py-3">
@@ -74,19 +69,7 @@ export function CommentRow({ comment }: { comment: Comment }) {
       </li>
     )
   return (
-    <li
-      data-testid={T.row}
-      data-comment-id={comment.id}
-      className={cn('flex items-start gap-2 border-b px-4 py-2.5', selected && 'bg-accent/40')}
-    >
-      <input
-        type="checkbox"
-        data-testid={T.rowSelect}
-        aria-label={t('comments:row.select')}
-        className="mt-1 accent-primary"
-        checked={selected}
-        onChange={toggle}
-      />
+    <li data-testid={T.row} data-comment-id={comment.id} className="flex items-start gap-2 border-b px-4 py-2.5">
       <SourceIcon source={comment.source} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-mono text-[12px]">{locationLabel(comment)}</div>

@@ -6,7 +6,7 @@ import { useCommentsStore } from './store'
 
 export interface SendOptions {
   preferredSessionId?: string
-  /** Default: the active worktree (used for the launch suggestion). */
+  /** Default: the active worktree. */
   worktreeId?: string
 }
 
@@ -20,28 +20,29 @@ const settled = (r: SendResult): SendResult | undefined =>
   r.status === SEND_STATUS.sent || r.status === SEND_STATUS.failed ? r : undefined
 
 /**
- * The send flow shared by the drawer, the composer and `CommentsUiService.send`: main resolves the target and sends
- * when exactly one agent runs; otherwise the store opens the target picker or the launch suggestion.
+ * The send flow shared by the drawer, the composer and `CommentsUiService.send`: one Send delivers every pending item
+ * of the worktree. Main resolves the target and sends when exactly one agent runs; otherwise the store opens the
+ * target picker or the launch suggestion.
  */
 export function createSendFlow(rt: CommentsRuntime, store: typeof useCommentsStore) {
-  const apply = (worktreeId: string | null, ids: string[], r: SendResult) =>
-    store.getState().applyResult(worktreeId, ids, r)
+  const apply = (worktreeId: string, r: SendResult) => store.getState().applyResult(worktreeId, r)
   return {
-    /** Resolves to the result, or undefined while a dialog waits for the user. */
-    async send(commentIds: string[], opts: SendOptions = {}): Promise<SendResult | undefined> {
+    /** Sends the worktree's review round; resolves to the result, or undefined while a dialog waits for the user. */
+    async send(opts: SendOptions = {}): Promise<SendResult | undefined> {
       const worktreeId = opts.worktreeId ?? store.getState().activeWorktreeId
-      const r = preferring(await rt.ipc.invoke(commentsIpc.send, { commentIds }), opts.preferredSessionId)
-      apply(worktreeId, commentIds, r)
+      if (!worktreeId) return undefined
+      const r = preferring(await rt.ipc.invoke(commentsIpc.send, { worktreeId }), opts.preferredSessionId)
+      apply(worktreeId, r)
       return settled(r)
     },
-    async sendTo(commentIds: string[], sessionId: string): Promise<SendResult> {
-      const r = await rt.ipc.invoke(commentsIpc.send, { commentIds, targetSessionId: sessionId })
-      apply(store.getState().activeWorktreeId, commentIds, r)
+    async sendTo(worktreeId: string, sessionId: string): Promise<SendResult> {
+      const r = await rt.ipc.invoke(commentsIpc.send, { worktreeId, targetSessionId: sessionId })
+      apply(worktreeId, r)
       return r
     },
-    /** Queues the comments for the next agent started in the worktree and opens 03's launcher. */
-    async startAgentAndSend(worktreeId: string, commentIds: string[]): Promise<void> {
-      await rt.ipc.invoke(commentsIpc.sendOnNextSession, { worktreeId, commentIds })
+    /** Queues the worktree's round for the next agent started there and opens 03's launcher. */
+    async startAgentAndSend(worktreeId: string): Promise<void> {
+      await rt.ipc.invoke(commentsIpc.sendOnNextSession, { worktreeId })
       store.getState().setLaunchWaiting()
       await rt.commands.execute(agentsCommands.openLauncher.id, { worktreeId })
     },
