@@ -5,8 +5,10 @@
   "center": {
     "empty": {
       "title": "No agents running in this worktree",
+      "hint": "Start Claude Code, OpenCode or another agent here. Each session keeps its own tab.",
       "action": "New agent"
     },
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to start an agent"
   },
   "tabs": {

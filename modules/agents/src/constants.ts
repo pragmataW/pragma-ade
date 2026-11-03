@@ -79,6 +79,7 @@ export const ICONS = {
   add: 'plus',
   menu: 'ellipsis',
   bot: 'bot',
+  noWorktree: 'folder-git-2',
   expand: 'chevron-down',
   collapse: 'chevron-up',
   remove: 'trash',

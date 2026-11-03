@@ -1,11 +1,10 @@
 import { useT } from '@pragma/sdk/renderer'
-import { Icon } from '@pragma/ui/components/icon'
+import { EmptyState } from '@pragma/ui'
 import { useEffect } from 'react'
-import { ICONS, MARK_LARGE } from '../../constants'
+import { ICONS } from '../../constants'
 import { AGENTS_TESTIDS, type AgentSession } from '../../contract'
 import { useActiveWorktreeId, useAgents } from '../active-worktree'
 import { NewAgentDialog } from '../launcher/NewAgentDialog'
-import { ActionButton } from '../lib/buttons'
 import { getRuntime } from '../runtime'
 import { CloseSessionDialog } from './CloseSessionDialog'
 import { SessionBody } from './SessionBody'
@@ -16,13 +15,17 @@ const NO_SESSIONS: AgentSession[] = []
 function EmptyAgents({ worktreeId }: { worktreeId: string }) {
   const t = useT()
   return (
-    <div data-testid={AGENTS_TESTIDS.empty} className="flex flex-1 flex-col items-center justify-center gap-3 text-mu">
-      <Icon name={ICONS.bot} size={MARK_LARGE} />
-      <span className="text-[13px]">{t('agents:center.empty.title')}</span>
-      <ActionButton onClick={() => getRuntime().store.getState().openLauncher(worktreeId)}>
-        {t('agents:center.empty.action')}
-      </ActionButton>
-    </div>
+    <EmptyState
+      testId={AGENTS_TESTIDS.empty}
+      icon={ICONS.bot}
+      title={t('agents:center.empty.title')}
+      description={t('agents:center.empty.hint')}
+      primaryAction={{
+        label: t('agents:center.empty.action'),
+        icon: ICONS.add,
+        onClick: () => getRuntime().store.getState().openLauncher(worktreeId),
+      }}
+    />
   )
 }
 
@@ -56,9 +59,11 @@ export function AgentsCenterView() {
       {worktreeId ? (
         <WorktreeSessions key={worktreeId} worktreeId={worktreeId} />
       ) : (
-        <div className="flex flex-1 items-center justify-center text-[13px] text-mu">
-          {t('agents:center.noWorktree')}
-        </div>
+        <EmptyState
+          icon={ICONS.noWorktree}
+          title={t('agents:center.noWorktreeTitle')}
+          description={t('agents:center.noWorktree')}
+        />
       )}
       <NewAgentDialog />
       <CloseSessionDialog />
