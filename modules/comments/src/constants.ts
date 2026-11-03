@@ -42,3 +42,6 @@ export const CRLF_RE = /\r\n?/g
 export const BACKSLASH_RE = /\\/g
 export const TRAILING_SPACE_RE = /[ \t]+$/gm
 export const ELLIPSIS = '…'
+
+/** Lucide icons of the drawer's empty states. */
+export const EMPTY_ICONS = { noDrafts: 'message-square-dashed', noWorktree: 'folder-git-2' } as const

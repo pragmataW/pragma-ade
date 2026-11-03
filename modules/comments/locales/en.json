@@ -11,8 +11,10 @@
   "drawer": {
     "title": "Comments",
     "description": "Review comments for the agents in this worktree.",
+    "noWorktreeTitle": "No worktree selected",
     "noWorktree": "Select a worktree to see its comments.",
-    "emptyDrafts": "No draft comments. Add comments from the editor, the diff or the browser.",
+    "emptyDraftsTitle": "No draft comments",
+    "emptyDrafts": "Add comments from the editor, the diff or the browser, then send them to an agent from here.",
     "selectAll": "Select all",
     "clearSelection": "Clear selection",
     "sendSelected_one": "Send {{count}} comment",

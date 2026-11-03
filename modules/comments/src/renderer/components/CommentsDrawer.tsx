@@ -1,5 +1,7 @@
 import { useT } from '@pragma/sdk/renderer'
+import { EmptyState } from '@pragma/ui'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@pragma/ui/components/sheet'
+import { EMPTY_ICONS } from '../../constants'
 import { type Comment, sendErrorI18nKey, COMMENTS_TESTIDS as T } from '../../contract'
 import { PrimaryButton, QuietButton } from '../lib/buttons'
 import { SEND, useBusy } from '../lib/use-busy'
@@ -7,8 +9,9 @@ import { useCommentsStore } from '../store'
 import { useSendFlow } from '../use-send-flow'
 import { CommentRow } from './CommentRow'
 
-function Empty({ children }: { children: string }) {
-  return <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">{children}</p>
+function Empty({ icon, titleKey, descriptionKey }: { icon: string; titleKey: string; descriptionKey: string }) {
+  const t = useT()
+  return <EmptyState icon={icon} title={t(titleKey)} description={t(descriptionKey)} />
 }
 
 function ErrorLine() {
@@ -75,16 +78,22 @@ function DraftsFooter({ drafts }: { drafts: Comment[] }) {
 
 /** The worktree's drafts; a delivered comment is deleted, so there is no sent list. */
 function DraftsList() {
-  const t = useT()
   const drafts = useCommentsStore((s) => s.drafts)
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ul className="min-h-0 flex-1 overflow-y-auto">
-        {drafts.map((c) => (
-          <CommentRow key={c.id} comment={c} />
-        ))}
-      </ul>
-      {drafts.length ? null : <Empty>{t('comments:drawer.emptyDrafts')}</Empty>}
+      {drafts.length ? (
+        <ul className="min-h-0 flex-1 overflow-y-auto">
+          {drafts.map((c) => (
+            <CommentRow key={c.id} comment={c} />
+          ))}
+        </ul>
+      ) : (
+        <Empty
+          icon={EMPTY_ICONS.noDrafts}
+          titleKey="comments:drawer.emptyDraftsTitle"
+          descriptionKey="comments:drawer.emptyDrafts"
+        />
+      )}
       <DraftsFooter drafts={drafts} />
     </div>
   )
@@ -102,7 +111,15 @@ export function CommentsDrawer() {
           <SheetTitle>{t('comments:drawer.title')}</SheetTitle>
           <SheetDescription className="sr-only">{t('comments:drawer.description')}</SheetDescription>
         </SheetHeader>
-        {worktreeId ? <DraftsList /> : <Empty>{t('comments:drawer.noWorktree')}</Empty>}
+        {worktreeId ? (
+          <DraftsList />
+        ) : (
+          <Empty
+            icon={EMPTY_ICONS.noWorktree}
+            titleKey="comments:drawer.noWorktreeTitle"
+            descriptionKey="comments:drawer.noWorktree"
+          />
+        )}
       </SheetContent>
     </Sheet>
   )
