@@ -4,9 +4,11 @@ import { PROJECTS_CHANNELS as C } from './ids'
 import {
   BranchInfoSchema,
   CreateWorktreeInputSchema,
+  FoldersSnapshotSchema,
   ProjectSchema,
   ProjectsSettingsSchema,
   ProjectsSnapshotSchema,
+  WorktreeFolderSchema,
   WorktreeRemovalInfoSchema,
   WorktreeSchema,
   WorktreeSyncStateSchema,
@@ -23,6 +25,7 @@ export function resultSchema<T>(value: z.ZodType<T>): z.ZodType<Result<T, Projec
 const none = z.void()
 const projectRef = z.object({ projectId: z.string() })
 const worktreeRef = z.object({ worktreeId: z.string() })
+const folderRef = projectRef.extend({ folderId: z.string() })
 const mutation = <I, O>(channel: string, input: z.ZodType<I>, output: z.ZodType<O>) =>
   defineIpc({ channel, input, output: resultSchema(output) })
 
@@ -55,6 +58,20 @@ export const projectsIpc = {
   setBaseBranch: mutation(C.setBaseBranch, worktreeRef.extend({ branch: z.string() }), WorktreeSchema),
   getSettings: defineIpc({ channel: C.getSettings, input: none, output: ProjectsSettingsSchema }),
   updateSettings: mutation(C.updateSettings, z.object({ worktreesRoot: z.string() }), ProjectsSettingsSchema),
+  /** Sidebar folders (renderer-only organisation; git and the worktree list are untouched). */
+  getFolders: defineIpc({ channel: C.getFolders, input: none, output: FoldersSnapshotSchema }),
+  /** `worktreeId` moves that worktree into the new folder ("Move to folder › New folder…"). */
+  createFolder: mutation(
+    C.createFolder,
+    projectRef.extend({ name: z.string(), worktreeId: z.string().optional() }),
+    WorktreeFolderSchema,
+  ),
+  renameFolder: mutation(C.renameFolder, folderRef.extend({ name: z.string() }), none),
+  /** Its worktrees go back to the project root; no worktree is removed. */
+  deleteFolder: mutation(C.deleteFolder, folderRef, none),
+  setFolderCollapsed: mutation(C.setFolderCollapsed, folderRef.extend({ collapsed: z.boolean() }), none),
+  /** `folderId: null` takes the worktree out of its folder. */
+  moveWorktreeToFolder: mutation(C.moveWorktreeToFolder, worktreeRef.extend({ folderId: z.string().nullable() }), none),
 } as const
 
 /** Main → renderer events (`ctx.ipc.publish`). */
@@ -62,4 +79,5 @@ export const projectsIpcEvents = {
   stateChanged: defineIpcEvent({ channel: C.stateChanged, payload: ProjectsSnapshotSchema }),
   statusChanged: defineIpcEvent({ channel: C.statusChanged, payload: StatusChangedPayloadSchema }),
   selected: defineIpcEvent({ channel: C.selected, payload: SelectedPayloadSchema }),
+  foldersChanged: defineIpcEvent({ channel: C.foldersChanged, payload: FoldersSnapshotSchema }),
 } as const

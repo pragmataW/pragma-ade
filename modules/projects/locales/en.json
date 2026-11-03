@@ -81,6 +81,8 @@
     "cannotRemoveMain": "The main checkout cannot be removed.",
     "gitNotFound": "git was not found on your PATH.",
     "gitFailed": "git failed: {{detail}}",
-    "invalidSettings": "Use an absolute path or one starting with ~."
+    "invalidSettings": "Use an absolute path or one starting with ~.",
+    "folderNotFound": "Folder not found.",
+    "invalidFolderName": "Folder names cannot be empty or longer than 64 characters."
   }
 }

@@ -15,6 +15,8 @@ export const PROJECTS_ERROR_CODES = [
   'gitNotFound',
   'gitFailed',
   'invalidSettings',
+  'folderNotFound',
+  'invalidFolderName',
 ] as const
 export type ProjectsErrorCode = (typeof PROJECTS_ERROR_CODES)[number]
 

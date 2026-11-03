@@ -1,5 +1,5 @@
 import { z } from '@pragma/sdk'
-import { ABSOLUTE_OR_HOME_PATH_RE, DEFAULT_WORKTREES_ROOT } from '../constants'
+import { ABSOLUTE_OR_HOME_PATH_RE, DEFAULT_WORKTREES_ROOT, FOLDER_NAME_MAX_CHARS } from '../constants'
 import { PROJECTS_ERROR_CODES } from './errors'
 
 const id = z.string().min(1)
@@ -79,3 +79,22 @@ export const CreateWorktreeInputSchema = z.object({
   path: z.string().min(1).optional(),
 })
 export type CreateWorktreeInput = z.infer<typeof CreateWorktreeInputSchema>
+
+/** A trimmed, non-empty folder name. */
+export const FolderNameSchema = z.string().trim().min(1).max(FOLDER_NAME_MAX_CHARS)
+
+/**
+ * A user-made sidebar folder inside one project. A worktree is in at most one folder; the others sit at
+ * the project root. `worktreeIds` only names live worktrees of that project (stale ids are dropped).
+ */
+export const WorktreeFolderSchema = z.object({
+  id,
+  name: FolderNameSchema,
+  collapsed: z.boolean(),
+  worktreeIds: z.array(id),
+})
+export type WorktreeFolder = z.infer<typeof WorktreeFolderSchema>
+
+/** Folders of every live project, by project id, in creation order. A missing project has none. */
+export const FoldersSnapshotSchema = z.record(z.string(), z.array(WorktreeFolderSchema))
+export type FoldersSnapshot = z.infer<typeof FoldersSnapshotSchema>

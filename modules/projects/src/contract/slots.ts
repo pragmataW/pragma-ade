@@ -7,3 +7,11 @@ export const WorktreeRowSlotPropsSchema = z.object({
   isActive: z.boolean(),
 })
 export type WorktreeRowSlotProps = z.infer<typeof WorktreeRowSlotPropsSchema>
+
+/** Props of `sidebar.worktreeFolder.leading` entries: the folder and its live member worktrees. */
+export const WorktreeFolderSlotPropsSchema = z.object({
+  projectId: z.string(),
+  folderId: z.string(),
+  worktreeIds: z.array(z.string()),
+})
+export type WorktreeFolderSlotProps = z.infer<typeof WorktreeFolderSlotPropsSchema>

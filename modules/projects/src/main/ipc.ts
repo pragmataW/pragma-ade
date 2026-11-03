@@ -8,11 +8,28 @@ import {
   type ProjectsSettings,
   ProjectsSettingsSchema,
 } from '../contract'
+import type { FolderStore } from './folders'
 import { handleResult } from './lib/ipc-result'
 
+function registerFolderIpc(ipc: MainContext['ipc'], folders: FolderStore): void {
+  ipc.handle(I.getFolders, () => folders.snapshot())
+  handleResult(ipc, I.createFolder, ({ projectId, name, worktreeId }) => folders.create(projectId, name, worktreeId))
+  handleResult(ipc, I.renameFolder, ({ projectId, folderId, name }) => folders.rename(projectId, folderId, name))
+  handleResult(ipc, I.deleteFolder, ({ projectId, folderId }) => folders.remove(projectId, folderId))
+  handleResult(ipc, I.setFolderCollapsed, ({ projectId, folderId, collapsed }) =>
+    folders.setCollapsed(projectId, folderId, collapsed),
+  )
+  handleResult(ipc, I.moveWorktreeToFolder, ({ worktreeId, folderId }) => folders.move(worktreeId, folderId))
+}
+
 /** Every `projects.*` handler; mutations answer `Result<T, ProjectsErrorDto>` through `handleResult`. */
-export function registerProjectsIpc(ctx: MainContext<ProjectsSettings>, service: ProjectsService): void {
+export function registerProjectsIpc(
+  ctx: MainContext<ProjectsSettings>,
+  service: ProjectsService,
+  folders: FolderStore,
+): void {
   const { ipc } = ctx
+  registerFolderIpc(ipc, folders)
   ipc.handle(I.getState, () => service.getSnapshot())
   ipc.handle(I.getSettings, () => ctx.settings.get())
   ipc.handle(I.pickFolder, async () => ({ path: await ctx.dialogs.openFolder({ titleKey: PICKER_TITLE_KEY }) }))

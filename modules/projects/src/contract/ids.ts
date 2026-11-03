@@ -21,6 +21,8 @@ export const PROJECTS_SLOTS = {
   worktreeRowBadges: 'sidebar.worktreeRow.badges',
   worktreeRowLeading: 'sidebar.worktreeRow.leading',
   worktreeRowSubtitle: 'sidebar.worktreeRow.subtitle',
+  /** Aggregated status of a sidebar folder; without entries it shows the members' `worktreeRow.leading`. */
+  worktreeFolderLeading: 'sidebar.worktreeFolder.leading',
 } as const
 
 export const PROJECTS_CHANNELS = {
@@ -39,6 +41,13 @@ export const PROJECTS_CHANNELS = {
   setBaseBranch: 'projects.setBaseBranch',
   getSettings: 'projects.getSettings',
   updateSettings: 'projects.updateSettings',
+  getFolders: 'projects.getFolders',
+  createFolder: 'projects.createFolder',
+  renameFolder: 'projects.renameFolder',
+  deleteFolder: 'projects.deleteFolder',
+  setFolderCollapsed: 'projects.setFolderCollapsed',
+  moveWorktreeToFolder: 'projects.moveWorktreeToFolder',
+  foldersChanged: 'projects.foldersChanged',
   stateChanged: 'projects.stateChanged',
   statusChanged: 'projects.statusChanged',
   selected: 'projects.selected',
