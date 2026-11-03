@@ -28,6 +28,8 @@ export const EMPTY_CELL = '-'
 export const DETACHED = '(detached)'
 export const YES_NO = { yes: 'yes', no: 'no' } as const
 export const NEWLINE = '\n'
+/** Collapses a multi-line description into one table cell. */
+export const LINE_BREAKS_RE = /\s*\n\s*/g
 /** Printed after `pragma session locate` (human output only). */
 export const HANDOFF_HINT = [
   'To continue in another agent, put the path in a prompt file and run:',

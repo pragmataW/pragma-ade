@@ -27,6 +27,11 @@ describe('cli bridge contract', () => {
     expect(cliRequestSchemas.worktreeList.safeParse({ context }).success).toBe(true)
   })
 
+  it('taskColumns takes an optional non-empty project id', () => {
+    expect(cliRequestSchemas.taskColumns.safeParse({ context }).success).toBe(true)
+    expect(cliRequestSchemas.taskColumns.safeParse({ context, projectId: '' }).success).toBe(false)
+  })
+
   it('taskUpdate needs at least one field', () => {
     expect(cliRequestSchemas.taskUpdate.safeParse({ context, taskId: '42' }).success).toBe(false)
     expect(cliRequestSchemas.taskUpdate.safeParse({ context, taskId: '42', title: 'a' }).success).toBe(true)

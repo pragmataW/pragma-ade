@@ -46,6 +46,11 @@ const TABLES: [CliMethod, unknown, string[]][] = [
     ['NAME', 'PROVIDER', 'ENABLED', 'DEFAULT', 'yes', 'no'],
   ],
   ['taskList', { projectId: 'p1', tasks: [task] }, ['COLUMN', 'PRIORITY', '42', 'PRA-42', 'Review', 'Fix login']],
+  [
+    'taskColumns',
+    { projectId: 'p1', columns: [{ id: 4, name: 'Review', description: 'Needs\n  review', taskCount: 2 }] },
+    ['NAME', 'TASKS', 'DESCRIPTION', 'Review', 'Needs review', '2'],
+  ],
   ['commentsList', { worktreeId: 'w1', comments: [comment] }, ['LOCATION', 'BODY', 'src/a.ts:3-5', 'Rename this']],
   ['taskCreate', task, ['title: Fix login', 'labels: ui', 'worktreeId: -']],
   [

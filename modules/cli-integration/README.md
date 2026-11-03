@@ -10,7 +10,8 @@ Dependencies: `projects`, `agents`, `bridge` (required); `board`, `comments` (op
 ## What the module provides
 
 - **Bridge namespace `cli`** (`src/main/handlers`): `worktreeList`, `worktreeCreate`, `agentList`, `agentSpawn`,
-  `profileList`, `taskList`, `taskCreate`, `taskUpdate`, `taskMove`, `commentsList`, `handoff`, plus `ping`. Every
+  `profileList`, `taskList`, `taskCreate`, `taskUpdate`, `taskMove`, `commentsList`, `handoff`, `sessionLocate`,
+  `taskColumns` (columns in board order with description and task count, read live), plus `ping`. Every
   handler answers the envelope `{ ok: true, result } | { ok: false, error: { code, message, details? } }`
   (`cliResponseSchema`); error codes are `CLI_ERROR_CODES`. Board/comments missing → `module_unavailable`.
 - **Launch decorator** `cli-integration.path` (order 500): prepends `<userData>/modules/cli-integration/bin` (the

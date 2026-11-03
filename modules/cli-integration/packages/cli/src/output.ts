@@ -21,6 +21,7 @@ import {
   ERROR_PREFIX,
   HANDOFF_HINT,
   JSON_INDENT,
+  LINE_BREAKS_RE,
   MAIN_MARK,
   NEWLINE,
   NOT_RUNNING_TEXT,
@@ -48,6 +49,7 @@ const HEADERS = {
   tasks: [ID, 'KEY', 'COLUMN', 'PRIORITY', 'TITLE'],
   comments: [ID, 'LOCATION', 'BODY'],
   candidates: [ID, 'NAME', 'PROVIDER'],
+  columns: [ID, 'NAME', 'TASKS', 'DESCRIPTION'],
 } as const
 
 /** Plain-text table; every column padded to its widest cell (Contract issue: belongs in the SDK, §9.1). */
@@ -75,6 +77,8 @@ function location(c: CliComment): string {
   const end = c.lineEnd !== null && c.lineEnd !== c.lineStart ? `${RANGE}${c.lineEnd}` : ''
   return `${c.filePath}${LOCATION_SEP}${c.lineStart}${end}`
 }
+/** A multi-line text as one cell; '' → `EMPTY_CELL`. */
+const oneLine = (text: string): string => text.trim().replace(LINE_BREAKS_RE, ' ') || EMPTY_CELL
 const preview = (body: string): string => (body.split(NEWLINE)[0] ?? '').slice(0, COMMENT_PREVIEW_CHARS)
 
 /** `key: value` lines for a single object. */
@@ -127,6 +131,13 @@ function humanResult(method: CliMethod, result: unknown): string {
       return formatTable(
         HEADERS.tasks,
         r.tasks.map((t) => [String(t.id), t.key, t.column, t.priority, t.title]),
+      )
+    }
+    case CLI_METHOD.taskColumns: {
+      const r = result as CliResult<'taskColumns'>
+      return formatTable(
+        HEADERS.columns,
+        r.columns.map((c) => [String(c.id), c.name, String(c.taskCount), oneLine(c.description)]),
       )
     }
     case CLI_METHOD.commentsList: {
